@@ -4,7 +4,7 @@
 
 | Projet | Licence annoncée | Apport | Décision proposée |
 |---|---|---|---|
-| [`op-patch-util`](https://github.com/AlexCharlton/op-patch-util) | MIT | CLI Rust pour lire/modifier/créer patches synthé et drum | **Candidat prioritaire** : réutiliser comme crate ou porter les primitives validées |
+| [`op-patch-util`](https://github.com/AlexCharlton/op-patch-util) | À vérifier au fichier LICENSE | CLI Rust pour lire/modifier/créer patches synthé et drum | **Candidat prioritaire** : réutiliser les primitives validées, sans intégrer avant audit de licence |
 | [`teoperator`](https://github.com/schollz/teoperator) | MIT | Conversion audio, synth patches, kits drum, découpe transients/fixe | **Référence + compatibilité** ; utile pour fixtures croisées |
 | [`op1tools`](https://github.com/blattm/op1tools) | MIT | Scripts Linux de détection, montage, sauvegarde, éjection | **Référence seulement** ; réécrire avec validations multiplateformes |
 | [`OP-1Z-Sample-Manager`](https://github.com/romangarms/OP-1Z-Sample-Manager) | GPL‑3.0 | Gestion samples, tape, backup/restore, aperçu multiplateforme | **Benchmark direct** ; code réutilisable si attribution et audit précis |
@@ -16,8 +16,35 @@
 | [`op1-fw-archive`](https://github.com/op1hacks/op1-fw-archive) | Firmware propriétaire | Archive communautaire de versions firmware | **Métadonnées seulement** ; ne jamais redistribuer les binaires |
 | [`op1-docs`](https://github.com/sualk/op1-docs) | À vérifier par fichier | Recherche sur conteneur, bases, chiffrement et ressources | **Source technique**, ne copier que ce que la licence permet |
 | [`connect-op1`](https://github.com/jidagraphy/connect-op1) | À confirmer | Exemple WebUSB et identifiant `2367:0004` | **Indicateur de détection**, jamais preuve unique |
-| [`OP-PatchStudio`](https://github.com/joseph-holland/op-patchstudio) | À confirmer avant réutilisation | Éditeur web/PWA de samples et waveforms | **Inspiration visuelle**, aucune copie sans licence claire |
+| [`OP-PatchStudio`](https://github.com/joseph-holland/op-patchstudio) | MIT annoncée | Éditeur web/PWA de samples et waveforms, sortie OP-XY et import OP-1 | **Inspiration et benchmark**, moteur OP-1 à valider avant réutilisation |
+| [`op1-glitter`](https://github.com/Nanobot567/op1-glitter) | MIT annoncée | Thèmes de couleurs et IDs SVG | **Sidecar expert**, normalisation et fixtures à ajouter |
+| [`op1.fun.app`](https://github.com/dustMason/op1.fun.app) | À vérifier | Compagnon macOS : packs, patches, samples, Tape | **Benchmark UX**, pas de dépendance ni téléchargement silencieux |
+| [`OP-1 Note Quantization`](https://github.com/stfj/OP-1-Note-Quantization-PublicGit) | À vérifier | Patch binaire de gammes pour OS 246 | **Recherche seulement**, aucun bouton d'installation |
+| [`op1-decryptor`](https://github.com/sualk/op1-decryptor) | Non déclarée | Recherche sur le chiffrement de `OP1_vdk.ldr` | **Référence historique**, aucune clé ni extraction dans l'app |
+| [`op1dumps`](https://github.com/Tolsi/op1dumps) | Non déclarée | Dumps flash/ECC/OTP et réparation | **Exclu**, risque matériel critique |
 | [`op1.fun`](https://op1.fun/) | Service tiers | Bibliothèque communautaire et patch builder | **Lien/import manuel** ; pas de scraping ni dépendance au compte |
+
+## Étude exécutée sur un firmware réel
+
+Le laboratoire a récupéré l’OS officiel **246** depuis Teenage Engineering,
+sans le committer, puis a vérifié son conteneur avec l’inspecteur du projet.
+Il a ensuite déballé et reconstruit une copie avec `op1repacker` au commit
+`390b18e4193a3af4f44e8f89b5f6c017a71ddf96`.
+
+- enveloppe confirmée : `CRC-32 little-endian → LZMA-Alone → TAR` ;
+- 117 entrées, 107 fichiers et 10 dossiers observés ;
+- version interne : `R. 00246`, build `00246`, te‑boot `2.30` ;
+- round-trip sans modification : 107 fichiers retrouvés et contenus
+  identiques ;
+- fichier reconstruit valide, mais différent en taille et en SHA‑256 : un
+  repack n’est pas une copie binaire identique ;
+- la copie finale vers le volume TE‑boot reste manuelle, conformément au guide
+  officiel.
+
+Le détail des mesures, commandes et limites se trouve dans
+[`FIRMWARE_LAB.md`](FIRMWARE_LAB.md). Le code tiers n’est pas intégré : notre
+inspecteur garde les validations de chemin, de taille et de type de membre qui
+manquent à l’extracteur historique.
 
 ## Ce que l’on récupère réellement
 
@@ -61,3 +88,8 @@
 
 Le registre machine-lisible est disponible dans [`../tools/sources.yml`](../tools/sources.yml).
 
+Le registre des mods est dans [`../data/mods/catalog.json`](../data/mods/catalog.json)
+et le registre des sources de contenu dans
+[`../data/content/sources.json`](../data/content/sources.json). Les compteurs
+de services communautaires y sont datés et traités comme des observations
+dynamiques, pas comme un inventaire à aspirer.

@@ -92,12 +92,19 @@ Au 11 août 2026, la page officielle liste l’OS **246**, publié le 13 dé
 
 Procédure officielle résumée :
 
-1. entrer dans TE‑boot ;
-2. choisir la touche 1 ;
-3. connecter l’USB et attendre le volume amovible ;
-4. copier le fichier `.op1` ;
-5. éjecter le volume ;
-6. presser `COM` sur la machine et la laisser terminer.
+1. éteindre l’OP‑1, débrancher l’USB et attendre trois secondes ;
+2. maintenir `COM` pendant l’allumage pour entrer dans TE‑boot ;
+3. choisir la touche 1 ;
+4. connecter l’USB et attendre le volume amovible ;
+5. **copier manuellement le fichier `.op1` sur ce volume** ;
+6. éjecter le volume depuis le système d’exploitation ;
+7. presser `COM` sur la machine et la laisser terminer.
+
+Le fichier firmware est donc copié dans le volume de mise à jour TE‑boot. Ce
+n’est pas le même usage que le Disk mode (`Shift + COM`, puis `T3`) utilisé pour
+la sauvegarde et le remplissage de la machine. L’application prépare et
+vérifie le fichier, mais le transfert firmware reste une étape manuelle et
+visible.
 
 OP‑1 Studio doit montrer ces étapes, pas simuler l’action physique.
 
@@ -122,4 +129,3 @@ L’archive contient notamment des ressources audio et graphiques, des bases `op
 - VID/PID selon mode normal, Disk et TE‑boot.
 
 Consulter [SOURCES.md](SOURCES.md) pour les références.
-

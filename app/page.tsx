@@ -6,6 +6,12 @@ type IconName =
   | "chip"
   | "shield"
   | "archive"
+  | "folder"
+  | "sliders"
+  | "upload"
+  | "music"
+  | "refresh"
+  | "save"
   | "wave"
   | "tape"
   | "settings"
@@ -21,6 +27,12 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     chip: <><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3M10 10h4v4h-4z"/></>,
     shield: <><path d="M12 3 5 6v5c0 4.8 2.7 8.1 7 10 4.3-1.9 7-5.2 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></>,
     archive: <><path d="M4 7h16v14H4zM3 3h18v4H3z"/><path d="M9 11h6"/></>,
+    folder: <><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M3 9h18"/></>,
+    sliders: <><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></>,
+    upload: <><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M5 20h14"/></>,
+    music: <><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></>,
+    refresh: <><path d="M20 11a8 8 0 0 0-14-4L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14 4l2-2"/><path d="M20 20v-5h-5"/></>,
+    save: <><path d="M5 3h12l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-6h8v6"/></>,
     wave: <path d="M3 12h3l2-6 4 12 3-9 2 6h4"/>,
     tape: <><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="8" cy="11" r="2.5"/><circle cx="16" cy="11" r="2.5"/><path d="m8 16 2-2h4l2 2"/></>,
     settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></>,
@@ -39,11 +51,53 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   );
 }
 
-const nav = [
-  { label: "Firmware", icon: "chip" as IconName, active: true },
-  { label: "Sauvegardes", icon: "archive" as IconName },
-  { label: "Sons", icon: "wave" as IconName },
-  { label: "Tape & Album", icon: "tape" as IconName },
+type ViewKey = "firmware" | "backups" | "machine" | "sounds" | "tape";
+
+const nav: Array<{ id: ViewKey; label: string; icon: IconName }> = [
+  { id: "firmware", label: "Firmware", icon: "chip" },
+  { id: "backups", label: "Sauvegardes", icon: "archive" },
+  { id: "machine", label: "Machine", icon: "folder" },
+  { id: "sounds", label: "Sons & patches", icon: "wave" },
+  { id: "tape", label: "Tape & Album", icon: "tape" },
+];
+
+const viewCopy: Record<ViewKey, { eyebrow: string; title: string; description: string; action: string }> = {
+  firmware: {
+    eyebrow: "FIRMWARE / CENTRE DE CONTRÔLE",
+    title: "Votre OP‑1, sous contrôle.",
+    description: "Identifier, sauvegarder, vérifier et mettre à jour avec un plan lisible à chaque étape.",
+    action: "Contrôler le firmware",
+  },
+  backups: {
+    eyebrow: "COFFRE LOCAL / TIME MACHINE",
+    title: "Votre machine peut revenir en arrière.",
+    description: "Créez une copie complète, vérifiez chaque fichier et restaurez uniquement après validation.",
+    action: "Créer une sauvegarde",
+  },
+  machine: {
+    eyebrow: "MACHINE / REMPLISSAGE CONTRÔLÉ",
+    title: "Remplir l’OP‑1 sans rien écraser par accident.",
+    description: "Préparez les samples, patches, kits et morceaux, puis relisez le plan avant chaque copie.",
+    action: "Préparer un transfert",
+  },
+  sounds: {
+    eyebrow: "SAMPLES & PATCHES / ÉDITEUR LOCAL",
+    title: "Construire vos sons, simplement.",
+    description: "Écoutez, ajustez et exportez une copie compatible avant de l’envoyer vers la machine.",
+    action: "Importer un son",
+  },
+  tape: {
+    eyebrow: "TAPE & ALBUM / ARCHIVE",
+    title: "Retrouver le morceau derrière les fichiers.",
+    description: "Prévisualisez les quatre pistes et archivez le projet avec sa sauvegarde source.",
+    action: "Analyser la Tape",
+  },
+};
+
+const patchCatalog = [
+  { name: "Dust Engine", type: "Synth patch", color: "orange", description: "Basse granuleuse · local" },
+  { name: "Glass Choir", type: "Synth patch", color: "blue", description: "Texture claire · local" },
+  { name: "Pocket Drums", type: "Drum kit", color: "green", description: "12 sons · local" },
 ];
 
 const firmwareSteps = [
@@ -54,8 +108,13 @@ const firmwareSteps = [
 ];
 
 export default function Home() {
+  const [activeView, setActiveView] = useState<ViewKey>("firmware");
   const [stage, setStage] = useState(0);
   const [scanning, setScanning] = useState(false);
+  const [backupState, setBackupState] = useState<"required" | "creating" | "verified">("required");
+  const [fillState, setFillState] = useState<"idle" | "planned">("idle");
+  const [selectedPatch, setSelectedPatch] = useState(0);
+  const [patchValues, setPatchValues] = useState({ cutoff: 62, resonance: 35, drive: 48, envelope: 20 });
   const [expertOpen, setExpertOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -63,19 +122,47 @@ export default function Home() {
     const entries = [
       ["14:32:04", "Interface sécurisée prête — aucune machine connectée"],
     ];
-    if (stage >= 1) entries.push(["14:32:18", "Pont local détecté sur cette machine"]);
+    if (stage >= 1) entries.push(["14:32:18", "Application locale prête — connexion USB simulée"]);
     if (stage >= 2) {
       entries.push(["14:32:21", "OP-1 original identifié — mode normal"]);
       entries.push(["14:32:22", "OS 243 lu — mise à jour 246 disponible"]);
     }
     if (stage >= 3) entries.push(["14:32:36", "Plan préparé — attente du mode TE-boot"]);
+    if (backupState === "verified") entries.push(["14:33:02", "Sauvegarde vérifiée — coffre local disponible"]);
+    if (fillState === "planned") entries.push(["14:33:18", "Plan de remplissage prêt — 3 éléments, aucune suppression"]);
     return entries;
-  }, [stage]);
+  }, [backupState, fillState, stage]);
 
   function runPrimaryAction() {
+    if (activeView === "backups") {
+      if (backupState === "verified") {
+        setNotice("La sauvegarde locale est déjà vérifiée. La prochaine étape sera la comparaison ou la restauration contrôlée.");
+        return;
+      }
+      setBackupState("creating");
+      setNotice("Copie simulée en cours : les fichiers seront ensuite relus et hachés.");
+      window.setTimeout(() => {
+        setBackupState("verified");
+        setNotice("Sauvegarde vérifiée. Le firmware et le remplissage peuvent maintenant utiliser ce coffre.");
+      }, 900);
+      return;
+    }
+    if (activeView === "machine") {
+      setFillState("planned");
+      setNotice("Plan de remplissage simulé : 2 patches, 1 kit batterie, 0 suppression. Aucune écriture réelle.");
+      return;
+    }
+    if (activeView === "sounds") {
+      setNotice("Import simulé. La version native analysera le format, la durée et la destination avant copie.");
+      return;
+    }
+    if (activeView === "tape") {
+      setNotice("Analyse Tape simulée : les quatre pistes seront prévisualisées sans modifier la machine.");
+      return;
+    }
     if (stage === 0) {
       setStage(1);
-      setNotice("Pont local simulé. Le prototype n’accède à aucun périphérique réel.");
+      setNotice("Connexion simulée. La version application utilisera le pont Tauri/Rust pour l’accès USB réel.");
       return;
     }
     if (stage === 1) {
@@ -97,13 +184,17 @@ export default function Home() {
 
   const primaryLabel = scanning
     ? "Contrôle en cours…"
-    : stage === 0
+    : activeView !== "firmware"
+      ? viewCopy[activeView].action
+      : stage === 0
       ? "Simuler la connexion"
       : stage === 1
         ? "Contrôler la machine"
         : stage === 2
           ? "Préparer la mise à jour"
           : "Voir l’étape TE-boot";
+
+  const copy = viewCopy[activeView];
 
   return (
     <main className="site-canvas">
@@ -117,8 +208,8 @@ export default function Home() {
           </div>
 
           <div className="mini-screen" aria-label="État du système">
-            <span className="screen-kicker">FIRMWARE CONTROL</span>
-            <strong>{stage >= 2 ? "OS 243 → 246" : "NO DEVICE"}</strong>
+            <span className="screen-kicker">OP‑1 STUDIO / LOCAL APP</span>
+            <strong>{stage >= 2 ? "OS 243 → 246" : "READY / NO DEVICE"}</strong>
             <div className="screen-wave" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
           </div>
 
@@ -131,7 +222,7 @@ export default function Home() {
 
           <div className={`bridge-state ${stage > 0 ? "online" : ""}`}>
             <span className="state-dot" />
-            <div><small>PONT LOCAL</small><strong>{stage > 0 ? "SIMULÉ" : "REQUIS"}</strong></div>
+            <div><small>APPLICATION LOCALE</small><strong>{stage > 0 ? "PRÊTE" : "EN ATTENTE"}</strong></div>
           </div>
         </header>
 
@@ -141,13 +232,12 @@ export default function Home() {
               <p className="nav-label">CONTRÔLE</p>
               {nav.map((item) => (
                 <button
-                  key={item.label}
-                  className={item.active ? "nav-item active" : "nav-item"}
-                  onClick={() => !item.active && setNotice(`${item.label} arrive après le socle firmware.`)}
+                  key={item.id}
+                  className={activeView === item.id ? "nav-item active" : "nav-item"}
+                  onClick={() => { setActiveView(item.id); setNotice(null); }}
                 >
                   <Icon name={item.icon} />
                   <span>{item.label}</span>
-                  {!item.active && <small>BIENTÔT</small>}
                 </button>
               ))}
             </nav>
@@ -162,22 +252,22 @@ export default function Home() {
             </button>
 
             <div className="plan-card">
-              <span>COMMUNITY CORE</span>
-              <strong>Gratuit & local</strong>
-              <p>Le contrôle essentiel reste disponible sans abonnement.</p>
-              <button onClick={() => setNotice("Studio Cloud ajoutera historique distant, profils et support — jamais l’accès de base à la machine.")}>Découvrir Studio Cloud</button>
+              <span>MIT / LOCAL FIRST</span>
+              <strong>Application libre</strong>
+              <p>Firmware, sauvegardes, samples et patches restent utilisables hors ligne.</p>
+              <button onClick={() => setNotice("Un service distant pourra venir plus tard, mais l’application ne dépendra jamais d’un abonnement.")}>Voir le principe</button>
             </div>
           </aside>
 
           <div className="content">
             <div className="page-heading">
               <div>
-                <span className="eyebrow"><Icon name="shield" size={16} /> FIRMWARE / CENTRE DE CONTRÔLE</span>
-                <h1>Votre OP‑1, sous contrôle.</h1>
-                <p>Identifier, sauvegarder, vérifier et mettre à jour avec un plan lisible à chaque étape.</p>
+                <span className="eyebrow"><Icon name={activeView === "sounds" ? "wave" : activeView === "backups" ? "archive" : activeView === "machine" ? "folder" : "shield"} size={16} /> {copy.eyebrow}</span>
+                <h1>{copy.title}</h1>
+                <p>{copy.description}</p>
               </div>
               <button className="primary-action" onClick={runPrimaryAction} disabled={scanning}>
-                {stage === 0 ? <Icon name="plug" /> : stage < 3 ? <Icon name="shield" /> : <Icon name="terminal" />}
+                {activeView === "backups" ? <Icon name="archive" /> : activeView === "machine" ? <Icon name="upload" /> : activeView === "sounds" ? <Icon name="upload" /> : activeView === "tape" ? <Icon name="music" /> : stage === 0 ? <Icon name="plug" /> : stage < 3 ? <Icon name="shield" /> : <Icon name="terminal" />}
                 {primaryLabel}
               </button>
             </div>
@@ -197,10 +287,11 @@ export default function Home() {
                 <div><span>OS ACTUEL</span><strong>{stage >= 2 ? "243" : "—"}</strong></div>
                 <div><span>DERNIER OFFICIEL</span><strong>246</strong></div>
                 <div><span>BATTERIE</span><strong>{stage >= 2 ? "84%" : "—"}</strong></div>
-                <div><span>SAUVEGARDE</span><strong className={stage >= 3 ? "ok" : "warn"}>{stage >= 3 ? "VÉRIFIÉE" : "REQUISE"}</strong></div>
+                <div><span>SAUVEGARDE</span><strong className={backupState === "verified" ? "ok" : "warn"}>{backupState === "verified" ? "VÉRIFIÉE" : "REQUISE"}</strong></div>
               </div>
             </section>
 
+            {activeView === "firmware" && <>
             <section className="workflow-section" aria-labelledby="workflow-title">
               <div className="section-heading">
                 <div><span className="section-label">PARCOURS SÉCURISÉ</span><h2 id="workflow-title">Mise à jour officielle</h2></div>
@@ -247,10 +338,65 @@ export default function Home() {
                 </div>
               </section>
             </div>
+            </>}
+
+            {activeView === "backups" && (
+              <div className="module-grid">
+                <section className="panel module-panel" aria-labelledby="backup-title">
+                  <div className="panel-heading"><div><span className="section-label">COFFRE LOCAL</span><h2 id="backup-title">Sauvegarde complète</h2></div><span className={`status-chip ${backupState === "verified" ? "success" : "warning"}`}>{backupState === "verified" ? "VÉRIFIÉE" : backupState === "creating" ? "EN COURS" : "REQUISE"}</span></div>
+                  <div className="module-body">
+                    <div className="big-status"><Icon name={backupState === "verified" ? "check" : "archive"} size={25} /><div><strong>{backupState === "verified" ? "Snapshot prêt à servir de point de retour" : "Aucun snapshot récent"}</strong><span>{backupState === "verified" ? "OP‑1 original · 184 fichiers · SHA‑256 relu" : "La sauvegarde est obligatoire avant firmware ou transfert."}</span></div></div>
+                    <div className="stat-grid"><div><span>CONTENU</span><strong>184 fichiers</strong></div><div><span>TAILLE</span><strong>412 Mo</strong></div><div><span>DERNIÈRE COPIE</span><strong>{backupState === "verified" ? "À l’instant" : "Jamais"}</strong></div></div>
+                    <div className="check-list"><p><Icon name="check" size={15} /> Copie locale dans le coffre</p><p><Icon name="check" size={15} /> Manifestes SHA‑256</p><p><Icon name="check" size={15} /> Restauration sous forme de plan relisible</p></div>
+                  </div>
+                </section>
+                <section className="panel log-panel" aria-labelledby="backup-log-title">
+                  <div className="panel-heading"><div><span className="section-label">JOURNAL</span><h2 id="backup-log-title">Contrôle de preuve</h2></div><span className="live-dot"><i /> LOCAL</span></div>
+                  <div className="terminal"><p><time>14:30:01</time><span>Destination coffre sélectionnée</span></p><p><time>14:30:03</time><span>Préservation des fichiers inconnus</span></p><p><time>14:30:08</time><span>{backupState === "verified" ? "SHA-256 : manifeste cohérent" : "En attente d’une copie vérifiée"}</span></p></div>
+                </section>
+              </div>
+            )}
+
+            {activeView === "machine" && (
+              <div className="module-grid machine-grid">
+                <section className="panel module-panel" aria-labelledby="fill-title">
+                  <div className="panel-heading"><div><span className="section-label">PLAN DE COPIE</span><h2 id="fill-title">Remplissage de la machine</h2></div><span className={`status-chip ${fillState === "planned" ? "success" : "warning"}`}>{fillState === "planned" ? "PRÊT" : "BROUILLON"}</span></div>
+                  <div className="module-body">
+                    <div className="transfer-summary"><div className="transfer-icon"><Icon name="upload" size={23} /></div><div><strong>Bibliothèque locale → OP‑1 original</strong><span>Le plan n’écrit rien tant qu’il n’est pas relu et confirmé.</span></div></div>
+                    <div className="transfer-list"><p><span className="file-kind patch-kind">PATCH</span><strong>Dust Engine</strong><small>vers synth · remplacement contrôlé</small><Icon name="check" size={15} /></p><p><span className="file-kind patch-kind">PATCH</span><strong>Glass Choir</strong><small>vers synth · nouveau fichier</small><Icon name="check" size={15} /></p><p><span className="file-kind kit-kind">KIT</span><strong>Pocket Drums</strong><small>12 samples · nouveau kit</small><Icon name="check" size={15} /></p></div>
+                    <div className="warning-line"><Icon name="shield" size={16} /> Aucun fichier existant ne sera supprimé automatiquement.</div>
+                  </div>
+                </section>
+                <section className="panel module-panel" aria-labelledby="capacity-title">
+                  <div className="panel-heading"><div><span className="section-label">INVENTAIRE</span><h2 id="capacity-title">Place et règles</h2></div><button onClick={() => setNotice("Inventaire simulé actualisé. La version native relira le volume avant chaque plan.")}><Icon name="refresh" size={14} /></button></div>
+                  <div className="module-body"><div className="capacity-meter"><div><span>ESPACE UTILISÉ</span><strong>412 / 1024 Mo</strong></div><i><b /></i></div><div className="check-list"><p><Icon name="check" size={15} /> Sauvegarde vérifiée liée au plan</p><p><Icon name="check" size={15} /> Conversion audio avant copie</p><p><Icon name="check" size={15} /> Vérification après écriture</p></div><button className="secondary-action" onClick={() => setNotice("Le plan de copie est prêt à être relu. Aucune écriture réelle dans ce prototype.")}>Relire le plan</button></div>
+                </section>
+              </div>
+            )}
+
+            {activeView === "sounds" && (
+              <div className="module-grid sounds-grid">
+                <section className="panel library-panel" aria-labelledby="library-title">
+                  <div className="panel-heading"><div><span className="section-label">BIBLIOTHÈQUE LOCALE</span><h2 id="library-title">Samples & patches</h2></div><button onClick={() => setNotice("Import simulé. Les formats WAV, AIFF, FLAC et MP3 seront mesurés avant conversion.")}><Icon name="upload" size={14} /> Importer</button></div>
+                  <div className="patch-list">{patchCatalog.map((patch, index) => <button key={patch.name} className={`patch-row ${selectedPatch === index ? "selected" : ""}`} onClick={() => setSelectedPatch(index)}><span className={`patch-dot ${patch.color}`} /><span><strong>{patch.name}</strong><small>{patch.type} · {patch.description}</small></span><Icon name={patch.type === "Drum kit" ? "music" : "sliders"} size={16} /></button>)}</div>
+                </section>
+                <section className="panel editor-panel" aria-labelledby="editor-title">
+                  <div className="panel-heading"><div><span className="section-label">ÉDITEUR SIMPLE</span><h2 id="editor-title">{patchCatalog[selectedPatch].name}</h2></div><span className="status-chip neutral">COPIE LOCALE</span></div>
+                  <div className="module-body"><label className="field-label">Nom du patch<input value={patchCatalog[selectedPatch].name} readOnly /></label><div className="wave-preview"><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="slider-list">{(["cutoff", "resonance", "drive", "envelope"] as const).map((key) => <label key={key}><span>{key === "cutoff" ? "Cutoff" : key === "resonance" ? "Résonance" : key === "drive" ? "Drive" : "Enveloppe"}<b>{patchValues[key]}%</b></span><input type="range" min="0" max="100" value={patchValues[key]} onChange={(event) => setPatchValues({ ...patchValues, [key]: Number(event.target.value) })} /></label>)}</div><div className="editor-actions"><button className="secondary-action" onClick={() => setNotice("Aperçu audio simulé : le moteur natif jouera le patch sans l’envoyer.")}><Icon name="music" size={15} /> Écouter</button><button className="primary-action compact" onClick={() => setNotice("Copie du patch préparée. Le transfert passera par une sauvegarde et un ChangePlan.")}><Icon name="save" size={15} /> Exporter la copie</button></div></div>
+                </section>
+              </div>
+            )}
+
+            {activeView === "tape" && (
+              <section className="panel module-panel tape-panel" aria-labelledby="tape-title">
+                <div className="panel-heading"><div><span className="section-label">APERÇU NON DESTRUCTIF</span><h2 id="tape-title">Tape & Album</h2></div><span className="status-chip neutral">4 PISTES</span></div>
+                <div className="module-body"><div className="tape-tracks">{["Side A", "Side B", "Side C", "Side D"].map((side, index) => <div key={side}><span>{side}</span><i className={`track-wave track-${index}`}><b /><b /><b /><b /><b /><b /><b /><b /></i><small>00:00 — 06:00</small></div>)}</div><div className="warning-line"><Icon name="shield" size={16} /> La prévisualisation ne modifie jamais les fichiers de la machine.</div></div>
+              </section>
+            )}
 
             <footer className="safety-footer">
-              <div><Icon name="shield" /><p><strong>Le navigateur pilote l’interface.</strong><span>Le pont local signé vérifie le volume, synchronise les écritures et demande une éjection sûre.</span></p></div>
-              <a href="https://github.com/propann/OP-1-Studio" target="_blank" rel="noreferrer">AGPL‑3.0 · DONNÉES LOCALES · VOIR LE CODE SOURCE</a>
+              <div><Icon name="shield" /><p><strong>L’application garde la main.</strong><span>Chaque écriture passe par une sauvegarde, un plan relisible, une synchronisation et une vérification.</span></p></div>
+              <a href="https://github.com/propann/OP-1-Studio" target="_blank" rel="noreferrer">MIT · DONNÉES LOCALES · VOIR LE CODE SOURCE</a>
             </footer>
           </div>
         </div>

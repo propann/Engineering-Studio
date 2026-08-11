@@ -4,7 +4,7 @@
 
 OP‑1 Studio doit rendre les opérations ordinaires de l’OP‑1 original aussi rassurantes qu’un gestionnaire de photos : on voit ce qui existe, on prévisualise, on prépare une action, puis on peut revenir en arrière grâce à une sauvegarde vérifiée.
 
-Le produit est **local-first** : l’app de bureau fonctionne hors ligne et ne demande ni compte ni abonnement pour contrôler la machine. Un service navigateur et un compte optionnels ajoutent synchronisation, sauvegarde distante et partage.
+Le produit est une **application locale** : elle fonctionne hors ligne et ne demande ni compte ni abonnement pour contrôler la machine, sauvegarder son contenu, gérer les samples ou préparer des patches. Un service distant reste une extension éventuelle, jamais une dépendance.
 
 ## Utilisateurs visés
 
@@ -44,12 +44,12 @@ flowchart LR
 | Accueil | Machine détectée, mode, capacité, OS, alertes | Oui |
 | Explorateur | Arborescence logique, recherche, écoute, métadonnées | Oui |
 | Sauvegardes | Historique, taille, intégrité, comparaison, restauration | Oui |
-| Sons | Bibliothèque, waveform, trim, conversion, transfert | Oui |
+| Sons & patches | Bibliothèque, waveform, trim, conversion, éditeur de patch simple et transfert | Oui |
 | Tape | Quatre pistes synchronisées, lecture, export | Oui |
 | Firmware | Version, catalogue officiel, assistant TE‑boot | Oui |
 | Studio | Arrangement de quatre stems et rendu compatible | Après le socle |
 | Labo expert | Inspection/repack de firmware tiers | Expérimental, opt-in |
-| Studio Cloud | Historique distant, synchronisation, partage privé | Service optionnel |
+| Synchronisation | Historique distant, synchronisation et partage privé | Extension optionnelle |
 
 ## Ce que la v1 ne promet pas
 

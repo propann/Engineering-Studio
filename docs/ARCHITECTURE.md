@@ -2,10 +2,7 @@
 
 ## Choix directeur
 
-Le produit partage une interface React/TypeScript entre deux surfaces :
-
-- une application **Tauri 2** avec cœur Rust pour toute opération matérielle ;
-- un service navigateur pour le compte, la bibliothèque distante et la synchronisation optionnelle.
+Le produit est d’abord une application **Tauri 2** avec interface React/TypeScript et cœur Rust. Elle porte toutes les opérations matérielles, les sauvegardes, le firmware et la bibliothèque locale. Une synchronisation distante pourra être ajoutée plus tard comme extension indépendante.
 
 Le navigateur standard ne constitue pas une base suffisante pour le firmware. WebUSB protège notamment la classe USB Mass Storage, et la File System Access API dépend du navigateur et d’un choix manuel de dossier ; elle ne fournit pas une stratégie portable d’identification et d’éjection sûre. L’app native est donc le produit matériel de référence. Un pont local navigateur pourra être étudié plus tard, après sécurisation du protocole.
 
@@ -15,15 +12,13 @@ Cette architecture réduit la taille du paquet par rapport à Electron, permet d
 
 ```mermaid
 flowchart TB
-    VIEW["Interface React partagée"]
-    APP["App Tauri"]
-    WEB["Service web"]
+    VIEW["Interface React"]
+    APP["Application Tauri"]
     DOMAIN["Domaine Rust\nplans, règles, manifestes"]
     OS["Adaptateurs OS\nWindows · macOS · Linux"]
-    CLOUD["API compte + cloud"]
+    LIB["Bibliothèque locale\nsamples · patches · Tape"]
     VIEW --> APP --> DOMAIN --> OS
-    VIEW --> WEB --> CLOUD
-    APP -. compte optionnel .-> CLOUD
+    DOMAIN --> LIB
 ```
 
 ### Présentation
@@ -33,7 +28,7 @@ flowchart TB
 - waveform et lecture audio sans écriture implicite ;
 - résumé humain + détail technique pour chaque plan.
 
-Le monorepo partage les composants, contrats et traductions, mais les capacités disponibles sont injectées par environnement. Une page web ne doit jamais afficher un bouton d’écriture matérielle actif en l’absence de l’app.
+L’interface web actuelle reste une façade de démonstration. Elle ne doit jamais afficher un bouton d’écriture matérielle actif en l’absence de l’application native. Les contrats de domaine sont conçus pour être testés sans matériel grâce aux fixtures.
 
 ### Domaine
 
@@ -113,9 +108,15 @@ Une version exacte du sidecar doit être épinglée et son SHA‑256 vérifié �
 
 ## Firmware
 
-Le cœur standard sait uniquement : lire un catalogue, télécharger depuis une origine officielle, valider le conteneur connu, confirmer le mode TE‑boot, copier le fichier, synchroniser et demander l’étape physique suivante. Il ne décompresse ni ne modifie le code du firmware dans le parcours normal.
+Le cœur standard sait uniquement : lire un catalogue, télécharger depuis une origine officielle, valider le conteneur connu, confirmer le mode TE‑boot, préparer le fichier et guider sa copie manuelle, puis demander l’éjection et l’étape physique suivante. Il ne décompresse ni ne modifie le code du firmware dans le parcours normal et n’écrit pas automatiquement le volume TE‑boot. Toute opération de contenu est bloquée tant qu’une sauvegarde vérifiée n’est pas liée au `ChangePlan`.
 
 L’analyse/repack communautaire est un module séparé, désactivé par défaut et incapable d’écrire directement sur un volume. Voir [FIRMWARE_SAFETY.md](FIRMWARE_SAFETY.md).
+
+## Samples, patches et remplissage
+
+Le remplissage de la machine passe par le même `ChangePlan` que le firmware : l’application inspecte d’abord la destination, affiche les fichiers ajoutés/remplacés, vérifie l’espace et conserve les fichiers inconnus. Un éditeur de patch simple manipule uniquement une copie locale, permet de régler les paramètres exposés par le format, puis exporte un fichier marqué comme nouveau avant tout transfert.
+
+Les formats propriétaires ou partiellement documentés sont traités en lecture prudente. L’application ne réécrit pas une base interne inconnue et ne supprime jamais automatiquement un fichier existant.
 
 ## Stockage de configuration
 

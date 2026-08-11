@@ -17,6 +17,7 @@
       "releasedAt": "2022-12-13",
       "officialUrl": "https://teenage.engineering/_software/op-1/op1_246.op1",
       "officialReleaseNotesUrl": "https://teenage.engineering/downloads/op-1/original",
+      "localObservationFile": "data/firmware/op1_246-observation.json",
       "sha256": null,
       "notes": [
         "Fixed line, microphone and radio related noise according to the official release notes."
@@ -24,4 +25,3 @@
     }
   ]
 }
-

@@ -49,21 +49,17 @@ Ces fonctions forment la confiance de base. Les paywall rendrait l’application
 
 ```mermaid
 flowchart TD
-    APP["App desktop gratuite"] --> LOCAL["OP‑1 + coffre local"]
-    APP --> ACCOUNT["Compte optionnel"]
-    WEB["Service navigateur"] --> ACCOUNT
-    ACCOUNT --> CLOUD["Cloud chiffré + synchronisation"]
+    APP["Application locale"] --> LOCAL["OP‑1 + coffre local"]
+    APP -. extension optionnelle .-> CLOUD["Synchronisation chiffrée"]
 ```
 
-L’utilisateur doit pouvoir se déconnecter du service sans perdre l’accès à son matériel ou à ses sauvegardes locales.
+L’utilisateur doit pouvoir ne jamais activer la synchronisation et conserver l’accès complet à son matériel, ses sauvegardes, ses samples et ses patches locaux.
 
 ## Licence
 
-Avec une interface réseau et un service hébergé, la licence proposée devient **AGPL‑3.0-only**. Elle autorise la vente et l’hébergement tout en exigeant que les versions modifiées accessibles par réseau proposent leur code source correspondant. Le revenu vient de l’hébergement fiable, du stockage, du support et de l’écosystème, pas de l’interdiction de consulter le code critique.
+Le code de l’application est placé sous **licence MIT**. Cela permet les forks, les intégrations commerciales et un éventuel service hébergé sans transformer la sécurité firmware en barrière propriétaire. La valeur du produit repose sur la qualité de l’application, la compatibilité matérielle, les sauvegardes vérifiées, l’expérience de remplissage de la machine et le support.
 
-Ce choix reste à faire valider par un juriste avant commercialisation, en particulier pour : contributions externes, éventuelle double licence, conditions du service, traitement des données, TVA et licences de codecs/audio.
-
-Une future double licence commerciale exigerait de contrôler les droits sur toutes les contributions concernées ; elle ne doit pas être promise sans processus explicite.
+La licence MIT ne couvre pas les firmwares propriétaires, les manuels, les marques, les sons ou les patches tiers. Chaque dépendance et chaque contenu importé gardent leurs propres conditions.
 
 ## Expériences avant tarification
 
@@ -83,4 +79,3 @@ Une future double licence commerciale exigerait de contrôler les droits sur tou
 - faible fréquence de mise à jour de l’OP‑1 original.
 
 La marge du service sera meilleure si les sauvegardes sont dédupliquées, incrémentales et chiffrées avant envoi, avec une politique de rétention transparente.
-

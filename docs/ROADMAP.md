@@ -5,25 +5,27 @@ Le firmware est le premier écran et le premier sujet de confiance. Techniquemen
 ## M0 — Fondations · terminé
 
 - vision et périmètre OP‑1 original ;
-- analyse du marché et modèle hybride ;
+- analyse du marché et positionnement application locale ;
 - base de connaissances et audit des outils ;
 - politique de firmware et moteur de changements sûrs ;
-- prototype web interactif ;
+- prototype d’interface de l’application ;
 - licence, contribution et sécurité.
 
-## M1 — Firmware Control Center · complexité L, risque élevé
+## M1 — Application locale : firmware et coffre · complexité L, risque élevé
 
-- monorepo React/TypeScript/Rust + coque Tauri ;
+- coque d’application Tauri + interface React/TypeScript + cœur Rust ;
 - détection en lecture seule des modes normal, Disk et TE‑boot ;
 - lecture de version et inventaire de la machine ;
 - sauvegarde complète minimale avec SHA‑256 ;
 - catalogue officiel versionné sans redistribuer les binaires ;
 - validation URL, CRC, LZMA/TAR et structure ;
-- plan étape par étape : backup, validation, TE‑boot, copie, sync, éjection ;
+- plan étape par étape : sauvegarde, validation, TE‑boot, copie, sync, éjection ;
+- écran de remplissage de la machine et aperçu des fichiers avant écriture ;
+- première bibliothèque locale de samples et patches ;
 - journal local et simulation complète sur fixtures ;
 - matrice de tests Windows/macOS/Linux puis hardware-in-loop.
 
-**Sortie :** une alpha qui guide une mise à jour officielle et refuse toute précondition ambiguë.
+**Sortie :** une alpha installable qui protège la machine, guide une mise à jour officielle et prépare le transfert de contenu sans précondition ambiguë.
 
 ## M2 — Time Machine · complexité L
 
@@ -36,13 +38,15 @@ Le firmware est le premier écran et le premier sujet de confiance. Techniquemen
 
 **Sortie :** la fonction récurrente qui rend l’app indispensable.
 
-## M3 — Bibliothèque de sons · complexité L
+## M3 — Bibliothèque de sons et éditeur de patches · complexité L
 
 - index local et import WAV/AIFF/FLAC/MP3 ;
 - waveform, écoute, trim, gain et fondus ;
 - rendu 44,1 kHz / 16 bits ;
 - modes synth 6 s et drum 12 s ;
 - lecture/écriture de patches avec tests croisés ;
+- éditeur simple : nom, catégorie, paramètres principaux, aperçu et export d’une copie ;
+- séparation explicite entre patch synthé, kit batterie et sample brut ;
 - transfert par le Safe Change Engine.
 
 ## M4 — Tape & Album · complexité M/L
@@ -103,4 +107,3 @@ Le firmware est le premier écran et le premier sujet de confiance. Techniquemen
 5. éjection native testée sur chaque OS ;
 6. procédure relue face au guide officiel ;
 7. bêta volontaire avec machine de test, jamais avec l’unique copie d’un morceau.
-

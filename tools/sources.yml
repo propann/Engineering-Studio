@@ -9,10 +9,12 @@ policy:
 tools:
   - name: op-patch-util
     url: https://github.com/AlexCharlton/op-patch-util
-    license: MIT
+    license: verify-before-reuse
+    observed_version: 1.1.0
     role: patch codec candidate
     integration: audit-for-rust-core
     risk: medium
+    findings: Rust CLI with copy, drum, dump, forward, pitch, reverse, set, shift, silence, synth and volume operations; no LICENSE file was found in the reviewed tree.
 
   - name: teoperator
     url: https://github.com/schollz/teoperator
@@ -38,16 +40,20 @@ tools:
   - name: op1repacker
     url: https://github.com/op1hacks/op1repacker
     license: MIT
+    reviewed_commit: 390b18e4193a3af4f44e8f89b5f6c017a71ddf96
     role: firmware analysis and repack
     integration: expert-lab-sidecar-only
     risk: critical
+    findings: CRC is removed and rebuilt around LZMA-Alone plus TAR; extraction uses tar.extractall without the safety policy required by OP-1 Studio.
 
   - name: op1REpackerGUI
     url: https://github.com/op1hacks/op1REpackerGUI
     license: MIT
+    reviewed_commit: 3f54f41c771c6045df8e6771fd965b055cef1084
     role: expert workflow reference
     integration: ux-reference
     risk: critical
+    findings: Includes a near-copy of op1repacker plus backup/restore/eject helpers; useful for UX, not safe to reuse as the write engine.
 
   - name: op1-fw-archive
     url: https://github.com/op1hacks/op1-fw-archive
@@ -58,9 +64,35 @@ tools:
 
   - name: op1-docs
     url: https://github.com/sualk/op1-docs
-    license: verify-per-file
+    license: not-declared
+    reviewed_commit: 38685982be029f678d9da1d01034a7331ec77808
     role: firmware format research
     integration: documentation-reference
+    risk: high
+    findings: Documents the CRC32/LZMA/TAR envelope, internal layout and encrypted code blocks; no repository license file was found.
+
+  - name: op1svg
+    url: https://github.com/op1hacks/op1svg
+    license: MIT
+    reviewed_commit: 50a3b01ebb74fd07b33d91c08b1e59e11494801d
+    role: SVG normalization and analysis
+    integration: future-isolated-sidecar
+    risk: medium
+
+  - name: op1aiff
+    url: https://github.com/op1hacks/op1aiff
+    license: MIT
+    reviewed_commit: db742a1bbd42c324b1996f1abbdee755f2cfd3d5
+    role: OP-1 preset AIFF study
+    integration: future-isolated-sidecar
+    risk: medium
+
+  - name: opie
+    url: https://github.com/op1hacks/opie
+    license: not-declared
+    reviewed_commit: 90b20ecf43003813d6d46e2e450c45af58d36f36
+    role: historical backup and preset workflow
+    integration: reference-only
     risk: high
 
   - name: connect-op1
@@ -72,10 +104,51 @@ tools:
 
   - name: OP-PatchStudio
     url: https://github.com/joseph-holland/op-patchstudio
-    license: verify-before-reuse
+    license: MIT-announced-verify-file
     role: visual editor benchmark
     integration: inspiration-only
     risk: low
+    findings: Modern waveform/drum UX; current output focus is OP-XY with OP-1 preset import, so OP-1 export still needs fixtures.
+
+  - name: op1-glitter
+    url: https://github.com/Nanobot567/op1-glitter
+    license: MIT-announced-verify-file
+    role: OP-1 original SVG/theme engine
+    integration: expert-sidecar-only
+    risk: high
+    findings: Uses theme JSON with global and per-SVG colors; apply only to a fresh unpacked firmware tree and normalize SVGs first.
+
+  - name: op1.fun.app
+    url: https://github.com/dustMason/op1.fun.app
+    license: verify-before-reuse
+    role: community content workflow benchmark
+    integration: ux-reference-only
+    risk: medium
+    findings: macOS companion for user-selected OP-1 disk; reads AIFF/APPL metadata and downloads user-selected content.
+
+  - name: OP-1-Note-Quantization-PublicGit
+    url: https://github.com/stfj/OP-1-Note-Quantization-PublicGit
+    license: verify-before-reuse
+    role: OS 246 binary patch research
+    integration: manual-export-only
+    risk: critical
+    findings: Publishes an OS 246 input/output hash workflow for scale quantization; not integrated and not installed automatically.
+
+  - name: op1-decryptor
+    url: https://github.com/sualk/op1-decryptor
+    license: not-declared
+    role: encrypted code research
+    integration: documentation-reference-only
+    risk: critical
+    findings: Requires an externally obtained key; OP-1 Studio neither extracts keys nor provides a decrypt button.
+
+  - name: op1dumps
+    url: https://github.com/Tolsi/op1dumps
+    license: not-declared
+    role: flash/ECC/OTP repair research
+    integration: excluded
+    risk: red
+    findings: Hardware-level procedures are outside the product and must not be automated.
 
 services:
   - name: op1.fun
@@ -83,4 +156,3 @@ services:
     role: community patch library
     integration: user-driven-link-or-import-only
     restrictions: no scraping and no credential handling
-

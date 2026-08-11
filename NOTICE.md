@@ -2,7 +2,7 @@
 
 ## Projet indépendant
 
-OP‑1 Studio est un logiciel communautaire non officiel. Il n’est pas affilié, soutenu, certifié ou approuvé par Teenage Engineering AB.
+OP‑1 Studio est une application communautaire non officielle. Elle n’est pas affiliée, soutenue, certifiée ou approuvée par Teenage Engineering AB.
 
 « OP‑1 », « Teenage Engineering » et les noms de produits associés sont des marques de leurs propriétaires respectifs. Leur emploi dans ce projet sert uniquement à indiquer la compatibilité.
 
@@ -25,8 +25,8 @@ Le registre de suivi se trouve dans [`tools/sources.yml`](tools/sources.yml).
 
 ## Absence de garantie
 
-La modification ou l’installation d’un firmware peut rendre une machine inutilisable et peut affecter sa garantie. OP‑1 Studio est fourni sans garantie, conformément à la licence AGPL. Le parcours standard doit limiter les opérations aux firmwares officiels et demander une sauvegarde préalable, mais il ne peut garantir l’absence de panne matérielle, de coupure ou de perte de données.
+La modification ou l’installation d’un firmware peut rendre une machine inutilisable et peut affecter sa garantie. OP‑1 Studio est fourni sans garantie, conformément à la licence MIT. Le parcours standard doit limiter les opérations aux firmwares officiels et demander une sauvegarde préalable, mais il ne peut garantir l’absence de panne matérielle, de coupure ou de perte de données.
 
 ## Service optionnel
 
-L’accès au matériel et aux sauvegardes locales ne dépend pas d’un abonnement. Un futur service hébergé pourra être payant pour financer stockage, synchronisation et support. Ses conditions, sa politique de confidentialité et ses sous-traitants devront être publiés avant toute collecte de données.
+L’accès au matériel, aux sauvegardes locales, aux samples et aux patches ne dépend pas d’un abonnement. Un futur service hébergé pourra être payant pour financer stockage, synchronisation et support. Ses conditions, sa politique de confidentialité et ses sous-traitants devront être publiés avant toute collecte de données.
