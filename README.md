@@ -14,6 +14,10 @@
   <img alt="Local first" src="https://img.shields.io/badge/données-locales-06B6D4.svg">
 </p>
 
+<p align="center">
+  <a href="https://op1-studio.azoth217.chatgpt.site"><strong>Ouvrir le prototype Firmware Control Center →</strong></a>
+</p>
+
 > [!IMPORTANT]
 > OP‑1 Studio est un projet communautaire indépendant. Il n’est ni affilié, ni approuvé, ni maintenu par Teenage Engineering. Les marques et firmwares appartiennent à leurs propriétaires respectifs.
 
