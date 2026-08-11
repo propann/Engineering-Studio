@@ -35,6 +35,12 @@ Parcours expérimental, désactivé par défaut. Il peut inspecter ou préparer 
 
 Le catalogue initial laisse le SHA‑256 vide tant qu’un processus de publication reproductible n’a pas confirmé la valeur depuis le fichier officiel. L’application peut calculer une empreinte locale, mais elle ne doit pas présenter celle-ci comme une signature de l’éditeur.
 
+### Inspecteur de référence disponible
+
+[`tools/firmware_inspector.py`](../tools/firmware_inspector.py) implémente déjà la partie non destructive : CRC‑32 little-endian, SHA‑256, LZMA-Alone, inventaire TAR sans extraction, limites de décompression et rejet des chemins/liens dangereux. Ses tests construisent uniquement des fixtures synthétiques ; aucun firmware propriétaire n’est committé.
+
+Cette implémentation Python sert d’oracle de compatibilité pour le futur cœur Rust/Tauri. Elle n’écrit pas sur la machine et ne repacke pas le firmware.
+
 ## Déroulement
 
 ```mermaid
@@ -90,4 +96,3 @@ Conditions minimales avant une éventuelle intégration :
 ## Réponse aux incidents
 
 Tout bug susceptible de viser le mauvais volume ou de déclarer un firmware invalide comme valide est traité comme une vulnérabilité. Voir [SECURITY.md](../SECURITY.md).
-

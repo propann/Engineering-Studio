@@ -66,11 +66,21 @@ Le dépôt contient aujourd’hui les fondations produit et techniques. Aucun bi
 - [x] Audit des principaux outils libres existants
 - [x] Architecture hybride et étude du marché
 - [x] Prototype interactif du Firmware Control Center
+- [x] Inspecteur `.op1` en lecture seule : CRC‑32, SHA‑256, LZMA/TAR et chemins sûrs
 - [ ] Détecteur de machine en lecture seule
 - [ ] Sauvegarde vérifiée et explorateur de fichiers
 - [ ] Bibliothèque de sons et conversion audio
 - [ ] Assistant firmware officiel
 - [ ] Studio d’arrangement quatre pistes
+
+### Inspecter un firmware sans l’extraire
+
+```bash
+python3 tools/firmware_inspector.py ./op1_246.op1 --include-files
+python3 -m unittest tests/test_firmware_inspector.py
+```
+
+L’inspecteur de référence n’écrit aucun fichier et ne touche jamais au volume de la machine. Il prépare le futur cœur Rust/Tauri et ne constitue pas encore un bouton d’installation.
 
 ## Commencer à contribuer
 
