@@ -1,0 +1,86 @@
+schema_version: 1
+reviewed_at: "2026-08-11"
+policy:
+  vendored_by_default: false
+  pin_before_integration: true
+  preserve_attribution: true
+  proprietary_firmware_allowed: false
+
+tools:
+  - name: op-patch-util
+    url: https://github.com/AlexCharlton/op-patch-util
+    license: MIT
+    role: patch codec candidate
+    integration: audit-for-rust-core
+    risk: medium
+
+  - name: teoperator
+    url: https://github.com/schollz/teoperator
+    license: MIT
+    role: patch generation and compatibility fixtures
+    integration: reference-and-cross-test
+    risk: medium
+
+  - name: op1tools
+    url: https://github.com/blattm/op1tools
+    license: MIT
+    role: Linux device workflow reference
+    integration: rewrite-safely
+    risk: high
+
+  - name: OP-1Z-Sample-Manager
+    url: https://github.com/romangarms/OP-1Z-Sample-Manager
+    license: GPL-3.0
+    role: sample tape backup benchmark
+    integration: compatible-with-project-license-after-audit
+    risk: medium
+
+  - name: op1repacker
+    url: https://github.com/op1hacks/op1repacker
+    license: MIT
+    role: firmware analysis and repack
+    integration: expert-lab-sidecar-only
+    risk: critical
+
+  - name: op1REpackerGUI
+    url: https://github.com/op1hacks/op1REpackerGUI
+    license: MIT
+    role: expert workflow reference
+    integration: ux-reference
+    risk: critical
+
+  - name: op1-fw-archive
+    url: https://github.com/op1hacks/op1-fw-archive
+    license: proprietary-content
+    role: firmware history reference
+    integration: metadata-only-never-vendor
+    risk: critical
+
+  - name: op1-docs
+    url: https://github.com/sualk/op1-docs
+    license: verify-per-file
+    role: firmware format research
+    integration: documentation-reference
+    risk: high
+
+  - name: connect-op1
+    url: https://github.com/jidagraphy/connect-op1
+    license: verify-before-reuse
+    role: USB identifier reference
+    integration: factual-reference-only
+    risk: low
+
+  - name: OP-PatchStudio
+    url: https://github.com/joseph-holland/op-patchstudio
+    license: verify-before-reuse
+    role: visual editor benchmark
+    integration: inspiration-only
+    risk: low
+
+services:
+  - name: op1.fun
+    url: https://op1.fun/
+    role: community patch library
+    integration: user-driven-link-or-import-only
+    restrictions: no scraping and no credential handling
+
