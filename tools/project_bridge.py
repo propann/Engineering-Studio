@@ -53,6 +53,11 @@ def validate(project: object) -> list[str]:
                 errors.append(f"track {index} invalide")
     if not isinstance(project.get("sources"), list):
         errors.append("sources doit etre une liste")
+    if "source_refs" in project and not isinstance(project.get("source_refs"), list):
+        errors.append("source_refs doit etre une liste")
+    for index, reference in enumerate(project.get("source_refs", [])):
+        if not isinstance(reference, dict) or not isinstance(reference.get("path"), str) or not reference["path"].strip():
+            errors.append(f"source_refs {index} invalide")
     return errors
 
 

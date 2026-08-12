@@ -42,21 +42,21 @@ fichier `.partial` restant.
 - le decoupage complet de `app/page.tsx` et l'accueil par modules restent a faire ;
 - la bibliotheque Sons n'a pas encore son index, ses 24 pads et sa pre-ecoute ;
 - edition avancee du piano-roll ;
-- rechargement des sources audio depuis leurs chemins locaux ;
+- reconnexion manuelle des sources audio locales à partir des références persistées ;
 - transfert machine et écriture finale dans `tape/` ;
 - Safe Change Engine : identification du volume, hash apres copie et ejection native ;
 - module Exercices complet avec progression et import MIDI.
 
 ## Qualite connue
 
-- `npm test`, le build et les 31 tests Python passent ;
+- `npm test`, le build et les 36 tests Python passent ;
 - le lint passe avec quatre avertissements non bloquants ;
 - `npx tsc --noEmit` reste bloque par les types Web MIDI stricts et les types
   Cloudflare manquants (`cloudflare:workers`, `Fetcher`, `D1Database`).
 
 ## Limites connues
 
-- Les fichiers audio choisis dans le navigateur restent des references locales. Un projet recharge ses noms et reglages, mais les sources doivent etre re-selectionnees si elles ont change de dossier.
+- Les fichiers audio choisis dans le navigateur restent des références locales. Un projet persiste désormais `source_refs` avec le chemin affiché et le statut `reconnect`; la re-sélection manuelle est requise pour réactiver une URL audio après réouverture.
 - Le clone ne reproduit pas le moteur sonore interne de l'OP-1. Il fournit une synthese de controle ; le son reel vient de l'OP-1 via MIDI et audio USB lorsqu'ils sont disponibles.
 - Les boutons de transfert affichent un plan prepare tant que le bridge natif et le volume autorise ne sont pas actifs.
 - L'OP-1 Field est reporte jusqu'a disponibilite du materiel de test.

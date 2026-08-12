@@ -76,7 +76,7 @@ plutôt que le glisser silencieusement dans Sauvegardes.
 | Piano-roll éditable avec quantification | existe |
 | Capture MIDI temporelle (note-on/note-off) et relecture programmée | existe |
 | Simplification de l'écran de découpe à une forme d'onde + deux poignées + durée en direct | existe dans le mode Trim focalisé de Studio |
-| Rechargement des sources audio depuis leurs chemins locaux après réouverture d'un projet | à construire — limite connue de `PROJECT_STATUS.md` |
+| Reconnexion des sources audio depuis les références persistées après réouverture d'un projet | existe — statut `reconnect` affiché, re-sélection manuelle requise |
 | Format de projet `op1-studio-project` v1 (sauvegarde/rechargement mixage, clips, événements MIDI) | existe |
 
 ## Exercices (module MIDI / éducation)

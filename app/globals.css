@@ -375,6 +375,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .tape-track-label { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .tape-track-label strong { font-size: 11px; }
 .tape-track-label small { overflow: hidden; color: #858d8e; font: 8px var(--font-geist-mono), monospace; text-overflow: ellipsis; white-space: nowrap; }
+.tape-source-status { color: #c37b3f; font: 8px var(--font-geist-mono), monospace; }
 .tape-file { width: max-content; display: inline-flex; align-items: center; gap: 4px; color: #267c65; font-size: 8px; cursor: pointer; }
 .tape-file input { display: none; }
 .tape-waveform { height: 45px; padding: 0 10px; display: flex; align-items: center; gap: 4px; background: #202729; border: 1px solid #101416; border-radius: 4px; }

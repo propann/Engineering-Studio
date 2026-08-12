@@ -24,7 +24,7 @@ Le projet a trois niveaux de maturite :
 | Firmware + Images | moteurs locaux livres, plans UI bornes et non destructifs | bridge de build natif, sans flash |
 | Sauvegardes | backup/verify/plan/execute/restore livres ; plan UI borne ; delete/restore valide sur hardware | bridge natif + ejection |
 | Bibliotheque Sons | preflight, patches CLI, grille 24 pads, index UI et plan UI borne livres | pre-ecoute fichier et transfert natif |
-| Studio | projet v1, mixage, fades, piano-roll, stems, Album et trim focalise livres | sources persistantes et import UI |
+| Studio | projet v1, mixage, fades, piano-roll, stems, Album, trim focalise et refs sources livres | reconnexion automatique et import UI |
 | MIDI/audio | detection Windows et contrats Web MIDI presents | capture et sortie live dans Chrome/Edge |
 | Education | fenetre prototype | exercices notes/timing/progression |
 | Distribution | dev server et build web | Tauri, installation et permissions |
@@ -304,8 +304,9 @@ audio maître. Le piano-roll est éditable, les événements MIDI sont rejoués
 pendant le transport, la quantification 1/16 dépendante du BPM est livrée et
 le rendu WAV offline applique gain, trim, mute/solo et fades, la vue globale
 calcule les niveaux audio en 24 points par piste, les stems Tape sont
-exportables séparément et l'Album produit deux faces WAV avec manifeste ; le
-transfert machine reste à faire.
+  exportables séparément et l'Album produit deux faces WAV avec manifeste ; les
+  références `source_refs` sont persistées et affichées comme à reconnecter au
+  chargement ; le transfert machine reste à faire.
 
 - définir un format `Project` JSON versionné ;
 - stocker sources, clips, événements MIDI, tempo et mixage ;
