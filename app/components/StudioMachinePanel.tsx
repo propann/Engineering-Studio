@@ -334,7 +334,7 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isDown ? "#b8bcb8" : "url(#wkeyGrad)"}
+                    fill={isDown ? "#dfe4df" : "#fbfcf8"}
                     stroke="#a0a3a0" strokeWidth={.06}
                   />
                   {/* Ovale central */}
@@ -342,7 +342,7 @@ export function StudioMachinePanel({
                     x={b.col + b.w*.22} y={b.row + b.h*.25}
                     width={b.w*.56} height={b.h*.45}
                     rx={b.w*.28}
-                    fill={isDown?"#b0b3b0":"#c0c3c0"}
+                    fill={isDown?"#d7ddd7":"#eef1ed"}
                     stroke="#aaa" strokeWidth={.04}
                   />
                   {/* Nom de la note */}
@@ -378,6 +378,8 @@ export function StudioMachinePanel({
                     r={Math.min(b.w, b.h)*.32}
                     fill={isDown?"#333":"#0a0a0a"}
                   />
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h-.45}
+                    r={.22} fill={["#698EFF","#00ED95","#DFD9FF","#FF3A5D"][i%4]} />
                 </g>
               );
             })}
@@ -430,9 +432,10 @@ export function StudioMachinePanel({
                 onPointerDown={() => { if (mode==="midi") onSendMidi([0x99, 36+i, 100]); }}
               >
                 <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
-                  rx={.3} fill="#0f1f18" stroke="#00ED9566" strokeWidth={.07}/>
+                  rx={.3} fill="#cececb" stroke="#a0a3a0" strokeWidth={.07}/>
                 <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
-                  r={Math.min(b.w,b.h)*.3} fill="#00ED9533"/>
+                  r={Math.min(b.w,b.h)*.3} fill="#0a0a0a"/>
+                <circle cx={b.col+b.w/2} cy={b.row+b.h-.45} r={.22} fill="#00ED95"/>
               </g>
             ))}
 
@@ -442,9 +445,10 @@ export function StudioMachinePanel({
                 onPointerDown={() => { if (i===0) onTogglePlayback(); }}
               >
                 <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
-                  rx={.3} fill="#1a0a0a" stroke="#FF3A5D66" strokeWidth={.07}/>
+                  rx={.3} fill="#cececb" stroke="#a0a3a0" strokeWidth={.07}/>
                 <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
-                  r={Math.min(b.w,b.h)*.28} fill="#FF3A5D44"/>
+                  r={Math.min(b.w,b.h)*.28} fill="#0a0a0a"/>
+                <circle cx={b.col+b.w/2} cy={b.row+b.h-.45} r={.22} fill="#FF3A5D"/>
               </g>
             ))}
 
