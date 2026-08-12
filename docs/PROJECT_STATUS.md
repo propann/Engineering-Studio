@@ -2,6 +2,11 @@
 
 Etat verifie le 12 aout 2026.
 
+Validation materielle du 12 aout 2026 : un OP-1 original en mode Disk a ete
+detecte sur `E:`. Une sauvegarde locale de test a copie 67 fichiers pour
+282528916 octets dans `backups/hardware-tests/`; la verification SHA-256 du
+manifeste est valide. Cette operation n'a rien ecrit sur la machine.
+
 ## Fonctionne reellement
 
 - Firmware : moteur `op1repacker` vendored, bridge de build par copie temporaire, mods selectionnes, manifeste SHA-256 et validation CRC/TAR/LZMA.
@@ -17,7 +22,7 @@ Etat verifie le 12 aout 2026.
 ## Reste a construire
 
 - aucune copie vers le volume OP-1 n'est declenchee par l'interface ;
-- sauvegarde et restauration machine passent encore par des messages de statut ;
+- sauvegarde et restauration machine ne sont pas encore declenchees par l'interface ;
 - edition avancee du piano-roll ;
 - rechargement des sources audio depuis leurs chemins locaux ;
 - transfert machine et écriture finale dans `tape/` ;

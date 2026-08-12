@@ -30,8 +30,9 @@ ambiguïté — dans [`ROADMAP_DE_L_ENFER.md`](ROADMAP_DE_L_ENFER.md).
 ## M1 — Firmware Control Center · complexité L, risque élevé
 
 **Etat : partiellement livré.** Inspection firmware, moteur de mods et build
-hors machine sont valides. Détection réelle, sauvegarde vérifiée et import
-officiel restent à terminer dans le bridge local.
+hors machine sont valides. La détection réelle et une sauvegarde complète
+vérifiée ont été validées sur un OP-1 original en mode Disk (`E:`). L'import
+officiel reste à terminer dans le bridge local.
 
 - monorepo React/TypeScript/Rust + coque Tauri ;
 - détection en lecture seule des modes normal, Disk et TE‑boot ;
@@ -41,14 +42,17 @@ officiel restent à terminer dans le bridge local.
 - validation URL, CRC, LZMA/TAR et structure ;
 - plan étape par étape : backup, validation, TE‑boot, copie, sync, éjection ;
 - journal local et simulation complète sur fixtures ;
-- matrice de tests Windows/macOS/Linux puis hardware-in-loop.
+- matrice de tests Windows/macOS/Linux puis hardware-in-loop ;
+- validation matérielle réalisée : 67 fichiers, 282528916 octets, manifeste
+  SHA-256 relu avec succès, sans écriture sur l'OP-1.
 
 **Sortie :** une alpha qui guide une mise à jour officielle et refuse toute précondition ambiguë.
 
 ## M2 — Time Machine · complexité L
 
-**Etat : interface et règles définies.** La copie, restauration, déduplication
-et éjection contrôlée restent à implémenter.
+**Etat : interface et règles définies.** Le snapshot local et sa vérification
+SHA-256 sont validés sur la machine. La copie vers l'OP-1, la restauration,
+la déduplication et l'éjection contrôlée restent à implémenter.
 
 La Time Capsule est réservée aux pistes Tape et Album. Les firmwares restent
 dans le parcours Firmware et les samples dans la Bibliothèque Sons.
