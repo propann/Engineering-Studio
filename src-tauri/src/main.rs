@@ -30,6 +30,37 @@ struct ProfileEnvelope {
     version: u8,
 }
 
+#[derive(Debug, Serialize)]
+struct LocalPlan {
+    schema: &'static str,
+    version: u8,
+    action: String,
+    #[serde(rename = "machineWrite")]
+    machine_write: bool,
+    #[serde(rename = "requiresConfirmation")]
+    requires_confirmation: bool,
+    payload: serde_json::Value,
+}
+
+/// Prépare un plan connu pour le cœur natif sans exécuter d'écriture.
+#[tauri::command]
+fn prepare_local_plan(action: String, payload: serde_json::Value) -> Result<LocalPlan, String> {
+    if !matches!(action.as_str(), "firmware.plan" | "backup.plan" | "sounds.transfer-plan") {
+        return Err("Action de bridge inconnue ou non autorisée.".into());
+    }
+    if !payload.is_object() {
+        return Err("Le payload du bridge doit être un objet JSON.".into());
+    }
+    Ok(LocalPlan {
+        schema: "op1-studio-local-bridge",
+        version: 1,
+        action,
+        machine_write: false,
+        requires_confirmation: true,
+        payload,
+    })
+}
+
 fn profile_path(root: &str) -> Result<PathBuf, String> {
     let root = Path::new(root);
     if !root.is_dir() {
@@ -74,7 +105,7 @@ fn profile_write(root: String, contents: String, confirm: bool) -> Result<(), St
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![app_info, profile_read, profile_write])
+        .invoke_handler(tauri::generate_handler![app_info, profile_read, profile_write, prepare_local_plan])
         .run(tauri::generate_context!())
         .expect("error while running OP-1 Studio");
 }

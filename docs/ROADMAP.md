@@ -79,6 +79,8 @@ Images a ete retire apres validation de cette integration.
 - **Dependance structurante** : le coeur Rust/Safe Change Engine reste le
   vrai chantier derriere l'installation Tauri et l'execution native. Les
   bridges Python servent au labo et aux fixtures, pas de coeur final cache.
+  La commande Tauri `prepare_local_plan` est le premier adaptateur natif : elle
+  valide les trois plans connus sans les executer.
 
 L'audit detaille des garde-fous reels est conserve dans
 [`TOOLS_SAFETY_AUDIT.md`](TOOLS_SAFETY_AUDIT.md). Il confirme notamment que

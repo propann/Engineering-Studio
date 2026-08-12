@@ -30,8 +30,8 @@ Ordre de travail confirme :
 4. brancher l'interface native/Tauri au `profile.json` du coffre ; le bridge
    local de lecture/ecriture et son format sont maintenant livres ;
 5. connecter les plans Firmware/Sauvegardes/Sons au pont natif, sans flash
-   automatique ; `profile_read/profile_write` est maintenant le premier pont
-   Tauri livré ;
+   automatique ; `prepare_local_plan` est maintenant livré, mais l'exécution
+   et l'éjection restent dans le Safe Change Engine ;
 6. persister les sources Studio et reconnecter les fichiers locaux ;
 7. reprendre les tests MIDI/audio dans Chrome ou Edge.
 
