@@ -57,3 +57,15 @@ Le 12 aout 2026, Windows a expose l'OP-1 en fonctionnement normal avec :
 
 Cette detection systeme est validee. La capture d'une note et l'envoi d'un
 message MIDI doivent encore etre verifies depuis Chrome ou Edge avec Web MIDI.
+L'application ecoute les deux ports d'entree `OP-1 [2]` et `OP-1 [3]` et
+decode les messages note-on/note-off sur tous les canaux MIDI. Le mode
+`CONFIG` du clone utilise cette ecoute pour afficher la touche jouee, meme
+hors capture ; le mode `MIDI externe` est necessaire pour envoyer les notes
+du clavier virtuel vers la machine.
+
+Pour le test matériel de contrôle : depuis `COM`, sélectionner `CTRL` avec
+`T2`. L'OP-1 devient alors un contrôleur MIDI avec son clavier, ses quatre
+encodeurs et son transport. Le canal d'émission se change avec `Shift` et
+l'encodeur vert ; l'application ne filtre volontairement aucun canal à la
+réception. La sélection `Mode contrôle` dans Studio active la connexion Web
+MIDI côté application, mais ne change pas le mode de l'OP-1 à distance.

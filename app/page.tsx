@@ -378,6 +378,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const projectInputRef = useRef<HTMLInputElement>(null);
   const midiHandler = useRef<((event: MIDIMessageEvent) => void) | null>(null);
   const midiInputRef = useRef<MidiInputLike | null>(null);
+  const midiInputsRef = useRef<MidiInputLike[]>([]);
   const midiStartRef = useRef(0);
   const midiTimersRef = useRef<number[]>([]);
   const autoMidiAttemptedRef = useRef(false);
@@ -387,6 +388,34 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     autoMidiAttemptedRef.current = true;
     void onConnectMidi({ silent: true });
   }, [onConnectMidi]);
+
+  // L'OP-1 expose deux ports MIDI sous Windows. Le retour visuel du clone
+  // doit rester actif même quand aucune capture n'est en cours.
+  useEffect(() => {
+    if (recording) return;
+    const request = (navigator as MidiNavigator).requestMIDIAccess;
+    if (!request) return;
+    let disposed = false;
+    let inputs: MidiInputLike[] = [];
+    const handler = (event: MIDIMessageEvent) => {
+      const message = decodeMidiNote(event.data);
+      if (!message) return;
+      if (message.type === "note_on") {
+        setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
+      } else {
+        setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
+      }
+    };
+    void request().then((access) => {
+      if (disposed) return;
+      inputs = [...access.inputs.values()].filter((port) => port.name?.toUpperCase().includes("OP-1"));
+      inputs.forEach((port) => { port.onmidimessage = handler; });
+    }).catch(() => undefined);
+    return () => {
+      disposed = true;
+      inputs.forEach((port) => { port.onmidimessage = null; });
+    };
+  }, [recording]);
 
   useEffect(() => {
     let cancelled = false;
@@ -425,9 +454,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   async function toggleMidiRecording() {
     if (recording) {
-      if (midiInputRef.current) midiInputRef.current.onmidimessage = null;
+      midiInputsRef.current.forEach((input) => { input.onmidimessage = null; });
       midiHandler.current = null;
       midiInputRef.current = null;
+      midiInputsRef.current = [];
       setRecording(false);
       onNotice(`Capture MIDI terminée : ${midiNotes} note${midiNotes === 1 ? "" : "s"} reçue${midiNotes === 1 ? "" : "s"}.`);
       return;
@@ -436,7 +466,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const request = (navigator as MidiNavigator).requestMIDIAccess;
     if (!request) return;
     const access = await request();
-    const input = [...access.inputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
+    const inputs = [...access.inputs.values()].filter((port) => port.name?.toUpperCase().includes("OP-1"));
+    const input = inputs[0];
     if (!input) return;
     setMidiNotes(0);
     setMidiEvents([]);
@@ -444,7 +475,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const handler = (event: MIDIMessageEvent) => { const message = decodeMidiNote(event.data); if (!message) return; if (message.type === "note_on") { setMidiNotes((count) => count + 1); setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]); } else setPressedMidiNotes((current) => current.filter((note) => note !== message.note)); setMidiEvents((current) => [...current, { ...message, time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
     midiHandler.current = handler;
     midiInputRef.current = input;
-    input.onmidimessage = handler;
+    midiInputsRef.current = inputs;
+    inputs.forEach((port) => { port.onmidimessage = handler; });
     setRecording(true);
     onNotice("Capture MIDI active : les notes de l’OP-1 sont comptées dans le projet local.");
   }
@@ -868,7 +900,8 @@ export default function Home() {
 
     try {
       const midi = await requestMIDIAccess();
-      const input = [...midi.inputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
+      const inputs = [...midi.inputs.values()].filter((port) => port.name?.toUpperCase().includes("OP-1"));
+      const input = inputs[0];
       const output = [...midi.outputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
       if (!input) {
         if (!options.silent) setNotice("Aucune entrée MIDI OP-1 détectée. Vérifiez le câble USB et le mode MIDI de la machine.");
@@ -878,7 +911,7 @@ export default function Home() {
       midiOutputRef.current = output ?? null;
       setMidiConnected(true);
       setStage(2);
-      if (!options.silent) setNotice(`OP-1 détecté par MIDI${output ? " en entrée et sortie" : " en entrée seulement"}.`);
+      if (!options.silent) setNotice(`OP-1 détecté par MIDI : ${inputs.length} port${inputs.length === 1 ? "" : "s"} en entrée${output ? " et une sortie" : ""}.`);
       return true;
     } catch {
       if (!options.silent) setNotice("L’accès MIDI a été refusé. Autorisez l’accès au port OP-1 dans le navigateur puis réessayez.");
