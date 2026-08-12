@@ -41,3 +41,5 @@ Thumbs.db
 *.log
 __pycache__/
 *.py[cod]
+tools/vendor/**/__pycache__/
+tools/runtime/

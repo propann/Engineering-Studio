@@ -1,107 +1,90 @@
-<p align="center">
-  <img src="docs/assets/op1-studio-mark.svg" alt="OP-1 Studio" width="880">
-</p>
+# OP-1 Studio
 
-<p align="center">
-  <strong>L’app et le service qui réunissent enfin tout l’OP‑1 original.</strong><br>
-  Firmware, sauvegardes, sons et morceaux — avec un plan vérifiable avant chaque écriture.
-</p>
+> Le bureau de controle pour apprivoiser un OP-1 sans lui faire peur.
 
-<p align="center">
-  <a href="LICENSE"><img alt="Licence AGPL-3.0-only" src="https://img.shields.io/badge/licence-AGPL--3.0--only-7C3AED.svg"></a>
-  <img alt="Cible OP-1 original" src="https://img.shields.io/badge/machine-OP--1_original-F59E0B.svg">
-  <img alt="Statut conception" src="https://img.shields.io/badge/statut-fondations-22C55E.svg">
-  <img alt="Local first" src="https://img.shields.io/badge/données-locales-06B6D4.svg">
-</p>
+OP-1 Studio rassemble firmware, sauvegardes, sons, MIDI et creation de pistes dans une interface locale inspiree de la machine. L'application prefere montrer exactement ce qu'elle prepare plutot que de cliquer tres fort sur un bouton magique.
 
-<p align="center">
-  <a href="https://op1-studio.azoth217.chatgpt.site"><strong>Ouvrir le prototype Firmware Control Center →</strong></a>
-</p>
+![OP-1 Studio](docs/assets/op1-studio-mark.svg)
 
 > [!IMPORTANT]
-> OP‑1 Studio est un projet communautaire indépendant. Il n’est ni affilié, ni approuvé, ni maintenu par Teenage Engineering. Les marques et firmwares appartiennent à leurs propriétaires respectifs.
+> Projet communautaire independant, sans affiliation avec Teenage Engineering. Les marques, firmwares et fichiers de la machine restent la propriete de leurs ayants droit.
 
-## Une seule maison pour l’OP‑1
+## Ce qui est deja la
 
-L’OP‑1 original expose ses morceaux, sons et réglages comme des fichiers, mais les opérations sont dispersées entre le mode disque, le mode TE‑boot et plusieurs utilitaires communautaires. OP‑1 Studio vise une expérience cohérente : l’application comprend le contexte de la machine, prépare les changements, montre exactement ce qui sera écrit, puis vérifie le résultat. Le service navigateur prolonge cette expérience avec un compte et un cloud optionnels.
+- **Firmware** : catalogue de mods, apercus, options documentees et moteur `op1repacker` local pour preparer un build valide.
+- **Bibliotheque Sons** : preflight WAV/AIFF, classement synth/drum, conversion mono 44.1 kHz / 16 bits et creation de patches.
+- **Sauvegardes** : organisation locale, manifestes et preparation de Time Capsule pour Tape/Album.
+- **Studio** : clone visuel OP-1, quatre pistes, machine Tape, vue globale de six minutes, piano-roll et capture MIDI temporelle.
+- **MIDI** : detection Web MIDI, clavier jouable depuis l'ordinateur, envoi de notes vers la sortie OP-1 et capture des notes entrantes.
+- **Audio USB** : tentative de routage du son OP-1 quand le navigateur expose l'appareil comme interface audio.
 
-| Espace | Ce que l’on veut offrir |
-|---|---|
-| **Machine** | Détection de l’OP‑1, état du stockage, mode courant et éjection sûre |
-| **Sauvegardes** | Instantanés horodatés, manifestes SHA‑256, comparaison et restauration contrôlée |
-| **Sons** | Bibliothèque locale, écoute, conversion et transfert des patches synthé/batterie |
-| **Tape & Album** | Aperçu des quatre pistes, export des stems et rendu WAV/FLAC |
-| **Firmware** | Contrôle central : versions, sauvegarde préalable, validation et assistant TE‑boot |
-| **Studio** | Préparation visuelle de quatre stems compatibles avec la bande de l’OP‑1 |
+## La regle d'or
 
-## La règle d’or : aucune surprise
+Les operations sensibles restent explicites. Les bridges locaux preparent, valident et produisent des manifestes ; l'interface ne pretend pas avoir ecrit sur la machine quand elle ne l'a pas fait. Autrement dit : le bouton ne porte pas de cape.
 
-- Lecture seule lors de la découverte d’une machine.
-- Sauvegarde vérifiée avant toute restauration ou mise à jour sensible.
-- Plan de changements visible avant écriture.
-- Firmware officiel uniquement dans le parcours normal.
-- Synchronisation, éjection et confirmation explicites avant de débrancher.
-- Aucune télémétrie ni mise en ligne des sons sans consentement.
+## Demarrage
 
-## Architecture hybride
+Prerequis : Node.js, Python 3 et, pour les outils audio, FFmpeg. Depuis la racine :
 
-```mermaid
-flowchart TD
-    UI["Interface React partagée"] --> APP["App Tauri + cœur Rust"]
-    UI --> WEB["Service navigateur"]
-    APP --> DEV["OP‑1 · fichiers · TE‑boot"]
-    APP --> VAULT["Coffre local"]
-    WEB --> CLOUD["Compte + cloud optionnels"]
-    VAULT -. consentement .-> CLOUD
+```powershell
+npm install
+npm run dev
 ```
 
-Le contrôle matériel vit dans une app **Tauri 2 + React/TypeScript + Rust**. Une page web ne peut pas accéder de façon portable et sûre à un périphérique de stockage USB ni l’éjecter sur tous les systèmes. Le même front-end alimente un service navigateur pour la bibliothèque, le compte et le cloud. Les fonctions essentielles restent utilisables hors ligne.
+Puis ouvrir `http://localhost:3000` avec Chrome ou Edge pour Web MIDI et l'audio USB.
 
-## État du projet
+Installation des outils locaux :
 
-Le dépôt contient aujourd’hui les fondations produit et techniques. Aucun binaire utilisable n’est encore publié.
-
-- [x] Cartographie de l’OP‑1 original et de ses modes USB
-- [x] Politique de sécurité firmware et sauvegarde
-- [x] Audit des principaux outils libres existants
-- [x] Architecture hybride et étude du marché
-- [x] Prototype interactif du Firmware Control Center
-- [x] Inspecteur `.op1` en lecture seule : CRC‑32, SHA‑256, LZMA/TAR et chemins sûrs
-- [ ] Détecteur de machine en lecture seule
-- [ ] Sauvegarde vérifiée et explorateur de fichiers
-- [ ] Bibliothèque de sons et conversion audio
-- [ ] Assistant firmware officiel
-- [ ] Studio d’arrangement quatre pistes
-
-### Inspecter un firmware sans l’extraire
-
-```bash
-python3 tools/firmware_inspector.py ./op1_246.op1 --include-files
-python3 -m unittest tests/test_firmware_inspector.py
+```powershell
+.\tools\Install-OP1StudioTools.ps1 -All
 ```
 
-L’inspecteur de référence n’écrit aucun fichier et ne touche jamais au volume de la machine. Il prépare le futur cœur Rust/Tauri et ne constitue pas encore un bouton d’installation.
+## Outils en ligne de commande
 
-## Commencer à contribuer
+```powershell
+python tools/sample_preflight.py --help
+python tools/project_bridge.py --help
+python tools/firmware_bridge.py --help
+python tools/patch_bridge.py --help
+python tools/tape_bridge.py --help
+```
 
-1. Lire la [vision produit](docs/PRODUCT_VISION.md) et la [base de connaissances OP‑1](docs/OP1_KNOWLEDGE_BASE.md).
-2. Examiner les [règles de sécurité firmware](docs/FIRMWARE_SAFETY.md).
-3. Choisir un jalon dans la [feuille de route](docs/ROADMAP.md).
-4. Suivre le guide [CONTRIBUTING.md](CONTRIBUTING.md).
+Les bridges travaillent dans des dossiers de sortie separes. Le transfert direct vers le volume OP-1 est volontairement bloque tant que le moteur de changement securise n'est pas termine.
 
-Les documents officiels ne sont pas recopiés dans le dépôt. Le script [`scripts/fetch-official-docs.sh`](scripts/fetch-official-docs.sh) permet d’en créer un cache local depuis les URL de Teenage Engineering.
+## Tests
 
-## Documentation
+```powershell
+npm run build
+npm test
+npm run lint
+python -m unittest tests/test_project_bridge.py tests/test_firmware_inspector.py
+```
 
-- [Architecture technique](docs/ARCHITECTURE.md)
-- [Analyse du marché](docs/MARKET_ANALYSIS.md)
-- [Modèle économique](docs/BUSINESS_MODEL.md)
-- [Base de connaissances OP‑1](docs/OP1_KNOWLEDGE_BASE.md)
-- [Sécurité du firmware](docs/FIRMWARE_SAFETY.md)
-- [Audit des outils existants](docs/TOOLING_AUDIT.md)
-- [Sources et références](docs/SOURCES.md)
-- [Licence et mentions](NOTICE.md)
+## Architecture actuelle
+
+```text
+app/page.tsx             interface et fenetres de travail
+app/globals.css          langage visuel OP-1 Studio
+tools/                   bridges locaux audio, firmware, patches et projets
+data/firmware/           catalogue des releases et mods
+docs/                    feuille de route, audits et recherches
+tests/                   tests UI et contrats Python
+```
+
+## Feuille de route
+
+1. rendre le piano-roll editable avec quantification et relecture MIDI ;
+2. calculer les vraies formes d'onde et les niveaux audio ;
+3. finaliser le moteur de changement securise pour sauvegarde et transfert ;
+4. brancher Album, mixage et export ;
+5. empaqueter l'application desktop avec un bridge natif pour les volumes USB et l'audio de sortie.
+
+Voir [docs/ROADMAP.md](docs/ROADMAP.md) et [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) pour le detail et les limites connues.
+
+## Contribuer
+
+Lire [CONTRIBUTING.md](CONTRIBUTING.md), choisir un jalon, ajouter un test quand un contrat change et garder les operations machine verifiables. Une bonne contribution doit laisser moins de surprises qu'elle n'en trouve.
 
 ## Licence
 
-Le code original de ce dépôt est distribué sous **GNU Affero GPL v3.0 uniquement** (`AGPL-3.0-only`). Cette licence couvre aussi les versions modifiées proposées comme service réseau, tout en autorisant un abonnement pour l’hébergement, le stockage et le support. Chaque dépendance conserve sa propre licence ; consulter [NOTICE.md](NOTICE.md). Ce choix ne remplace pas un avis juridique avant commercialisation.
+Le code du depot est distribue sous **AGPL-3.0-only**. Les dependances, firmwares et ressources externes conservent leurs licences respectives ; voir [NOTICE.md](NOTICE.md).

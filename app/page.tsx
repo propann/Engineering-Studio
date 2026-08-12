@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import firmwareCatalog from "../data/firmware/catalog.json";
 
 type IconName =
   | "chip"
@@ -15,6 +16,8 @@ type IconName =
   | "terminal"
   | "plug"
   | "book";
+
+type ToolWindow = "exercise" | "docs" | "editor" | "backups" | "sounds" | "tape" | null;
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -39,25 +42,321 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   );
 }
 
+function SoundControls() {
+  const [mode, setMode] = useState<"synth" | "drum">("synth");
+  const [baseFreq, setBaseFreq] = useState(440);
+  const [octave, setOctave] = useState(5);
+  const [lowRes, setLowRes] = useState(false);
+
+  return (
+    <section className="sound-control-panel" aria-labelledby="sound-controls-title">
+      <div className="mod-section-heading"><div><span className="section-label">PRÉPARATION PATCH</span><strong id="sound-controls-title">Contrôles audio</strong></div><small>{mode === "synth" ? "1 WAV · 6 s max" : `${lowRes ? "24" : "12"} s max · 24 touches`}</small></div>
+      <div className="sound-mode-switch" role="group" aria-label="Mode de patch">
+        <button type="button" className={mode === "synth" ? "is-active" : ""} onClick={() => setMode("synth")}><Icon name="wave" size={15} />Synthé</button>
+        <button type="button" className={mode === "drum" ? "is-active" : ""} onClick={() => setMode("drum")}><Icon name="tape" size={15} />Drum</button>
+      </div>
+      {mode === "synth" ? <label className="sound-number-control"><span>Fréquence de base</span><input type="number" min="20" max="20000" value={baseFreq} onChange={(event) => setBaseFreq(Number(event.target.value))} /><small>440 Hz par défaut</small></label> : <><label className="sound-number-control"><span>Octave racine</span><input type="number" min="1" max="10" value={octave} onChange={(event) => setOctave(Number(event.target.value))} /><small>De 1 à 10</small></label><label className="sound-toggle"><input type="checkbox" checked={lowRes} onChange={(event) => setLowRes(event.target.checked)} /><span><strong>Mode basse résolution</strong><small>Double la durée au prix d’une fréquence réduite.</small></span></label></>}
+      <div className="sound-tool-status"><span><i /> Moteur de patch détecté</span><code>op-patch-util 1.1.0</code></div>
+    </section>
+  );
+}
+
+function MachineControls({ onNotice }: { onNotice: (message: string) => void }) {
+  const [values, setValues] = useState([42, 58, 31, 67]);
+  const controls = [
+    { label: "BLEU", name: "Tempo", color: "blue" },
+    { label: "VERT", name: "Volume", color: "green" },
+    { label: "BLANC", name: "Pan", color: "white" },
+    { label: "ROUGE", name: "Effet", color: "red" },
+  ];
+
+  return (
+    <section className="machine-controls" aria-label="Commandes OP-1">
+      <div className="machine-controls-head"><span className="section-label">SURFACE OP-1</span><small>Commandes du clone et du MIDI</small></div>
+      <div className="machine-controls-grid">{controls.map((control, index) => <label className={`machine-knob machine-knob-${control.color}`} key={control.label}><span className="machine-knob-cap"><i style={{ transform: `rotate(${values[index] * 2.7 - 135}deg)` }} /></span><span className="machine-knob-label">{control.label}</span><strong>{control.name}</strong><input aria-label={control.name} type="range" min="0" max="100" value={values[index]} onChange={(event) => { const next = [...values]; next[index] = Number(event.target.value); setValues(next); }} onDoubleClick={() => onNotice(`${control.name} réinitialisé.`)} /><output>{values[index]}</output></label>)}</div>
+    </section>
+  );
+}
+
+function TapeMachine() {
+  const meters = ["Track 1", "Track 2", "Track 3", "Track 4"];
+  return (
+    <section className="tape-machine" aria-label="Machine Tape OP-1">
+      <div className="tape-machine-screen"><span>STUDIO TAPE</span><strong>00:00:00</strong><small>4 TRACK · 44.1 kHz · 16 bit</small></div>
+      <div className="tape-reels" aria-hidden="true"><i /><div className="tape-head-mark" /><i /></div>
+      <div className="tape-machine-meters">{meters.map((meter, index) => <div className="tape-meter" key={meter}><span>{meter}</span><div className="meter-scale"><i style={{ height: `${32 + index * 9}%` }} /></div><small>-{12 - index * 2} dB</small></div>)}</div>
+    </section>
+  );
+}
+
+function MidiRoll({ events }: { events: Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }> }) {
+  const notes = [72, 71, 69, 67, 65, 64, 62, 60];
+  const cells = Array.from({ length: 16 }, (_, index) => index);
+  const activeNotes = new Set(events.filter((event) => event.type === "note_on").map((event) => event.note));
+  return (
+    <section className="midi-roll" aria-label="Piano roll MIDI">
+      <div className="midi-roll-head"><div><span className="section-label">ÉDITEUR MIDI</span><strong>Piano-roll Tape</strong></div><small>{events.length ? `${events.length} événements capturés` : "Aucune note capturée"}</small></div>
+      <div className="midi-roll-grid">{notes.map((note) => <div className="midi-roll-row" key={note}><span>{note === 60 ? "C4" : note}</span>{cells.map((cell) => { const active = activeNotes.has(note) && cell === 4; return <i className={active ? "is-note" : ""} key={`${note}-${cell}`} />; })}</div>)}</div>
+      <div className="midi-roll-scale"><span>00:00</span><span>00:02</span><span>00:04</span><span>00:06</span></div>
+    </section>
+  );
+}
+
+function GlobalArrangement({ files, position, playing, onSeek, onTogglePlay }: { files: Record<number, string>; position: number; playing: boolean; onSeek: (time: number) => void; onTogglePlay: () => void }) {
+  const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
+  return (
+    <section className="global-arrangement" aria-label="Vue globale de la bande">
+      <div className="global-arrangement-head"><div><span className="section-label">VUE GLOBALE</span><strong>Partition Tape · 6 minutes</strong><small>Les quatre pistes restent alignées sur le même transport.</small></div><button className="primary-action" onClick={onTogglePlay}><Icon name={playing ? "check" : "wave"} size={15} />{playing ? "Arrêter" : "Lecture globale"}</button></div>
+      <div className="arrangement-ruler"><span>00:00</span><span>01:00</span><span>02:00</span><span>03:00</span><span>04:00</span><span>05:00</span><span>06:00</span></div>
+      <div className="arrangement-body" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); onSeek(Math.max(0, Math.min(360, ((event.clientX - rect.left) / rect.width) * 360))); }}>
+        <div className="arrangement-playhead" style={{ left: `${(position / 360) * 100}%` }} />
+        {tracks.map((track, index) => <div className="arrangement-row" key={track}><span>{track}</span><div className={`arrangement-clip ${files[index] ? "has-source" : ""}`}><i />{files[index] ?? "Piste vide"}</div></div>)}
+      </div>
+    </section>
+  );
+}
+
+function CloneSurface({ onSendMidi, onNotice }: { onSendMidi: (data: number[]) => void; onNotice: (message: string) => void }) {
+  const [pressed, setPressed] = useState<number[]>([]);
+  const audioContext = useRef<AudioContext | null>(null);
+  const oscillators = useRef<Record<number, OscillatorNode>>({});
+  const keys = [
+    { note: 60, label: "C4", key: "a", black: false }, { note: 61, label: "C#4", key: "w", black: true }, { note: 62, label: "D4", key: "s", black: false }, { note: 63, label: "D#4", key: "e", black: true }, { note: 64, label: "E4", key: "d", black: false }, { note: 65, label: "F4", key: "f", black: false }, { note: 66, label: "F#4", key: "t", black: true }, { note: 67, label: "G4", key: "g", black: false }, { note: 68, label: "G#4", key: "y", black: true }, { note: 69, label: "A4", key: "h", black: false }, { note: 70, label: "A#4", key: "u", black: true }, { note: 71, label: "B4", key: "j", black: false }, { note: 72, label: "C5", key: "k", black: false },
+  ];
+
+  function noteOn(note: number) {
+    if (pressed.includes(note)) return;
+    const context = audioContext.current ?? new AudioContext(); audioContext.current = context; void context.resume();
+    const oscillator = context.createOscillator(); const gain = context.createGain(); oscillator.frequency.value = 440 * Math.pow(2, (note - 69) / 12); gain.gain.setValueAtTime(0.0001, context.currentTime); gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.015); oscillator.connect(gain).connect(context.destination); oscillator.start(); oscillators.current[note] = oscillator; setPressed((current) => [...current, note]); onSendMidi([0x90, note, 100]);
+  }
+  function noteOff(note: number) {
+    const oscillator = oscillators.current[note]; if (oscillator && audioContext.current) { oscillator.stop(audioContext.current.currentTime + 0.04); delete oscillators.current[note]; } setPressed((current) => current.filter((item) => item !== note)); onSendMidi([0x80, note, 0]);
+  }
+  useEffect(() => { const down = (event: KeyboardEvent) => { const item = keys.find((key) => key.key === event.key.toLowerCase()); if (item) { event.preventDefault(); noteOn(item.note); } }; const up = (event: KeyboardEvent) => { const item = keys.find((key) => key.key === event.key.toLowerCase()); if (item) noteOff(item.note); }; window.addEventListener("keydown", down); window.addEventListener("keyup", up); return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); }; });
+  return <section className="clone-surface" aria-label="Clone OP-1 contrôlable"><div className="clone-surface-head"><div><span className="section-label">CLONE OP-1</span><strong>Surface jouable</strong><small>Clavier de l’ordinateur ou clavier MIDI connecté</small></div><button className="secondary-action" onClick={() => onNotice("Le clavier local joue une synthèse de contrôle. Le son OP-1 réel passe par la sortie audio USB.")}><Icon name="wave" size={14} />Source audio</button></div><div className="clone-keyboard">{keys.map((item) => <button type="button" className={`${item.black ? "clone-key black-key" : "clone-key"} ${pressed.includes(item.note) ? "is-pressed" : ""}`} key={item.note} onPointerDown={() => noteOn(item.note)} onPointerUp={() => noteOff(item.note)} onPointerLeave={() => { if (pressed.includes(item.note)) noteOff(item.note); }}><strong>{item.label}</strong><small>{item.key.toUpperCase()}</small></button>)}</div></section>;
+}
+
+function UsbAudioMonitor({ onNotice }: { onNotice: (message: string) => void }) {
+  const [active, setActive] = useState(false);
+  const [deviceLabel, setDeviceLabel] = useState("Interface audio du système");
+  const streamRef = useRef<MediaStream | null>(null);
+  const contextRef = useRef<AudioContext | null>(null);
+  async function toggle() {
+    if (active) { streamRef.current?.getTracks().forEach((track) => track.stop()); void contextRef.current?.close(); streamRef.current = null; contextRef.current = null; setActive(false); return; }
+    if (!navigator.mediaDevices?.getUserMedia) { onNotice("Cette fenêtre ne donne pas accès à l’audio USB. Utilisez Chrome ou Edge en local."); return; }
+    try { let stream = await navigator.mediaDevices.getUserMedia({ audio: true }); const devices = await navigator.mediaDevices.enumerateDevices(); const op1 = devices.find((device) => device.kind === "audioinput" && device.label.toUpperCase().includes("OP-1")); if (op1 && stream.getAudioTracks()[0].getSettings().deviceId !== op1.deviceId) { stream.getTracks().forEach((track) => track.stop()); stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: op1.deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); setDeviceLabel(op1.label); } else { setDeviceLabel(op1?.label ?? "Entrée audio sélectionnée"); } const context = new AudioContext(); const source = context.createMediaStreamSource(stream); source.connect(context.destination); streamRef.current = stream; contextRef.current = context; setActive(true); onNotice("Audio USB OP-1 routé vers la sortie du Studio."); } catch { onNotice("L’accès audio a été refusé ou aucune interface OP-1 n’est disponible."); }
+  }
+  return <section className="usb-audio-panel"><div><span className="section-label">AUDIO MACHINE</span><strong>{active ? "Son OP-1 actif" : "Son OP-1 disponible"}</strong><small>{deviceLabel} · casque recommandé pour éviter le Larsen</small></div><button className={active ? "primary-action is-active" : "secondary-action"} onClick={toggle}><Icon name="wave" size={14} />{active ? "Couper l’audio" : "Écouter l’OP-1"}</button></section>;
+}
+
+function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: () => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
+  const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
+  const [files, setFiles] = useState<Record<number, string>>({});
+  const [sources, setSources] = useState<Record<number, string>>({});
+  const [muted, setMuted] = useState<Record<number, boolean>>({});
+  const [solo, setSolo] = useState<number | null>(null);
+  const [playing, setPlaying] = useState<number | null>(null);
+  const [tempo, setTempo] = useState(90);
+  const [recording, setRecording] = useState(false);
+  const [looping, setLooping] = useState(false);
+  const [transportTime, setTransportTime] = useState(0);
+  const [transportPlaying, setTransportPlaying] = useState(false);
+  const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
+  const [midiNotes, setMidiNotes] = useState(0);
+  const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
+  const [projectName, setProjectName] = useState("Nouveau projet OP-1");
+  const projectInputRef = useRef<HTMLInputElement>(null);
+  const midiHandler = useRef<((event: { data: Uint8Array }) => void) | null>(null);
+  const midiInputRef = useRef<MidiPortLike | null>(null);
+  const midiStartRef = useRef(0);
+
+  function projectData() {
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: 360 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null } };
+  }
+
+  function saveProject() {
+    const blob = new Blob([JSON.stringify(projectData(), null, 2)], { type: "application/json" });
+    const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "op1-project"}.op1studio.json`; link.click(); URL.revokeObjectURL(link.href);
+    onNotice("Projet Studio enregistré avec ses pistes et réglages.");
+  }
+
+  function loadProject(file: File) {
+    void file.text().then((text) => { try { const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; clips?: Array<{ source?: string }> }> }; if (project.schema !== "op1-studio-project" || project.tracks?.length !== 4) throw new Error("format"); setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); const nextFiles: Record<number, string> = {}; const nextMuted: Record<number, boolean> = {}; let nextSolo: number | null = null; project.tracks.forEach((track, index) => { const source = track.clips?.[0]?.source; if (source) nextFiles[index] = source; if (track.mute) nextMuted[index] = true; if (track.solo) nextSolo = index; }); setFiles(nextFiles); setMuted(nextMuted); setSolo(nextSolo); onNotice("Projet Studio chargé. Les sources audio doivent être re-sélectionnées si elles ont changé de dossier."); } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
+  }
+
+  async function toggleMidiRecording() {
+    if (recording) {
+      if (midiInputRef.current) midiInputRef.current.onmidimessage = null;
+      midiHandler.current = null;
+      midiInputRef.current = null;
+      setRecording(false);
+      onNotice(`Capture MIDI terminée : ${midiNotes} note${midiNotes === 1 ? "" : "s"} reçue${midiNotes === 1 ? "" : "s"}.`);
+      return;
+    }
+    if (!await onConnectMidi()) return;
+    const request = (navigator as MidiNavigator).requestMIDIAccess;
+    if (!request) return;
+    const access = await request();
+    const input = [...access.inputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
+    if (!input) return;
+    setMidiNotes(0);
+    setMidiEvents([]);
+    midiStartRef.current = performance.now();
+    const handler = (event: { data: Uint8Array }) => { const status = event.data[0] & 0xf0; const isOn = status === 0x90 && event.data[2] > 0; const isOff = status === 0x80 || (status === 0x90 && event.data[2] === 0); if (!isOn && !isOff) return; if (isOn) setMidiNotes((count) => count + 1); setMidiEvents((current) => [...current, { type: isOn ? "note_on" : "note_off", note: event.data[1], velocity: event.data[2], time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
+    midiHandler.current = handler;
+    midiInputRef.current = input;
+    input.onmidimessage = handler;
+    setRecording(true);
+    onNotice("Capture MIDI active : les notes de l’OP-1 sont comptées dans le projet local.");
+  }
+  const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
+
+  useEffect(() => {
+    if (!transportPlaying) return;
+    const timer = window.setInterval(() => setTransportTime((time) => time >= 360 ? 0 : time + 0.1), 100);
+    return () => window.clearInterval(timer);
+  }, [transportPlaying]);
+
+  function toggleGlobalPlayback() {
+    if (transportPlaying) {
+      Object.values(audioRefs.current).forEach((audio) => audio?.pause());
+      setTransportPlaying(false);
+      return;
+    }
+    const loaded = Object.values(audioRefs.current).filter((audio): audio is HTMLAudioElement => Boolean(audio));
+    if (!loaded.length) { onNotice("Chargez au moins une piste audio pour lancer la bande."); return; }
+    loaded.forEach((audio) => { audio.currentTime = transportTime; void audio.play(); });
+    setTransportPlaying(true);
+  }
+
+  function seekTransport(time: number) {
+    setTransportTime(time);
+    Object.values(audioRefs.current).forEach((audio) => { if (audio) audio.currentTime = time; });
+  }
+
+  function togglePlay(index: number) {
+    const audio = audioRefs.current[index];
+    if (!audio) {
+      onNotice("Chargez d’abord une piste audio locale.");
+      return;
+    }
+    if (playing === index) {
+      audio.pause();
+      setPlaying(null);
+    } else {
+      Object.values(audioRefs.current).forEach((item) => item?.pause());
+      void audio.play();
+      setPlaying(index);
+    }
+  }
+
+  return (
+    <div className="tool-body tape-editor">
+      <MachineControls onNotice={onNotice} />
+      <TapeMachine />
+      <CloneSurface onSendMidi={onSendMidi} onNotice={onNotice} />
+      <UsbAudioMonitor onNotice={onNotice} />
+      <GlobalArrangement files={files} position={transportTime} playing={transportPlaying} onSeek={seekTransport} onTogglePlay={toggleGlobalPlayback} />
+      <MidiRoll events={midiEvents} />
+      <div className="tape-editor-head"><div><span className="section-label">STUDIO OP-1</span><strong>Tape & Album · 4 pistes</strong><small>{studioMode === "clone" ? "Clone local · édition non destructive" : "OP-1 MIDI · machine utilisée comme contrôleur"}</small></div><span className="midi-badge"><i /> {studioMode === "clone" ? "CLONE" : "MIDI"}</span></div>
+      <div className="studio-mode-tabs" role="tablist" aria-label="Mode du studio"><button className={studioMode === "clone" ? "is-active" : ""} onClick={() => setStudioMode("clone")}><Icon name="chip" size={15} />Clone OP-1</button><button className={studioMode === "midi" ? "is-active" : ""} onClick={async () => { setStudioMode("midi"); await onConnectMidi(); }}><Icon name="plug" size={15} />OP-1 MIDI</button></div>
+      <div className="tape-toolbar"><div className="project-actions"><button className="secondary-action" onClick={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); onNotice("Nouveau projet Studio créé."); }}><Icon name="archive" />Nouveau projet</button><button className="secondary-action" onClick={() => projectInputRef.current?.click()}><Icon name="book" />Ouvrir</button><button className="secondary-action" onClick={saveProject}><Icon name="download" />Enregistrer</button><input ref={projectInputRef} className="visually-hidden" type="file" accept=".json,.op1studio.json,application/json" onChange={(event) => { const file = event.target.files?.[0]; if (file) loadProject(file); event.currentTarget.value = ""; }} /></div><label className="project-name"><span>Projet</span><input value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><span className="tape-timecode">00:00:00 / 06:00:00</span><button className="primary-action" onClick={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")}><Icon name="download" />Préparer l’import</button></div>
+      <div className="tape-track-list">{tracks.map((track, index) => { const isMuted = muted[index] === true || (solo !== null && solo !== index); return <div className={`tape-track${isMuted ? " is-muted" : ""}`} key={track}><div className="tape-track-label"><strong>{track}</strong><small>{files[index] ?? "Aucun fichier"}</small><label className="tape-file"><Icon name="download" size={13} />Charger<input type="file" accept="audio/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setFiles({ ...files, [index]: file.name }); setSources({ ...sources, [index]: URL.createObjectURL(file) }); onNotice(`${track} chargée localement.`); } }} /></label></div><div className="tape-waveform" aria-label={`Forme d’onde ${track}`}><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tape-track-actions"><button className="icon-action" aria-label={`Lire ${track}`} onClick={() => togglePlay(index)}><Icon name={playing === index ? "check" : "wave"} size={15} /></button><button className={`track-state ${solo === index ? "is-active" : ""}`} onClick={() => setSolo(solo === index ? null : index)}>S</button><button className={`track-state ${muted[index] ? "is-active" : ""}`} onClick={() => setMuted({ ...muted, [index]: !muted[index] })}>M</button></div>{sources[index] && <audio ref={(element) => { audioRefs.current[index] = element; }} src={sources[index]} muted={isMuted} onEnded={() => setPlaying(null)} />}</div>; })}</div>
+      <div className="tape-transport-panel"><button className="icon-action" aria-label="Lecture" onClick={() => onNotice("Lecture du projet Tape local.")}><Icon name="wave" size={15} /></button><button className={`icon-action ${recording ? "is-recording" : ""}`} aria-label="Enregistrement MIDI" onClick={toggleMidiRecording}><Icon name="check" size={15} /></button><button className={`track-state ${looping ? "is-active" : ""}`} onClick={() => setLooping(!looping)}>LOOP</button><label className="tempo-control">BPM <input type="number" min="40" max="200" value={tempo} onChange={(event) => setTempo(Number(event.target.value))} /></label><span><i /> {tempo} BPM · {recording ? `MIDI ENREGISTRE · ${midiNotes} notes` : studioMode === "midi" ? "OP-1 MIDI PRÊT" : "CLONE PRÊT"}</span><button className="secondary-action" onClick={onConnectMidi}><Icon name="plug" />Connecter MIDI</button></div>
+      <div className="tape-import-note"><Icon name="shield" size={16} /><span><strong>Import sécurisé</strong><small>Le clone prépare les pistes dans `tape/`. La copie vers l’OP-1 viendra après sauvegarde, vérification et éjection contrôlée.</small></span></div>
+    </div>
+  );
+}
+
 const nav = [
   { label: "Firmware", icon: "chip" as IconName, active: true },
   { label: "Sauvegardes", icon: "archive" as IconName },
   { label: "Sons", icon: "wave" as IconName },
-  { label: "Tape & Album", icon: "tape" as IconName },
+  { label: "Studio", icon: "tape" as IconName },
 ];
 
-const firmwareSteps = [
-  { title: "Sauvegarde", detail: "Snapshot complet + SHA-256", color: "blue" },
-  { title: "Validation", detail: "Origine, CRC et structure", color: "green" },
-  { title: "TE-boot", detail: "Volume de maintenance", color: "white" },
-  { title: "Installation", detail: "Copie, sync et éjection", color: "orange" },
+const recommendedFirmware = firmwareCatalog.releases[0];
+const officialFirmwareUrl = recommendedFirmware.officialUrl;
+
+type FirmwareMod = { id: string; category: string; title: string; detail: string; source: string; availability?: string; preview?: string; isNew?: boolean };
+
+const firmwareMods: FirmwareMod[] = [
+  { id: "playmode", category: "Écrans", title: "Écran Play Mode", detail: "Remplace l’écran du mode lecture.", source: "SOURCE_MODIFIEE/content/display/playmode.svg", preview: "/firmware-mods/playmode.svg" },
+  { id: "rymd", category: "Écrans", title: "Écran RYMD", detail: "Modifie l’écran et les repères du mode RYMD.", source: "SOURCE_MODIFIEE/content/display/rymd.svg", preview: "/firmware-mods/rymd.svg" },
+  { id: "tapeconfig", category: "Écrans", title: "Écran Tape Config", detail: "Remplace l’écran de configuration Tape.", source: "SOURCE_MODIFIEE/content/display/tapeconfig.svg", preview: "/firmware-mods/tapeconfig.svg" },
+  { id: "op1patch", category: "Audio", title: "Patch vocal OP-1", detail: "Ajoute la ressource audio de speech modifiée.", source: "SOURCE_MODIFIEE/content/audio/speech/op1patch.raw" },
+  { id: "audio", category: "Ressources", title: "Ressources audio du pack", detail: "40 RAW : synth, drum, presets et speech.", source: "SOURCE_MODIFIEE/content/audio/" },
+  { id: "display", category: "Ressources", title: "Ressources graphiques du pack", detail: "61 SVG d’interface et d’écrans.", source: "SOURCE_MODIFIEE/content/display/" },
+  { id: "iter", category: "Fonctions", title: "Synthé Iter", detail: "Active le synthé Iter caché dans le firmware original.", source: "op1repacker --options iter", availability: "Moteur local trouvé", isNew: true },
+  { id: "presets-iter", category: "Fonctions", title: "Presets Iter", detail: "Ajoute 11 presets AIF fournis avec le moteur Iter.", source: "op1repacker --options presets-iter", availability: "Moteur local trouvé · dépend de Iter", isNew: true },
+  { id: "filter", category: "Fonctions", title: "Effet Filter", detail: "Rend disponible l’effet Filter pour le traitement sonore.", source: "op1repacker --options filter", availability: "Moteur local trouvé", isNew: true },
+  { id: "subtle-fx", category: "Fonctions", title: "Subtle FX", detail: "Modifie les réglages par défaut des effets pour un rendu plus léger.", source: "op1repacker --options subtle-fx", availability: "Moteur local trouvé", isNew: true },
+  { id: "gfx-tape-invert", category: "Thèmes", title: "Tape inversé", detail: "Applique le patch graphique d’inversion de l’écran Tape.", source: "op1repacker --options gfx-tape-invert", availability: "Moteur local trouvé", isNew: true },
+  { id: "gfx-cwo-moose", category: "Thèmes", title: "CWO Moose", detail: "Applique le patch graphique Moose au visuel CWO.", source: "op1repacker --options gfx-cwo-moose", availability: "Moteur local trouvé", isNew: true },
+  { id: "gfx-iter-lab", category: "Thèmes", title: "Iter Lab", detail: "Remplace le visuel Iter par l’asset Iter Lab fourni.", source: "op1repacker --options gfx-iter-lab", availability: "Moteur local trouvé · dépend de Iter", isNew: true },
 ];
+
+type DirectoryPickerWindow = Window & {
+  showDirectoryPicker?: () => Promise<{ name: string }>;
+};
+
+type MidiPortLike = {
+  name?: string;
+  type: "input" | "output";
+  state: string;
+  onmidimessage?: ((event: { data: Uint8Array }) => void) | null;
+  send?: (data: number[]) => void;
+};
+
+type MidiAccessLike = {
+  inputs: { values: () => Iterable<MidiPortLike> };
+  outputs: { values: () => Iterable<MidiPortLike> };
+};
+
+type MidiNavigator = Navigator & {
+  requestMIDIAccess?: () => Promise<MidiAccessLike>;
+};
 
 export default function Home() {
   const [stage, setStage] = useState(0);
   const [scanning, setScanning] = useState(false);
   const [expertOpen, setExpertOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [deviceName, setDeviceName] = useState<string | null>(null);
+  const [midiConnected, setMidiConnected] = useState(false);
+  const [backupTested, setBackupTested] = useState(false);
+  const [libraryFolder, setLibraryFolder] = useState<string | null>(null);
+  const [toolWindow, setToolWindow] = useState<ToolWindow>(null);
+  const [exerciseRunning, setExerciseRunning] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
+  const [firmwareOptions, setFirmwareOptions] = useState({
+    verify: true,
+    backup: true,
+    teBoot: false,
+  });
+  const [firmwareFile, setFirmwareFile] = useState<{ name: string; size: number } | null>(null);
+  const [firmwarePlanReady, setFirmwarePlanReady] = useState(false);
+  const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
+  const [selectedMod, setSelectedMod] = useState<FirmwareMod | null>(null);
+  const [soundPackReady, setSoundPackReady] = useState(false);
+  const [backupRoot, setBackupRoot] = useState("backups/");
+  const folderInputRef = useRef<HTMLInputElement>(null);
+  const midiOutputRef = useRef<MidiPortLike | null>(null);
+
+  async function chooseLibraryFolder() {
+    const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
+    if (picker) {
+      try {
+        const folder = await picker();
+        setLibraryFolder(folder.name);
+        setNotice(`Dossier local sélectionné : ${folder.name}. Les fichiers restent sur cet appareil.`);
+      } catch {
+        // The user cancelled the native picker.
+      }
+      return;
+    }
+    folderInputRef.current?.click();
+  }
 
   const logs = useMemo(() => {
     const entries = [
@@ -72,10 +371,41 @@ export default function Home() {
     return entries;
   }, [stage]);
 
-  function runPrimaryAction() {
+  async function connectMidiDevice() {
+    const requestMIDIAccess = (navigator as MidiNavigator).requestMIDIAccess;
+    if (!requestMIDIAccess) {
+      setNotice("Ce navigateur ne propose pas Web MIDI. Utilisez Chrome ou Edge en local pour connecter l’OP-1.");
+      return false;
+    }
+
+    try {
+      const midi = await requestMIDIAccess();
+      const input = [...midi.inputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
+      const output = [...midi.outputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
+      if (!input) {
+        setNotice("Aucune entrée MIDI OP-1 détectée. Vérifiez le câble USB et le mode MIDI de la machine.");
+        return false;
+      }
+      setDeviceName(input.name ?? "OP-1");
+      midiOutputRef.current = output ?? null;
+      setMidiConnected(true);
+      setStage(2);
+      setNotice(`OP-1 détecté par MIDI${output ? " en entrée et sortie" : " en entrée seulement"}.`);
+      return true;
+    } catch {
+      setNotice("L’accès MIDI a été refusé. Autorisez l’accès au port OP-1 dans le navigateur puis réessayez.");
+      return false;
+    }
+  }
+
+  function testBackupPlan() {
+    setBackupTested(true);
+    setNotice("Plan de sauvegarde vérifié en simulation. La copie réelle nécessite encore le pont local et le volume OP-1 autorisé.");
+  }
+
+  async function runPrimaryAction() {
     if (stage === 0) {
-      setStage(1);
-      setNotice("Pont local simulé. Le prototype n’accède à aucun périphérique réel.");
+      await connectMidiDevice();
       return;
     }
     if (stage === 1) {
@@ -98,7 +428,7 @@ export default function Home() {
   const primaryLabel = scanning
     ? "Contrôle en cours…"
     : stage === 0
-      ? "Simuler la connexion"
+      ? "Détecter l’OP-1 en MIDI"
       : stage === 1
         ? "Contrôler la machine"
         : stage === 2
@@ -118,7 +448,7 @@ export default function Home() {
 
           <div className="mini-screen" aria-label="État du système">
             <span className="screen-kicker">FIRMWARE CONTROL</span>
-            <strong>{stage >= 2 ? "OS 243 → 246" : "NO DEVICE"}</strong>
+            <strong>{deviceName ? "OP-1 CONNECTÉ" : "NO DEVICE"}</strong>
             <div className="screen-wave" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
           </div>
 
@@ -131,7 +461,7 @@ export default function Home() {
 
           <div className={`bridge-state ${stage > 0 ? "online" : ""}`}>
             <span className="state-dot" />
-            <div><small>PONT LOCAL</small><strong>{stage > 0 ? "SIMULÉ" : "REQUIS"}</strong></div>
+            <div><small>{midiConnected ? "MIDI USB" : "PONT LOCAL"}</small><strong>{midiConnected ? "CONNECTÉ" : "REQUIS"}</strong></div>
           </div>
         </header>
 
@@ -143,7 +473,7 @@ export default function Home() {
                 <button
                   key={item.label}
                   className={item.active ? "nav-item active" : "nav-item"}
-                  onClick={() => !item.active && setNotice(`${item.label} arrive après le socle firmware.`)}
+                  onClick={() => !item.active && (item.label === "Sauvegardes" ? setToolWindow("backups") : item.label === "Sons" ? setToolWindow("sounds") : item.label === "Studio" ? setToolWindow("tape") : setNotice(`${item.label} arrive après le socle firmware.`))}
                 >
                   <Icon name={item.icon} />
                   <span>{item.label}</span>
@@ -154,19 +484,16 @@ export default function Home() {
 
             <div className="sidebar-spacer" />
 
-            <button className="nav-item" onClick={() => setNotice("La documentation sera reliée au guide officiel et à chaque contrôle.")}>
+            <button className="nav-item" onClick={() => setToolWindow("docs")}>
               <Icon name="book" /><span>Documentation</span>
+            </button>
+            <button className="nav-item" onClick={() => setToolWindow("exercise")}>
+              <Icon name="wave" /><span>Exercices MIDI</span>
             </button>
             <button className="nav-item" onClick={() => setNotice("Les réglages restent locaux dans la version de base.")}>
               <Icon name="settings" /><span>Réglages</span>
             </button>
 
-            <div className="plan-card">
-              <span>COMMUNITY CORE</span>
-              <strong>Gratuit & local</strong>
-              <p>Le contrôle essentiel reste disponible sans abonnement.</p>
-              <button onClick={() => setNotice("Studio Cloud ajoutera historique distant, profils et support — jamais l’accès de base à la machine.")}>Découvrir Studio Cloud</button>
-            </div>
           </aside>
 
           <div className="content">
@@ -176,13 +503,33 @@ export default function Home() {
                 <h1>Votre OP‑1, sous contrôle.</h1>
                 <p>Identifier, sauvegarder, vérifier et mettre à jour avec un plan lisible à chaque étape.</p>
               </div>
-              <button className="primary-action" onClick={runPrimaryAction} disabled={scanning}>
-                {stage === 0 ? <Icon name="plug" /> : stage < 3 ? <Icon name="shield" /> : <Icon name="terminal" />}
-                {primaryLabel}
-              </button>
+              <div className="heading-actions">
+                <button className="primary-action" onClick={runPrimaryAction} disabled={scanning}>
+                  {stage === 0 ? <Icon name="plug" /> : stage < 3 ? <Icon name="shield" /> : <Icon name="terminal" />}
+                  {primaryLabel}
+                </button>
+              </div>
             </div>
 
             {notice && <div className="notice" role="status"><Icon name="shield" size={17} /><span>{notice}</span><button aria-label="Fermer" onClick={() => setNotice(null)}>×</button></div>}
+
+            <section className="library-folder" aria-labelledby="library-folder-title">
+              <div className="library-folder-icon"><Icon name="archive" size={21} /></div>
+              <div className="library-folder-copy">
+                <span className="section-label">BIBLIOTHÈQUE LOCALE</span>
+                <h2 id="library-folder-title">Firmwares, samples et sauvegardes</h2>
+                <p>{libraryFolder ? `Dossier actif : ${libraryFolder}` : "Choisissez un dossier racine pour réunir vos fichiers OP-1."}</p>
+              </div>
+              <button className="folder-action" onClick={chooseLibraryFolder}>{libraryFolder ? "Changer de dossier" : "Choisir un dossier"}</button>
+              <input ref={folderInputRef} className="visually-hidden" type="file" /* Chromium fallback */ {...({ webkitdirectory: "", directory: "" } as Record<string, string>)} onChange={(event) => {
+                const file = event.target.files?.[0];
+                const folder = file?.webkitRelativePath.split("/")[0];
+                if (folder) {
+                  setLibraryFolder(folder);
+                  setNotice(`Dossier local sélectionné : ${folder}. Les fichiers restent sur cet appareil.`);
+                }
+              }} />
+            </section>
 
             <section className="device-overview" aria-labelledby="machine-title">
               <div className="device-identity">
@@ -190,7 +537,8 @@ export default function Home() {
                 <div>
                   <span className="section-label">MACHINE DÉTECTÉE</span>
                   <h2 id="machine-title">{stage >= 2 ? "OP‑1 original" : "En attente d’une machine"}</h2>
-                  <p>{stage >= 2 ? "USB 2367:0004 · Mode normal" : "Installez le pont local puis connectez l’OP‑1 en USB."}</p>
+                  <p>{deviceName ? "USB 2367:0004 · MIDI détecté" : "Connectez l’OP-1 en USB puis lancez la détection MIDI."}</p>
+                  <button className="backup-button" onClick={testBackupPlan}><Icon name="archive" size={14} />{backupTested ? "Plan vérifié" : "Tester la sauvegarde"}</button>
                 </div>
               </div>
               <div className="device-metrics">
@@ -201,60 +549,35 @@ export default function Home() {
               </div>
             </section>
 
-            <section className="workflow-section" aria-labelledby="workflow-title">
-              <div className="section-heading">
-                <div><span className="section-label">PARCOURS SÉCURISÉ</span><h2 id="workflow-title">Mise à jour officielle</h2></div>
-                <span className="release-pill"><i /> OS 246 · 13 DÉC. 2022</span>
+            <section id="firmware-editor" className="firmware-editor-inline" aria-labelledby="firmware-editor-title">
+              <div className="section-heading"><div><span className="section-label">ÉDITEUR INTÉGRÉ</span><h2 id="firmware-editor-title">Préparer un firmware</h2></div><div className="editor-status-pills"><span className="release-pill"><i /> MODS LOCAUX</span><span className="engine-pill"><i /> OP1REPACKER 0.2.6 · TROUVÉ</span></div></div>
+              <div className="firmware-steps" aria-label="Progression de préparation"><span className={firmwareFile ? "is-done" : "is-current"}><b>1</b><small>Source</small></span><i /><span className={Object.values(selectedMods).some(Boolean) ? "is-done" : firmwareFile ? "is-current" : ""}><b>2</b><small>Mods</small></span><i /><span className={firmwarePlanReady ? "is-done" : firmwareFile ? "is-current" : ""}><b>3</b><small>Contrôles</small></span><i /><span className={firmwarePlanReady ? "is-current" : ""}><b>4</b><small>Exporter</small></span></div>
+              <div className="inline-editor-grid">
+                <div>
+                  <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a className="firmware-download-button" href={officialFirmwareUrl} target="_blank" rel="noreferrer" download={`op1_${recommendedFirmware.version}.op1`}><Icon name="download" size={17} />Télécharger le firmware officiel</a></div>
+                  <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
+                </div>
+                <div className="inline-editor-options"><div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>{Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}<button className="primary-action" disabled={!firmwareFile} onClick={() => { setFirmwarePlanReady(Boolean(firmwareFile)); setNotice(firmwareFile ? "Plan firmware préparé. Le pont local produira une nouvelle copie, sans écriture sur l’OP-1." : "Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button></div>
               </div>
-
-              <div className="step-grid">
-                {firmwareSteps.map((step, index) => {
-                  const reached = stage >= index + 2 || (index === 0 && stage >= 1);
-                  const active = (index === 0 && stage === 1) || (index === 1 && stage === 2) || (index === 2 && stage === 3);
-                  return (
-                    <article key={step.title} className={`step-card ${reached ? "reached" : ""} ${active ? "active" : ""}`}>
-                      <div className={`step-number ${step.color}`}>{reached && !active ? <Icon name="check" size={17} /> : index + 1}</div>
-                      <div><h3>{step.title}</h3><p>{step.detail}</p></div>
-                      <span className="step-status">{active ? "À FAIRE" : reached ? "PRÊT" : <Icon name="lock" size={14} />}</span>
-                    </article>
-                  );
-                })}
-              </div>
+              <div className="mod-section inline-mods"><div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>{["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}</div>
             </section>
 
-            <div className="dashboard-grid">
-              <section className="panel release-panel" aria-labelledby="release-title">
-                <div className="panel-heading"><div><span className="section-label">CATALOGUE VÉRIFIÉ</span><h2 id="release-title">Firmwares</h2></div><button onClick={() => setNotice("Le catalogue officiel a été vérifié le 11 août 2026.")}>Actualiser</button></div>
-                <div className="release-row selected">
-                  <div className="release-radio"><i /></div>
-                  <div className="release-copy"><strong>OP‑1 OS 246</strong><span>Version officielle recommandée</span></div>
-                  <div className="release-meta"><span>OFFICIEL</span><small>Correction line / mic / radio</small></div>
-                  <button className="icon-button" aria-label="Informations sur OS 246" onClick={() => setNotice("Le binaire ne sera téléchargé qu’à la demande depuis teenage.engineering.")}><Icon name="download" size={17} /></button>
-                </div>
-                <div className="release-row muted">
-                  <div className="release-radio" />
-                  <div className="release-copy"><strong>Firmware personnalisé</strong><span>Analyse et repack communautaire</span></div>
-                  <div className="release-meta danger"><span>LABO EXPERT</span><small>Désactivé par défaut</small></div>
-                  <button className="text-button" onClick={() => setExpertOpen(true)}>Comprendre</button>
-                </div>
-              </section>
-
-              <section className="panel log-panel" aria-labelledby="log-title">
-                <div className="panel-heading"><div><span className="section-label">JOURNAL LOCAL</span><h2 id="log-title">Session</h2></div><span className="live-dot"><i /> LOCAL</span></div>
-                <div className="terminal">
-                  {logs.map(([time, message]) => <p key={`${time}-${message}`}><time>{time}</time><span>{message}</span></p>)}
-                  {scanning && <p className="terminal-active"><time>14:32:20</time><span>Contrôle des interfaces et du mode…</span></p>}
-                </div>
-              </section>
-            </div>
-
-            <footer className="safety-footer">
-              <div><Icon name="shield" /><p><strong>Le navigateur pilote l’interface.</strong><span>Le pont local signé vérifie le volume, synchronise les écritures et demande une éjection sûre.</span></p></div>
-              <a href="https://github.com/propann/OP-1-Studio" target="_blank" rel="noreferrer">AGPL‑3.0 · DONNÉES LOCALES · VOIR LE CODE SOURCE</a>
-            </footer>
           </div>
         </div>
       </section>
+
+      {selectedMod && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelectedMod(null)}>
+          <section className="mod-detail-window" role="dialog" aria-modal="true" aria-labelledby="mod-detail-title" onMouseDown={(event) => event.stopPropagation()}>
+            <button className="window-close mod-detail-close" aria-label="Fermer" onClick={() => setSelectedMod(null)}>×</button>
+            {selectedMod.preview ? <img className="mod-detail-image" src={selectedMod.preview} alt={`Aperçu agrandi ${selectedMod.title}`} /> : <div className="mod-detail-placeholder"><Icon name={selectedMod.id === "op1patch" ? "wave" : "archive"} size={34} /></div>}
+            <span className="section-label">{selectedMod.category} · SOURCE_MODIFIEE</span>
+            <h2 id="mod-detail-title">{selectedMod.title}</h2>
+            <p>{selectedMod.detail}</p>
+            <div className="mod-detail-meta"><strong>Source</strong><code>{selectedMod.source}</code><strong>État</strong><span>Disponible pour sélection · aucune écriture automatique</span></div>
+          </section>
+        </div>
+      )}
 
       {expertOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setExpertOpen(false)}>
@@ -270,6 +593,94 @@ export default function Home() {
               <li>aucun mélange avec le catalogue Teenage Engineering.</li>
             </ul>
             <button onClick={() => setExpertOpen(false)}>J’ai compris</button>
+          </section>
+        </div>
+      )}
+
+      {toolWindow && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => setToolWindow(null)}>
+          <section className="tool-window" role="dialog" aria-modal="true" aria-labelledby="tool-window-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="tool-window-header">
+              <div>
+                <span className="section-label">OP-1 STUDIO / OUTIL</span>
+                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "docs" ? "Documentation rapide" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
+              </div>
+              <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
+            </div>
+
+            {toolWindow === "exercise" && (
+              <div className="tool-body">
+                <div className="exercise-toolbar">
+                  <label>Suite d’accords
+                    <select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>
+                      <option>I–V–vi–IV</option>
+                      <option>I–IV–V</option>
+                      <option>ii–V–I</option>
+                    </select>
+                  </label>
+                  <label>Tempo <input type="number" min="40" max="200" defaultValue="90" /> BPM</label>
+                </div>
+                <div className="exercise-score"><span>PROCHAÎNEMENT</span><strong>{selectedExercise}</strong><small>{exerciseRunning ? "Écoute MIDI active" : "Prêt à commencer"}</small></div>
+                <div className="chord-sequence"><span className="chord-current">C</span><span>G</span><span>Am</span><span>F</span></div>
+                <div className="exercise-actions"><button className="primary-action" onClick={() => setExerciseRunning(!exerciseRunning)}><Icon name={exerciseRunning ? "check" : "wave"} />{exerciseRunning ? "Arrêter l’exercice" : "Commencer l’exercice"}</button><span className="midi-badge"><i /> OP-1 MIDI {exerciseRunning ? "ACTIF" : "PRÊT"}</span></div>
+                <p className="tool-note">L’exercice valide les notes reçues, l’ordre des accords et le timing. Aucun message MIDI n’est envoyé à la machine.</p>
+              </div>
+            )}
+
+            {toolWindow === "docs" && (
+              <div className="tool-body docs-body">
+                <div className="doc-row"><strong>Exercices MIDI</strong><span>Branche l’OP-1 en USB, sélectionne son entrée MIDI, puis commence. Les notes sont analysées localement.</span></div>
+                <div className="doc-row"><strong>Firmware officiel</strong><span>Utilise uniquement un fichier provenant de Teenage Engineering. Une sauvegarde doit précéder toute préparation.</span></div>
+                <div className="doc-row"><strong>Éditeur firmware</strong><span>Les cases préparent un plan lisible. Elles ne modifient pas le firmware et n’écrivent rien sur l’OP-1.</span></div>
+                <a className="docs-link" href="https://teenage.engineering/guides/op-1/original/te-boot" target="_blank" rel="noreferrer">Ouvrir le guide TE-boot officiel</a>
+              </div>
+            )}
+
+            {toolWindow === "editor" && (
+              <div className="tool-body">
+                <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a href={officialFirmwareUrl} target="_blank" rel="noreferrer">Télécharger depuis Teenage Engineering</a></div>
+                <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
+                <div className="mod-section">
+                  <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE</span><strong>Mods disponibles</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
+                  <div className="mod-grid">{firmwareMods.map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <img src={mod.preview} alt={`Aperçu ${mod.title}`} /> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title}</strong><small>{mod.detail}</small><em>{mod.source}</em></span></label>)}</div>
+                </div>
+                <div className="editor-options">
+                  <label><input type="checkbox" checked={firmwareOptions.verify} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, verify: event.target.checked })} /><span><strong>Vérifier l’origine et le CRC</strong><small>Refuser un fichier incomplet ou non reconnu.</small></span></label>
+                  <label><input type="checkbox" checked={firmwareOptions.backup} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, backup: event.target.checked })} /><span><strong>Exiger une sauvegarde</strong><small>Créer un snapshot avant toute opération sensible.</small></span></label>
+                  <label><input type="checkbox" checked={firmwareOptions.teBoot} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, teBoot: event.target.checked })} /><span><strong>Préparer le mode TE-boot</strong><small>Afficher les étapes manuelles avant la mise à jour.</small></span></label>
+                </div>
+                <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
+              </div>
+            )}
+
+            {toolWindow === "backups" && (
+              <div className="tool-body">
+                <label className="backup-root"><span className="section-label">DOSSIER RACINE</span><input value={backupRoot} onChange={(event) => setBackupRoot(event.target.value)} /><small>Sous-dossiers : machine, firmware, time-capsule-pistes et exports. La Time Capsule contient uniquement Tape et Album.</small></label>
+                <div className="backup-summary">
+                  <span className="backup-check"><Icon name="check" size={19} /></span>
+                  <div><span className="section-label">DERNIÈRE SAUVEGARDE</span><strong>OP-1 · 12 août 2026 à 01:04</strong><small>Vérifiée · 65 fichiers · 269,44 Mo</small></div>
+                </div>
+                <div className="backup-scope"><strong>Time Capsule Pistes</strong><span>Tape et Album uniquement · pistes, prises et exports audio · sans firmware ni samples utilisateur</span></div>
+                <div className="backup-tree">
+                  <div><Icon name="archive" size={15} /><strong>OP-1_2026-08-12_01-00</strong></div>
+                  <span>tape/ · 4 pistes AIFF</span><span>album/ · 2 faces AIFF</span><span>synth/user/ · 44 samples</span><span>drum/user/ · 15 samples</span>
+                </div>
+                <div className="editor-footer"><span>Copie locale vérifiée par taille et nombre de fichiers</span><button className="primary-action" onClick={() => setNotice("Nouvelle copie prête à être lancée par le pont local. La sauvegarde existante reste intacte.")}><Icon name="archive" />Lancer une sauvegarde</button></div>
+                <div className="backup-actions"><button className="secondary-action" onClick={() => setNotice("La connexion Drive sera proposée après validation du dossier local.")}><Icon name="download" />Connecter Drive</button><button className="secondary-action" onClick={() => setNotice("Time Capsule Pistes : compression de Tape et Album uniquement. Aucun firmware ni sample utilisateur n’est inclus.")}><Icon name="tape" />Time Capsule Pistes</button><button className="secondary-action" onClick={() => setToolWindow("sounds")}><Icon name="wave" />Bibliothèque Sons</button></div>
+              </div>
+            )}
+
+            {toolWindow === "tape" && <TapeEditor onNotice={setNotice} onConnectMidi={connectMidiDevice} onSendMidi={(data) => midiOutputRef.current?.send?.(data)} />}
+
+            {toolWindow === "sounds" && (
+              <div className="tool-body">
+                <SoundControls />
+                <div className="sound-library-head"><div><span className="section-label">BIBLIOTHÈQUE LOCALE</span><strong>OP-1 Music Library</strong><small>Source : sauvegarde OP-1 et dossiers sélectionnés</small></div><span className="midi-badge"><i /> LOCAL</span></div>
+                <div className="sound-categories"><div><strong>44</strong><span>Samples synth</span></div><div><strong>15</strong><span>Samples drum</span></div><div><strong>4</strong><span>Pistes Tape</span></div><div><strong>2</strong><span>Faces Album</span></div></div>
+                <div className="pack-builder"><div className="mod-section-heading"><div><span className="section-label">PACK À PRÉPARER</span><strong>Pack OP-1 · User Library</strong></div><small>{soundPackReady ? "PRÊT" : "BROUILLON"}</small></div><label><input type="checkbox" defaultChecked /> Samples synth · `synth/user`</label><label><input type="checkbox" defaultChecked /> Samples drum · `drum/user`</label><label><input type="checkbox" defaultChecked /> Pistes Tape · `tape`</label><label><input type="checkbox" /> Faces Album · `album`</label></div>
+                <div className="editor-footer"><span>{soundPackReady ? "Pack vérifié et prêt pour copie" : "Sélection locale · aucune copie exécutée"}</span><button className="primary-action" onClick={() => { setSoundPackReady(true); setNotice("Pack de sons préparé. La copie vers l’OP-1 attend une confirmation du pont local."); }}><Icon name="archive" />Préparer le pack</button></div><div className="sound-transfer-panel"><div><span className="section-label">TRANSFERT OP-1</span><strong>Copier les sons préparés</strong><small>La sauvegarde doit être validée dans Sauvegardes avant toute copie.</small></div><button className="secondary-action" onClick={() => setNotice(soundPackReady ? "Transfert audio prêt. Vérifiez le volume OP-1 avant confirmation." : "Préparez d’abord le pack de sons.")}><Icon name="plug" />Préparer le transfert</button></div>
+              </div>
+            )}
           </section>
         </div>
       )}
