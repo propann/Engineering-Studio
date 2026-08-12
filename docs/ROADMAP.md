@@ -187,8 +187,9 @@ maintenant la durée réelle des fichiers chargés et le transport suit l'horlog
 audio maître. Le piano-roll est éditable, les événements MIDI sont rejoués
 pendant le transport, la quantification 1/16 dépendante du BPM est livrée et
 le rendu WAV offline applique gain, trim, mute/solo et fades, la vue globale
-calcule les niveaux audio en 24 points par piste et les stems Tape sont
-exportables séparément ; le transfert machine et l'emballage Album restent à faire.
+calcule les niveaux audio en 24 points par piste, les stems Tape sont
+exportables séparément et l'Album produit deux faces WAV avec manifeste ; le
+transfert machine reste à faire.
 
 - définir un format `Project` JSON versionné ;
 - stocker sources, clips, événements MIDI, tempo et mixage ;
