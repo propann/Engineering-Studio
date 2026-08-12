@@ -379,16 +379,16 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isDown ? "#dfe4df" : "#fbfcf8"}
-                    stroke="#a0a3a0" strokeWidth={.06}
+                    fill={isDown ? "#c9c2eb" : "#DFD9FF"}
+                    stroke="#8f89aa" strokeWidth={.06}
                   />
                   {/* Ovale central */}
                   <rect
                     x={b.col + b.w*.22} y={b.row + b.h*.25}
                     width={b.w*.56} height={b.h*.45}
                     rx={b.w*.28}
-                    fill={isDown?"#d7ddd7":"#eef1ed"}
-                    stroke="#aaa" strokeWidth={.04}
+                    fill={isDown?"#b8b0d9":"#f5f2ff"}
+                    stroke="#aaa2c5" strokeWidth={.04}
                   />
                   {/* Nom de la note */}
                   <text x={b.col+b.w/2} y={b.row+b.h*.16}
@@ -412,13 +412,13 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.3}
-                    fill={isDown?"#d0d3d0":"#cececb"}
-                    stroke="#a0a3a0" strokeWidth={.06}
+                    fill={isDown?"#555":"#171a1b"}
+                    stroke="#050606" strokeWidth={.06}
                   />
                   {/* Cercle noir */}
                   <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
                     r={Math.min(b.w, b.h)*.32}
-                    fill={isDown?"#333":"#0a0a0a"}
+                    fill={isDown?"#777":"#000000"}
                   />
                 </g>
               );
@@ -441,8 +441,8 @@ export function StudioMachinePanel({
                   }}
                   style={{ cursor: "ns-resize" }}
                 >
-                  <circle cx={cx} cy={cy} r={r} fill="#c8ccc8" stroke="#999" strokeWidth={.07}/>
-                  <circle cx={cx} cy={cy} r={r*.75} fill="#b8bcb8" stroke="#888" strokeWidth={.04}/>
+                  <circle cx={cx} cy={cy} r={r} fill={`${ec}44`} stroke={ec} strokeWidth={.07}/>
+                  <circle cx={cx} cy={cy} r={r*.75} fill="#ffffff" stroke="#8d9690" strokeWidth={.04}/>
                   {/* Arc valeur */}
                   <circle cx={cx} cy={cy} r={r*.88}
                     fill="none" stroke={ec} strokeWidth={.18}
@@ -456,7 +456,7 @@ export function StudioMachinePanel({
                     x2={cx + r*.65*Math.sin(angle)}
                     y2={cy - r*.65*Math.cos(angle)}
                     stroke="#444" strokeWidth={.1} strokeLinecap="round"/>
-                  <circle cx={cx} cy={cy} r={.15} fill="#666"/>
+                  <circle cx={cx} cy={cy} r={.15} fill={ec}/>
                   {/* Label */}
                   <text x={cx} y={b.row+b.h+.55} textAnchor="middle"
                     fontSize={.55} fill={ec} fontFamily="monospace" fontWeight="700">
