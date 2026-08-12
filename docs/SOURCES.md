@@ -32,6 +32,10 @@ Dernière vérification : **11 août 2026**. Les liens officiels priment pour 
 - [`op1aiff`](https://github.com/op1hacks/op1aiff) — inspection/création de presets AIFF.
 - [`op1svg`](https://github.com/op1hacks/op1svg) — SVG adaptés aux ressources de l’OP‑1.
 - [op1.fun](https://op1.fun/) — bibliothèque communautaire de patches et outils web.
+- [`op1-patch-preview`](https://github.com/dustMason/op1-patch-preview) — prévisualisation jouable de patches dans le navigateur.
+- [`finger` (sampi)](https://github.com/sampi/finger) — séquenceur Finger OP‑1/OP‑Z recréé en Web MIDI API ; référence pour le module Éducation.
+- [`marctdt/op-1-ableton-live-control-surface`](https://github.com/marctdt/op-1-ableton-live-control-surface) — fork communautaire actif du control surface Ableton Live (le dépôt officiel Teenage Engineering est archivé).
+- [`op1emu`](https://github.com/op1emu) — projet en cours d'émulateur logiciel OP‑1 ; veille uniquement, non intégré.
 
 ## Web, application native et marché
 

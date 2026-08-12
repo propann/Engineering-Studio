@@ -89,14 +89,15 @@ function TapeMachine() {
   );
 }
 
-function MidiRoll({ events }: { events: Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }> }) {
+type MidiEvent = { type: "note_on" | "note_off"; note: number; velocity: number; time: number };
+
+function MidiRoll({ events, onToggleNote }: { events: MidiEvent[]; onToggleNote: (note: number, time: number) => void }) {
   const notes = [72, 71, 69, 67, 65, 64, 62, 60];
   const cells = Array.from({ length: 16 }, (_, index) => index);
-  const activeNotes = new Set(events.filter((event) => event.type === "note_on").map((event) => event.note));
   return (
     <section className="midi-roll" aria-label="Piano roll MIDI">
       <div className="midi-roll-head"><div><span className="section-label">ÉDITEUR MIDI</span><strong>Piano-roll Tape</strong></div><small>{events.length ? `${events.length} événements capturés` : "Aucune note capturée"}</small></div>
-      <div className="midi-roll-grid">{notes.map((note) => <div className="midi-roll-row" key={note}><span>{note === 60 ? "C4" : note}</span>{cells.map((cell) => { const active = activeNotes.has(note) && cell === 4; return <i className={active ? "is-note" : ""} key={`${note}-${cell}`} />; })}</div>)}</div>
+      <div className="midi-roll-grid">{notes.map((note) => <div className="midi-roll-row" key={note}><span>{note === 60 ? "C4" : note}</span>{cells.map((cell) => { const time = cell * 0.5; const active = events.some((event) => event.type === "note_on" && event.note === note && Math.abs(event.time - time) < 0.05); return <button type="button" aria-label={`${active ? "Supprimer" : "Ajouter"} la note ${note} à ${time.toFixed(1)} seconde`} className={active ? "is-note" : ""} onClick={() => onToggleNote(note, time)} key={`${note}-${cell}`} />; })}</div>)}</div>
       <div className="midi-roll-scale"><span>00:00</span><span>00:02</span><span>00:04</span><span>00:06</span></div>
     </section>
   );
@@ -149,10 +150,23 @@ function UsbAudioMonitor({ onNotice }: { onNotice: (message: string) => void }) 
   return <section className="usb-audio-panel"><div><span className="section-label">AUDIO MACHINE</span><strong>{active ? "Son OP-1 actif" : "Son OP-1 disponible"}</strong><small>{deviceLabel} · casque recommandé pour éviter le Larsen</small></div><button className={active ? "primary-action is-active" : "secondary-action"} onClick={toggle}><Icon name="wave" size={14} />{active ? "Couper l’audio" : "Écouter l’OP-1"}</button></section>;
 }
 
+function TrackGainControls({ tracks, gains, onChange }: { tracks: string[]; gains: Record<number, number>; onChange: (index: number, value: number) => void }) {
+  return <section className="track-gain-panel" aria-label="Gain des pistes"><div className="mod-section-heading"><div><span className="section-label">MIXAGE LOCAL</span><strong>Gain des quatre pistes</strong></div><small>Persisté dans le projet</small></div><div className="track-gain-grid">{tracks.map((track, index) => <label key={track}><span>{track}</span><input type="range" min="0" max="1" step="0.01" value={gains[index] ?? 1} onChange={(event) => onChange(index, Number(event.target.value))} /><output>{Math.round((gains[index] ?? 1) * 100)}%</output></label>)}</div></section>;
+}
+
+function TrackEditControls({ tracks, durations, clipEnds, fadeIns, fadeOuts, onChange }: { tracks: string[]; durations: Record<number, number>; clipEnds: Record<number, number>; fadeIns: Record<number, number>; fadeOuts: Record<number, number>; onChange: (kind: "end" | "fadeIn" | "fadeOut", index: number, value: number) => void }) {
+  return <section className="track-edit-panel" aria-label="Edition des clips"><div className="mod-section-heading"><div><span className="section-label">EDITION NON DESTRUCTIVE</span><strong>Trim et fondus</strong></div><small>Les sources restent intactes</small></div><div className="track-edit-grid">{tracks.map((track, index) => { const max = durations[index] && Number.isFinite(durations[index]) ? durations[index] : 360; const end = Math.min(clipEnds[index] ?? max, max); return <div className="track-edit-row" key={track}><strong>{track}</strong><label>Fin <input type="number" min="0.1" max={max || 360} step="0.1" value={Number(end.toFixed(1))} onChange={(event) => onChange("end", index, Number(event.target.value))} /><small>s</small></label><label>Fade in <input type="number" min="0" max="10" step="0.1" value={fadeIns[index] ?? 0} onChange={(event) => onChange("fadeIn", index, Number(event.target.value))} /><small>s</small></label><label>Fade out <input type="number" min="0" max="10" step="0.1" value={fadeOuts[index] ?? 0} onChange={(event) => onChange("fadeOut", index, Number(event.target.value))} /><small>s</small></label></div>; })}</div></section>;
+}
+
 function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: () => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   const [files, setFiles] = useState<Record<number, string>>({});
   const [sources, setSources] = useState<Record<number, string>>({});
+  const [durations, setDurations] = useState<Record<number, number>>({});
+  const [gains, setGains] = useState<Record<number, number>>({});
+  const [clipEnds, setClipEnds] = useState<Record<number, number>>({});
+  const [fadeIns, setFadeIns] = useState<Record<number, number>>({});
+  const [fadeOuts, setFadeOuts] = useState<Record<number, number>>({});
   const [muted, setMuted] = useState<Record<number, boolean>>({});
   const [solo, setSolo] = useState<number | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
@@ -169,9 +183,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const midiHandler = useRef<((event: { data: Uint8Array }) => void) | null>(null);
   const midiInputRef = useRef<MidiPortLike | null>(null);
   const midiStartRef = useRef(0);
+  const midiTimersRef = useRef<number[]>([]);
 
   function projectData() {
-    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: 360 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null } };
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null } };
   }
 
   function saveProject() {
@@ -181,7 +196,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }
 
   function loadProject(file: File) {
+    loadProjectState(file);
+    return;
     void file.text().then((text) => { try { const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; clips?: Array<{ source?: string }> }> }; if (project.schema !== "op1-studio-project" || project.tracks?.length !== 4) throw new Error("format"); setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); const nextFiles: Record<number, string> = {}; const nextMuted: Record<number, boolean> = {}; let nextSolo: number | null = null; project.tracks.forEach((track, index) => { const source = track.clips?.[0]?.source; if (source) nextFiles[index] = source; if (track.mute) nextMuted[index] = true; if (track.solo) nextSolo = index; }); setFiles(nextFiles); setMuted(nextMuted); setSolo(nextSolo); onNotice("Projet Studio chargé. Les sources audio doivent être re-sélectionnées si elles ont changé de dossier."); } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
+  }
+
+  function loadProjectState(file: File) {
+    void file.text().then((text) => { try {
+      const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; gain?: number; clips?: Array<{ source?: string; duration?: number; fade_in?: number; fade_out?: number }>; midi_events?: MidiEvent[] }> };
+      if (project.schema !== "op1-studio-project" || project.tracks?.length !== 4) throw new Error("format");
+      const nextFiles: Record<number, string> = {}; const nextDurations: Record<number, number> = {}; const nextEnds: Record<number, number> = {}; const nextFadeIns: Record<number, number> = {}; const nextFadeOuts: Record<number, number> = {}; const nextMuted: Record<number, boolean> = {}; const nextGains: Record<number, number> = {}; let nextSolo: number | null = null;
+      project.tracks.forEach((track, index) => { const clip = track.clips?.[0]; if (clip?.source) nextFiles[index] = clip.source; if (typeof clip?.duration === "number") { nextDurations[index] = clip.duration; nextEnds[index] = clip.duration; } if (typeof clip?.fade_in === "number") nextFadeIns[index] = clip.fade_in; if (typeof clip?.fade_out === "number") nextFadeOuts[index] = clip.fade_out; if (track.mute) nextMuted[index] = true; if (typeof track.gain === "number") nextGains[index] = Math.max(0, Math.min(1, track.gain)); if (track.solo) nextSolo = index; });
+      const events = project.tracks[0].midi_events ?? [];
+      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); setFiles(nextFiles); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé avec son mixage, ses clips et ses événements MIDI. Les sources audio doivent être re-sélectionnées si elles ont changé de dossier.");
+    } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
   }
 
   async function toggleMidiRecording() {
@@ -212,21 +240,59 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
 
   useEffect(() => {
+    Object.entries(audioRefs.current).forEach(([index, audio]) => { if (audio) audio.volume = gains[Number(index)] ?? 1; });
+  }, [gains]);
+
+  useEffect(() => {
     if (!transportPlaying) return;
-    const timer = window.setInterval(() => setTransportTime((time) => time >= 360 ? 0 : time + 0.1), 100);
-    return () => window.clearInterval(timer);
+    let frame = 0;
+    const process = () => {
+      Object.entries(audioRefs.current).forEach(([rawIndex, audio]) => { if (!audio) return; const index = Number(rawIndex); const end = clipEnds[index] ?? durations[index] ?? 360; const fadeIn = fadeIns[index] ?? 0; const fadeOut = fadeOuts[index] ?? 0; if (audio.currentTime >= end) { audio.pause(); audio.currentTime = end; } let level = gains[index] ?? 1; if (fadeIn > 0 && audio.currentTime < fadeIn) level *= audio.currentTime / fadeIn; if (fadeOut > 0 && audio.currentTime > end - fadeOut) level *= Math.max(0, (end - audio.currentTime) / fadeOut); audio.volume = Math.max(0, Math.min(1, level)); });
+      frame = window.requestAnimationFrame(process);
+    };
+    frame = window.requestAnimationFrame(process);
+    return () => window.cancelAnimationFrame(frame);
+  }, [clipEnds, durations, fadeIns, fadeOuts, gains, transportPlaying]);
+
+  useEffect(() => {
+    if (!transportPlaying) return;
+    let frame = 0;
+    const sync = () => {
+      const master = audioRefs.current[0] ?? Object.values(audioRefs.current).find((audio): audio is HTMLAudioElement => Boolean(audio));
+      if (master) setTransportTime(Math.min(360, master.currentTime));
+      frame = window.requestAnimationFrame(sync);
+    };
+    frame = window.requestAnimationFrame(sync);
+    return () => window.cancelAnimationFrame(frame);
   }, [transportPlaying]);
 
   function toggleGlobalPlayback() {
     if (transportPlaying) {
       Object.values(audioRefs.current).forEach((audio) => audio?.pause());
+      midiTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      midiTimersRef.current = [];
       setTransportPlaying(false);
       return;
     }
     const loaded = Object.values(audioRefs.current).filter((audio): audio is HTMLAudioElement => Boolean(audio));
-    if (!loaded.length) { onNotice("Chargez au moins une piste audio pour lancer la bande."); return; }
-    loaded.forEach((audio) => { audio.currentTime = transportTime; void audio.play(); });
+    if (!loaded.length && !midiEvents.length) { onNotice("Chargez une piste audio ou ajoutez des notes MIDI pour lancer la bande."); return; }
+    loaded.forEach((audio) => { audio.currentTime = transportTime < audio.duration ? transportTime : 0; void audio.play(); });
+    midiEvents.forEach((event) => {
+      const delay = Math.max(0, (event.time - transportTime) * 1000);
+      const timer = window.setTimeout(() => onSendMidi([event.type === "note_on" ? 0x90 : 0x80, event.note, event.type === "note_on" ? event.velocity : 0]), delay);
+      midiTimersRef.current.push(timer);
+    });
     setTransportPlaying(true);
+  }
+
+  function toggleRollNote(note: number, time: number) {
+    const existing = midiEvents.find((event) => event.type === "note_on" && event.note === note && Math.abs(event.time - time) < 0.05);
+    if (existing) {
+      setMidiEvents((current) => current.filter((event) => !(event.note === note && Math.abs(event.time - time) < 0.05)));
+      return;
+    }
+    const next = [...midiEvents, { type: "note_on" as const, note, velocity: 100, time }, { type: "note_off" as const, note, velocity: 0, time: time + 0.45 }];
+    setMidiEvents(next.sort((left, right) => left.time - right.time));
   }
 
   function seekTransport(time: number) {
@@ -256,12 +322,14 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       <TapeMachine />
       <CloneSurface onSendMidi={onSendMidi} onNotice={onNotice} />
       <UsbAudioMonitor onNotice={onNotice} />
+      <TrackGainControls tracks={tracks} gains={gains} onChange={(index, value) => setGains((current) => ({ ...current, [index]: value }))} />
+      <TrackEditControls tracks={tracks} durations={durations} clipEnds={clipEnds} fadeIns={fadeIns} fadeOuts={fadeOuts} onChange={(kind, index, value) => { if (kind === "end") setClipEnds((current) => ({ ...current, [index]: Math.max(0.1, value) })); if (kind === "fadeIn") setFadeIns((current) => ({ ...current, [index]: Math.max(0, value) })); if (kind === "fadeOut") setFadeOuts((current) => ({ ...current, [index]: Math.max(0, value) })); }} />
       <GlobalArrangement files={files} position={transportTime} playing={transportPlaying} onSeek={seekTransport} onTogglePlay={toggleGlobalPlayback} />
-      <MidiRoll events={midiEvents} />
+      <MidiRoll events={midiEvents} onToggleNote={toggleRollNote} />
       <div className="tape-editor-head"><div><span className="section-label">STUDIO OP-1</span><strong>Tape & Album · 4 pistes</strong><small>{studioMode === "clone" ? "Clone local · édition non destructive" : "OP-1 MIDI · machine utilisée comme contrôleur"}</small></div><span className="midi-badge"><i /> {studioMode === "clone" ? "CLONE" : "MIDI"}</span></div>
       <div className="studio-mode-tabs" role="tablist" aria-label="Mode du studio"><button className={studioMode === "clone" ? "is-active" : ""} onClick={() => setStudioMode("clone")}><Icon name="chip" size={15} />Clone OP-1</button><button className={studioMode === "midi" ? "is-active" : ""} onClick={async () => { setStudioMode("midi"); await onConnectMidi(); }}><Icon name="plug" size={15} />OP-1 MIDI</button></div>
       <div className="tape-toolbar"><div className="project-actions"><button className="secondary-action" onClick={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); onNotice("Nouveau projet Studio créé."); }}><Icon name="archive" />Nouveau projet</button><button className="secondary-action" onClick={() => projectInputRef.current?.click()}><Icon name="book" />Ouvrir</button><button className="secondary-action" onClick={saveProject}><Icon name="download" />Enregistrer</button><input ref={projectInputRef} className="visually-hidden" type="file" accept=".json,.op1studio.json,application/json" onChange={(event) => { const file = event.target.files?.[0]; if (file) loadProject(file); event.currentTarget.value = ""; }} /></div><label className="project-name"><span>Projet</span><input value={projectName} onChange={(event) => setProjectName(event.target.value)} /></label><span className="tape-timecode">00:00:00 / 06:00:00</span><button className="primary-action" onClick={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")}><Icon name="download" />Préparer l’import</button></div>
-      <div className="tape-track-list">{tracks.map((track, index) => { const isMuted = muted[index] === true || (solo !== null && solo !== index); return <div className={`tape-track${isMuted ? " is-muted" : ""}`} key={track}><div className="tape-track-label"><strong>{track}</strong><small>{files[index] ?? "Aucun fichier"}</small><label className="tape-file"><Icon name="download" size={13} />Charger<input type="file" accept="audio/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setFiles({ ...files, [index]: file.name }); setSources({ ...sources, [index]: URL.createObjectURL(file) }); onNotice(`${track} chargée localement.`); } }} /></label></div><div className="tape-waveform" aria-label={`Forme d’onde ${track}`}><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tape-track-actions"><button className="icon-action" aria-label={`Lire ${track}`} onClick={() => togglePlay(index)}><Icon name={playing === index ? "check" : "wave"} size={15} /></button><button className={`track-state ${solo === index ? "is-active" : ""}`} onClick={() => setSolo(solo === index ? null : index)}>S</button><button className={`track-state ${muted[index] ? "is-active" : ""}`} onClick={() => setMuted({ ...muted, [index]: !muted[index] })}>M</button></div>{sources[index] && <audio ref={(element) => { audioRefs.current[index] = element; }} src={sources[index]} muted={isMuted} onEnded={() => setPlaying(null)} />}</div>; })}</div>
+      <div className="tape-track-list">{tracks.map((track, index) => { const isMuted = muted[index] === true || (solo !== null && solo !== index); return <div className={`tape-track${isMuted ? " is-muted" : ""}`} key={track}><div className="tape-track-label"><strong>{track}</strong><small>{files[index] ?? "Aucun fichier"}</small><label className="tape-file"><Icon name="download" size={13} />Charger<input type="file" accept="audio/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setFiles({ ...files, [index]: file.name }); setSources({ ...sources, [index]: URL.createObjectURL(file) }); setDurations({ ...durations, [index]: 0 }); onNotice(`${track} chargée localement.`); } }} /></label></div><div className="tape-waveform" aria-label={`Forme d’onde ${track}`}><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><div className="tape-track-actions"><button className="icon-action" aria-label={`Lire ${track}`} onClick={() => togglePlay(index)}><Icon name={playing === index ? "check" : "wave"} size={15} /></button><button className={`track-state ${solo === index ? "is-active" : ""}`} onClick={() => setSolo(solo === index ? null : index)}>S</button><button className={`track-state ${muted[index] ? "is-active" : ""}`} onClick={() => setMuted({ ...muted, [index]: !muted[index] })}>M</button></div>{sources[index] && <audio ref={(element) => { audioRefs.current[index] = element; }} src={sources[index]} muted={isMuted} onLoadedMetadata={(event) => setDurations((current) => ({ ...current, [index]: event.currentTarget.duration }))} onEnded={() => { if (transportPlaying) setTransportPlaying(false); setPlaying(null); }} />}</div>; })}</div>
       <div className="tape-transport-panel"><button className="icon-action" aria-label="Lecture" onClick={() => onNotice("Lecture du projet Tape local.")}><Icon name="wave" size={15} /></button><button className={`icon-action ${recording ? "is-recording" : ""}`} aria-label="Enregistrement MIDI" onClick={toggleMidiRecording}><Icon name="check" size={15} /></button><button className={`track-state ${looping ? "is-active" : ""}`} onClick={() => setLooping(!looping)}>LOOP</button><label className="tempo-control">BPM <input type="number" min="40" max="200" value={tempo} onChange={(event) => setTempo(Number(event.target.value))} /></label><span><i /> {tempo} BPM · {recording ? `MIDI ENREGISTRE · ${midiNotes} notes` : studioMode === "midi" ? "OP-1 MIDI PRÊT" : "CLONE PRÊT"}</span><button className="secondary-action" onClick={onConnectMidi}><Icon name="plug" />Connecter MIDI</button></div>
       <div className="tape-import-note"><Icon name="shield" size={16} /><span><strong>Import sécurisé</strong><small>Le clone prépare les pistes dans `tape/`. La copie vers l’OP-1 viendra après sauvegarde, vérification et éjection contrôlée.</small></span></div>
     </div>

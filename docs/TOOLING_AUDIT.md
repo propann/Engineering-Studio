@@ -23,6 +23,9 @@
 | [`op1-decryptor`](https://github.com/sualk/op1-decryptor) | Non déclarée | Recherche sur le chiffrement de `OP1_vdk.ldr` | **Référence historique**, aucune clé ni extraction dans l'app |
 | [`op1dumps`](https://github.com/Tolsi/op1dumps) | Non déclarée | Dumps flash/ECC/OTP et réparation | **Exclu**, risque matériel critique |
 | [`op1.fun`](https://op1.fun/) | Service tiers | Bibliothèque communautaire et patch builder | **Lien/import manuel** ; pas de scraping ni dépendance au compte |
+| [`op1-patch-preview`](https://github.com/dustMason/op1-patch-preview) | À vérifier | Aperçu jouable de patches OP‑1 dans le navigateur | **Référence UI**, utile pour l'aperçu A/B audio de la Bibliothèque Sons |
+| [`finger` (sampi)](https://github.com/sampi/finger) | À vérifier | Recréation du séquenceur Finger OP‑1/OP‑Z en Web MIDI, mapping clavier musical → patterns | **Référence technique directe** pour le futur module Éducation / finger drumming |
+| [`op1emu`](https://github.com/op1emu) | Recherche/expérimental | Émulateur logiciel OP‑1 en construction (recompilateur JIT Blackfin, `bcore`) | **Veille uniquement** ; trop tôt pour intégrer, question légale sur la ROM firmware source, aucune redistribution possible |
 
 ## Étude exécutée sur un firmware réel
 

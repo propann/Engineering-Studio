@@ -22,7 +22,8 @@ liste de dependances a installer automatiquement.
 | [TOP-1](https://github.com/AlbertSmit/TOP-1) | Clone inspire de l'OP-1, surtout Linux/Raspberry Pi, pas un pilote OP-1. | Reference pour audio, sequencer et architecture MIDI. |
 | [op1kenobi](https://github.com/alexmandelshtam/op1kenobi) | Simulateur visuel, pas une connexion materielle. | Reference UI et tests sans machine. |
 | [op1REpackerGUI](https://github.com/epixjava/op1REpackerGUI) | Wrapper graphique du moteur firmware. | Comparer les parcours UX, sans doubler notre editeur integre. |
-| [alesya-h/op1](https://github.com/alesya-h/op1) | Surface de controle Ableton Live. | Etudier les mappings MIDI pour les exercices et le transport. |
+| [marctdt/op-1-ableton-live-control-surface](https://github.com/marctdt/op-1-ableton-live-control-surface) | Fork communautaire actif ; le depot officiel `teenageengineering/op-1-ableton-live-control-surface` est archive et redirige vers celui-ci. | Etudier les mappings MIDI pour les exercices et le transport. |
+| [sampi/finger](https://github.com/sampi/finger) | Recreation du sequenceur Finger OP-1/OP-Z en Web MIDI API, demo sur `finger.sampi.io`. | Reference technique directe pour le module Education / finger drumming. |
 | [op1tools](https://github.com/blattm/op1tools) | Scripts USB/Linux, utiles mais hors cible Windows actuelle. | Reprendre uniquement les operations de preview et inventaire. |
 
 ## Non confirmes dans cette passe

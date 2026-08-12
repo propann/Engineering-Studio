@@ -48,6 +48,8 @@ flowchart LR
 | Tape | Quatre pistes synchronisées, lecture, export | Oui |
 | Firmware | Version, catalogue officiel, assistant TE‑boot | Oui |
 | Studio | Arrangement de quatre stems et rendu compatible | Après le socle |
+| Exercices & Éducation | Disposition clavier configurable, finger drumming avec retour, apprentissage de morceaux (import MIDI) | Après le socle Studio |
+| Documentation | Guide utilisateur français simplifié, FAQ, aide contextuelle | Première version (partielle) |
 | Labo expert | Inspection/repack de firmware tiers | Expérimental, opt-in |
 | Synchronisation | Historique distant, synchronisation et partage privé | Extension optionnelle |
 
