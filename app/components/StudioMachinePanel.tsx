@@ -351,9 +351,6 @@ export function StudioMachinePanel({
                     fontSize={.55} fill="#5a5e5a" fontFamily="monospace" fontWeight="700">
                     {name}
                   </text>
-                  {/* Pastille couleur OP-1 */}
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h-.5}
-                    r={.3} fill={["#698EFF","#00ED95","#DFD9FF","#FF3A5D"][i%4]} opacity={.9} />
                 </g>
               );
             })}
@@ -378,8 +375,6 @@ export function StudioMachinePanel({
                     r={Math.min(b.w, b.h)*.32}
                     fill={isDown?"#333":"#0a0a0a"}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h-.45}
-                    r={.22} fill={["#698EFF","#00ED95","#DFD9FF","#FF3A5D"][i%4]} />
                 </g>
               );
             })}
@@ -434,8 +429,7 @@ export function StudioMachinePanel({
                 <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
                   rx={.3} fill="#cececb" stroke="#a0a3a0" strokeWidth={.07}/>
                 <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
-                  r={Math.min(b.w,b.h)*.3} fill="#0a0a0a"/>
-                <circle cx={b.col+b.w/2} cy={b.row+b.h-.45} r={.22} fill="#00ED95"/>
+                  r={Math.min(b.w,b.h)*.3} fill="#00ED95"/>
               </g>
             ))}
 
@@ -447,8 +441,7 @@ export function StudioMachinePanel({
                 <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
                   rx={.3} fill="#cececb" stroke="#a0a3a0" strokeWidth={.07}/>
                 <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
-                  r={Math.min(b.w,b.h)*.28} fill="#0a0a0a"/>
-                <circle cx={b.col+b.w/2} cy={b.row+b.h-.45} r={.22} fill="#FF3A5D"/>
+                  r={Math.min(b.w,b.h)*.28} fill="#FF3A5D"/>
               </g>
             ))}
 
