@@ -60,10 +60,11 @@ Images a ete retire apres validation de cette integration.
   documentee et `op1svg` avant tout export ; il ne devient pas un importeur
   libre de fichiers tiers.
 - **Outils prioritaires** : `op1aiff` pour inspecter les AIFF en lecture seule
-  dans Sons et `op1svg` pour valider les SVG avant patch. `teoperator` reste
-  une fixture de comparaison ; les autres outils restent des references. Les
-  deux outils ne sont pas encore presents dans le depot/registres installes :
-  leur ajout passe d'abord par un audit de licence, version et commande.
+  dans Sons et `op1svg` pour valider les SVG avant patch. Les replis locaux
+  `tools/aiff_inspector.py` et `tools/svg_preflight.py` sont maintenant livres
+  et testes ; les upstream restent des sidecars optionnels, non executes par
+  l'application. `teoperator` reste une fixture de comparaison ; les autres
+  outils restent des references.
 - **Profil utilisateur** : `profile.json` local, sans compte ni reseau, pour le
   pseudo, les machines nommees, le coffre, les marqueurs de partage et les
   preferences. Il reference `DeviceIdentity` et `BackupManifest` sans les

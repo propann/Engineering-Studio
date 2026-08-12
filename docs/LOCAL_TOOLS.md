@@ -162,6 +162,17 @@ applique les limites 6 s / 12 s et produit `MANIFESTE_SAMPLES.json`. Avec
 FFmpeg installe, il convertit les sources en AIFF mono 44,1 kHz / 16 bits sans
 modifier les originaux.
 
+### Preflight AIFF et SVG
+
+`tools/aiff_inspector.py` inspecte un fichier AIFF en lecture seule : format,
+hash SHA-256, metadonnees audio, liste des chunks et chunks inconnus. Il sert
+de compatibilite avec `op1aiff` sans installer ni executer ce sidecar externe.
+
+`tools/svg_preflight.py` controle un SVG avant toute edition ou export : XML,
+`viewBox` 320x160, balises a risque, styles et nombres trop precis. Un statut
+`review` bloque l'idee d'un export automatique ; ce controle ne modifie jamais
+le fichier source et reste le repli local de `op1svg`.
+
 ```powershell
 python tools/sample_preflight.py "C:\chemin\vers\samples" --check-only
 python tools/sample_preflight.py "C:\chemin\vers\samples" --output "backups\sample-preflight"
