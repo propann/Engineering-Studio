@@ -88,12 +88,22 @@ export function StudioMachinePanel({
   // La grille complete le clavier et reste visible a l'ouverture.
   const [editOpen, setEditOpen]   = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
+  const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
+  const [savedNotice, setSavedNotice] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
   // ── Sauvegarde auto ───────────────────────────────────────────────────────
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, validated })); } catch {}
   }, [cells, validated]);
+
+  function saveKeyboard() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, validated }));
+      setSavedNotice(true);
+      window.setTimeout(() => setSavedNotice(false), 1400);
+    } catch {}
+  }
 
   // ── Éditeur : peinture ────────────────────────────────────────────────────
   function cellAt(e: React.MouseEvent | MouseEvent): [number,number] | null {
@@ -143,7 +153,12 @@ export function StudioMachinePanel({
       if (e.key >= "1" && e.key <= "5") setColorIdx(Number(e.key)-1);
       // E efface la zone en cours sans changer le mode de peinture.
       if (e.key === "e" || e.key === "E") {
-        setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
+        if (selectedBlock !== null) {
+          setValidated((current) => current.filter((_, index) => index !== selectedBlock));
+          setSelectedBlock(null);
+        } else {
+          setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
+        }
         setErasing(false);
       }
       if (e.key === "Delete" || e.key === "Backspace") {
@@ -153,7 +168,7 @@ export function StudioMachinePanel({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cells, colorIdx, editOpen]);
+  }, [cells, colorIdx, editOpen, selectedBlock]);
 
   // ── Interface interactive : note mapping ──────────────────────────────────
   const [pressed, setPressed] = useState<Set<number>>(new Set());
@@ -208,6 +223,9 @@ export function StudioMachinePanel({
             <button className={`mgrid-tool${showGrid?" is-active":""}`} onClick={() => setShowGrid(v=>!v)}>
               {showGrid ? "grille ON" : "grille OFF"}
             </button>
+            <button className="mgrid-tool" onClick={saveKeyboard}>
+              {savedNotice ? "clavier sauvegardé" : "sauvegarder clavier"}
+            </button>
             <span className="mgrid-hint">Espace : valider · E : effacer · Suppr : tout effacer · 1-5 : couleur</span>
           </>
         )}
@@ -229,7 +247,7 @@ export function StudioMachinePanel({
         <div className="machine-grid-zone">
           <svg ref={svgRef} viewBox={`0 0 ${COLS} ${ROWS}`} preserveAspectRatio="none"
             style={{ width:"100%", height:"100%", display:"block", cursor: erasing ? "cell" : "crosshair" }}
-            onMouseDown={e => { setPainting(true); paint(e); }}
+            onMouseDown={e => { setSelectedBlock(null); setPainting(true); paint(e); }}
             onMouseMove={e => { if (painting) paint(e); }}
             onMouseUp={() => setPainting(false)}
             onMouseLeave={() => setPainting(false)}
@@ -237,7 +255,10 @@ export function StudioMachinePanel({
             {/* Blocs validés */}
             {validated.map((v,i) => (
               <rect key={i} x={v.col+.05} y={v.row+.05} width={v.w-.1} height={v.h-.1}
-                fill={v.color+"55"} stroke={v.color} strokeWidth={.07} rx={.2} />
+                fill={v.color+"55"} stroke={selectedBlock === i ? "#fff" : v.color}
+                strokeWidth={selectedBlock === i ? .16 : .07} rx={.2}
+                onPointerDown={(e) => { e.stopPropagation(); setSelectedBlock(i); }}
+                aria-label={`Sélectionner ${v.type}`} />
             ))}
             {/* Peinture en cours */}
             {cells.map((row,r) => row.map((c,col) => c ? (
