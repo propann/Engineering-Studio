@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
+import { HomeHub } from "./components/HomeHub";
 import { SoundControlsPanel } from "./components/SoundControlsPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 
@@ -618,6 +619,7 @@ export default function Home() {
   const [backupTested, setBackupTested] = useState(false);
   const [libraryFolder, setLibraryFolder] = useState<string | null>(null);
   const [toolWindow, setToolWindow] = useState<ToolWindow>(null);
+  const [homeOpen, setHomeOpen] = useState(true);
   const [exerciseRunning, setExerciseRunning] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
   const [firmwareOptions, setFirmwareOptions] = useState({
@@ -772,11 +774,14 @@ export default function Home() {
           <aside className="sidebar">
             <nav aria-label="Navigation principale">
               <p className="nav-label">CONTRÔLE</p>
+              <button className={`nav-item ${homeOpen ? "active" : ""}`} onClick={() => { setHomeOpen(true); setToolWindow(null); }}>
+                <Icon name="archive" /><span>Accueil</span>
+              </button>
               {nav.map((item) => (
                 <button
                   key={item.label}
                   className={item.active ? "nav-item active" : "nav-item"}
-                  onClick={() => !item.active && (item.label === "Sauvegardes" ? setToolWindow("backups") : item.label === "Sons" ? setToolWindow("sounds") : item.label === "Studio" ? setToolWindow("tape") : setNotice(`${item.label} arrive après le socle firmware.`))}
+                  onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else setToolWindow("editor"); }}
                 >
                   <Icon name={item.icon} />
                   <span>{item.label}</span>
@@ -787,10 +792,10 @@ export default function Home() {
 
             <div className="sidebar-spacer" />
 
-            <button className="nav-item" onClick={() => setToolWindow("docs")}>
+            <button className="nav-item" onClick={() => { setHomeOpen(false); setToolWindow("docs"); }}>
               <Icon name="book" /><span>Documentation</span>
             </button>
-            <button className="nav-item" onClick={() => setToolWindow("exercise")}>
+            <button className="nav-item" onClick={() => { setHomeOpen(false); setToolWindow("exercise"); }}>
               <Icon name="wave" /><span>Exercices MIDI</span>
             </button>
             <button className="nav-item" onClick={() => setNotice("Les réglages restent locaux dans la version de base.")}>
@@ -799,7 +804,7 @@ export default function Home() {
 
           </aside>
 
-          <div className="content">
+          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); setToolWindow(id as ToolWindow); }} /> : <div className="content">
             <div className="page-heading">
               <div>
                 <span className="eyebrow"><Icon name="shield" size={16} /> FIRMWARE / CENTRE DE CONTRÔLE</span>
@@ -865,7 +870,7 @@ export default function Home() {
               <div className="mod-section inline-mods"><div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>{["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}</div>
             </section>
 
-          </div>
+          </div>}
         </div>
       </section>
 
