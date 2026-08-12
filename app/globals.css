@@ -752,6 +752,8 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   cursor: pointer;
 }
 .mgrid-tool.is-active { background: #3a1515; border-color: #FF3A5D88; color: #FF3A5D; }
+.mgrid-clear-tool { color: #d97979; border-color: #5a2c2c; }
+.mgrid-clear-tool:hover { background: #3a1515; border-color: #FF3A5D88; color: #FF3A5D; }
 .mgrid-hint { font: 9px var(--font-geist-mono), monospace; color: #3a5050; margin-left: 4px; }
 .mgrid-legend { order: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 5px 10px; background: #0d1213; border-bottom: 1px solid #0e1515; }
 .mgrid-legend-item { display: inline-flex; align-items: center; gap: 4px; color: #78918b; font: 700 8px var(--font-geist-mono), monospace; white-space: nowrap; }

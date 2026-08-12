@@ -105,6 +105,12 @@ export function StudioMachinePanel({
     } catch {}
   }
 
+  function clearKeyboard() {
+    setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
+    setValidated([]);
+    setSelectedBlock(null);
+  }
+
   // ── Éditeur : peinture ────────────────────────────────────────────────────
   function cellAt(e: React.MouseEvent | MouseEvent): [number,number] | null {
     const svg = svgRef.current;
@@ -162,8 +168,13 @@ export function StudioMachinePanel({
         setErasing(false);
       }
       if (e.key === "Delete" || e.key === "Backspace") {
-        setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
-        setValidated([]);
+        e.preventDefault();
+        if (selectedBlock !== null) {
+          setValidated((current) => current.filter((_, index) => index !== selectedBlock));
+          setSelectedBlock(null);
+        } else {
+          setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
+        }
       }
     }
     window.addEventListener("keydown", onKey);
@@ -226,7 +237,10 @@ export function StudioMachinePanel({
             <button className="mgrid-tool" onClick={saveKeyboard}>
               {savedNotice ? "clavier sauvegardé" : "sauvegarder clavier"}
             </button>
-            <span className="mgrid-hint">Espace : valider · E : effacer · Suppr : tout effacer · 1-5 : couleur</span>
+            <button className="mgrid-tool mgrid-clear-tool" onClick={clearKeyboard}>
+              nettoyer la page
+            </button>
+            <span className="mgrid-hint">Espace : valider · E / Suppr : touche sélectionnée · 1-5 : couleur</span>
           </>
         )}
       </div>
