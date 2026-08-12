@@ -21,6 +21,7 @@ fichier `.partial` restant.
 ## Fonctionne reellement
 
 - Firmware : moteur `op1repacker` vendored, bridge de build par copie temporaire, mods selectionnes, manifeste SHA-256 et validation CRC/TAR/LZMA.
+- Editeur d'images machine : `tools/display_bridge.py` deballe en lecture seule, trie les 61 SVG `content/display/` par categorie documentee (confiance haute/moyenne/basse selon la source) et ecrit un manifeste. L'ecran "Images" charge ces SVG localement, permet une edition non destructive et exporte un patch JSON compatible `op1_gfx.patch_image_file` ; aucune ecriture firmware automatique.
 - Audio : FFmpeg, preflight WAV/AIFF, classement synth/drum, limites de duree et conversion mono 44,1 kHz / 16 bits.
 - Patches : `op-patch-util` 1.1.0 et bridge synth/drum securise.
 - Tape : bridge quatre pistes, conversion six minutes maximum, manifeste et sortie separee `tape/`.

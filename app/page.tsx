@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
+import { ToolWindowTabs } from "./components/ToolWindowTabs";
 
 type IconName =
   | "chip"
@@ -15,9 +16,10 @@ type IconName =
   | "lock"
   | "terminal"
   | "plug"
-  | "book";
+  | "book"
+  | "image";
 
-type ToolWindow = "exercise" | "docs" | "editor" | "backups" | "sounds" | "tape" | null;
+type ToolWindow = "exercise" | "docs" | "editor" | "backups" | "sounds" | "tape" | "display" | null;
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -33,12 +35,176 @@ function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     terminal: <><path d="m5 7 4 5-4 5M11 17h8"/></>,
     plug: <><path d="M9 2v6m6-6v6M7 8h10v3a5 5 0 0 1-5 5v5"/></>,
     book: <><path d="M4 4h6a2 2 0 0 1 2 2v15a3 3 0 0 0-3-3H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v15a3 3 0 0 1 3-3h5z"/></>,
+    image: <><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 3 3 4-5 4 5"/></>,
   };
 
   return (
     <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       {paths[name]}
     </svg>
+  );
+}
+
+// Categorie/confiance : miroir volontaire de CATEGORY_MAP dans tools/display_bridge.py.
+// Toute modification de la logique de tri doit rester cohérente des deux côtés.
+type DisplayConfidence = "high" | "medium" | "low";
+const DISPLAY_CATEGORY_MAP: Record<string, [string, DisplayConfidence, string]> = {
+  tape: ["tape", "high", "Guide officiel, chapitre tape-mode."],
+  tapeconfig: ["tape", "high", "Déjà documenté dans FIRMWARE_MOD_CATALOG.md."],
+  mixer: ["tape", "high", "Fiche produit : « 4 channel mixer » de la fonction Tape."],
+  album: ["album", "high", "Guide officiel, chapitre song-rendering-and-connectivity."],
+  com: ["connectivite", "high", "Repère « album/com » du guide layout officiel."],
+  help: ["aide", "high", "Guide officiel, chapitre help."],
+  tempo: ["tempo", "high", "Guide officiel, chapitre tempo."],
+  clock: ["sequenceurs", "medium", "Associé au tempo/horloge, non nommé explicitement par TE."],
+  octave: ["clavier", "high", "Guide officiel, ancre musical-keyboard#3.2 (octave shift)."],
+  endless: ["sequenceurs", "high", "Nommé « Endless sequencer » dans OP1_KNOWLEDGE_BASE.md."],
+  pattern: ["sequenceurs", "medium", "Séquenceur pattern, cohérent avec le guide sequencers."],
+  playmode: ["modes_principaux", "high", "Déjà documenté dans FIRMWARE_MOD_CATALOG.md."],
+  rymd: ["modes_principaux", "medium", "Déjà utilisé comme mod vérifié, nom d’écran non confirmé par TE."],
+  delay: ["effets", "high", "Fiche produit : « seven high quality effects »."],
+  eq: ["effets", "high", "Fiche produit : effets + fonction mixer/EQ Tape."],
+  master: ["effets", "high", "OP1_KNOWLEDGE_BASE.md : traitements master de l’Album."],
+  singlelfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  duallfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  rndlfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  bendlfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  cranklfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  midilfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  reroutelfo: ["lfo", "high", "Fiche produit : « multiple routable lfo's »."],
+  iter: ["moteurs_sonores", "high", "data/mods/catalog.json : synthé Iter vérifié."],
+  fm: ["moteurs_sonores", "medium", "Moteur FM, cohérent avec les treize moteurs annoncés."],
+  sampler: ["moteurs_sonores", "medium", "OP-1 documenté comme synthétiseur ET sampler."],
+  presetbrowser: ["navigation_presets", "medium", "Nom explicite du fichier, pas de page TE dédiée."],
+  save: ["interface_generique", "low", "Chrome d’interface générique, sens probable mais non confirmé."],
+  ok: ["interface_generique", "low", "Chrome d’interface générique, sens probable mais non confirmé."],
+  cls: ["interface_generique", "low", "Codename interne, sens non confirmé."],
+};
+const DISPLAY_DEFAULT_CATEGORY: [string, DisplayConfidence, string] = ["non_identifie", "low", "Codename interne du firmware, aucune source externe ne le confirme."];
+const DISPLAY_CATEGORY_LABELS: Record<string, string> = {
+  tape: "Tape", album: "Album", connectivite: "Connectivité", aide: "Aide", tempo: "Tempo",
+  sequenceurs: "Séquenceurs", clavier: "Clavier", modes_principaux: "Modes principaux",
+  effets: "Effets", lfo: "LFO", moteurs_sonores: "Moteurs sonores", navigation_presets: "Navigation presets",
+  interface_generique: "Interface générique", non_identifie: "Non identifié",
+};
+const DISPLAY_CATEGORY_ORDER = ["tape", "album", "connectivite", "aide", "tempo", "sequenceurs", "clavier", "modes_principaux", "effets", "lfo", "moteurs_sonores", "navigation_presets", "interface_generique", "non_identifie"];
+
+function categorizeDisplayAsset(fileName: string) {
+  const stem = fileName.replace(/\.svg$/i, "").toLowerCase();
+  const [category, confidence, note] = DISPLAY_CATEGORY_MAP[stem] ?? DISPLAY_DEFAULT_CATEGORY;
+  return { category, confidence, note };
+}
+
+// Doit produire exactement le meme contrat que build_patch() dans tools/display_bridge.py,
+// pour rester compatible avec op1_gfx.patch_image_file côté Python.
+function pyRegexEscape(text: string) {
+  return text.replace(/[.^$*+?()[\]{}|\\]/g, "\\$&");
+}
+function buildDisplayPatch(file: string, original: string, edited: string) {
+  return { file, changes: [{ type: "substitute", find: pyRegexEscape(original), replace: edited.replace(/\\/g, "\\\\") }] };
+}
+
+type DisplayAsset = { file: string; category: string; confidence: DisplayConfidence; note: string; original: string; edited: string };
+
+function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
+  const [assets, setAssets] = useState<DisplayAsset[]>([]);
+  const [activeFile, setActiveFile] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function loadFiles(files: FileList) {
+    const svgFiles = Array.from(files).filter((file) => file.name.toLowerCase().endsWith(".svg"));
+    if (!svgFiles.length) { onNotice("Aucun fichier .svg dans la sélection."); return; }
+    const loaded = await Promise.all(svgFiles.map(async (file) => {
+      const text = await file.text();
+      const { category, confidence, note } = categorizeDisplayAsset(file.name);
+      return { file: file.name, category, confidence, note, original: text, edited: text } as DisplayAsset;
+    }));
+    setAssets((current) => {
+      const byName = new Map(current.map((asset) => [asset.file, asset]));
+      loaded.forEach((asset) => byName.set(asset.file, asset));
+      return [...byName.values()];
+    });
+    onNotice(`${loaded.length} écran${loaded.length > 1 ? "s" : ""} chargé${loaded.length > 1 ? "s" : ""} localement, triés par catégorie.`);
+  }
+
+  const active = assets.find((asset) => asset.file === activeFile) ?? null;
+  const grouped = DISPLAY_CATEGORY_ORDER
+    .map((category) => ({ category, items: assets.filter((asset) => asset.category === category) }))
+    .filter((group) => group.items.length > 0);
+
+  function updateActiveEdit(text: string) {
+    if (!activeFile) return;
+    setAssets((current) => current.map((asset) => (asset.file === activeFile ? { ...asset, edited: text } : asset)));
+  }
+
+  function resetActiveEdit() {
+    if (!activeFile) return;
+    setAssets((current) => current.map((asset) => (asset.file === activeFile ? { ...asset, edited: asset.original } : asset)));
+    onNotice("Écran remis dans son état d’origine.");
+  }
+
+  function exportPatch() {
+    if (!active) return;
+    if (active.edited === active.original) { onNotice("Rien à exporter : modifiez le SVG avant de générer un patch."); return; }
+    const patch = buildDisplayPatch(active.file, active.original, active.edited);
+    const blob = new Blob([JSON.stringify(patch, null, 4)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${active.file.replace(/\.svg$/i, "")}.patch.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    onNotice("Patch JSON exporté. Il s’applique avec tools/display_bridge.py ou op1_gfx.patch_image_file, jamais directement sur l’OP-1.");
+  }
+
+  return (
+    <div className="tool-body display-editor">
+      <div className="display-editor-intro">
+        <Icon name="shield" size={16} />
+        <p>
+          Ces écrans viennent d’un firmware officiel déballé en local avec <code>python tools/display_bridge.py sort --input votre_firmware.op1 --output-dir backups/display-sorted</code>.
+          Rien n’est stocké dans le dépôt Git. Chargez ici les fichiers <code>.svg</code> obtenus (dossier <code>backups/display-sorted/</code>) pour les prévisualiser, les modifier et exporter un patch — jamais pour écrire directement sur la machine.
+        </p>
+      </div>
+
+      <div className="display-loader">
+        <button className="secondary-action" onClick={() => fileInputRef.current?.click()}><Icon name="download" size={14} />Charger des écrans .svg</button>
+        <input ref={fileInputRef} className="visually-hidden" type="file" accept=".svg" multiple onChange={(event) => { const files = event.target.files; if (files?.length) void loadFiles(files); event.currentTarget.value = ""; }} />
+        <small>{assets.length ? `${assets.length} écran${assets.length > 1 ? "s" : ""} en mémoire, sur cet appareil uniquement.` : "Aucun écran chargé pour l’instant."}</small>
+      </div>
+
+      {grouped.length > 0 && (
+        <div className="display-groups">
+          {grouped.map((group) => (
+            <div className="display-category" key={group.category}>
+              <h3>{DISPLAY_CATEGORY_LABELS[group.category]}<small>{group.items.length}</small></h3>
+              <div className="display-grid">
+                {group.items.map((asset) => (
+                  <button type="button" key={asset.file} className={`display-card ${activeFile === asset.file ? "is-active" : ""} ${asset.edited !== asset.original ? "is-edited" : ""}`} onClick={() => setActiveFile(asset.file)}>
+                    <span className="display-card-preview" dangerouslySetInnerHTML={{ __html: asset.edited }} />
+                    <span className="display-card-meta"><strong>{asset.file}</strong><em className={`confidence-badge confidence-${asset.confidence}`}>{asset.confidence === "high" ? "confirmé" : asset.confidence === "medium" ? "probable" : "non confirmé"}</em></span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {active && (
+        <section className="display-edit-panel" aria-label={`Édition de ${active.file}`}>
+          <div className="mod-section-heading"><div><span className="section-label">{DISPLAY_CATEGORY_LABELS[active.category].toUpperCase()}</span><strong>{active.file}</strong></div><small>{active.note}</small></div>
+          <div className="display-edit-columns">
+            <textarea className="display-edit-textarea" value={active.edited} onChange={(event) => updateActiveEdit(event.target.value)} spellCheck={false} aria-label="Code SVG éditable" />
+            <div className="display-edit-preview" aria-label="Aperçu en direct" dangerouslySetInnerHTML={{ __html: active.edited }} />
+          </div>
+          <div className="editor-footer">
+            <span>{active.edited === active.original ? "Aucune modification" : "Modifié localement, pas encore exporté"}</span>
+            <button className="secondary-action" onClick={resetActiveEdit} disabled={active.edited === active.original}><Icon name="terminal" size={14} />Réinitialiser</button>
+            <button className="primary-action" onClick={exportPatch} disabled={active.edited === active.original}><Icon name="download" size={14} />Exporter le patch JSON</button>
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 
@@ -758,21 +924,20 @@ export default function Home() {
             <div className="tool-window-header">
               <div>
                 <span className="section-label">OP-1 STUDIO / OUTIL</span>
-                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "docs" ? "Documentation rapide" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
+                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "docs" ? "Documentation rapide" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "tape" ? "Studio · Tape & Album" : toolWindow === "display" ? "Éditeur d’images machine" : "Éditeur firmware"}</h2>
               </div>
               <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
             </div>
 
-            <nav className="tool-window-tabs" aria-label="Outils OP-1 Studio">
-              {[
+            <ToolWindowTabs tabs={[
                 ["editor", "Firmware", "chip"],
+                ["display", "Images", "image"],
                 ["backups", "Sauvegardes", "archive"],
                 ["sounds", "Sons", "wave"],
                 ["tape", "Studio", "tape"],
                 ["exercise", "Exercices", "settings"],
                 ["docs", "Documentation", "book"],
-              ].map(([id, label, icon]) => <button key={id} type="button" aria-current={toolWindow === id ? "page" : undefined} className={toolWindow === id ? "is-active" : ""} onClick={() => setToolWindow(id as ToolWindow)}><Icon name={icon as IconName} size={14} />{label}</button>)}
-            </nav>
+              ].map(([id, label, icon]) => ({ id, label, icon: <Icon name={icon as IconName} size={14} /> }))} activeId={toolWindow ?? ""} onSelect={(id) => setToolWindow(id as ToolWindow)} />
 
             {toolWindow === "exercise" && (
               <div className="tool-body">
@@ -818,6 +983,8 @@ export default function Home() {
                 <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
               </div>
             )}
+
+            {toolWindow === "display" && <DisplayEditor onNotice={setNotice} />}
 
             {toolWindow === "backups" && (
               <div className="tool-body">

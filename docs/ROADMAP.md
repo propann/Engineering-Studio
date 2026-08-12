@@ -45,7 +45,11 @@ officiel reste à terminer dans le bridge local.
 - matrice de tests Windows/macOS/Linux puis hardware-in-loop ;
 - validation matérielle réalisée : deux snapshots de 67 fichiers, dernier
   snapshot de 282529116 octets, manifeste SHA-256 relu avec succès, sans
-  écriture sur l'OP-1.
+  écriture sur l'OP-1 ;
+- éditeur d'images machine livré (`tools/display_bridge.py` + écran
+  « Images ») : tri des 61 SVG `content/display/` par catégorie documentée
+  et édition non destructive via patch JSON, voir
+  [`LOCAL_TOOLS.md`](LOCAL_TOOLS.md#editeur-dimages-machine).
 
 **Sortie :** une alpha qui guide une mise à jour officielle et refuse toute précondition ambiguë.
 

@@ -21,7 +21,7 @@ OP-1 Studio a confirmé à chaque fois le CRC, le flux LZMA, l'archive TAR et le
 | P2 | Tape invert | lisibilité | vérifié en labo | contrôlé |
 | P2 | Iter Lab / Lost Art | identité visuelle | Iter Lab vérifié, Lost Art partiel | contrôlé |
 | P2 | CWO moose/cat/dog/wizard | personnalisation | variants vérifiés séparément | contrôlé |
-| P2 | Glitter / SVG personnalisé | thèmes complets | candidat sidecar | contrôlé/élevé |
+| P2 | Glitter / SVG personnalisé | thèmes complets | candidat sidecar ; voir [`op1hacks/op1-glitter`](https://github.com/op1hacks/op1-glitter) et [`FIRMWARE_MOD_RESOURCES.md`](FIRMWARE_MOD_RESOURCES.md) pour le mécanisme et la palette réelle | contrôlé/élevé |
 | P3 | moteur compilé supplémentaire | comportement inédit | aucune preuve reproductible | critique |
 | P3 | flash/OTP/ECC/bootloader | recherche matérielle | exclu | rouge |
 

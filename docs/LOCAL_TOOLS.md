@@ -38,6 +38,34 @@ produit un nouveau `.op1`, ecrit un manifeste SHA-256 et confirme
 python tools/firmware_bridge.py --input "C:\chemin\op1_246.op1" --options iter presets-iter filter subtle-fx gfx-iter-lab gfx-cwo-moose gfx-tape-invert
 ```
 
+## Editeur d'images machine
+
+`tools/display_bridge.py` deballe un `.op1` en lecture seule (copie
+temporaire, jamais le fichier source), liste les 61 SVG de
+`content/display/` et les trie par categorie documentee avec un niveau de
+confiance (`high` = confirme par une page officielle teenage.engineering ou
+notre propre `data/mods/catalog.json`, `medium` = concept documente mais nom
+d'ecran non confirme, `low`/`non_identifie` = codename interne sans source
+externe) :
+
+```powershell
+python tools/display_bridge.py sort --input backups/firmware-builds/OP1_op1_246_mods.op1 --output-dir backups/display-sorted
+```
+
+Le manifeste `backups/display-sorted/manifest.json` et les SVG tries restent
+hors du depot (`backups/` est ignore par Git). L'ecran "Images" de
+l'application charge ensuite ces fichiers `.svg` localement (bouton "Charger
+des ecrans .svg"), les regroupe par categorie, permet une edition non
+destructive du code SVG avec apercu en direct, et exporte un patch JSON au
+format lu par `op1_gfx.patch_image_file` — le meme moteur que les mods
+`gfx-cwo-moose` et `gfx-tape-invert` deja references par `firmware_bridge.py`.
+Aucune ecriture n'est faite dans le firmware depuis le navigateur ; le patch
+exporte doit encore etre applique localement :
+
+```powershell
+python tools/display_bridge.py patch --file tapeconfig.svg --original original.svg --edited edite.svg --output tapeconfig.patch.json
+```
+
 ## Outils a integrer ensuite
 
 - `opie` : backup et restauration complete, a relier a la fenetre Sauvegardes.
