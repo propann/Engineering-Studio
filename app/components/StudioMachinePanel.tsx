@@ -213,6 +213,17 @@ export function StudioMachinePanel({
         )}
       </div>
 
+      {panelOpen && editOpen && (
+        <div className="mgrid-legend" aria-label="Légende des couleurs MIDI">
+          {PALETTE.map((p) => (
+            <span key={p.type} className="mgrid-legend-item">
+              <i style={{ background: p.color }} aria-hidden="true" />
+              {p.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Éditeur (replié par défaut) */}
       {panelOpen && editOpen && (
         <div className="machine-grid-zone">

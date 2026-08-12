@@ -132,3 +132,9 @@ dans `.cache/firmware/`, également ignoré.
 - [`OP-1Z-Sample-Manager`](https://github.com/romangarms/OP-1Z-Sample-Manager)
 - [`op1.fun`](https://op1.fun/)
 - [Firmware OP-1 officiel](https://teenage.engineering/downloads/op-1/original)
+### Legende des types MIDI
+
+Dans l'editeur de clavier, chaque couleur construit un type de controle :
+blanc = note blanche, orange = note noire, bleu = potentiometre, vert = bouton,
+rouge = transport. La legende visible reprend la meme palette que le moteur de
+validation et les blocs sauvegardes.
