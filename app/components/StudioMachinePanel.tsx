@@ -10,7 +10,6 @@
  *   #FF3A5D  rouge   → transport / spécial
  */
 import { useEffect, useRef, useState } from "react";
-import { LegacyKeyboardPanel } from "./LegacyKeyboardPanel";
 
 // ── Grille éditeur ────────────────────────────────────────────────────────────
 const COLS = 64;
@@ -82,13 +81,14 @@ export function StudioMachinePanel({
   );
   // localStorage is read again after browser hydration.
   const [validated, setValidated] = useState<Block[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [painting, setPainting]   = useState(false);
   const [colorIdx, setColorIdx]   = useState(0);
   const [erasing, setErasing]     = useState(false);
   // La grille est le plan de construction du clavier MIDI.
   const [showGrid, setShowGrid]   = useState(true);
-  // L'editeur peut rester range sans demonter le clavier construit.
-  const [editOpen, setEditOpen]   = useState(false);
+  // L'editeur est de nouveau disponible pour modifier le clavier construit.
+  const [editOpen, setEditOpen]   = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -98,9 +98,17 @@ export function StudioMachinePanel({
   // The hidden editor must not overwrite the saved keyboard with an empty state.
   useEffect(() => {
     const state = loadState();
-    const timer = window.setTimeout(() => setValidated(state?.validated ?? []), 0);
+    const timer = window.setTimeout(() => {
+      setValidated(state?.validated ?? []);
+      setHydrated(true);
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!editOpen || !hydrated) return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, validated })); } catch {}
+  }, [cells, validated, editOpen, hydrated]);
 
   function saveKeyboard() {
     try {
@@ -305,7 +313,7 @@ export function StudioMachinePanel({
 
       {/* ── Interface interactive — plein écran ── */}
       {panelOpen && (
-        validated.length === 0 ? <LegacyKeyboardPanel onSendMidi={onSendMidi} /> : <div className="machine-layout-zone">
+        <div className="machine-layout-zone">
           <svg viewBox={`0 0 ${COLS} ${ROWS}`} preserveAspectRatio="none"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
