@@ -1,0 +1,18 @@
+[package]
+name = "op1-studio"
+version = "0.1.0"
+description = "Application locale de gestion de l'OP-1 original"
+authors = ["OP-1 Studio contributors"]
+edition = "2021"
+rust-version = "1.77"
+build = "build.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2", features = [] }
+
+[lints.rust]
+unsafe_code = "forbid"

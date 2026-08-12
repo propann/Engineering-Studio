@@ -21,7 +21,8 @@ Parcours expérimental, désactivé par défaut. Il peut inspecter ou préparer 
 - version et modèle confirmés par l’utilisateur ;
 - TE‑boot ouvert sur la fonction de mise à jour, pas sur reset/format ;
 - volume cible reconnu sans ambiguïté ;
-- aucun autre volume portant un nom ressemblant utilisé par défaut.
+- aucun autre volume portant un nom ressemblant utilisé par défaut ;
+- copie manuelle confirmée par l’utilisateur.
 
 ## Validations du fichier
 
@@ -41,6 +42,13 @@ Le catalogue initial laisse le SHA‑256 vide tant qu’un processus de publicat
 
 Cette implémentation Python sert d’oracle de compatibilité pour le futur cœur Rust/Tauri. Elle n’écrit pas sur la machine et ne repacke pas le firmware.
 
+Deux commandes de référence complètent cet inspecteur :
+
+- [`tools/firmware_fetch.py`](../tools/firmware_fetch.py) vérifie l’hôte officiel, bloque les redirections externes, limite la taille, valide le conteneur et ne remplace le fichier final qu’après contrôle ;
+- [`tools/backup_manifest.py`](../tools/backup_manifest.py) copie un volume explicitement fourni vers un coffre séparé, refuse les liens symboliques et vérifie chaque fichier avec SHA‑256.
+
+Ces scripts sont des oracles de comportement pour le futur cœur Rust. Ils ne détectent pas encore automatiquement un périphérique, ne montent pas un volume et ne lancent pas l’installation du firmware.
+
 ## Déroulement
 
 ```mermaid
@@ -49,8 +57,8 @@ stateDiagram-v2
     BackupRequired --> FileValidated: sauvegarde vérifiée
     FileValidated --> BootModeRequired: fichier officiel valide
     BootModeRequired --> Ready: volume TE-boot confirmé
-    Ready --> Copied: copie + sync
-    Copied --> Ejected: éjection OS réussie
+    Ready --> UserCopy: l’utilisateur copie le .op1
+    UserCopy --> Ejected: l’utilisateur éjecte
     Ejected --> UserAction: demander COM
     UserAction --> [*]: fin confirmée par l’utilisateur
 ```
@@ -61,6 +69,8 @@ L’application s’arrête avant chaque transition si la machine est déconnect
 
 - déclencher une réinitialisation usine ou un formatage ;
 - couper l’alimentation ou redémarrer automatiquement la machine ;
+- copier automatiquement un firmware sur le volume TE‑boot dans le parcours
+  normal ;
 - supprimer le firmware précédent du stockage interne ;
 - modifier silencieusement un firmware officiel ;
 - choisir une version sur la seule base d’un nom de fichier ;
@@ -81,7 +91,7 @@ L’application s’arrête avant chaque transition si la machine est déconnect
 
 ## Labo expert et `op1repacker`
 
-`op1repacker` et son interface graphique sont sous licence MIT et savent décompresser/recompresser ou modifier certaines versions de firmware. Ils avertissent qu’un firmware modifié peut annuler la garantie ou rendre l’appareil inutilisable.
+`op1repacker` et son interface graphique sont sous licence MIT et savent décompresser/recompresser ou modifier certaines versions de firmware. Ils avertissent qu’un firmware modifié peut annuler la garantie ou rendre l’appareil inutilisable. La version auditée utilise une extraction TAR non protégée contre les chemins dangereux et ne doit donc pas devenir le moteur d’ouverture de fichiers téléchargés par l’application.
 
 Conditions minimales avant une éventuelle intégration :
 
@@ -91,7 +101,14 @@ Conditions minimales avant une éventuelle intégration :
 - aucune clé ou protection embarquée dans OP‑1 Studio ;
 - résultat marqué `UNOFFICIAL-MODIFIED` dans l’interface et dans le journal ;
 - aucun bouton « installer » dans le même écran ;
+- copie finale effectuée manuellement par l’utilisateur dans TE‑boot ;
 - tests sur fichiers de démonstration légalement redistribuables.
+
+Le catalogue des possibilités et de leur niveau de preuve est maintenu dans
+[`FIRMWARE_MOD_CATALOG.md`](FIRMWARE_MOD_CATALOG.md). Il sépare les mods de
+base SQLite et SVG vérifiés sur l'OS 246 des patchs binaires communautaires et
+des recherches flash/OTP qui restent hors produit. Les variantes graphiques
+CWO sont exclusives : chaque test repart d'une copie propre.
 
 ## Réponse aux incidents
 
