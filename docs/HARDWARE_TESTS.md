@@ -42,9 +42,10 @@ La machine a ete rebranchee en mode normal pendant le test de
 audio `Haut-parleurs (OP-1)` et les ports MIDI `OP-1 [2]` et `OP-1 [3]`.
 Le serveur local repond `HTTP 200`.
 
-L'autorisation Web MIDI et la capture note-on/note-off restent a verifier dans
-Chrome ou Edge : aucun navigateur automatisable n'est disponible dans cet
-environnement.
+L'ouverture de Studio lance maintenant une tentative de détection silencieuse ;
+le bouton MIDI reste une relance manuelle. L'autorisation Web MIDI et la
+capture note-on/note-off restent à vérifier dans Chrome ou Edge : aucun
+navigateur automatisable n'est disponible dans cet environnement.
 
 ## Mode normal detecte
 

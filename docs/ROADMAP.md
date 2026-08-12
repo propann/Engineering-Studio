@@ -25,7 +25,7 @@ Le projet a trois niveaux de maturite :
 | Sauvegardes | backup/verify/plan/execute/restore livres ; plan UI borne ; delete/restore valide sur hardware | bridge natif + ejection |
 | Bibliotheque Sons | preflight, patches CLI, grille 24 pads, index UI et plan UI borne livres | pre-ecoute fichier et transfert natif |
 | Studio | projet v1, mixage, fades, piano-roll, stems, Album, trim focalise et refs sources livres | reconnexion automatique et import UI |
-| MIDI/audio | detection Windows, capture MIDI et decodeur note-on/note-off isole | sortie live et essai OP-1 dans Chrome/Edge |
+| MIDI/audio | detection Windows, capture MIDI et auto-detection silencieuse dans Studio | sortie live et essai OP-1 dans Chrome/Edge |
 | Education | fenetre prototype | exercices notes/timing/progression |
 | Distribution | dev server et build web | Tauri, installation et permissions |
 

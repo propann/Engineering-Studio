@@ -344,7 +344,7 @@ function WaveformOverview({ tracks, peaks }: { tracks: string[]; peaks: Record<n
   return <section className="waveform-overview" aria-label="Formes d&apos;onde audio calculees"><div className="mod-section-heading"><div><span className="section-label">ANALYSE AUDIO</span><strong>Formes d&apos;onde réelles</strong></div><small>24 points par piste</small></div><div className="waveform-overview-grid">{tracks.map((track, index) => <div className="waveform-overview-row" key={track}><span>{track}</span><div>{(peaks[index] ?? Array.from({ length: 24 }, () => 0)).map((peak, peakIndex) => <i key={`${index}-${peakIndex}`} style={{ height: `${Math.max(4, peak * 100)}%` }} />)}</div></div>)}</div></section>;
 }
 
-function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: () => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
+function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   const [files, setFiles] = useState<Record<number, string>>({});
   const [sources, setSources] = useState<Record<number, string>>({});
@@ -373,6 +373,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const midiInputRef = useRef<MidiInputLike | null>(null);
   const midiStartRef = useRef(0);
   const midiTimersRef = useRef<number[]>([]);
+  const autoMidiAttemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoMidiAttemptedRef.current) return;
+    autoMidiAttemptedRef.current = true;
+    void onConnectMidi({ silent: true });
+  }, [onConnectMidi]);
 
   useEffect(() => {
     let cancelled = false;
@@ -711,10 +718,10 @@ export default function Home() {
     return entries;
   }, [stage]);
 
-  async function connectMidiDevice() {
+  async function connectMidiDevice(options: { silent?: boolean } = {}) {
     const requestMIDIAccess = (navigator as MidiNavigator).requestMIDIAccess;
     if (!requestMIDIAccess) {
-      setNotice("Ce navigateur ne propose pas Web MIDI. Utilisez Chrome ou Edge en local pour connecter l’OP-1.");
+      if (!options.silent) setNotice("Ce navigateur ne propose pas Web MIDI. Utilisez Chrome ou Edge en local pour connecter l’OP-1.");
       return false;
     }
 
@@ -723,17 +730,17 @@ export default function Home() {
       const input = [...midi.inputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
       const output = [...midi.outputs.values()].find((port) => port.name?.toUpperCase().includes("OP-1"));
       if (!input) {
-        setNotice("Aucune entrée MIDI OP-1 détectée. Vérifiez le câble USB et le mode MIDI de la machine.");
+        if (!options.silent) setNotice("Aucune entrée MIDI OP-1 détectée. Vérifiez le câble USB et le mode MIDI de la machine.");
         return false;
       }
       setDeviceName(input.name ?? "OP-1");
       midiOutputRef.current = output ?? null;
       setMidiConnected(true);
       setStage(2);
-      setNotice(`OP-1 détecté par MIDI${output ? " en entrée et sortie" : " en entrée seulement"}.`);
+      if (!options.silent) setNotice(`OP-1 détecté par MIDI${output ? " en entrée et sortie" : " en entrée seulement"}.`);
       return true;
     } catch {
-      setNotice("L’accès MIDI a été refusé. Autorisez l’accès au port OP-1 dans le navigateur puis réessayez.");
+      if (!options.silent) setNotice("L’accès MIDI a été refusé. Autorisez l’accès au port OP-1 dans le navigateur puis réessayez.");
       return false;
     }
   }
