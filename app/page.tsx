@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
+import { decodeMidiNote } from "./lib/midi";
 import { DEFAULT_PROFILE, parseProfile, serializeProfile, type LocalProfile } from "./lib/profile";
 import { HomeHub } from "./components/HomeHub";
 import { FirmwareSubtabs } from "./components/FirmwareSubtabs";
@@ -426,7 +427,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     setMidiNotes(0);
     setMidiEvents([]);
     midiStartRef.current = performance.now();
-    const handler = (event: MIDIMessageEvent) => { const data = event.data; if (!data || data.length < 3) return; const status = data[0] & 0xf0; const isOn = status === 0x90 && data[2] > 0; const isOff = status === 0x80 || (status === 0x90 && data[2] === 0); if (!isOn && !isOff) return; if (isOn) setMidiNotes((count) => count + 1); setMidiEvents((current) => [...current, { type: isOn ? "note_on" : "note_off", note: data[1], velocity: data[2], time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
+    const handler = (event: MIDIMessageEvent) => { const message = decodeMidiNote(event.data); if (!message) return; if (message.type === "note_on") setMidiNotes((count) => count + 1); setMidiEvents((current) => [...current, { ...message, time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
     midiHandler.current = handler;
     midiInputRef.current = input;
     input.onmidimessage = handler;
