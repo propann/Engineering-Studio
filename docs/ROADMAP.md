@@ -97,9 +97,9 @@ encore etre imposee par l'UI/coeur natif.
 - **M4.5 Education** : prototype de fenetre seulement ; progression et
   verification de performance restent a construire.
 - **M4.6 Visuel** : onglets, Escape et accessibilite de base livres ; le
-  premier composant (`SoundControlsPanel`) est extrait de `app/page.tsx` sans
-  changement de rendu. Le hub d'accueil par modules est maintenant livre ; le
-  decoupage des autres ecrans de `app/page.tsx` reste a poursuivre.
+  `SoundControlsPanel`, `FirmwareSubtabs` et `LocalProfilePanel` sont extraits
+  de `app/page.tsx` sans changement de rendu. Le hub d'accueil par modules est
+  maintenant livre ; le decoupage des autres ecrans reste a poursuivre.
 
 Le projet dispose aujourd'hui d'un prototype fonctionnel et de bridges locaux
 testés pour firmware, samples, patches et préparation Tape. Les écrans sont
