@@ -230,7 +230,11 @@ export function StudioMachinePanel({
   // disponible sans modifier les blocs sauvegardes.
   const layoutMinX = validated.length ? Math.max(0, Math.min(...validated.map((b) => b.col)) - 1) : 0;
   const layoutMaxX = validated.length ? Math.min(COLS, Math.max(...validated.map((b) => b.col + b.w)) + 1) : COLS;
-  const layoutViewBox = `${layoutMinX} 0 ${Math.max(1, layoutMaxX - layoutMinX)} ${ROWS}`;
+  const layoutMinY = validated.length ? Math.max(0, Math.min(...validated.map((b) => b.row)) - 1) : 0;
+  const layoutMaxY = validated.length ? Math.min(ROWS, Math.max(...validated.map((b) => b.row + b.h)) + 1) : ROWS;
+  const layoutWidth = Math.max(1, layoutMaxX - layoutMinX);
+  const layoutHeight = Math.max(1, layoutMaxY - layoutMinY);
+  const layoutViewBox = `${layoutMinX} ${layoutMinY} ${layoutWidth} ${layoutHeight}`;
 
   function noteOn(note: number) {
     setPressed(s => new Set(s).add(note));
@@ -341,7 +345,7 @@ export function StudioMachinePanel({
 
       {/* ── Interface interactive — plein écran ── */}
       {panelOpen && (
-        <div className="machine-layout-zone" style={{ aspectRatio: `${Math.max(1, layoutMaxX - layoutMinX)} / ${ROWS}` }}>
+        <div className="machine-layout-zone" style={{ aspectRatio: `${layoutWidth} / ${layoutHeight}` }}>
           <svg viewBox={layoutViewBox} preserveAspectRatio="xMidYMid meet"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
