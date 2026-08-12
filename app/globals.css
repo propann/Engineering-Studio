@@ -12,6 +12,9 @@
   --orange: #f26c38;
   --red: #e3473f;
   --screen: #171a1e;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --shadow-panel: 0 3px 12px rgba(25,28,30,.04);
 }
 
 * { box-sizing: border-box; }
@@ -256,9 +259,16 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .modal > button { min-height: 39px; margin-top: 10px; padding: 0 16px; color: white; background: #262a2d; border: 0; border-radius: 5px; cursor: pointer; font-size: 11px; }
 
 .tool-window { width: 100%; height: 100%; overflow: auto; color: var(--ink); background: var(--surface); border: 0; border-radius: 0; box-shadow: none; }
-.tool-window-header { position: sticky; top: 0; z-index: 2; padding: 18px 24px 15px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--soft-line); background: #f0f1ef; }
+.tool-window-header { position: sticky; top: 0; z-index: 3; padding: 18px 24px 14px; display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--soft-line); background: #f0f1ef; }
 .tool-window-header h2 { margin: 8px 0 0; font-size: 24px; letter-spacing: -.035em; }
-.window-close { width: 29px; height: 29px; color: #707578; background: #e1e3e0; border: 1px solid #c9ccca; border-radius: 5px; cursor: pointer; font-size: 19px; line-height: 1; }
+.tool-window-actions { display: flex; align-items: center; gap: 14px; }
+.tool-window-status { display: inline-flex; align-items: center; gap: 7px; color: #697174; font: 700 8px/1 var(--font-geist-mono), monospace; letter-spacing: .08em; text-transform: uppercase; }
+.tool-window-status i { width: 7px; height: 7px; background: var(--green); border-radius: 50%; box-shadow: 0 0 0 2px #d5eee4; }
+.window-close { width: 29px; height: 29px; color: #707578; background: #e1e3e0; border: 1px solid #c9ccca; border-radius: var(--radius-control); cursor: pointer; font-size: 19px; line-height: 1; }
+.tool-window-tabs { position: sticky; top: 83px; z-index: 2; min-height: 48px; padding: 7px 24px; display: flex; align-items: center; gap: 6px; overflow-x: auto; background: #e7e9e6; border-bottom: 1px solid #d1d4d1; }
+.tool-window-tabs button { min-height: 33px; padding: 0 11px; display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; color: #6b7274; background: transparent; border: 1px solid transparent; border-radius: var(--radius-control); cursor: pointer; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.tool-window-tabs button:hover { color: var(--ink); background: rgba(255,255,255,.65); }
+.tool-window-tabs button.is-active { color: #202629; background: #fff; border-color: #cbd0cd; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 .tool-body { padding: 21px 22px 23px; }
 .tool-window .tool-body { max-width: 1160px; margin: 0 auto; padding: 26px 30px 34px; }
 .exercise-toolbar { display: flex; gap: 13px; flex-wrap: wrap; }

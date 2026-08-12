@@ -28,7 +28,7 @@ fichier `.partial` restant.
 - Studio audio : quatre pistes, transport commun, position audio maitre, gain, trim de fin, fade-in et fade-out non destructifs.
 - MIDI : detection Web MIDI OP-1, entree/sortie identifiees, capture temporelle note-on/note-off, piano-roll editable et relecture MIDI programmee.
 - Clone : clavier ordinateur, touches visuelles, synthese locale de secours, sortie MIDI OP-1 et ecoute audio USB quand le navigateur expose l'interface.
-- Interface : fenetres de travail larges pour Firmware, Sauvegardes, Bibliotheque Sons, Studio et Exercices MIDI.
+- Interface : fenetres de travail larges et barre d'outils persistante pour Firmware, Sauvegardes, Bibliotheque Sons, Studio, Exercices et Documentation.
 
 ## Reste a construire
 

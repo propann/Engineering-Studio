@@ -751,6 +751,17 @@ export default function Home() {
               <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
             </div>
 
+            <nav className="tool-window-tabs" aria-label="Outils OP-1 Studio">
+              {[
+                ["editor", "Firmware", "chip"],
+                ["backups", "Sauvegardes", "archive"],
+                ["sounds", "Sons", "wave"],
+                ["tape", "Studio", "tape"],
+                ["exercise", "Exercices", "settings"],
+                ["docs", "Documentation", "book"],
+              ].map(([id, label, icon]) => <button key={id} type="button" className={toolWindow === id ? "is-active" : ""} onClick={() => setToolWindow(id as ToolWindow)}><Icon name={icon as IconName} size={14} />{label}</button>)}
+            </nav>
+
             {toolWindow === "exercise" && (
               <div className="tool-body">
                 <div className="exercise-toolbar">
