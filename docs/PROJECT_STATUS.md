@@ -20,7 +20,7 @@ Etat verifie le 12 aout 2026.
 - sauvegarde et restauration machine passent encore par des messages de statut ;
 - edition avancee du piano-roll ;
 - rechargement des sources audio depuis leurs chemins locaux ;
-- export final Tape/Album et transfert machine ;
+- emballage Album, transfert machine et écriture finale dans `tape/` ;
 - Safe Change Engine : identification du volume, hash apres copie et ejection native ;
 - module Exercices complet avec progression et import MIDI.
 

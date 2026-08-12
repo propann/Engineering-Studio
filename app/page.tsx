@@ -342,6 +342,19 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     } catch { onNotice("Le rendu WAV a échoué. Vérifiez les sources audio locales et réessayez."); }
   }
 
+  async function exportTapeStems() {
+    const entries = Object.entries(sources).filter(([, source]) => Boolean(source));
+    if (!entries.length) { onNotice("Chargez au moins une piste avant l'export Tape."); return; }
+    try {
+      const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const soloed = solo !== null;
+      for (const { index, buffer } of decoded) {
+        if (muted[index] || (soloed && solo !== index)) continue;
+        const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const offline = new OfflineAudioContext(2, Math.ceil(end * sampleRate), sampleRate); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); const rendered = await offline.startRendering(); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToWav(rendered)); link.download = `track_${index + 1}.wav`; link.click(); URL.revokeObjectURL(link.href); await new Promise((resolve) => window.setTimeout(resolve, 120));
+      }
+      onNotice("Stems Tape exportés : quatre fichiers WAV séparés, prêts pour validation.");
+    } catch { onNotice("L'export Tape a échoué. Vérifiez les fichiers audio locaux."); }
+  }
+
   function seekTransport(time: number) {
     setTransportTime(time);
     Object.values(audioRefs.current).forEach((audio) => { if (audio) audio.currentTime = time; });
@@ -374,6 +387,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       <GlobalArrangement files={files} position={transportTime} playing={transportPlaying} onSeek={seekTransport} onTogglePlay={toggleGlobalPlayback} />
       <WaveformOverview tracks={tracks} peaks={waveformPeaks} />
       <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV offline</button><small>Mixe les pistes locales avec le gain, le trim et les fades actuels.</small></div>
+      <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Exporter les stems Tape</button><small>Produit un WAV par piste pour la préparation du dossier tape.</small></div>
       <MidiRoll events={midiEvents} onToggleNote={toggleRollNote} />
       <div className="tape-editor-head"><div><span className="section-label">STUDIO OP-1</span><strong>Tape & Album · 4 pistes</strong><small>{studioMode === "clone" ? "Clone local · édition non destructive" : "OP-1 MIDI · machine utilisée comme contrôleur"}</small></div><span className="midi-badge"><i /> {studioMode === "clone" ? "CLONE" : "MIDI"}</span></div>
       <div className="studio-mode-tabs" role="tablist" aria-label="Mode du studio"><button className={studioMode === "clone" ? "is-active" : ""} onClick={() => setStudioMode("clone")}><Icon name="chip" size={15} />Clone OP-1</button><button className={studioMode === "midi" ? "is-active" : ""} onClick={async () => { setStudioMode("midi"); await onConnectMidi(); }}><Icon name="plug" size={15} />OP-1 MIDI</button></div>
