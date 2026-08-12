@@ -653,7 +653,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .settings-row select, .settings-row input[type="number"] { padding: 3px 6px; background: #111a1a; border: 1px solid #1e2a2a; border-radius: 3px; color: #8ab0a8; font: 9px var(--font-geist-mono), monospace; }
 
 /* ── Clone machine OP-1 ─────────────────────────────────────────────────── */
-.studio-machine-panel { border-top: 1px solid #0e1515; background: #090d0e; }
+.studio-machine-panel { border-top: 1px solid #d7ddd8; background: #ffffff; }
 
 /* Le clavier construit est le mode d'utilisation courant. L'editeur reste
    conserve dans le composant pour une future fenetre de maintenance, mais
@@ -662,7 +662,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 
 /* Le clavier clone reste au-dessus de l'editeur de touches MIDI. */
 .studio-machine-panel { display: flex; flex-direction: column; }
-.studio-machine-panel { min-width: 0; }
+.studio-machine-panel { min-width: 0; margin-top: 4px; margin-bottom: 6px; }
 .studio-machine-panel > .mpanel-bar { order: 1; }
 .studio-machine-panel > .machine-layout-zone { order: 2; }
 .studio-machine-panel > .machine-grid-zone { order: 3; }
@@ -727,7 +727,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   flex: 1;
   min-height: 0;
   aspect-ratio: 64 / 16;
-  background: #181c1d;
+  background: #ffffff;
 }
 
 /* Barre contrôle panneau */

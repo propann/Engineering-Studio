@@ -61,6 +61,7 @@ function loadState(): { cells: (string|null)[][]; validated: Block[] } | null {
 
 export function StudioMachinePanel({
   mode = "clone",
+  pressedNotes = [],
   onTogglePlayback,
   onSendMidi,
 }: {
@@ -210,7 +211,13 @@ export function StudioMachinePanel({
   }, [cells, colorIdx, editOpen, selectedBlock]);
 
   // ── Interface interactive : note mapping ──────────────────────────────────
-  const [pressed, setPressed] = useState<Set<number>>(new Set());
+  const [pressed, setPressed] = useState<Set<number>>(new Set(pressedNotes));
+
+  // Reflète les notes reçues de l'OP-1 sur le clavier construit.
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPressed(new Set(pressedNotes)), 0);
+    return () => window.clearTimeout(timer);
+  }, [pressedNotes]);
 
   // Trie les blocs par position x pour assigner les notes dans l'ordre
   const whiteBlocks = [...validated.filter(b => b.type === "white")].sort((a,b) => a.col - b.col);
@@ -351,7 +358,7 @@ export function StudioMachinePanel({
             }}
           >
             {/* Fond */}
-            <rect x={0} y={0} width={COLS} height={ROWS} fill="#181c1d" />
+            <rect x={0} y={0} width={COLS} height={ROWS} fill="#ffffff" />
 
             {/* ── Touches blanches ── */}
             {whiteBlocks.map((b, i) => {
