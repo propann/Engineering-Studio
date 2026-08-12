@@ -329,6 +329,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .backup-root { margin-bottom: 16px; display: flex; flex-direction: column; gap: 7px; }
 .backup-root input { min-height: 34px; padding: 0 9px; color: var(--ink); background: #fff; border: 1px solid #cbd0cd; border-radius: 5px; font: 11px var(--font-geist-mono), monospace; }
 .backup-root small { color: #83898b; font-size: 10px; line-height: 1.4; }
+.local-profile-panel { margin-bottom: 14px; padding: 13px 14px; background: #f1f4f0; border: 1px solid #d1dbd2; border-radius: 7px; }.local-profile-panel .mod-section-heading { margin-bottom: 10px; }.local-profile-panel label { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; gap: 10px; margin-top: 7px; color: #66736b; font: 9px var(--font-geist-mono), monospace; }.local-profile-panel input { min-height: 30px; padding: 0 8px; color: #33413a; background: #fff; border: 1px solid #cbd5cd; border-radius: 4px; font: 10px var(--font-geist-mono), monospace; }
 .backup-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 .secondary-action { min-height: 35px; padding: 0 11px; display: inline-flex; align-items: center; gap: 7px; color: #4c5558; background: #fff; border: 1px solid #c4c9c7; border-radius: 5px; cursor: pointer; font-size: 10px; font-weight: 650; }
 .secondary-action:hover { background: #f0f3f1; }

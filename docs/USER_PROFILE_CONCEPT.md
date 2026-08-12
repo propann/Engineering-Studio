@@ -61,6 +61,11 @@ machines », actuellement rangé côté Studio Cloud).
 
 ## Où ça vit tant qu'il n'y a pas de compte
 
+Le contrat TypeScript de la première tranche est dans `app/lib/profile.ts`.
+L'interface web utilise temporairement `localStorage` comme fallback ; le
+bridge Tauri remplacera ce stockage par le fichier `profile.json` du coffre
+sans changer le schéma public.
+
 Un seul fichier local, cohérent avec la section « Stockage de configuration »
 de `ARCHITECTURE.md` (préférences : configuration applicative native, sans
 secret) :

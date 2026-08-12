@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
+import { DEFAULT_PROFILE, parseProfile, serializeProfile, type LocalProfile } from "./lib/profile";
 import { HomeHub } from "./components/HomeHub";
 import { SoundPadGrid } from "./components/SoundPadGrid";
 import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
@@ -653,8 +654,18 @@ export default function Home() {
   const [selectedMod, setSelectedMod] = useState<FirmwareMod | null>(null);
   const [soundPackReady, setSoundPackReady] = useState(false);
   const [backupRoot, setBackupRoot] = useState("backups/");
+  const [profile, setProfile] = useState<LocalProfile>(() => {
+    if (typeof window === "undefined") return DEFAULT_PROFILE;
+    const stored = window.localStorage.getItem("op1-studio-profile");
+    return stored ? parseProfile(stored) : DEFAULT_PROFILE;
+  });
   const folderInputRef = useRef<HTMLInputElement>(null);
   const midiOutputRef = useRef<MidiPortLike | null>(null);
+
+  function updateProfile(next: LocalProfile) {
+    setProfile(next);
+    window.localStorage.setItem("op1-studio-profile", serializeProfile(next));
+  }
 
   useEffect(() => {
     if (!toolWindow && !selectedMod && !expertOpen) return;
@@ -996,6 +1007,7 @@ export default function Home() {
             {toolWindow === "backups" && (
               <div className="tool-body">
                 <label className="backup-root"><span className="section-label">DOSSIER RACINE</span><input value={backupRoot} onChange={(event) => setBackupRoot(event.target.value)} /><small>Sous-dossiers : machine, firmware, time-capsule-pistes et exports. La Time Capsule contient uniquement Tape et Album.</small></label>
+                <section className="local-profile-panel" aria-labelledby="local-profile-title"><div className="mod-section-heading"><div><span className="section-label">PROFIL LOCAL</span><strong id="local-profile-title">Votre atelier</strong></div><small>Sans compte · hors ligne</small></div><label><span>Pseudo d’affichage</span><input value={profile.pseudo} onChange={(event) => updateProfile({ ...profile, pseudo: event.target.value })} /></label><label><span>Nom de la machine</span><input value={profile.machines[0]?.name ?? ""} placeholder="Mon OP-1" onChange={(event) => updateProfile({ ...profile, machines: [{ ...(profile.machines[0] ?? {}), name: event.target.value }] })} /></label></section>
                 <div className="backup-summary">
                   <span className="backup-check"><Icon name="check" size={19} /></span>
                   <div><span className="section-label">DERNIÈRE SAUVEGARDE</span><strong>OP-1 · 12 août 2026 à 01:04</strong><small>Vérifiée · 65 fichiers · 269,44 Mo</small></div>

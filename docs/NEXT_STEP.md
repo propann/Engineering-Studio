@@ -27,7 +27,7 @@ Ordre de travail confirme :
 1. decouper les autres ecrans de `app/page.tsx` sans toucher aux invariants DisplayEditor ;
 2. brancher le preflight AIFF/SVG en lecture seule via `op1aiff` et `op1svg` apres audit d'installation ;
 3. construire le createur de dessin original dans Firmware > Graphismes ;
-4. definir et persister le `profile.json` local, sans compte ni synchronisation ;
+4. brancher le `profile.json` natif du coffre sur le contrat local deja livre ;
 5. connecter le contrat de bridge a l'execution native sans flash automatique ;
 6. persister les sources Studio et reconnecter les fichiers locaux ;
 7. reprendre les tests MIDI/audio dans Chrome ou Edge.
