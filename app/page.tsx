@@ -13,6 +13,7 @@ import { ExercisePanel } from "./components/ExercisePanel";
 import { BackupPanel } from "./components/BackupPanel";
 import { SoundsPanel } from "./components/SoundsPanel";
 import { StudioModeHeader } from "./components/StudioModeHeader";
+import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
 import { StudioTrackList } from "./components/StudioTrackList";
 import { StudioTransportPanel } from "./components/StudioTransportPanel";
@@ -264,15 +265,15 @@ function MidiRoll({ events, onToggleNote }: { events: MidiEvent[]; onToggleNote:
   );
 }
 
-function GlobalArrangement({ files, position, playing, onSeek, onTogglePlay }: { files: Record<number, string>; position: number; playing: boolean; onSeek: (time: number) => void; onTogglePlay: () => void }) {
+function GlobalArrangement({ files, offsets, position, playing, onSeek, onMoveClip, onTogglePlay }: { files: Record<number, string>; offsets: Record<number, number>; position: number; playing: boolean; onSeek: (time: number) => void; onMoveClip: (index: number, time: number) => void; onTogglePlay: () => void }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   return (
     <section className="global-arrangement" aria-label="Vue globale de la bande">
       <div className="global-arrangement-head"><div><span className="section-label">VUE GLOBALE</span><strong>Partition Tape · 6 minutes</strong><small>Les quatre pistes restent alignées sur le même transport.</small></div><button className="primary-action" onClick={onTogglePlay}><Icon name={playing ? "check" : "wave"} size={15} />{playing ? "Arrêter" : "Lecture globale"}</button></div>
       <div className="arrangement-ruler"><span>00:00</span><span>01:00</span><span>02:00</span><span>03:00</span><span>04:00</span><span>05:00</span><span>06:00</span></div>
-      <div className="arrangement-body" onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); onSeek(Math.max(0, Math.min(360, ((event.clientX - rect.left) / rect.width) * 360))); }}>
+      <div className="arrangement-body" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const index = Number(event.dataTransfer.getData("text/plain")); if (!Number.isInteger(index)) return; const rect = event.currentTarget.getBoundingClientRect(); onMoveClip(index, Math.max(0, Math.min(360, ((event.clientX - rect.left) / rect.width) * 360))); }} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); onSeek(Math.max(0, Math.min(360, ((event.clientX - rect.left) / rect.width) * 360))); }}>
         <div className="arrangement-playhead" style={{ left: `${(position / 360) * 100}%` }} />
-        {tracks.map((track, index) => <div className="arrangement-row" key={track}><span>{track}</span><div className={`arrangement-clip ${files[index] ? "has-source" : ""}`}><i />{files[index] ?? "Piste vide"}</div></div>)}
+        {tracks.map((track, index) => <div className="arrangement-row" key={track}><span>{track}</span><div className={`arrangement-clip ${files[index] ? "has-source" : ""}`} draggable={Boolean(files[index])} onDragStart={(event) => { event.dataTransfer.setData("text/plain", String(index)); event.dataTransfer.effectAllowed = "move"; }} style={{ transform: `translateX(${((offsets[index] ?? 0) / 360) * 100}%)` }}><i />{files[index] ?? "Piste vide"}</div></div>)}
       </div>
     </section>
   );
@@ -350,6 +351,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [sources, setSources] = useState<Record<number, string>>({});
   const [sourceRefs, setSourceRefs] = useState<Record<number, { path: string; status: "linked" | "reconnect" }>>({});
   const [durations, setDurations] = useState<Record<number, number>>({});
+  const [clipOffsets, setClipOffsets] = useState<Record<number, number>>({});
   const [gains, setGains] = useState<Record<number, number>>({});
   const [clipEnds, setClipEnds] = useState<Record<number, number>>({});
   const [fadeIns, setFadeIns] = useState<Record<number, number>>({});
@@ -366,6 +368,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
   const [midiNotes, setMidiNotes] = useState(0);
+  const [pressedMidiNotes, setPressedMidiNotes] = useState<number[]>([]);
   const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
   const [projectName, setProjectName] = useState("Nouveau projet OP-1");
   const projectInputRef = useRef<HTMLInputElement>(null);
@@ -434,7 +437,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     setMidiNotes(0);
     setMidiEvents([]);
     midiStartRef.current = performance.now();
-    const handler = (event: MIDIMessageEvent) => { const message = decodeMidiNote(event.data); if (!message) return; if (message.type === "note_on") setMidiNotes((count) => count + 1); setMidiEvents((current) => [...current, { ...message, time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
+    const handler = (event: MIDIMessageEvent) => { const message = decodeMidiNote(event.data); if (!message) return; if (message.type === "note_on") { setMidiNotes((count) => count + 1); setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]); } else setPressedMidiNotes((current) => current.filter((note) => note !== message.note)); setMidiEvents((current) => [...current, { ...message, time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
     midiHandler.current = handler;
     midiInputRef.current = input;
     input.onmidimessage = handler;
@@ -464,6 +467,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const sync = () => {
       const master = audioRefs.current[0] ?? Object.values(audioRefs.current).find((audio): audio is HTMLAudioElement => Boolean(audio));
       if (master) setTransportTime(Math.min(360, master.currentTime));
+      else setTransportTime((current) => Math.min(360, current + 1 / 60));
       frame = window.requestAnimationFrame(sync);
     };
     frame = window.requestAnimationFrame(sync);
@@ -479,7 +483,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       return;
     }
     const loaded = Object.values(audioRefs.current).filter((audio): audio is HTMLAudioElement => Boolean(audio));
-    if (!loaded.length && !midiEvents.length) { onNotice("Chargez une piste audio ou ajoutez des notes MIDI pour lancer la bande."); return; }
+    // Le transport avance aussi avec des pistes vides pour tester le workflow Tape.
     loaded.forEach((audio) => { audio.currentTime = transportTime < audio.duration ? transportTime : 0; void audio.play(); });
     midiEvents.forEach((event) => {
       const delay = Math.max(0, (event.time - transportTime) * 1000);
@@ -575,22 +579,12 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   return (
     <div className="tool-body tape-editor">
-      <MachineControls onNotice={onNotice} />
-      <TapeMachine />
-      <CloneSurface onSendMidi={onSendMidi} onNotice={onNotice} />
-      <UsbAudioMonitor onNotice={onNotice} />
-      <TrackGainControls tracks={tracks} gains={gains} onChange={(index, value) => setGains((current) => ({ ...current, [index]: value }))} />
-      <TrackEditControls tracks={tracks} durations={durations} clipEnds={clipEnds} fadeIns={fadeIns} fadeOuts={fadeOuts} trimTrack={trimTrack} onTrimTrack={setTrimTrack} onChange={(kind, index, value) => { if (kind === "end") setClipEnds((current) => ({ ...current, [index]: Math.max(0.1, value) })); if (kind === "fadeIn") setFadeIns((current) => ({ ...current, [index]: Math.max(0, value) })); if (kind === "fadeOut") setFadeOuts((current) => ({ ...current, [index]: Math.max(0, value) })); }} />
-      <GlobalArrangement files={files} position={transportTime} playing={transportPlaying} onSeek={seekTransport} onTogglePlay={toggleGlobalPlayback} />
-      <WaveformOverview tracks={tracks} peaks={waveformPeaks} />
       <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV offline</button><small>Mixe les pistes locales avec le gain, le trim et les fades actuels.</small></div>
       <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Exporter les stems Tape</button><small>Produit un WAV par piste pour la préparation du dossier tape.</small></div>
       <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Exporter Album</button><small>Produit deux faces WAV et un manifeste JSON.</small></div>
-      <MidiRoll events={midiEvents} onToggleNote={toggleRollNote} />
-      <StudioModeHeader Icon={Icon} mode={studioMode} onModeChange={setStudioMode} onConnectMidi={onConnectMidi} />
+      <StudioMachinePanel pressedNotes={pressedMidiNotes} mode={studioMode} playing={transportPlaying} position={transportTime} files={files} onTogglePlayback={toggleGlobalPlayback} onSendMidi={onSendMidi} />
       <StudioProjectToolbar Icon={Icon} projectName={projectName} inputRef={projectInputRef} onProjectNameChange={setProjectName} onNew={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); }} onOpen={() => projectInputRef.current?.click()} onSave={saveProject} onLoad={loadProject} onImport={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")} />
       <StudioTrackList Icon={Icon} tracks={tracks} files={files} sources={sources} sourceRefs={sourceRefs} muted={muted} solo={solo} playing={playing} audioRefs={audioRefs} onFileLoad={(index, file) => { setFiles({ ...files, [index]: file.name }); setSourceRefs({ ...sourceRefs, [index]: { path: file.name, status: "linked" } }); setSources({ ...sources, [index]: URL.createObjectURL(file) }); setDurations({ ...durations, [index]: 0 }); onNotice(`${tracks[index]} chargée localement.`); }} onTogglePlay={togglePlay} onSoloChange={(index) => setSolo(solo === index ? null : index)} onMuteChange={(index) => setMuted({ ...muted, [index]: !muted[index] })} onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))} onTrackEnd={() => { if (transportPlaying) setTransportPlaying(false); setPlaying(null); }} />
-      <StudioTransportPanel Icon={Icon} tempo={tempo} recording={recording} looping={looping} mode={studioMode} midiNotes={midiNotes} onPlay={() => onNotice("Lecture du projet Tape local.")} onRecord={toggleMidiRecording} onQuantize={quantizeMidi} onLoopChange={setLooping} onTempoChange={setTempo} onConnectMidi={onConnectMidi} />
       <div className="tape-import-note"><Icon name="shield" size={16} /><span><strong>Import sécurisé</strong><small>Le clone prépare les pistes dans `tape/`. La copie vers l’OP-1 viendra après sauvegarde, vérification et éjection contrôlée.</small></span></div>
     </div>
   );

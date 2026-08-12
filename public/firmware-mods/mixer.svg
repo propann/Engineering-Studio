@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 14.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 43363)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="screen" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="320px" height="160px" viewBox="0 0 320 160" enable-background="new 0 0 320 160" xml:space="preserve">
+<g id="static">
+	<path id="bow1" fill="none" stroke="#534468" stroke-width="1.5" d="M76.112,38.486c0-18.241-14.787-33.027-33.026-33.027
+		c-18.24,0-33.026,14.786-33.026,33.027"/>
+	<path id="bow2" fill="none" stroke="#534468" stroke-width="1.5" d="M153.447,38.486c0-18.241-14.788-33.027-33.027-33.027
+		c-18.24,0-33.026,14.786-33.026,33.027"/>
+	<path id="bow3" fill="none" stroke="#534468" stroke-width="1.5" d="M230.781,38.486c0-18.241-14.797-33.027-33.028-33.027
+		c-18.239,0-33.024,14.786-33.024,33.027"/>
+	<path id="bow4" fill="none" stroke="#534468" stroke-width="1.5" d="M308.115,38.486c0-18.241-14.788-33.027-33.023-33.027
+		c-18.244,0-33.023,14.786-33.023,33.027"/>
+	<line id="bowline1" fill="none" stroke="#534468" stroke-width="1.5" x1="42.058" y1="8.178" x2="42.058" y2="0.89"/>
+	<line id="bowline3" fill="none" stroke="#534468" stroke-width="1.5" x1="199.393" y1="8.178" x2="199.393" y2="0.89"/>
+	<line id="bowline4" fill="none" stroke="#534468" stroke-width="1.5" x1="276.727" y1="8.178" x2="276.727" y2="0.89"/>
+	<line id="bowline2" fill="none" stroke="#534468" stroke-width="1.5" x1="122.058" y1="8.178" x2="122.058" y2="0.89"/>
+	<circle id="viftdot2" fill="#FFFFFF" cx="122.058" cy="38.486" r="2.667"/>
+	<circle id="viftdot3" fill="#FFFFFF" cx="199.393" cy="38.486" r="2.667"/>
+	<circle id="viftdot1" fill="#FFFFFF" cx="42.058" cy="38.486" r="2.667"/>
+	<circle id="viftdot4" fill="#FFFFFF" cx="276.727" cy="38.486" r="2.667"/>
+	<line id="track1" fill="none" stroke="#534468" stroke-width="1.5" x1="42.058" y1="14.491" x2="42.058" y2="30.485"/>
+	<path id="track2" fill="none" stroke="#534468" stroke-width="1.5" d="M114.058,19.891c0-2.985,2.42-5.405,5.403-5.405h4.193
+		c2.951,0,5.344,2.345,5.344,5.297c0,2.393-1.346,4.253-3.744,5.099l-11.19,4.799v0.799h15.19"/>
+	<polyline id="track4" fill="none" stroke="#534468" stroke-width="1.5" points="282.061,25.685 266.062,25.685 266.062,24.882 
+		277.264,14.486 278.061,14.486 278.061,30.48 	"/>
+	<path id="track3" fill="none" stroke="#534468" stroke-width="1.5" d="M191.391,18.604c0-2.274,1.851-4.119,4.123-4.119h7.803
+		c2.248,0,4.072,1.788,4.072,4.037c0,2.25-1.824,3.961-4.072,3.961h-7.125h7.125c2.248,0,4.072,1.711,4.072,3.961
+		c0,2.249-1.824,4.038-4.072,4.038h-7.803c-2.272,0-4.123-1.844-4.123-4.12"/>
+</g>
+<g id="pangroup">
+	<circle id="panring4" fill="none" stroke="#656579" stroke-width="1.5" cx="276.727" cy="65.997" r="10.581"/>
+	<line id="panmid1" fill="none" stroke="#656579" stroke-width="1.5" x1="42.058" y1="47.331" x2="42.058" y2="49.997"/>
+	<circle id="panring3" fill="none" stroke="#656579" stroke-width="1.5" cx="199.393" cy="65.997" r="10.581"/>
+	<line id="panmid3" fill="none" stroke="#656579" stroke-width="1.5" x1="199.393" y1="47.331" x2="199.393" y2="49.997"/>
+	<line id="panmid4" fill="none" stroke="#656579" stroke-width="1.5" x1="276.727" y1="47.331" x2="276.727" y2="49.997"/>
+	<line id="panmid2" fill="none" stroke="#656579" stroke-width="1.5" x1="122.058" y1="47.331" x2="122.058" y2="49.997"/>
+	<circle id="panring1" fill="none" stroke="#656579" stroke-width="1.5" cx="42.058" cy="65.997" r="10.582"/>
+	<circle id="panring2" fill="none" stroke="#656579" stroke-width="1.5" cx="122.058" cy="65.997" r="10.582"/>
+</g>
+<g id="panmeters">
+	<line id="pan1" fill="none" stroke="#656579" stroke-width="1.5" x1="42.058" y1="52.664" x2="42.058" y2="65.997"/>
+	<line id="pan2" fill="none" stroke="#656579" stroke-width="1.5" x1="122.058" y1="52.664" x2="122.058" y2="65.997"/>
+	<line id="pan3" fill="none" stroke="#656579" stroke-width="1.5" x1="199.393" y1="52.664" x2="199.393" y2="65.997"/>
+	<line id="pan4" fill="none" stroke="#656579" stroke-width="1.5" x1="276.727" y1="52.664" x2="276.727" y2="65.997"/>
+</g>
+<g id="panleftright">
+	<line id="rline3" fill="none" stroke="#656579" stroke-width="1.5" x1="223.393" y1="71.331" x2="218.059" y2="71.331"/>
+	<polyline id="l4" fill="none" stroke="#656579" stroke-width="1.5" points="252.727,65.997 252.727,76.664 260.727,76.664 	"/>
+	<polyline id="l1" fill="none" stroke="#656579" stroke-width="1.5" points="18.058,65.997 18.058,76.664 26.058,76.664 	"/>
+	<polyline id="l2" fill="none" stroke="#656579" stroke-width="1.5" points="98.058,65.997 98.058,76.664 106.058,76.664 	"/>
+	<line id="rline4" fill="none" stroke="#656579" stroke-width="1.5" x1="300.726" y1="71.331" x2="295.393" y2="71.331"/>
+	<path id="r4" fill="none" stroke="#656579" stroke-width="1.5" d="M295.393,76.664V65.997h5.333c1.478,0,2.667,1.194,2.667,2.667
+		l0,0c0,1.472-1.189,2.666-2.667,2.666l0,0l2.667,5.333"/>
+	<line id="rline1" fill="none" stroke="#656579" stroke-width="1.5" x1="66.057" y1="71.331" x2="60.723" y2="71.331"/>
+	<path id="r1" fill="none" stroke="#656579" stroke-width="1.5" d="M60.723,76.664V65.997h5.334c1.472,0,2.666,1.194,2.666,2.667
+		l0,0c0,1.472-1.194,2.666-2.666,2.666l0,0l2.667,5.333"/>
+	<line id="rline2" fill="none" stroke="#656579" stroke-width="1.5" x1="146.057" y1="71.331" x2="140.723" y2="71.331"/>
+	<path id="r2" fill="none" stroke="#656579" stroke-width="1.5" d="M140.723,76.664V65.997h5.334c1.472,0,2.666,1.194,2.666,2.667
+		l0,0c0,1.472-1.194,2.666-2.666,2.666l0,0l2.667,5.333"/>
+	<path id="r3" fill="none" stroke="#656579" stroke-width="1.5" d="M218.059,76.664V65.997h5.334c1.477,0,2.666,1.194,2.666,2.667
+		l0,0c0,1.472-1.189,2.666-2.666,2.666l0,0l2.666,5.333"/>
+	<polyline id="l3" fill="none" stroke="#656579" stroke-width="1.5" points="175.391,65.997 175.391,76.664 183.391,76.664 	"/>
+</g>
+<g id="lev2">
+	<path fill="none" stroke="#00ED95" stroke-width="1.5" stroke-linecap="square" d="M91.058,85.293h26.667v2.667l-13.333,24.001
+		c7.363,0,13.333,5.977,13.333,13.332c0,7.364-5.971,13.343-13.333,13.343c-7.363,0-13.333-5.979-13.333-13.343"/>
+	<polyline fill="none" stroke="#00ED95" stroke-width="1.5" stroke-linecap="square" points="155.059,122.627 123.06,122.627 
+		123.06,119.961 144.392,85.293 147.059,85.293 147.059,138.627 	"/>
+</g>
+<g id="lev3">
+	<polyline fill="none" stroke="#FFFFFF" stroke-width="1.5" points="199.725,122.627 167.725,122.627 167.725,119.961 
+		189.057,85.293 191.725,85.293 191.725,138.627 	"/>
+	<path fill="none" stroke="#FFFFFF" stroke-width="1.5" d="M231.725,85.293h-26.666v40c0-7.355,5.969-13.332,13.334-13.332
+		c7.362,0,13.332,5.977,13.332,13.332c0,7.364-5.97,13.343-13.332,13.343h-13.334"/>
+</g>
+<g id="lev1">
+	<path fill="none" stroke="#698EFF" stroke-width="1.5" stroke-linecap="square" d="M40.392,125.293
+		c0,7.364-5.971,13.334-13.333,13.334c-7.363,0-13.333-5.97-13.333-13.334V98.624c0-7.36,5.97-13.333,13.333-13.333
+		c7.363,0,13.333,5.973,13.333,13.333V125.293z"/>
+	<path fill="none" stroke="#698EFF" stroke-width="1.5" stroke-linecap="square" d="M72.391,138.627H45.726l24-32
+		c1.674-2.229,2.666-4.998,2.666-8.008c0-7.355-5.97-13.334-13.333-13.334c-7.363,0-13.333,5.979-13.333,13.334"/>
+</g>
+<g id="lev4">
+	<path fill="none" stroke="#FF3A5D" stroke-width="1.5" d="M274.393,138.627h-26.676l24.01-32c1.666-2.229,2.666-4.998,2.666-8.008
+		c0-7.355-5.979-13.334-13.334-13.334c-7.363,0-13.342,5.979-13.342,13.334"/>
+	<path fill="none" stroke="#FF3A5D" stroke-width="1.5" d="M279.727,85.293h26.666v2.667l-13.332,24.001
+		c7.362,0,13.332,5.977,13.332,13.332c0,7.364-5.97,13.343-13.332,13.343c-7.365,0-13.334-5.979-13.334-13.343"/>
+</g>
+<g id="redbows">
+	<path fill="none" stroke="#FF3A5D" stroke-width="1.5" d="M72.433,38.461c0-7.491-2.681-14.357-7.132-19.691"/>
+	<path fill="none" stroke="#FF3A5D" stroke-width="1.5" d="M149.768,38.461c0-7.491-2.681-14.357-7.133-19.691"/>
+	<path fill="none" stroke="#FF3A5D" stroke-width="1.5" d="M227.102,38.461c0-7.491-2.682-14.357-7.134-19.691"/>
+	<path fill="none" stroke="#FF3A5D" stroke-width="1.5" d="M304.434,38.461c0-7.491-2.681-14.357-7.132-19.691"/>
+</g>
+<g id="ledgroup">
+	<circle id="led1" fill="#FF3A5D" cx="60.873" cy="29.079" r="2.822"/>
+	<circle id="led2" fill="#FF3A5D" cx="140.873" cy="29.079" r="2.822"/>
+	<circle id="led3" fill="#FF3A5D" cx="218.207" cy="29.079" r="2.822"/>
+	<circle id="led4" fill="#FF3A5D" cx="295.541" cy="29.079" r="2.822"/>
+</g>
+<g id="viftaregroup">
+	
+		<line id="vu2" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="square" x1="122.058" y1="38.516" x2="122.058" y2="1.182"/>
+	
+		<line id="vu1" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="square" x1="42.058" y1="38.516" x2="42.058" y2="1.182"/>
+	
+		<line id="vu3" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="square" x1="199.393" y1="38.516" x2="199.393" y2="1.182"/>
+	
+		<line id="vu4" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="square" x1="276.727" y1="38.516" x2="276.727" y2="1.182"/>
+</g>
+</svg>

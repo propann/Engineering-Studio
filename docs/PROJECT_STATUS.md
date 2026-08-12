@@ -33,6 +33,9 @@ fichier `.partial` restant.
 - Studio audio : quatre pistes, transport commun, position audio maitre, gain, trim de fin, fade-in et fade-out non destructifs.
 - MIDI : détection Web MIDI OP-1, entrée/sortie identifiées, décodage note-on/note-off isolé dans `app/lib/midi.ts`, capture temporelle, piano-roll éditable et relecture MIDI programmée. Windows voit actuellement l’OP-1 et son audio USB ; l’autorisation Web MIDI et la capture Chrome/Edge restent à valider manuellement.
 - Clone : clavier ordinateur, touches visuelles, synthese locale de secours, sortie MIDI OP-1 et ecoute audio USB quand le navigateur expose l'interface.
+- Clone Studio lateral : panneau retractable avec ecrans issus de la bibliotheque display,
+  touches colorees sur les notes MIDI recues et commandes d'ecran marquees comme reperes
+  MIDI a confirmer sur le materiel.
 - Interface : fenetres de travail larges et barre d'outils persistante pour Firmware, Sauvegardes, Bibliotheque Sons, Studio, Exercices et Documentation.
 
 ## Reste a construire
