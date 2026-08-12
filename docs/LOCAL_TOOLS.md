@@ -95,6 +95,16 @@ L'execution ne supprime aucun fichier, utilise un fichier temporaire, puis
 verifie le SHA-256 apres chaque copie. L'ejection native reste une etape
 separee a ajouter avant utilisation courante.
 
+La restauration d'un fichier manquant utilise le meme contrat et refuse par
+defaut d'ecraser un fichier existant :
+
+```powershell
+python tools/device_transfer_plan.py restore backups/hardware-tests/op1-delete-restore-test_<snapshot> "E:" synth/user/8.aif --confirm
+```
+
+Cette operation ne supprime jamais de fichier. L'option `--replace` est
+necessaire pour remplacer explicitement un fichier present.
+
 ## Packs audio
 
 `tools/Build-OP1DirectPacks.ps1` prépare des packs `synth` et `drum` pour le

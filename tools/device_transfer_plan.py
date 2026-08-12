@@ -163,6 +163,41 @@ def execute_transfer(source: Path, device: Path, backup_snapshot: Path, *, confi
     return {"schemaVersion": SCHEMA_VERSION, "machineWrite": True, "backup": backup, "copied": copied, "skipped": skipped, "verified": True}
 
 
+def restore_file(backup_snapshot: Path, device: Path, relative: str, *, confirm: bool = False, replace: bool = False) -> dict[str, Any]:
+    """Restore one missing device file from a verified snapshot without deleting anything."""
+    if not confirm:
+        raise TransferPlanError("confirmation_required", "Pass --confirm to enable machine writes.")
+    parsed = PurePosixPath(relative)
+    if parsed.is_absolute() or any(part in {"", ".", ".."} for part in parsed.parts) or not _allowed(relative):
+        raise TransferPlanError("unexpected_path", "The restore path is outside an OP-1 content directory.", path=relative)
+    backup = _verify_backup(backup_snapshot)
+    snapshot = Path(backup["snapshot"])
+    source = snapshot / "files" / parsed
+    target = device.expanduser().resolve() / parsed
+    if not device.expanduser().resolve().is_dir():
+        raise TransferPlanError("device_unavailable", "The target OP-1 volume must be mounted.", path=str(device))
+    if not source.is_file():
+        raise TransferPlanError("backup_file_missing", "The requested file is not in the backup.", path=relative)
+    if target.exists() and not replace:
+        raise TransferPlanError("target_exists", "Refusing to overwrite an existing device file without --replace.", path=relative)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name(f".{target.name}.op1studio.restore.partial")
+    try:
+        with source.open("rb") as input_stream, temporary.open("wb") as output_stream:
+            shutil.copyfileobj(input_stream, output_stream, length=CHUNK_SIZE)
+            output_stream.flush()
+            os.fsync(output_stream.fileno())
+        expected_hash = _hash(source)
+        if _hash(temporary) != expected_hash:
+            raise TransferPlanError("restore_verification_failed", "The temporary restore failed SHA-256 verification.", path=relative)
+        os.replace(temporary, target)
+        if _hash(target) != expected_hash:
+            raise TransferPlanError("restore_verification_failed", "The restored device file failed SHA-256 verification.", path=relative)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return {"schemaVersion": SCHEMA_VERSION, "machineWrite": True, "backup": backup, "restored": relative, "sha256": expected_hash, "verified": True}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Prepare or execute a controlled OP-1 transfer.")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -174,9 +209,20 @@ def main(argv: list[str] | None = None) -> int:
     execute.add_argument("device", type=Path, help="Mounted OP-1 volume")
     execute.add_argument("backup", type=Path, help="Verified local OP-1 backup snapshot")
     execute.add_argument("--confirm", action="store_true", help="Confirm writes to the mounted OP-1 volume")
+    restore = subparsers.add_parser("restore")
+    restore.add_argument("backup", type=Path, help="Verified local OP-1 backup snapshot")
+    restore.add_argument("device", type=Path, help="Mounted OP-1 volume")
+    restore.add_argument("path", help="Relative OP-1 file to restore")
+    restore.add_argument("--confirm", action="store_true", help="Confirm writes to the mounted OP-1 volume")
+    restore.add_argument("--replace", action="store_true", help="Allow replacing an existing file")
     args = parser.parse_args(argv)
     try:
-        result = prepare_transfer(args.source, args.device) if args.command == "prepare" else execute_transfer(args.source, args.device, args.backup, confirm=args.confirm)
+        if args.command == "prepare":
+            result = prepare_transfer(args.source, args.device)
+        elif args.command == "execute":
+            result = execute_transfer(args.source, args.device, args.backup, confirm=args.confirm)
+        else:
+            result = restore_file(args.backup, args.device, args.path, confirm=args.confirm, replace=args.replace)
         exit_code = 0
     except (TransferPlanError, OSError) as exc:
         if isinstance(exc, TransferPlanError):

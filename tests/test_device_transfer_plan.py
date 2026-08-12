@@ -75,6 +75,28 @@ class DeviceTransferPlanTests(unittest.TestCase):
             self.assertTrue(result["verified"])
             self.assertEqual((device / "tape" / "track_1.aif").read_bytes(), b"new track")
 
+    def test_restore_requires_missing_target_or_replace(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            backup_source = root / "backup-source"
+            device = root / "device"
+            (backup_source / "synth" / "user").mkdir(parents=True)
+            (device / "synth" / "user").mkdir(parents=True)
+            (backup_source / "synth" / "user" / "8.aif").write_bytes(b"restored patch")
+            snapshot = Path(backup_manifest.create_backup(backup_source, root / "snapshots")["snapshot"])
+
+            with self.assertRaises(device_transfer_plan.TransferPlanError) as caught:
+                device_transfer_plan.restore_file(snapshot, device, "synth/user/8.aif")
+            self.assertEqual(caught.exception.code, "confirmation_required")
+
+            result = device_transfer_plan.restore_file(snapshot, device, "synth/user/8.aif", confirm=True)
+            self.assertTrue(result["verified"])
+            self.assertEqual((device / "synth" / "user" / "8.aif").read_bytes(), b"restored patch")
+
+            with self.assertRaises(device_transfer_plan.TransferPlanError) as caught:
+                device_transfer_plan.restore_file(snapshot, device, "synth/user/8.aif", confirm=True)
+            self.assertEqual(caught.exception.code, "target_exists")
+
 
 if __name__ == "__main__":
     unittest.main()

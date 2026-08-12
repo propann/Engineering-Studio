@@ -7,7 +7,9 @@ detecte sur `E:`. Deux sauvegardes locales de test ont copie 67 fichiers ; le
 dernier snapshot contient 282529116 octets et sa verification SHA-256 est
 valide. Entre les deux lectures, `tape/track_1.aif`, `tape/track_2.aif` et
 neuf presets sous `synth/user/` ont change. Aucune operation n'a ecrit sur la
-machine.
+machine. Un test delete/restore controle a ensuite supprime puis restaure
+`synth/user/8.aif` depuis le snapshot : 88778 octets, SHA-256 valide, aucun
+fichier `.partial` restant.
 
 ## Fonctionne reellement
 

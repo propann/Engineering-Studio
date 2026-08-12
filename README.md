@@ -51,6 +51,7 @@ python tools/device_inventory.py "E:"
 python tools/backup_manifest.py create "E:" backups/hardware-tests --label op1-disk
 python tools/device_transfer_plan.py backups/tape-import "E:"
 python tools/device_transfer_plan.py prepare backups/tape-import "E:"
+python tools/device_transfer_plan.py restore backups/hardware-tests/op1-delete-restore-test_<snapshot> "E:" synth/user/8.aif --confirm
 ```
 
 Les bridges travaillent dans des dossiers de sortie separes. `device_inventory.py`
