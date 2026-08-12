@@ -17,11 +17,11 @@ const ROWS = 16;
 const STORAGE_KEY = "op1-studio-grid-v1";
 
 const PALETTE = [
-  { color: "#DFD9FF", label: "Blanc",  type: "white"  },
-  { color: "#e8a020", label: "Orange", type: "black"  },
-  { color: "#698EFF", label: "Bleu",   type: "enc"    },
-  { color: "#00ED95", label: "Vert",   type: "fn"     },
-  { color: "#FF3A5D", label: "Rouge",  type: "trans"  },
+  { color: "#DFD9FF", label: "Note blanche", type: "white"  },
+  { color: "#e8a020", label: "Note noire",   type: "black"  },
+  { color: "#698EFF", label: "Potentiomètre", type: "enc"    },
+  { color: "#00ED95", label: "Bouton",        type: "fn"     },
+  { color: "#FF3A5D", label: "Transport",     type: "trans"  },
 ] as const;
 
 type Block = { col: number; row: number; w: number; h: number; color: string; type: string };
@@ -199,6 +199,7 @@ export function StudioMachinePanel({
                 style={{ background: p.color }}
                 onClick={() => { setColorIdx(i); setErasing(false); }}
                 title={p.label}
+                aria-label={p.label}
               />
             ))}
             <button className={`mgrid-tool${erasing?" is-active":""}`} onClick={() => setErasing(v=>!v)}>
