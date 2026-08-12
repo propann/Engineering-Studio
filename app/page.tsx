@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { HomeHub } from "./components/HomeHub";
+import { SoundPadGrid } from "./components/SoundPadGrid";
 import { SoundControlsPanel } from "./components/SoundControlsPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 
@@ -995,6 +996,7 @@ export default function Home() {
             {toolWindow === "sounds" && (
               <div className="tool-body">
                 <SoundControlsPanel Icon={Icon} />
+                <SoundPadGrid />
                 <div className="sound-library-head"><div><span className="section-label">BIBLIOTHÈQUE LOCALE</span><strong>OP-1 Music Library</strong><small>Source : sauvegarde OP-1 et dossiers sélectionnés</small></div><span className="midi-badge"><i /> LOCAL</span></div>
                 <div className="sound-categories"><div><strong>44</strong><span>Samples synth</span></div><div><strong>15</strong><span>Samples drum</span></div><div><strong>4</strong><span>Pistes Tape</span></div><div><strong>2</strong><span>Faces Album</span></div></div>
                 <div className="pack-builder"><div className="mod-section-heading"><div><span className="section-label">PACK À PRÉPARER</span><strong>Pack OP-1 · User Library</strong></div><small>{soundPackReady ? "PRÊT" : "BROUILLON"}</small></div><label><input type="checkbox" defaultChecked /> Samples synth · `synth/user`</label><label><input type="checkbox" defaultChecked /> Samples drum · `drum/user`</label><label><input type="checkbox" defaultChecked /> Pistes Tape · `tape`</label><label><input type="checkbox" /> Faces Album · `album`</label></div>

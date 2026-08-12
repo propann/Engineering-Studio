@@ -23,7 +23,7 @@ Le projet a trois niveaux de maturite :
 | --- | --- | --- |
 | Firmware + Images | moteurs locaux livres, non destructifs | UI -> bridge de build, sans flash |
 | Sauvegardes | backup/verify/plan/execute/restore livres ; delete/restore valide sur hardware | bridge natif + UI + ejection |
-| Bibliotheque Sons | preflight et patches CLI livres | index, pads 24, pre-ecoute et transfert |
+| Bibliotheque Sons | preflight, patches CLI et grille 24 pads livres | index local, pre-ecoute fichier et transfert |
 | Studio | projet v1, mixage, fades, piano-roll, stems et Album livres | sources persistantes et import UI |
 | MIDI/audio | detection Windows et contrats Web MIDI presents | capture et sortie live dans Chrome/Edge |
 | Education | fenetre prototype | exercices notes/timing/progression |
