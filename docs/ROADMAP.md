@@ -412,6 +412,7 @@ Premier jalon : voir [`GUIDE_UTILISATEUR.md`](GUIDE_UTILISATEUR.md).
 ## Clavier MIDI construit
 
 Le clavier Studio est construit dans une grille 64x16 puis rendu sous l'ecran
-avec un SVG responsive. Le mode editeur peut etre replie pour conserver le
-clavier sans laisser son ecouteur clavier actif. Les blocs valides restent
-persistes et peuvent etre reouverts, corriges ou sauvegardes explicitement.
+avec un SVG responsive. Le mode utilisation affiche uniquement le clavier
+fabrique et charge ses blocs persistants. L'editeur de grille est conserve pour
+maintenance, mais n'est pas monte dans cette interface et ne branche aucun
+ecouteur clavier en fonctionnement normal.

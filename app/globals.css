@@ -654,6 +654,11 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 /* ── Clone machine OP-1 ─────────────────────────────────────────────────── */
 .studio-machine-panel { border-top: 1px solid #0e1515; background: #090d0e; }
 
+/* Le clavier construit est le mode d'utilisation courant. L'editeur reste
+   conserve dans le composant pour une future fenetre de maintenance, mais
+   n'est pas monte dans cette surface afin de ne consommer aucune ressource. */
+.studio-machine-panel > .mpanel-bar { display: none; }
+
 /* Le clavier clone reste au-dessus de l'editeur de touches MIDI. */
 .studio-machine-panel { display: flex; flex-direction: column; }
 .studio-machine-panel > .mpanel-bar { order: 1; }

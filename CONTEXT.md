@@ -140,6 +140,7 @@ rouge = transport. La legende visible reprend la meme palette que le moteur de
 validation et les blocs sauvegardes.
 
 Le clavier construit est redimensionne par le SVG a la largeur disponible et
-reste sous l'ecran Studio. L'editeur de grille est replie par defaut : son
-ecouteur clavier n'est installe que lorsqu'il est ouvert, sans supprimer les
-blocs MIDI deja sauvegardes.
+reste sous l'ecran Studio. Il est maintenant le seul mode visible et charge les
+blocs MIDI sauvegardes. L'editeur de grille reste conserve dans le code pour
+maintenance, mais sa barre, sa grille et son ecouteur clavier ne sont pas
+montes dans l'interface courante.
