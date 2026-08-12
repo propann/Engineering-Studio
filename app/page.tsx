@@ -368,8 +368,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
   const [projectName, setProjectName] = useState("Nouveau projet OP-1");
   const projectInputRef = useRef<HTMLInputElement>(null);
-  const midiHandler = useRef<((event: { data: Uint8Array }) => void) | null>(null);
-  const midiInputRef = useRef<MidiPortLike | null>(null);
+  const midiHandler = useRef<((event: MIDIMessageEvent) => void) | null>(null);
+  const midiInputRef = useRef<MidiInputLike | null>(null);
   const midiStartRef = useRef(0);
   const midiTimersRef = useRef<number[]>([]);
 
@@ -426,7 +426,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     setMidiNotes(0);
     setMidiEvents([]);
     midiStartRef.current = performance.now();
-    const handler = (event: { data: Uint8Array }) => { const status = event.data[0] & 0xf0; const isOn = status === 0x90 && event.data[2] > 0; const isOff = status === 0x80 || (status === 0x90 && event.data[2] === 0); if (!isOn && !isOff) return; if (isOn) setMidiNotes((count) => count + 1); setMidiEvents((current) => [...current, { type: isOn ? "note_on" : "note_off", note: event.data[1], velocity: event.data[2], time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
+    const handler = (event: MIDIMessageEvent) => { const data = event.data; if (!data || data.length < 3) return; const status = data[0] & 0xf0; const isOn = status === 0x90 && data[2] > 0; const isOff = status === 0x80 || (status === 0x90 && data[2] === 0); if (!isOn && !isOff) return; if (isOn) setMidiNotes((count) => count + 1); setMidiEvents((current) => [...current, { type: isOn ? "note_on" : "note_off", note: data[1], velocity: data[2], time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
     midiHandler.current = handler;
     midiInputRef.current = input;
     input.onmidimessage = handler;
@@ -620,17 +620,12 @@ type DirectoryPickerWindow = Window & {
   showDirectoryPicker?: () => Promise<{ name: string }>;
 };
 
-type MidiPortLike = {
-  name?: string;
-  type: "input" | "output";
-  state: string;
-  onmidimessage?: ((event: { data: Uint8Array }) => void) | null;
-  send?: (data: number[]) => void;
-};
+type MidiInputLike = { name: string | null; onmidimessage: MIDIInput["onmidimessage"] };
+type MidiOutputLike = { name: string | null; send: MIDIOutput["send"] };
 
 type MidiAccessLike = {
-  inputs: { values: () => Iterable<MidiPortLike> };
-  outputs: { values: () => Iterable<MidiPortLike> };
+  inputs: { values: () => Iterable<MidiInputLike> };
+  outputs: { values: () => Iterable<MidiOutputLike> };
 };
 
 type MidiNavigator = Navigator & {
@@ -668,7 +663,7 @@ export default function Home() {
     return stored ? parseProfile(stored) : DEFAULT_PROFILE;
   });
   const folderInputRef = useRef<HTMLInputElement>(null);
-  const midiOutputRef = useRef<MidiPortLike | null>(null);
+  const midiOutputRef = useRef<MidiOutputLike | null>(null);
 
   function updateProfile(next: LocalProfile) {
     setProfile(next);

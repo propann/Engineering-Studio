@@ -51,8 +51,9 @@ fichier `.partial` restant.
 
 - `npm test`, le build et les 36 tests Python passent ;
 - le lint passe avec quatre avertissements non bloquants ;
-- `npx tsc --noEmit` reste bloque par les types Web MIDI stricts et les types
-  Cloudflare manquants (`cloudflare:workers`, `Fetcher`, `D1Database`).
+- `npx tsc --noEmit` ne remonte plus d'erreur dans `app/` ; les trois erreurs
+  restantes concernent uniquement les types Cloudflare manquants
+  (`cloudflare:workers`, `Fetcher`, `D1Database`).
 
 ## Limites connues
 

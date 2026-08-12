@@ -25,7 +25,7 @@ Le projet a trois niveaux de maturite :
 | Sauvegardes | backup/verify/plan/execute/restore livres ; plan UI borne ; delete/restore valide sur hardware | bridge natif + ejection |
 | Bibliotheque Sons | preflight, patches CLI, grille 24 pads, index UI et plan UI borne livres | pre-ecoute fichier et transfert natif |
 | Studio | projet v1, mixage, fades, piano-roll, stems, Album, trim focalise et refs sources livres | reconnexion automatique et import UI |
-| MIDI/audio | detection Windows et contrats Web MIDI presents | capture et sortie live dans Chrome/Edge |
+| MIDI/audio | detection Windows, capture MIDI et contrats Web MIDI stricts | sortie live et essai OP-1 dans Chrome/Edge |
 | Education | fenetre prototype | exercices notes/timing/progression |
 | Distribution | dev server et build web | Tauri, installation et permissions |
 
@@ -306,7 +306,9 @@ le rendu WAV offline applique gain, trim, mute/solo et fades, la vue globale
 calcule les niveaux audio en 24 points par piste, les stems Tape sont
   exportables séparément et l'Album produit deux faces WAV avec manifeste ; les
   références `source_refs` sont persistées et affichées comme à reconnecter au
-  chargement ; le transfert machine reste à faire.
+  chargement ; le transfert machine reste à faire. Les types Web MIDI natifs
+  de l'application sont maintenant stricts ; seuls les types Cloudflare du
+  worker bloquent encore `tsc` global.
 
 - définir un format `Project` JSON versionné ;
 - stocker sources, clips, événements MIDI, tempo et mixage ;
