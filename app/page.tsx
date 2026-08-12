@@ -720,13 +720,14 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       </div>
 
       {/* ── Panneau Clavier (escamotable) ── */}
-      <div className={`studio-slide-panel studio-keyboard-panel${keyboardFolded ? " is-folded" : ""}`}>
+      <div className="studio-slide-panel studio-keyboard-panel">
         <button
           className="slide-panel-toggle"
-          onClick={() => setKeyboardFolded(!keyboardFolded)}
-          title={keyboardFolded ? "Déplier le clavier" : "Replier le clavier"}
+          type="button"
+          disabled
+          title="Clavier Studio visible"
         >
-          <span>{keyboardFolded ? "▶ Clavier" : "◀ Replier clavier"}</span>
+          <span>▼ Clavier Studio</span>
         </button>
 
         {/* Contenu quand déplié : clone clavier */}
