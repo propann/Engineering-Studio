@@ -1,0 +1,7 @@
+import type { ReactNode } from "react";
+
+type ExerciseIcon = (props: { name: "check" | "wave"; size?: number }) => ReactNode;
+
+export function ExercisePanel({ Icon, selectedExercise, running, onExerciseChange, onToggle }: { Icon: ExerciseIcon; selectedExercise: string; running: boolean; onExerciseChange: (value: string) => void; onToggle: () => void }) {
+  return <div className="tool-body"><div className="exercise-toolbar"><label>Suite d’accords<select value={selectedExercise} onChange={(event) => onExerciseChange(event.target.value)}><option>I–V–vi–IV</option><option>I–IV–V</option><option>ii–V–I</option></select></label><label>Tempo <input type="number" min="40" max="200" defaultValue="90" /> BPM</label></div><div className="exercise-score"><span>PROCHAINEMENT</span><strong>{selectedExercise}</strong><small>{running ? "Écoute MIDI active" : "Prêt à commencer"}</small></div><div className="chord-sequence"><span className="chord-current">C</span><span>G</span><span>Am</span><span>F</span></div><div className="exercise-actions"><button className="primary-action" onClick={onToggle}><Icon name={running ? "check" : "wave"} />{running ? "Arrêter l’exercice" : "Commencer l’exercice"}</button><span className="midi-badge"><i /> OP-1 MIDI {running ? "ACTIF" : "PRÊT"}</span></div><p className="tool-note">L’exercice valide les notes reçues, l’ordre des accords et le timing. Aucun message MIDI n’est envoyé à la machine.</p></div>;
+}

@@ -6,6 +6,8 @@ import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/local
 import { DEFAULT_PROFILE, parseProfile, serializeProfile, type LocalProfile } from "./lib/profile";
 import { HomeHub } from "./components/HomeHub";
 import { FirmwareSubtabs } from "./components/FirmwareSubtabs";
+import { DocumentationPanel } from "./components/DocumentationPanel";
+import { ExercisePanel } from "./components/ExercisePanel";
 import { LocalProfilePanel } from "./components/LocalProfilePanel";
 import { SoundPadGrid } from "./components/SoundPadGrid";
 import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
@@ -958,33 +960,9 @@ export default function Home() {
                 ["docs", "Documentation", "book"],
               ].map(([id, label, icon]) => ({ id, label, icon: <Icon name={icon as IconName} size={14} /> }))} activeId={toolWindow ?? ""} onSelect={(id) => setToolWindow(id as ToolWindow)} />
 
-            {toolWindow === "exercise" && (
-              <div className="tool-body">
-                <div className="exercise-toolbar">
-                  <label>Suite d’accords
-                    <select value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)}>
-                      <option>I–V–vi–IV</option>
-                      <option>I–IV–V</option>
-                      <option>ii–V–I</option>
-                    </select>
-                  </label>
-                  <label>Tempo <input type="number" min="40" max="200" defaultValue="90" /> BPM</label>
-                </div>
-                <div className="exercise-score"><span>PROCHAÎNEMENT</span><strong>{selectedExercise}</strong><small>{exerciseRunning ? "Écoute MIDI active" : "Prêt à commencer"}</small></div>
-                <div className="chord-sequence"><span className="chord-current">C</span><span>G</span><span>Am</span><span>F</span></div>
-                <div className="exercise-actions"><button className="primary-action" onClick={() => setExerciseRunning(!exerciseRunning)}><Icon name={exerciseRunning ? "check" : "wave"} />{exerciseRunning ? "Arrêter l’exercice" : "Commencer l’exercice"}</button><span className="midi-badge"><i /> OP-1 MIDI {exerciseRunning ? "ACTIF" : "PRÊT"}</span></div>
-                <p className="tool-note">L’exercice valide les notes reçues, l’ordre des accords et le timing. Aucun message MIDI n’est envoyé à la machine.</p>
-              </div>
-            )}
+            {toolWindow === "exercise" && <ExercisePanel Icon={Icon} selectedExercise={selectedExercise} running={exerciseRunning} onExerciseChange={setSelectedExercise} onToggle={() => setExerciseRunning((running) => !running)} />}
 
-            {toolWindow === "docs" && (
-              <div className="tool-body docs-body">
-                <div className="doc-row"><strong>Exercices MIDI</strong><span>Branche l’OP-1 en USB, sélectionne son entrée MIDI, puis commence. Les notes sont analysées localement.</span></div>
-                <div className="doc-row"><strong>Firmware officiel</strong><span>Utilise uniquement un fichier provenant de Teenage Engineering. Une sauvegarde doit précéder toute préparation.</span></div>
-                <div className="doc-row"><strong>Éditeur firmware</strong><span>Les cases préparent un plan lisible. Elles ne modifient pas le firmware et n’écrivent rien sur l’OP-1.</span></div>
-                <a className="docs-link" href="https://teenage.engineering/guides/op-1/original/te-boot" target="_blank" rel="noreferrer">Ouvrir le guide TE-boot officiel</a>
-              </div>
-            )}
+            {toolWindow === "docs" && <DocumentationPanel />}
 
             {toolWindow === "editor" && (
               <div className="tool-body">
