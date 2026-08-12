@@ -654,6 +654,12 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 /* ── Clone machine OP-1 ─────────────────────────────────────────────────── */
 .studio-machine-panel { border-top: 1px solid #0e1515; background: #090d0e; }
 
+/* Le clavier clone reste au-dessus de l'editeur de touches MIDI. */
+.studio-machine-panel { display: flex; flex-direction: column; }
+.studio-machine-panel > .mpanel-bar { order: 1; }
+.studio-machine-panel > .machine-layout-zone { order: 2; }
+.studio-machine-panel > .machine-grid-zone { order: 3; }
+
 /* En-tête */
 .machine-header { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: #0b1010; border-bottom: 1px solid #0e1515; }
 .machine-oct-btn { padding: 2px 7px; background: #111a1a; border: 1px solid #1a2525; border-radius: 2px; color: #3a5550; font: 700 11px var(--font-geist-mono), monospace; cursor: pointer; }

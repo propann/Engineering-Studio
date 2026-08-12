@@ -9,7 +9,7 @@
  *   #00ED95  vert    → bouton de fonction
  *   #FF3A5D  rouge   → transport / spécial
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // ── Grille éditeur ────────────────────────────────────────────────────────────
 const COLS = 64;
@@ -61,7 +61,6 @@ function loadState(): { cells: (string|null)[][]; validated: Block[] } | null {
 
 export function StudioMachinePanel({
   mode = "clone",
-  playing = false,
   onTogglePlayback,
   onSendMidi,
 }: {
@@ -85,7 +84,8 @@ export function StudioMachinePanel({
   const [colorIdx, setColorIdx]   = useState(0);
   const [erasing, setErasing]     = useState(false);
   const [showGrid, setShowGrid]   = useState(false);
-  const [editOpen, setEditOpen]   = useState(false);
+  // La grille complete le clavier et reste visible a l'ouverture.
+  const [editOpen, setEditOpen]   = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -123,18 +123,28 @@ export function StudioMachinePanel({
       if (!editOpen) return;
       if (e.code === "Space") {
         e.preventDefault();
-        let minC = COLS, maxC = -1, minR = ROWS, maxR = -1;
-        cells.forEach((row, r) => row.forEach((c, col) => {
-          if (c) { minC = Math.min(minC,col); maxC = Math.max(maxC,col); minR = Math.min(minR,r); maxR = Math.max(maxR,r); }
+        const groups = new Map<string, { col: number; row: number }[]>();
+        cells.forEach((row, r) => row.forEach((color, col) => {
+          if (color) groups.set(color, [...(groups.get(color) ?? []), { col, row: r }]);
         }));
-        if (maxC >= 0) {
-          const pal = PALETTE[colorIdx];
-          setValidated(v => [...v, { col: minC, row: minR, w: maxC-minC+1, h: maxR-minR+1, color: pal.color, type: pal.type }]);
+        if (groups.size) {
+          const blocks = [...groups].map(([color, points]) => {
+            const minC = Math.min(...points.map((p) => p.col));
+            const maxC = Math.max(...points.map((p) => p.col));
+            const minR = Math.min(...points.map((p) => p.row));
+            const maxR = Math.max(...points.map((p) => p.row));
+            return { col: minC, row: minR, w: maxC - minC + 1, h: maxR - minR + 1, color, type: colorToType(color) };
+          });
+          setValidated(v => [...v, ...blocks]);
           setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
         }
       }
       if (e.key >= "1" && e.key <= "5") setColorIdx(Number(e.key)-1);
-      if (e.key === "e" || e.key === "E") setErasing(v => !v);
+      // E efface la zone en cours sans changer le mode de peinture.
+      if (e.key === "e" || e.key === "E") {
+        setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
+        setErasing(false);
+      }
       if (e.key === "Delete" || e.key === "Backspace") {
         setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
         setValidated([]);
@@ -177,7 +187,7 @@ export function StudioMachinePanel({
           {panelOpen ? "▼ clavier" : "▲ clavier"}
         </button>
         {panelOpen && <button className="mpanel-bar-btn" onClick={() => setEditOpen(v => !v)}>
-          {editOpen ? "fermer éditeur" : "✎ éditeur"}
+          {editOpen ? "masquer éditeur" : "✎ éditeur"}
         </button>}
         <span className="mgrid-hint">{validated.length} blocs</span>
         {editOpen && panelOpen && (
@@ -196,7 +206,7 @@ export function StudioMachinePanel({
             <button className={`mgrid-tool${showGrid?" is-active":""}`} onClick={() => setShowGrid(v=>!v)}>
               {showGrid ? "grille ON" : "grille OFF"}
             </button>
-            <span className="mgrid-hint">Espace : valider · Suppr : effacer · 1-5 : couleur</span>
+            <span className="mgrid-hint">Espace : valider · E : effacer · Suppr : tout effacer · 1-5 : couleur</span>
           </>
         )}
       </div>
@@ -241,11 +251,11 @@ export function StudioMachinePanel({
       )}
 
       {/* ── Interface interactive — plein écran ── */}
-      {panelOpen && !editOpen && (
+      {panelOpen && (
         <div className="machine-layout-zone">
           <svg viewBox={`0 0 ${COLS} ${ROWS}`} preserveAspectRatio="none"
             style={{ width:"100%", height:"100%", display:"block" }}
-            onPointerUp={e => {
+            onPointerUp={() => {
               // Note-off global si pointer lâché hors bouton
               if (encDrag.current) encDrag.current = null;
             }}
