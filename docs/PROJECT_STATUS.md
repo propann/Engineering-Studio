@@ -18,10 +18,10 @@ Etat verifie le 12 aout 2026.
 
 - aucune copie vers le volume OP-1 n'est declenchee par l'interface ;
 - sauvegarde et restauration machine passent encore par des messages de statut ;
-- quantification MIDI et edition avancee du piano-roll ;
+- edition avancee du piano-roll ;
 - rechargement des sources audio depuis leurs chemins locaux ;
 - vraies formes d'onde calculees depuis l'audio ;
-- rendu offline des quatre pistes et export final Tape/Album ;
+- export final Tape/Album et transfert machine ;
 - Safe Change Engine : identification du volume, hash apres copie et ejection native ;
 - module Exercices complet avec progression et import MIDI.
 
