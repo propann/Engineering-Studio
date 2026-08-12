@@ -334,8 +334,8 @@ export function StudioMachinePanel({
 
       {/* ── Interface interactive — plein écran ── */}
       {panelOpen && (
-        <div className="machine-layout-zone">
-          <svg viewBox={layoutViewBox} preserveAspectRatio="none"
+        <div className="machine-layout-zone" style={{ aspectRatio: `${Math.max(1, layoutMaxX - layoutMinX)} / ${ROWS}` }}>
+          <svg viewBox={layoutViewBox} preserveAspectRatio="xMidYMid meet"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
               // Note-off global si pointer lâché hors bouton
