@@ -61,7 +61,9 @@ Images a ete retire apres validation de cette integration.
   libre de fichiers tiers.
 - **Outils prioritaires** : `op1aiff` pour inspecter les AIFF en lecture seule
   dans Sons et `op1svg` pour valider les SVG avant patch. `teoperator` reste
-  une fixture de comparaison ; les autres outils restent des references.
+  une fixture de comparaison ; les autres outils restent des references. Les
+  deux outils ne sont pas encore presents dans le depot/registres installes :
+  leur ajout passe d'abord par un audit de licence, version et commande.
 - **Profil utilisateur** : `profile.json` local, sans compte ni reseau, pour le
   pseudo, les machines nommees, le coffre, les marqueurs de partage et les
   preferences. Il reference `DeviceIdentity` et `BackupManifest` sans les
@@ -74,6 +76,12 @@ Images a ete retire apres validation de cette integration.
 - **Dependance structurante** : le coeur Rust/Safe Change Engine reste le
   vrai chantier derriere l'installation Tauri et l'execution native. Les
   bridges Python servent au labo et aux fixtures, pas de coeur final cache.
+
+L'audit detaille des garde-fous reels est conserve dans
+[`TOOLS_SAFETY_AUDIT.md`](TOOLS_SAFETY_AUDIT.md). Il confirme notamment que
+`device_transfer_plan.py execute/restore` est la seule surface d'ecriture
+machine, et que l'association entre une sauvegarde et le volume cible doit
+encore etre imposee par l'UI/coeur natif.
 
 ### Recalage des jalons
 
