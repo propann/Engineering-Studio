@@ -409,3 +409,9 @@ Premier jalon : voir [`GUIDE_UTILISATEUR.md`](GUIDE_UTILISATEUR.md).
 6. procédure relue face au guide officiel ;
 7. bêta volontaire avec machine de test, jamais avec l’unique copie d’un morceau.
 
+## Clavier MIDI construit
+
+Le clavier Studio est construit dans une grille 64x16 puis rendu sous l'ecran
+avec un SVG responsive. Le mode editeur peut etre replie pour conserver le
+clavier sans laisser son ecouteur clavier actif. Les blocs valides restent
+persistes et peuvent etre reouverts, corriges ou sauvegardes explicitement.

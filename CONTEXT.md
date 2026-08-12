@@ -138,3 +138,8 @@ Dans l'editeur de clavier, chaque couleur construit un type de controle :
 blanc = note blanche, orange = note noire, bleu = potentiometre, vert = bouton,
 rouge = transport. La legende visible reprend la meme palette que le moteur de
 validation et les blocs sauvegardes.
+
+Le clavier construit est redimensionne par le SVG a la largeur disponible et
+reste sous l'ecran Studio. L'editeur de grille est replie par defaut : son
+ecouteur clavier n'est installe que lorsqu'il est ouvert, sans supprimer les
+blocs MIDI deja sauvegardes.

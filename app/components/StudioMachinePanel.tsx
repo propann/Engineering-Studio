@@ -85,8 +85,8 @@ export function StudioMachinePanel({
   const [erasing, setErasing]     = useState(false);
   // La grille est le plan de construction du clavier MIDI.
   const [showGrid, setShowGrid]   = useState(true);
-  // La grille complete le clavier et reste visible a l'ouverture.
-  const [editOpen, setEditOpen]   = useState(true);
+  // L'editeur peut rester range sans demonter le clavier construit.
+  const [editOpen, setEditOpen]   = useState(false);
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -135,9 +135,9 @@ export function StudioMachinePanel({
 
   // Espace : valider la sélection
   useEffect(() => {
+    if (!editOpen) return;
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (!editOpen) return;
       if (e.code === "Space") {
         e.preventDefault();
         const groups = new Map<string, { col: number; row: number }[]>();
