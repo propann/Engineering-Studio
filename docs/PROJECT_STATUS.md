@@ -2,6 +2,10 @@
 
 Etat verifie le 12 aout 2026.
 
+Point d'avancement apres integration du Display Editor : les outils locaux
+sont plus avances que leur branchement dans l'interface. Le tableau de bord
+detaille et les priorites corrigees sont dans [`ROADMAP.md`](ROADMAP.md).
+
 La matrice detaillee des tests materiels est dans
 [`HARDWARE_TESTS.md`](HARDWARE_TESTS.md). Le mode Disk est valide pour le
 cycle sauvegarde, suppression/restauration et verification ; le mode normal
@@ -33,13 +37,22 @@ fichier `.partial` restant.
 
 ## Reste a construire
 
-- aucune copie vers le volume OP-1 n'est declenchee par l'interface ;
-- sauvegarde et restauration machine ne sont pas encore declenchees par l'interface ;
+- aucune copie, sauvegarde ou restauration n'est declenchee par l'interface ;
+- le bridge natif et l'ejection controlee ne sont pas encore disponibles ;
+- le decoupage complet de `app/page.tsx` et l'accueil par modules restent a faire ;
+- la bibliotheque Sons n'a pas encore son index, ses 24 pads et sa pre-ecoute ;
 - edition avancee du piano-roll ;
 - rechargement des sources audio depuis leurs chemins locaux ;
 - transfert machine et écriture finale dans `tape/` ;
 - Safe Change Engine : identification du volume, hash apres copie et ejection native ;
 - module Exercices complet avec progression et import MIDI.
+
+## Qualite connue
+
+- `npm test`, le build et les 31 tests Python passent ;
+- le lint passe avec quatre avertissements non bloquants ;
+- `npx tsc --noEmit` reste bloque par les types Web MIDI stricts et les types
+  Cloudflare manquants (`cloudflare:workers`, `Fetcher`, `D1Database`).
 
 ## Limites connues
 

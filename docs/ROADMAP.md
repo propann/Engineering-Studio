@@ -4,6 +4,51 @@ Le firmware est le premier écran et le premier sujet de confiance. Techniquemen
 
 ## Etat de livraison
 
+Etat de pilotage : 12 aout 2026.
+
+Le projet a trois niveaux de maturite :
+
+- **socle local livre** : firmware, display, samples, patches, Studio et
+  contrats JSON fonctionnent hors interface native ;
+- **materiel valide** : l'OP-1 original a ete detecte en Disk et en mode
+  normal, sauvegarde, comparaison et delete/restore ont ete verifies sur un
+  vrai volume ;
+- **integration produit manquante** : l'interface web ne declenche pas encore
+  les bridges locaux, le MIDI/audio interactif n'est pas valide dans le
+  navigateur et le pont natif d'ejection n'existe pas.
+
+### Tableau de bord
+
+| Zone | Etat reel | Prochaine preuve |
+| --- | --- | --- |
+| Firmware + Images | moteurs locaux livres, non destructifs | UI -> bridge de build, sans flash |
+| Sauvegardes | backup/verify/plan/execute/restore livres ; delete/restore valide sur hardware | bridge natif + UI + ejection |
+| Bibliotheque Sons | preflight et patches CLI livres | index, pads 24, pre-ecoute et transfert |
+| Studio | projet v1, mixage, fades, piano-roll, stems et Album livres | sources persistantes et import UI |
+| MIDI/audio | detection Windows et contrats Web MIDI presents | capture et sortie live dans Chrome/Edge |
+| Education | fenetre prototype | exercices notes/timing/progression |
+| Distribution | dev server et build web | Tauri, installation et permissions |
+
+La priorite n'est plus d'ajouter des prototypes isoles : il faut rendre les
+ecrans coherents, brancher les contrats existants par des actions limitees et
+fermer les portes de qualite avant toute distribution.
+
+### Recalage des jalons
+
+- **M1 Firmware** : socle local et Images livres ; integration UI et flash
+  restent explicitement hors perimetre tant que le ChangePlan natif n'est pas
+  branche.
+- **M2 Sauvegardes** : moteur de fichiers livre et teste sur hardware ;
+  l'interface affiche encore une simulation et l'ejection native manque.
+- **M3 Sons** : conversion et patches livres ; l'index, les 24 pads et le
+  transfert utilisateur sont le prochain travail produit.
+- **M4/M5 Studio** : coeur audio et projet v1 livres ; persistence des sources,
+  trim simplifie et import machine restent a fermer.
+- **M4.5 Education** : prototype de fenetre seulement ; progression et
+  verification de performance restent a construire.
+- **M4.6 Visuel** : onglets, Escape et accessibilite de base livres ; le
+  decoupage de `app/page.tsx` et l'accueil sont les prochaines taches.
+
 Le projet dispose aujourd'hui d'un prototype fonctionnel et de bridges locaux
 testés pour firmware, samples, patches et préparation Tape. Les écrans sont
 plus avancés que les transferts machine : les prochaines étapes donnent la
