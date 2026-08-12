@@ -26,6 +26,14 @@ const PALETTE = [
 
 type Block = { col: number; row: number; w: number; h: number; color: string; type: string };
 
+// Clavier visible par défaut quand le stockage local est absent. Il donne une
+// surface jouable immédiatement ; une configuration sauvegardée reste prioritaire.
+const DEFAULT_BLOCKS: Block[] = [
+  ...Array.from({ length: 14 }, (_, index) => ({ col: index * 4 + 1, row: 8, w: 4, h: 7, color: "#DFD9FF", type: "white" })),
+  ...[1, 2, 4, 5, 6, 8, 9, 11, 12, 13].map((index) => ({ col: index * 4 - 1, row: 8, w: 2, h: 4, color: "#e8a020", type: "black" })),
+  ...Array.from({ length: 4 }, (_, index) => ({ col: index * 16 + 2, row: 1, w: 4, h: 4, color: ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"][index], type: "enc" })),
+];
+
 // ── Mappage note MIDI par position gauche→droite ──────────────────────────────
 // Blanches : C3 D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4
 const WHITE_NOTES = [48,50,52,53,55,57,59,60,62,64,65,67,69,71];
@@ -88,7 +96,7 @@ export function StudioMachinePanel({
   // localStorage is read again after browser hydration.
   // Afficher immédiatement le clavier sauvegardé, sans attendre le second
   // passage d'hydratation du navigateur.
-  const [validated, setValidated] = useState<Block[]>(() => saved?.validated ?? []);
+  const [validated, setValidated] = useState<Block[]>(() => saved?.validated ?? (saved === null ? DEFAULT_BLOCKS : []));
   const [hydrated, setHydrated] = useState(false);
   const [painting, setPainting]   = useState(false);
   const [colorIdx, setColorIdx]   = useState(0);
@@ -110,7 +118,7 @@ export function StudioMachinePanel({
   useEffect(() => {
     const state = loadState();
     const timer = window.setTimeout(() => {
-      setValidated(state?.validated ?? []);
+      setValidated(state?.validated ?? (state === null ? DEFAULT_BLOCKS : []));
       setHydrated(true);
     }, 0);
     return () => window.clearTimeout(timer);
