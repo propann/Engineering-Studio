@@ -7,7 +7,7 @@ function text(value: unknown, fallback: string): string { return typeof value ==
 
 export function normalizeProfile(value: unknown): LocalProfile {
   const input = value && typeof value === "object" ? value as Partial<LocalProfile> : {};
-  const preferences = input.preferences ?? {};
+  const preferences = (input.preferences ?? {}) as Partial<LocalProfile["preferences"]>;
   const machines = Array.isArray(input.machines) ? input.machines : [];
   return { ...DEFAULT_PROFILE, pseudo: text(input.pseudo, DEFAULT_PROFILE.pseudo), machines: machines.filter((machine): machine is LocalProfileMachine => Boolean(machine && typeof machine === "object")).map((machine) => ({ name: text(machine.name, "OP-1"), ...(machine.deviceIdentityRef ? { deviceIdentityRef: text(machine.deviceIdentityRef, "") } : {}), ...(machine.lastSnapshot ? { lastSnapshot: text(machine.lastSnapshot, "") } : {}), ...(machine.notes ? { notes: text(machine.notes, "") } : {}) })), localSpace: { root: text(input.localSpace?.root, DEFAULT_PROFILE.localSpace.root), usedBytes: input.localSpace?.usedBytes, availableBytes: input.localSpace?.availableBytes }, shareMarkers: Array.isArray(input.shareMarkers) ? input.shareMarkers.filter((item): item is string => typeof item === "string" && Boolean(item.trim())) : [], preferences: { language: preferences.language === "en" ? "en" : "fr", keyboard: preferences.keyboard === "qwerty" ? "qwerty" : "azerty", theme: "machine" } };
 }

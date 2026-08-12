@@ -27,7 +27,8 @@ Ordre de travail confirme :
 1. decouper les autres ecrans de `app/page.tsx` sans toucher aux invariants DisplayEditor ;
 2. installer/auditer `op1aiff` et `op1svg`, absents du depot actuel, avant tout branchement ;
 3. construire le createur de dessin original dans Firmware > Graphismes apres validation SVG ;
-4. brancher le `profile.json` natif du coffre sur le contrat local deja livre ;
+4. brancher l'interface native/Tauri au `profile.json` du coffre ; le bridge
+   local de lecture/ecriture et son format sont maintenant livres ;
 5. connecter le contrat de bridge a l'execution native sans flash automatique ;
 6. persister les sources Studio et reconnecter les fichiers locaux ;
 7. reprendre les tests MIDI/audio dans Chrome ou Edge.

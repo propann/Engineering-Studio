@@ -68,8 +68,9 @@ Images a ete retire apres validation de cette integration.
 - **Profil utilisateur** : `profile.json` local, sans compte ni reseau, pour le
   pseudo, les machines nommees, le coffre, les marqueurs de partage et les
   preferences. Il reference `DeviceIdentity` et `BackupManifest` sans les
-  remplacer. Le schema TypeScript et l'edition locale du pseudo/machine sont
-  maintenant livres ; le fichier natif du coffre reste a brancher.
+  remplacer. Le schema TypeScript, l'edition locale du pseudo/machine et
+  `tools/profile_bridge.py` sont livres ; l'interface native/Tauri reste a
+  brancher.
 - **Cloud et licence** : Studio Cloud reste M6, apres validation de l'usage
   local. L'ecart MIT/AGPL signale dans l'analyse tooling est un point legal a
   trancher avant toute communication de service ; aucune licence n'est
