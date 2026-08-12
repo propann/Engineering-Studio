@@ -9,9 +9,7 @@ import { FirmwareSubtabs } from "./components/FirmwareSubtabs";
 import { DocumentationPanel } from "./components/DocumentationPanel";
 import { ExercisePanel } from "./components/ExercisePanel";
 import { BackupPanel } from "./components/BackupPanel";
-import { SoundPadGrid } from "./components/SoundPadGrid";
-import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
-import { SoundControlsPanel } from "./components/SoundControlsPanel";
+import { SoundsPanel } from "./components/SoundsPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 
 type IconName =
@@ -986,19 +984,10 @@ export default function Home() {
 
             {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => describeLocalBridgeAction(prepareLocalBridgeAction("backup.plan", { root }))} />}
 
+            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onPreparePack={() => { setSoundPackReady(true); setNotice(describeLocalBridgeAction(prepareLocalBridgeAction("sounds.transfer-plan", { packReady: true }))); }} onTransfer={() => setNotice(soundPackReady ? describeLocalBridgeAction(prepareLocalBridgeAction("sounds.transfer-plan", { packReady: true })) : "Préparez d’abord le pack de sons.")} />}
+
             {toolWindow === "tape" && <TapeEditor onNotice={setNotice} onConnectMidi={connectMidiDevice} onSendMidi={(data) => midiOutputRef.current?.send?.(data)} />}
 
-            {toolWindow === "sounds" && (
-              <div className="tool-body">
-                <SoundControlsPanel Icon={Icon} />
-                <SoundPadGrid />
-                <SoundLibraryIndex />
-                <div className="sound-library-head"><div><span className="section-label">BIBLIOTHÈQUE LOCALE</span><strong>OP-1 Music Library</strong><small>Source : sauvegarde OP-1 et dossiers sélectionnés</small></div><span className="midi-badge"><i /> LOCAL</span></div>
-                <div className="sound-categories"><div><strong>44</strong><span>Samples synth</span></div><div><strong>15</strong><span>Samples drum</span></div><div><strong>4</strong><span>Pistes Tape</span></div><div><strong>2</strong><span>Faces Album</span></div></div>
-                <div className="pack-builder"><div className="mod-section-heading"><div><span className="section-label">PACK À PRÉPARER</span><strong>Pack OP-1 · User Library</strong></div><small>{soundPackReady ? "PRÊT" : "BROUILLON"}</small></div><label><input type="checkbox" defaultChecked /> Samples synth · `synth/user`</label><label><input type="checkbox" defaultChecked /> Samples drum · `drum/user`</label><label><input type="checkbox" defaultChecked /> Pistes Tape · `tape`</label><label><input type="checkbox" /> Faces Album · `album`</label></div>
-                <div className="editor-footer"><span>{soundPackReady ? "Pack vérifié et prêt pour copie" : "Sélection locale · aucune copie exécutée"}</span><button className="primary-action" onClick={() => { setSoundPackReady(true); setNotice(describeLocalBridgeAction(prepareLocalBridgeAction("sounds.transfer-plan", { packReady: true }))); }}><Icon name="archive" />Préparer le pack</button></div><div className="sound-transfer-panel"><div><span className="section-label">TRANSFERT OP-1</span><strong>Copier les sons préparés</strong><small>La sauvegarde doit être validée dans Sauvegardes avant toute copie.</small></div><button className="secondary-action" onClick={() => setNotice(soundPackReady ? describeLocalBridgeAction(prepareLocalBridgeAction("sounds.transfer-plan", { packReady: true })) : "Préparez d’abord le pack de sons.")}><Icon name="plug" />Préparer le transfert</button></div>
-              </div>
-            )}
           </section>
         </div>
       )}
