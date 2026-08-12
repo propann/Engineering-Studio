@@ -390,6 +390,10 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .editor-release small { color: #7d8782; font-size: 10px; }
 .editor-release a { width: max-content; margin-top: 3px; color: #267c65; font-size: 10px; text-decoration: underline; }
 .firmware-download-button { min-height: 44px; margin-top: 9px !important; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: #fff !important; background: #1d2528; border: 1px solid #101416; border-radius: 6px; box-shadow: inset 0 1px rgba(255,255,255,.12), 0 2px 4px rgba(0,0,0,.14); font-size: 11px !important; font-weight: 700; text-decoration: none !important; }
+.firmware-subtabs { margin-bottom: 15px; display: flex; gap: 6px; border-bottom: 1px solid #cbd5cf; }
+.firmware-subtabs button { min-height: 34px; padding: 0 11px; color: #68766e; background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer; font: 700 9px var(--font-geist-mono), monospace; }
+.firmware-subtabs button:hover, .firmware-subtabs button:focus-visible { color: #267c65; }
+.firmware-subtabs button.is-active { color: #267c65; border-bottom-color: #267c65; }
 .firmware-download-button:hover { background: #101517; }
 .firmware-file-picker { margin-top: 14px; padding: 15px; display: flex; flex-direction: column; gap: 6px; color: var(--ink); background: #fff; border: 1px dashed #a9cfc2; border-radius: 6px; cursor: pointer; }
 .firmware-file-picker:hover { background: #f5fbf8; }

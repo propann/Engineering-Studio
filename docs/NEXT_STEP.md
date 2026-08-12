@@ -24,7 +24,7 @@ les fonctions cibles de chaque fenetre.
 
 Ordre de travail confirme :
 
-1. fusionner l'editeur Images dans Firmware sous le sous-onglet Graphismes ;
+1. retirer l'onglet Images de transition apres validation du sous-onglet Graphismes ;
 2. decouper les autres ecrans de `app/page.tsx` sans toucher aux invariants DisplayEditor ;
 3. construire l'index local Sons et brancher le preflight ;
 4. connecter le contrat de bridge a l'execution native sans flash automatique ;

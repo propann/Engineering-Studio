@@ -645,6 +645,7 @@ export default function Home() {
     backup: true,
     teBoot: false,
   });
+  const [firmwareSection, setFirmwareSection] = useState<"build" | "graphics">("build");
   const [firmwareFile, setFirmwareFile] = useState<{ name: string; size: number } | null>(null);
   const [firmwarePlanReady, setFirmwarePlanReady] = useState(false);
   const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
@@ -974,6 +975,8 @@ export default function Home() {
 
             {toolWindow === "editor" && (
               <div className="tool-body">
+                <div className="firmware-subtabs" role="tablist" aria-label="Sections Firmware"><button type="button" className={firmwareSection === "build" ? "is-active" : ""} onClick={() => setFirmwareSection("build")}>Plan &amp; build</button><button type="button" className={firmwareSection === "graphics" ? "is-active" : ""} onClick={() => setFirmwareSection("graphics")}>Graphismes</button></div>
+                {firmwareSection === "graphics" ? <DisplayEditor onNotice={setNotice} /> : <>
                 <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a href={officialFirmwareUrl} target="_blank" rel="noreferrer">Télécharger depuis Teenage Engineering</a></div>
                 <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
                 <div className="mod-section">
@@ -986,6 +989,7 @@ export default function Home() {
                   <label><input type="checkbox" checked={firmwareOptions.teBoot} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, teBoot: event.target.checked })} /><span><strong>Préparer le mode TE-boot</strong><small>Afficher les étapes manuelles avant la mise à jour.</small></span></label>
                 </div>
                 <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
+                </>}
               </div>
             )}
 

@@ -42,7 +42,7 @@ autour de sept espaces visibles dans l'accueil :
 | Fenetre | Perimetre retenu | Etat architectural |
 | --- | --- | --- |
 | Accueil | lancement par modules, etats machine et raccourcis | livre |
-| Firmware | source, verification, moteurs, graphismes, audio usine, plan/build et TE-boot | fusion Images decidee, sous-onglets a construire |
+| Firmware | source, verification, moteurs, graphismes, audio usine, plan/build et TE-boot | sous-onglet Graphismes livre ; retrait de la transition et build natif a poursuivre |
 | Sauvegardes | snapshots, comparaison, restauration, Time Capsule Pistes et transfert | livre en moteur, UI/bridge natif a brancher |
 | Sons | bibliotheque, preflight, patches, 24 pads et packs | pads livres, index et transfert a poursuivre |
 | Studio | Clone OP-1, MIDI, Tape, Album, mixage et projet | coeur livre, sources persistantes a poursuivre |

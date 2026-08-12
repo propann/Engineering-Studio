@@ -110,7 +110,11 @@ le contenu d'usine).
 `OP1_vdk.ldr`, déchiffrement, OTP, ECC, flash, bootloader. Objectif d'afficher
 une mention claire dans l'UI plutôt que de laisser croire à un oubli.
 
-## Proposition d'organisation interne (sous-onglets dans la fenêtre Firmware)
+## Architecture interne (sous-onglets dans la fenêtre Firmware)
+
+Le premier sous-onglet **Graphismes** est maintenant integre a la fenetre
+Firmware dans l'UI. L'onglet Images global reste temporairement disponible
+comme transition ; il sera retire apres validation de cette integration.
 
 ```text
 Firmware
