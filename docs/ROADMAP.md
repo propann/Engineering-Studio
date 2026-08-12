@@ -4,7 +4,7 @@ Le firmware est le premier écran et le premier sujet de confiance. Techniquemen
 
 ## Etat de livraison
 
-Etat de pilotage : 12 aout 2026.
+Etat de pilotage : 12 aout 2026 (maj soir).
 
 Le projet a trois niveaux de maturite :
 
@@ -106,9 +106,14 @@ encore etre imposee par l'UI/coeur natif.
   `ExercisePanel`, `DocumentationPanel`, `BackupPanel`, `SoundsPanel`,
   `StudioModeHeader`, `StudioProjectToolbar`, `StudioTransportPanel` et
   `StudioTrackList` sont extraits ; `DisplayCreatorPanel` est livre dans
-  Firmware > Graphismes
-  de `app/page.tsx` sans changement de rendu. Le hub d'accueil par modules est
-  maintenant livre ; le decoupage des autres ecrans reste a poursuivre.
+  Firmware > Graphismes de `app/page.tsx` sans changement de rendu. Le hub
+  d'accueil par modules est maintenant livre ; le decoupage des autres ecrans
+  reste a poursuivre. **Clavier Studio** : `StudioMachinePanel` remplace le
+  clavier SVG fixe par un editeur de grille 64x16 — l'utilisateur peint les
+  blocs, les valide (Espace), ils deviennent des elements SVG interactifs en
+  mode jeu (touches piano, encodeurs, boutons) ; etat persiste en
+  localStorage, migration automatique des anciens blocs, panneau deploye par
+  defaut.
 
 Le projet dispose aujourd'hui d'un prototype fonctionnel et de bridges locaux
 testés pour firmware, samples, patches et préparation Tape. Les écrans sont

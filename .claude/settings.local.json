@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:teenage.engineering)",
+      "Bash(python -c \"import lzma, tarfile; print\\('stdlib ok'\\)\")",
+      "Bash(python tools/firmware_fetch.py --version 246 --output .cache/firmware/op1_246.op1 --force)",
+      "Bash(python tools/firmware_bridge.py --input .cache/firmware/op1_246.op1 --output-dir backups/firmware-builds --options iter presets-iter filter subtle-fx gfx-iter-lab gfx-cwo-moose gfx-tape-invert)",
+      "Bash(python tools/firmware_inspector.py .cache/firmware/op1_246.op1 --compact)",
+      "Bash(python tools/firmware_inspector.py backups/firmware-builds/OP1_op1_246_mods.op1 --compact)",
+      "Bash(python tools/display_bridge.py list --input .cache/firmware/op1_246.op1)",
+      "Bash(python -c ' *)",
+      "Bash(python -)"
+    ]
+  }
+}

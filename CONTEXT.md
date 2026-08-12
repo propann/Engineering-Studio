@@ -1,6 +1,6 @@
 # Contexte de reprise — OP-1 Studio
 
-Dernière mise à jour : **11 août 2026** · langue de travail : français · cible :
+Dernière mise à jour : **12 août 2026** · langue de travail : français · cible :
 **OP-1 original uniquement**.
 
 ## Récupération sur le PC Windows
@@ -23,6 +23,28 @@ npm run lint
 Le dépôt est une application Tauri/React avec des scripts Python servant
 d'oracles de sécurité et de compatibilité. Aucun firmware propriétaire, pack
 tiers ou cache d'outil ne doit être ajouté à Git.
+
+## Clavier Studio — grille interactive (12 août 2026)
+
+`StudioMachinePanel` a été entièrement réécrit autour d'un éditeur de grille
+64 × 16 :
+
+- **Mode éditeur** : clic souris pour peindre des cases (5 couleurs), Espace
+  pour valider un bloc rectangulaire, Suppr pour tout effacer. L'état est
+  persisté dans `localStorage` sous la clé `op1-studio-grid-v1`.
+- **Palette** : blanc `#DFD9FF` → touche blanche, orange `#e8a020` → touche
+  noire, bleu `#698EFF` → encodeur, vert `#00ED95` → bouton fonction, rouge
+  `#FF3A5D` → transport.
+- **Mode jeu** : les blocs validés deviennent des éléments SVG interactifs —
+  touches piano avec ovale + nom de note + pastille colorée, touches noires
+  avec cercle, encodeurs avec arc SVG animé et drag vertical, boutons fonction
+  et transport.
+- **Notes MIDI** : blanches C3–B4 (`WHITE_NOTES`), noires C#3–A#4
+  (`BLACK_NOTES`) assignées de gauche à droite.
+- **Barre de contrôle** : bouton `▲ clavier` / `▼ clavier` pour
+  déployer/replier l'ensemble, bouton `✎ éditeur` pour basculer entre les
+  deux modes. Panneau déployé par défaut (`panelOpen = true`).
+- **Migration** : `colorToType()` migre les anciens blocs sans champ `type`.
 
 ## Où en est le travail
 

@@ -15,7 +15,7 @@ import { SoundsPanel } from "./components/SoundsPanel";
 import { StudioModeHeader } from "./components/StudioModeHeader";
 import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
-import { StudioTrackList } from "./components/StudioTrackList";
+import { StudioTapeEditor } from "./components/StudioTapeEditor";
 import { StudioTransportPanel } from "./components/StudioTransportPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 
@@ -357,6 +357,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [fadeIns, setFadeIns] = useState<Record<number, number>>({});
   const [fadeOuts, setFadeOuts] = useState<Record<number, number>>({});
   const [trimTrack, setTrimTrack] = useState<number | null>(null);
+  const [selectedTrack, setSelectedTrack] = useState(0);
   const [waveformPeaks, setWaveformPeaks] = useState<Record<number, number[]>>({});
   const [muted, setMuted] = useState<Record<number, boolean>>({});
   const [solo, setSolo] = useState<number | null>(null);
@@ -364,6 +365,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [tempo, setTempo] = useState(90);
   const [recording, setRecording] = useState(false);
   const [looping, setLooping] = useState(false);
+  const [reversed, setReversed] = useState(false);
+  const [screenFolded, setScreenFolded] = useState(false);
+  const [keyboardFolded, setKeyboardFolded] = useState(false);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -579,13 +583,156 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   return (
     <div className="tool-body tape-editor">
-      <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV offline</button><small>Mixe les pistes locales avec le gain, le trim et les fades actuels.</small></div>
-      <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Exporter les stems Tape</button><small>Produit un WAV par piste pour la préparation du dossier tape.</small></div>
-      <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Exporter Album</button><small>Produit deux faces WAV et un manifeste JSON.</small></div>
-      <StudioMachinePanel pressedNotes={pressedMidiNotes} mode={studioMode} playing={transportPlaying} position={transportTime} files={files} onTogglePlayback={toggleGlobalPlayback} onSendMidi={onSendMidi} />
-      <StudioProjectToolbar Icon={Icon} projectName={projectName} inputRef={projectInputRef} onProjectNameChange={setProjectName} onNew={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); }} onOpen={() => projectInputRef.current?.click()} onSave={saveProject} onLoad={loadProject} onImport={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")} />
-      <StudioTrackList Icon={Icon} tracks={tracks} files={files} sources={sources} sourceRefs={sourceRefs} muted={muted} solo={solo} playing={playing} audioRefs={audioRefs} onFileLoad={(index, file) => { setFiles({ ...files, [index]: file.name }); setSourceRefs({ ...sourceRefs, [index]: { path: file.name, status: "linked" } }); setSources({ ...sources, [index]: URL.createObjectURL(file) }); setDurations({ ...durations, [index]: 0 }); onNotice(`${tracks[index]} chargée localement.`); }} onTogglePlay={togglePlay} onSoloChange={(index) => setSolo(solo === index ? null : index)} onMuteChange={(index) => setMuted({ ...muted, [index]: !muted[index] })} onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))} onTrackEnd={() => { if (transportPlaying) setTransportPlaying(false); setPlaying(null); }} />
-      <div className="tape-import-note"><Icon name="shield" size={16} /><span><strong>Import sécurisé</strong><small>Le clone prépare les pistes dans `tape/`. La copie vers l’OP-1 viendra après sauvegarde, vérification et éjection contrôlée.</small></span></div>
+
+      {/* ── Transport strip (toujours visible) ── */}
+      <div className="studio-top-strip">
+        <StudioModeHeader Icon={Icon} mode={studioMode} onModeChange={setStudioMode} onConnectMidi={onConnectMidi} />
+        <StudioTransportPanel Icon={Icon} tempo={tempo} recording={recording} looping={looping} reversed={reversed} mode={studioMode} midiNotes={midiNotes} onPlay={toggleGlobalPlayback} onRecord={toggleMidiRecording} onQuantize={quantizeMidi} onLoopChange={setLooping} onTempoChange={setTempo} onConnectMidi={onConnectMidi} onReversedChange={setReversed} />
+      </div>
+
+      {/* ── Panneau Écran (escamotable) ── */}
+      <div className={`studio-slide-panel studio-screen-panel${screenFolded ? " is-folded" : ""}`}>
+        <button
+          className="slide-panel-toggle"
+          onClick={() => setScreenFolded(!screenFolded)}
+          title={screenFolded ? "Déplier l’écran" : "Replier l’écran"}
+        >
+          <span>{screenFolded ? "▶ Écran" : "◀ Replier écran"}</span>
+        </button>
+
+        {/* Contenu quand déplié : SVG tape editor */}
+        {!screenFolded && (
+          <StudioTapeEditor
+            tracks={tracks}
+            files={files}
+            sources={sources}
+            sourceRefs={sourceRefs}
+            waveformPeaks={waveformPeaks}
+            clipOffsets={clipOffsets}
+            clipEnds={clipEnds}
+            durations={durations}
+            muted={muted}
+            solo={solo}
+            playing={playing}
+            selectedTrack={selectedTrack}
+            position={transportTime}
+            transportPlaying={transportPlaying}
+            looping={looping}
+            audioRefs={audioRefs}
+            onFileLoad={(index, file) => {
+              setFiles({ ...files, [index]: file.name });
+              setSourceRefs({ ...sourceRefs, [index]: { path: file.name, status: "linked" } });
+              setSources({ ...sources, [index]: URL.createObjectURL(file) });
+              setDurations({ ...durations, [index]: 0 });
+              setSelectedTrack(index);
+              onNotice(`${tracks[index]} chargée localement.`);
+            }}
+            onTogglePlay={togglePlay}
+            onSoloChange={(index) => setSolo(solo === index ? null : index)}
+            onMuteChange={(index) => setMuted({ ...muted, [index]: !muted[index] })}
+            onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))}
+            onTrackEnd={() => { if (transportPlaying) setTransportPlaying(false); setPlaying(null); }}
+            onOffsetChange={(index, offset) => setClipOffsets((current) => ({ ...current, [index]: offset }))}
+            onSelectTrack={setSelectedTrack}
+            onSeek={seekTransport}
+            reversed={reversed}
+          />
+        )}
+
+        {/* Contenu quand replié : réglages affichage */}
+        {screenFolded && (
+          <div className="panel-settings display-settings">
+            <h3>Réglages affichage</h3>
+
+            {trimTrack !== null && (
+              <TrackEditControls
+                tracks={tracks}
+                durations={durations}
+                clipEnds={clipEnds}
+                fadeIns={fadeIns}
+                fadeOuts={fadeOuts}
+                trimTrack={trimTrack}
+                onTrimTrack={setTrimTrack}
+                onChange={(kind, index, value) => {
+                  if (kind === "end") setClipEnds((c) => ({ ...c, [index]: value }));
+                  else if (kind === "fadeIn") setFadeIns((c) => ({ ...c, [index]: value }));
+                  else setFadeOuts((c) => ({ ...c, [index]: value }));
+                }}
+              />
+            )}
+
+            <StudioProjectToolbar
+              Icon={Icon}
+              projectName={projectName}
+              inputRef={projectInputRef}
+              onProjectNameChange={setProjectName}
+              onNew={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); }}
+              onOpen={() => projectInputRef.current?.click()}
+              onSave={saveProject}
+              onLoad={loadProject}
+              onImport={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")}
+            />
+
+            <div className="studio-render-actions">
+              <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV</button><small>Mixe les pistes.</small></div>
+              <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Stems</button><small>Un WAV par piste.</small></div>
+              <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Album</button><small>Deux faces + manifeste.</small></div>
+            </div>
+
+            <div className="tape-import-note">
+              <Icon name="shield" size={14} />
+              <span><small>Le clone prépare les pistes dans tape/. Copie vers OP-1 après sauvegarde et éjection.</small></span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Panneau Clavier (escamotable) ── */}
+      <div className={`studio-slide-panel studio-keyboard-panel${keyboardFolded ? " is-folded" : ""}`}>
+        <button
+          className="slide-panel-toggle"
+          onClick={() => setKeyboardFolded(!keyboardFolded)}
+          title={keyboardFolded ? "Déplier le clavier" : "Replier le clavier"}
+        >
+          <span>{keyboardFolded ? "▶ Clavier" : "◀ Replier clavier"}</span>
+        </button>
+
+        {/* Contenu quand déplié : clone clavier */}
+        {!keyboardFolded && (
+          <StudioMachinePanel
+            pressedNotes={pressedMidiNotes}
+            mode={studioMode}
+            playing={transportPlaying}
+            position={transportTime}
+            files={files}
+            onTogglePlayback={toggleGlobalPlayback}
+            onSendMidi={onSendMidi}
+          />
+        )}
+
+        {/* Contenu quand replié : réglages clavier */}
+        {keyboardFolded && (
+          <div className="panel-settings keyboard-settings">
+            <h3>Réglages clavier</h3>
+            <div className="settings-row">
+              <label>Mode</label>
+              <select value={studioMode} onChange={(e) => setStudioMode(e.target.value as "clone" | "midi")}>
+                <option value="clone">Clone local</option>
+                <option value="midi">MIDI externe</option>
+              </select>
+            </div>
+            <div className="settings-row">
+              <label>Tempo</label>
+              <input type="number" min="40" max="200" value={tempo} onChange={(e) => setTempo(Number(e.target.value))} /> BPM
+            </div>
+            <div className="settings-row">
+              <label>Boucle</label>
+              <button className={`track-state${looping ? " is-active" : ""}`} onClick={() => setLooping(!looping)}>LOOP</button>
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 }
