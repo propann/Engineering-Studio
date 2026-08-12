@@ -80,12 +80,20 @@ actions `copy` et `skip`. Seuls `tape/`, `album/`, `synth/user/` et
 `drum/user/` sont acceptes :
 
 ```powershell
-python tools/device_transfer_plan.py backups/tape-import "E:"
+python tools/device_transfer_plan.py prepare backups/tape-import "E:"
 ```
 
-Le resultat contient `machineWrite: false`. L'execution effective sera ajoutee
-separement, apres confirmation du manifeste de sauvegarde et implementation de
-l'ejection native.
+Le resultat contient `machineWrite: false`. L'execution effective exige un
+snapshot verifie et une confirmation explicite :
+
+```powershell
+python tools/device_transfer_plan.py execute backups/tape-import "E:" `
+  backups/hardware-tests/op1-disk_<snapshot> --confirm
+```
+
+L'execution ne supprime aucun fichier, utilise un fichier temporaire, puis
+verifie le SHA-256 apres chaque copie. L'ejection native reste une etape
+separee a ajouter avant utilisation courante.
 
 ## Packs audio
 

@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import sys
+import shutil
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -49,6 +50,28 @@ def _relative(path: Path, root: Path) -> str:
 
 def _allowed(relative: str) -> bool:
     return any(relative == root or relative.startswith(f"{root}/") for root in ALLOWED_ROOTS)
+
+
+def _verify_backup(snapshot: Path) -> dict[str, Any]:
+    manifest_path = snapshot.expanduser().resolve() / "manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise TransferPlanError("backup_unavailable", "The backup manifest cannot be read.", path=str(manifest_path)) from exc
+    if manifest.get("model") != "op-1-original":
+        raise TransferPlanError("backup_model", "The backup is not an original OP-1 snapshot.")
+    files_root = manifest_path.parent / "files"
+    for entry in manifest.get("files", []):
+        relative = str(entry.get("path", ""))
+        parsed = PurePosixPath(relative)
+        target = files_root / relative
+        if parsed.is_absolute() or any(part in {"", ".", ".."} for part in parsed.parts):
+            raise TransferPlanError("unsafe_path", "The backup contains an unsafe path.", path=relative)
+        if not target.is_file() or target.is_symlink() or target.stat().st_size != int(entry["size"]):
+            raise TransferPlanError("backup_invalid", "A backup file is missing or changed.", path=relative)
+        if _hash(target) != str(entry["sha256"]):
+            raise TransferPlanError("backup_invalid", "A backup file failed SHA-256 verification.", path=relative)
+    return {"snapshot": str(manifest_path.parent), "checkedFiles": len(manifest.get("files", []))}
 
 
 def _files(root: Path) -> list[tuple[Path, str]]:
@@ -107,13 +130,53 @@ def prepare_transfer(source: Path, device: Path) -> dict[str, Any]:
     }
 
 
+def execute_transfer(source: Path, device: Path, backup_snapshot: Path, *, confirm: bool = False) -> dict[str, Any]:
+    """Copy changed files only after an explicit confirmation and backup check."""
+    if not confirm:
+        raise TransferPlanError("confirmation_required", "Pass --confirm to enable machine writes.")
+    backup = _verify_backup(backup_snapshot)
+    plan = prepare_transfer(source, device)
+    copied = 0
+    skipped = 0
+    for action in plan["actions"]:
+        if action["action"] == "skip":
+            skipped += 1
+            continue
+        relative = action["path"]
+        source_path = Path(plan["source"]) / PurePosixPath(relative)
+        target = Path(plan["device"]) / PurePosixPath(relative)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_name(f".{target.name}.op1studio.partial")
+        try:
+            with source_path.open("rb") as input_stream, temporary.open("wb") as output_stream:
+                shutil.copyfileobj(input_stream, output_stream, length=CHUNK_SIZE)
+                output_stream.flush()
+                os.fsync(output_stream.fileno())
+            if _hash(temporary) != action["sourceSha256"]:
+                raise TransferPlanError("source_changed", "A source file changed during transfer.", path=relative)
+            os.replace(temporary, target)
+            if _hash(target) != action["sourceSha256"]:
+                raise TransferPlanError("write_verification_failed", "A device file failed post-copy verification.", path=relative)
+            copied += 1
+        finally:
+            temporary.unlink(missing_ok=True)
+    return {"schemaVersion": SCHEMA_VERSION, "machineWrite": True, "backup": backup, "copied": copied, "skipped": skipped, "verified": True}
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Prepare an OP-1 transfer plan without writing to the device.")
-    parser.add_argument("source", type=Path, help="Prepared local pack")
-    parser.add_argument("device", type=Path, help="Mounted OP-1 volume")
+    parser = argparse.ArgumentParser(description="Prepare or execute a controlled OP-1 transfer.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    prepare = subparsers.add_parser("prepare")
+    prepare.add_argument("source", type=Path, help="Prepared local pack")
+    prepare.add_argument("device", type=Path, help="Mounted OP-1 volume")
+    execute = subparsers.add_parser("execute")
+    execute.add_argument("source", type=Path, help="Prepared local pack")
+    execute.add_argument("device", type=Path, help="Mounted OP-1 volume")
+    execute.add_argument("backup", type=Path, help="Verified local OP-1 backup snapshot")
+    execute.add_argument("--confirm", action="store_true", help="Confirm writes to the mounted OP-1 volume")
     args = parser.parse_args(argv)
     try:
-        result = prepare_transfer(args.source, args.device)
+        result = prepare_transfer(args.source, args.device) if args.command == "prepare" else execute_transfer(args.source, args.device, args.backup, confirm=args.confirm)
         exit_code = 0
     except (TransferPlanError, OSError) as exc:
         if isinstance(exc, TransferPlanError):

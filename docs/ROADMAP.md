@@ -52,7 +52,8 @@ officiel reste à terminer dans le bridge local.
 
 **Etat : interface et règles définies.** Le snapshot local et sa vérification
 SHA-256 sont validés sur la machine. La copie vers l'OP-1, la restauration,
-la déduplication et l'éjection contrôlée restent à implémenter.
+la déduplication et l'éjection contrôlée restent à finaliser. Le plan de
+transfert et son exécution confirmée sont maintenant testés sur fixtures.
 
 La Time Capsule est réservée aux pistes Tape et Album. Les firmwares restent
 dans le parcours Firmware et les samples dans la Bibliothèque Sons.
@@ -208,6 +209,7 @@ transfert machine reste à faire.
 - créer et relire une sauvegarde avant écriture ;
 - préparer un plan Tape/Sons avec liste exacte des fichiers ;
 - copier vers un volume temporaire contrôlé, synchroniser, vérifier les hash ;
+- exécuter les copies autorisées seulement après `--confirm`, sans suppression ;
 - éjecter avec l'API système et afficher le résultat ;
 - tester déconnexion, volume disparu et fichier partial.
 
