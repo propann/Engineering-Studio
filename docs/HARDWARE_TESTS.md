@@ -35,6 +35,17 @@ Ces tests ne sont pas declares valides par cette session :
 Le mode suivant est le mode normal/MIDI. Il doit etre lance apres ejection
 Windows du volume Disk, puis retour de l'OP-1 en fonctionnement normal.
 
+## Detection MIDI/audio du 12 aout 2026
+
+La machine a ete rebranchee en mode normal pendant le test de
+`http://127.0.0.1:4173/`. Windows expose `USB\\VID_2367&PID_0004`, la sortie
+audio `Haut-parleurs (OP-1)` et les ports MIDI `OP-1 [2]` et `OP-1 [3]`.
+Le serveur local repond `HTTP 200`.
+
+L'autorisation Web MIDI et la capture note-on/note-off restent a verifier dans
+Chrome ou Edge : aucun navigateur automatisable n'est disponible dans cet
+environnement.
+
 ## Mode normal detecte
 
 Le 12 aout 2026, Windows a expose l'OP-1 en fonctionnement normal avec :

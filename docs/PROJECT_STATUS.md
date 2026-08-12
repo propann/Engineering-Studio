@@ -31,7 +31,7 @@ fichier `.partial` restant.
 - Tape : bridge quatre pistes, conversion six minutes maximum, manifeste et sortie separee `tape/`.
 - Projet Studio : format JSON `op1-studio-project` v1, creation, validation, enregistrement et rechargement du mixage, des clips et des evenements MIDI.
 - Studio audio : quatre pistes, transport commun, position audio maitre, gain, trim de fin, fade-in et fade-out non destructifs.
-- MIDI : détection Web MIDI OP-1, entrée/sortie identifiées, décodage note-on/note-off isolé dans `app/lib/midi.ts`, capture temporelle, piano-roll éditable et relecture MIDI programmée. La capture matérielle Chrome/Edge reste à valider avec l’OP-1 connecté.
+- MIDI : détection Web MIDI OP-1, entrée/sortie identifiées, décodage note-on/note-off isolé dans `app/lib/midi.ts`, capture temporelle, piano-roll éditable et relecture MIDI programmée. Windows voit actuellement l’OP-1 et son audio USB ; l’autorisation Web MIDI et la capture Chrome/Edge restent à valider manuellement.
 - Clone : clavier ordinateur, touches visuelles, synthese locale de secours, sortie MIDI OP-1 et ecoute audio USB quand le navigateur expose l'interface.
 - Interface : fenetres de travail larges et barre d'outils persistante pour Firmware, Sauvegardes, Bibliotheque Sons, Studio, Exercices et Documentation.
 
