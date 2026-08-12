@@ -745,6 +745,10 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   font: 700 8px var(--font-geist-mono), monospace;
   cursor: pointer;
 }
+.mpanel-bar-btn.is-active { color: #267c65; background: #e2f3ea; border-color: #72b899; }
+.machine-config-panel { display: flex; align-items: center; gap: 10px; min-height: 30px; padding: 5px 10px; color: #52645b; background: #f3f7f3; border-bottom: 1px solid #d6e2d9; font: 9px var(--font-geist-mono), monospace; }
+.machine-config-panel strong { color: #263a31; }
+.machine-config-panel small { color: #78877f; }
 .mgrid-toolbar {
   display: flex; align-items: center; gap: 6px;
   padding: 5px 10px;

@@ -90,6 +90,8 @@ export function StudioMachinePanel({
   const [showGrid, setShowGrid]   = useState(true);
   // L'editeur est de nouveau disponible pour modifier le clavier construit.
   const [editOpen, setEditOpen]   = useState(true);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [configTarget, setConfigTarget] = useState<{ type: string; index: number; label: string } | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -245,6 +247,10 @@ export function StudioMachinePanel({
     if (mode === "midi") onSendMidi([0x80, Math.max(0, Math.min(127, note)), 0]);
   }
 
+  function selectConfig(type: string, index: number, label: string) {
+    setConfigTarget({ type, index, label });
+  }
+
   // ── Encodeurs ─────────────────────────────────────────────────────────────
   const [encVals, setEncVals] = useState([64,64,64,64,64,64,64,64]);
   const encDrag = useRef<{idx:number; startY:number; startV:number}|null>(null);
@@ -260,6 +266,9 @@ export function StudioMachinePanel({
         </button>
         {panelOpen && <button className="mpanel-bar-btn" onClick={() => setEditOpen(v => !v)}>
           {editOpen ? "masquer éditeur" : "✎ éditeur"}
+        </button>}
+        {panelOpen && <button className={`mpanel-bar-btn${configOpen ? " is-active" : ""}`} onClick={() => { setConfigOpen(v => !v); setConfigTarget(null); }}>
+          {configOpen ? "fermer config" : "config"}
         </button>}
         <span className="mgrid-hint">{validated.length} blocs</span>
         {editOpen && panelOpen && (
@@ -289,6 +298,16 @@ export function StudioMachinePanel({
           </>
         )}
       </div>
+
+      {panelOpen && configOpen && (
+        <div className="machine-config-panel" aria-label="Configuration du contrôle MIDI">
+          {configTarget ? <>
+            <strong>{configTarget.label}</strong>
+            <span>{configTarget.type === "note" ? `Note MIDI ${WHITE_NOTES[configTarget.index] ?? BLACK_NOTES[configTarget.index] ?? "-"}` : configTarget.type === "enc" ? `CC MIDI ${70 + configTarget.index}` : `Commande MIDI ${36 + configTarget.index}`}</span>
+            <small>Cliquez un autre contrôle pour le configurer.</small>
+          </> : <small>Cliquez un bouton virtuel, une note ou un potentiomètre sur le clavier.</small>}
+        </div>
+      )}
 
       {panelOpen && editOpen && (
         <div className="mgrid-legend" aria-label="Légende des couleurs MIDI">
@@ -372,9 +391,9 @@ export function StudioMachinePanel({
               const name = NOTE_NAMES[note % 12];
               return (
                 <g key={`w${i}`}
-                  onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); noteOn(note); }}
-                  onPointerUp={() => noteOff(note)}
-                  onPointerLeave={() => { if (pressed.has(note)) noteOff(note); }}
+                  onPointerDown={e => { if (configOpen) { e.stopPropagation(); selectConfig("note", i, name); return; } e.currentTarget.setPointerCapture(e.pointerId); noteOn(note); }}
+                  onPointerUp={() => { if (!configOpen) noteOff(note); }}
+                  onPointerLeave={() => { if (!configOpen && pressed.has(note)) noteOff(note); }}
                   style={{ cursor: "pointer" }}
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
@@ -406,8 +425,8 @@ export function StudioMachinePanel({
               const isDown = pressed.has(note);
               return (
                 <g key={`bk${i}`}
-                  onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); noteOn(note); }}
-                  onPointerUp={() => noteOff(note)}
+                  onPointerDown={e => { if (configOpen) { e.stopPropagation(); selectConfig("note", i, `Noire ${note}`); return; } e.currentTarget.setPointerCapture(e.pointerId); noteOn(note); }}
+                  onPointerUp={() => { if (!configOpen) noteOff(note); }}
                   style={{ cursor: "pointer" }}
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
@@ -436,6 +455,7 @@ export function StudioMachinePanel({
               return (
                 <g key={`enc${i}`}
                   onPointerDown={e => {
+                    if (configOpen) { e.stopPropagation(); selectConfig("enc", i, `Potentiomètre T${i + 1}`); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     encDrag.current = {idx:i, startY:e.clientY, startV:v};
                   }}
@@ -469,7 +489,7 @@ export function StudioMachinePanel({
             {/* ── Boutons de fonction (vert) ── */}
             {fnBlocks.map((b, i) => (
               <g key={`fn${i}`} style={{ cursor: "pointer" }}
-                onPointerDown={() => { if (mode==="midi") onSendMidi([0x99, 36+i, 100]); }}
+                onPointerDown={(e) => { if (configOpen) { e.stopPropagation(); selectConfig("button", i, `Bouton ${i + 1}`); return; } if (mode==="midi") onSendMidi([0x99, 36+i, 100]); }}
               >
                 <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
                   rx={.3} fill="#cececb" stroke="#a0a3a0" strokeWidth={.07}/>
@@ -481,7 +501,7 @@ export function StudioMachinePanel({
             {/* ── Transport / spécial (rouge) ── */}
             {transBlocks.map((b, i) => (
               <g key={`tr${i}`} style={{ cursor: "pointer" }}
-                onPointerDown={() => { if (i===0) onTogglePlayback(); }}
+                onPointerDown={(e) => { if (configOpen) { e.stopPropagation(); selectConfig("transport", i, `Transport ${i + 1}`); return; } if (i===0) onTogglePlayback(); }}
               >
                 <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
                   rx={.3} fill="#cececb" stroke="#a0a3a0" strokeWidth={.07}/>
