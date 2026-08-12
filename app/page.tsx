@@ -304,8 +304,23 @@ function TrackGainControls({ tracks, gains, onChange }: { tracks: string[]; gain
   return <section className="track-gain-panel" aria-label="Gain des pistes"><div className="mod-section-heading"><div><span className="section-label">MIXAGE LOCAL</span><strong>Gain des quatre pistes</strong></div><small>Persisté dans le projet</small></div><div className="track-gain-grid">{tracks.map((track, index) => <label key={track}><span>{track}</span><input type="range" min="0" max="1" step="0.01" value={gains[index] ?? 1} onChange={(event) => onChange(index, Number(event.target.value))} /><output>{Math.round((gains[index] ?? 1) * 100)}%</output></label>)}</div></section>;
 }
 
-function TrackEditControls({ tracks, durations, clipEnds, fadeIns, fadeOuts, onChange }: { tracks: string[]; durations: Record<number, number>; clipEnds: Record<number, number>; fadeIns: Record<number, number>; fadeOuts: Record<number, number>; onChange: (kind: "end" | "fadeIn" | "fadeOut", index: number, value: number) => void }) {
-  return <section className="track-edit-panel" aria-label="Edition des clips"><div className="mod-section-heading"><div><span className="section-label">EDITION NON DESTRUCTIVE</span><strong>Trim et fondus</strong></div><small>Les sources restent intactes</small></div><div className="track-edit-grid">{tracks.map((track, index) => { const max = durations[index] && Number.isFinite(durations[index]) ? durations[index] : 360; const end = Math.min(clipEnds[index] ?? max, max); return <div className="track-edit-row" key={track}><strong>{track}</strong><label>Fin <input type="number" min="0.1" max={max || 360} step="0.1" value={Number(end.toFixed(1))} onChange={(event) => onChange("end", index, Number(event.target.value))} /><small>s</small></label><label>Fade in <input type="number" min="0" max="10" step="0.1" value={fadeIns[index] ?? 0} onChange={(event) => onChange("fadeIn", index, Number(event.target.value))} /><small>s</small></label><label>Fade out <input type="number" min="0" max="10" step="0.1" value={fadeOuts[index] ?? 0} onChange={(event) => onChange("fadeOut", index, Number(event.target.value))} /><small>s</small></label></div>; })}</div></section>;
+function TrimEditor({ track, max, end, onChange, onClose }: { track: string; max: number; end: number; onChange: (value: number) => void; onClose: () => void }) {
+  const [start, setStart] = useState(0);
+  const safeEnd = Math.max(start + 0.1, Math.min(end, max));
+  const duration = Math.max(0, safeEnd - start);
+  return <div className="trim-editor" aria-label={`Trim de ${track}`}>
+    <div className="trim-editor-head"><div><span className="section-label">TRIM ACTIF</span><strong>{track}</strong></div><button type="button" className="secondary-action" onClick={onClose}>Retour aux réglages</button></div>
+    <div className="trim-waveform" aria-label="Forme d’onde de la sélection"><div className="trim-selection" style={{ left: `${(start / max) * 100}%`, right: `${100 - (safeEnd / max) * 100}%` }} />{Array.from({ length: 32 }, (_, index) => <i key={index} style={{ height: `${22 + ((index * 37) % 68)}%` }} />)}<input aria-label="Poignée de début" type="range" min="0" max={max} step="0.1" value={start} onChange={(event) => setStart(Math.min(Number(event.target.value), safeEnd - 0.1))} /><input aria-label="Poignée de fin" type="range" min="0.1" max={max} step="0.1" value={safeEnd} onChange={(event) => onChange(Math.max(start + 0.1, Number(event.target.value)))} /></div>
+    <div className="trim-editor-meta"><label>Début <output>{start.toFixed(1)} s</output></label><strong>{duration.toFixed(1)} s sélectionnées</strong><label>Fin <output>{safeEnd.toFixed(1)} s</output></label></div>
+  </div>;
+}
+
+function TrackEditControls({ tracks, durations, clipEnds, fadeIns, fadeOuts, trimTrack, onTrimTrack, onChange }: { tracks: string[]; durations: Record<number, number>; clipEnds: Record<number, number>; fadeIns: Record<number, number>; fadeOuts: Record<number, number>; trimTrack: number | null; onTrimTrack: (index: number | null) => void; onChange: (kind: "end" | "fadeIn" | "fadeOut", index: number, value: number) => void }) {
+  if (trimTrack !== null) {
+    const max = durations[trimTrack] && Number.isFinite(durations[trimTrack]) ? durations[trimTrack] : 360;
+    return <section className="track-edit-panel" aria-label="Edition du trim"><TrimEditor track={tracks[trimTrack]} max={max} end={Math.min(clipEnds[trimTrack] ?? max, max)} onChange={(value) => onChange("end", trimTrack, value)} onClose={() => onTrimTrack(null)} /></section>;
+  }
+  return <section className="track-edit-panel" aria-label="Edition des clips"><div className="mod-section-heading"><div><span className="section-label">EDITION NON DESTRUCTIVE</span><strong>Trim et fondus</strong></div><small>Les sources restent intactes</small></div><div className="track-edit-grid">{tracks.map((track, index) => { const max = durations[index] && Number.isFinite(durations[index]) ? durations[index] : 360; const end = Math.min(clipEnds[index] ?? max, max); return <div className="track-edit-row" key={track}><strong>{track}</strong><button type="button" className="secondary-action trim-open-button" onClick={() => onTrimTrack(index)}>Trim · {Number(end.toFixed(1))} s</button><label>Fade in <input type="number" min="0" max="10" step="0.1" value={fadeIns[index] ?? 0} onChange={(event) => onChange("fadeIn", index, Number(event.target.value))} /><small>s</small></label><label>Fade out <input type="number" min="0" max="10" step="0.1" value={fadeOuts[index] ?? 0} onChange={(event) => onChange("fadeOut", index, Number(event.target.value))} /><small>s</small></label></div>; })}</div></section>;
 }
 
 function audioBufferToWav(buffer: AudioBuffer) {
@@ -327,6 +342,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [clipEnds, setClipEnds] = useState<Record<number, number>>({});
   const [fadeIns, setFadeIns] = useState<Record<number, number>>({});
   const [fadeOuts, setFadeOuts] = useState<Record<number, number>>({});
+  const [trimTrack, setTrimTrack] = useState<number | null>(null);
   const [waveformPeaks, setWaveformPeaks] = useState<Record<number, number[]>>({});
   const [muted, setMuted] = useState<Record<number, boolean>>({});
   const [solo, setSolo] = useState<number | null>(null);
@@ -544,7 +560,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       <CloneSurface onSendMidi={onSendMidi} onNotice={onNotice} />
       <UsbAudioMonitor onNotice={onNotice} />
       <TrackGainControls tracks={tracks} gains={gains} onChange={(index, value) => setGains((current) => ({ ...current, [index]: value }))} />
-      <TrackEditControls tracks={tracks} durations={durations} clipEnds={clipEnds} fadeIns={fadeIns} fadeOuts={fadeOuts} onChange={(kind, index, value) => { if (kind === "end") setClipEnds((current) => ({ ...current, [index]: Math.max(0.1, value) })); if (kind === "fadeIn") setFadeIns((current) => ({ ...current, [index]: Math.max(0, value) })); if (kind === "fadeOut") setFadeOuts((current) => ({ ...current, [index]: Math.max(0, value) })); }} />
+      <TrackEditControls tracks={tracks} durations={durations} clipEnds={clipEnds} fadeIns={fadeIns} fadeOuts={fadeOuts} trimTrack={trimTrack} onTrimTrack={setTrimTrack} onChange={(kind, index, value) => { if (kind === "end") setClipEnds((current) => ({ ...current, [index]: Math.max(0.1, value) })); if (kind === "fadeIn") setFadeIns((current) => ({ ...current, [index]: Math.max(0, value) })); if (kind === "fadeOut") setFadeOuts((current) => ({ ...current, [index]: Math.max(0, value) })); }} />
       <GlobalArrangement files={files} position={transportTime} playing={transportPlaying} onSeek={seekTransport} onTogglePlay={toggleGlobalPlayback} />
       <WaveformOverview tracks={tracks} peaks={waveformPeaks} />
       <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV offline</button><small>Mixe les pistes locales avec le gain, le trim et les fades actuels.</small></div>
