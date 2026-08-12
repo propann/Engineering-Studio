@@ -10,6 +10,7 @@
  *   #FF3A5D  rouge   → transport / spécial
  */
 import { useEffect, useRef, useState } from "react";
+import { LegacyKeyboardPanel } from "./LegacyKeyboardPanel";
 
 // ── Grille éditeur ────────────────────────────────────────────────────────────
 const COLS = 64;
@@ -25,20 +26,6 @@ const PALETTE = [
 ] as const;
 
 type Block = { col: number; row: number; w: number; h: number; color: string; type: string };
-
-// Surface de secours : elle garde un clavier visible si la sauvegarde locale
-// a ete effacee ou si le navigateur vient d'etre reinitialise.
-const DEFAULT_KEYBOARD: Block[] = [
-  ...Array.from({ length: 14 }, (_, i) => ({ col: i * 4, row: 10, w: 4, h: 6, color: "#DFD9FF", type: "white" })),
-  ...[3, 7, 15, 19, 23, 31, 35, 43, 47, 51].map((col) => ({ col, row: 8, w: 2, h: 4, color: "#e8a020", type: "black" })),
-  { col: 1, row: 1, w: 4, h: 4, color: "#698EFF", type: "enc" },
-  { col: 8, row: 1, w: 4, h: 4, color: "#698EFF", type: "enc" },
-  { col: 15, row: 1, w: 4, h: 4, color: "#698EFF", type: "enc" },
-  { col: 22, row: 1, w: 4, h: 4, color: "#698EFF", type: "enc" },
-  { col: 40, row: 1, w: 4, h: 4, color: "#00ED95", type: "fn" },
-  { col: 47, row: 1, w: 4, h: 4, color: "#00ED95", type: "fn" },
-  { col: 54, row: 1, w: 4, h: 4, color: "#FF3A5D", type: "trans" },
-];
 
 // ── Mappage note MIDI par position gauche→droite ──────────────────────────────
 // Blanches : C3 D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4
@@ -94,7 +81,7 @@ export function StudioMachinePanel({
     () => saved?.cells ?? Array.from({ length: ROWS }, () => Array(COLS).fill(null))
   );
   // localStorage is read again after browser hydration.
-  const [validated, setValidated] = useState<Block[]>(DEFAULT_KEYBOARD);
+  const [validated, setValidated] = useState<Block[]>([]);
   const [painting, setPainting]   = useState(false);
   const [colorIdx, setColorIdx]   = useState(0);
   const [erasing, setErasing]     = useState(false);
@@ -111,7 +98,7 @@ export function StudioMachinePanel({
   // The hidden editor must not overwrite the saved keyboard with an empty state.
   useEffect(() => {
     const state = loadState();
-    const timer = window.setTimeout(() => setValidated(state?.validated ?? DEFAULT_KEYBOARD), 0);
+    const timer = window.setTimeout(() => setValidated(state?.validated ?? []), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
@@ -318,7 +305,7 @@ export function StudioMachinePanel({
 
       {/* ── Interface interactive — plein écran ── */}
       {panelOpen && (
-        <div className="machine-layout-zone">
+        validated.length === 0 ? <LegacyKeyboardPanel onSendMidi={onSendMidi} /> : <div className="machine-layout-zone">
           <svg viewBox={`0 0 ${COLS} ${ROWS}`} preserveAspectRatio="none"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
