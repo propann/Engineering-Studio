@@ -50,6 +50,30 @@ python tools/firmware_bridge.py --input "C:\chemin\op1_246.op1" --options iter p
 Ces depots restent des integrations candidates : ils devront etre ajoutes avec
 leur licence, leur version et un adaptateur local limite.
 
+## Inventaire et sauvegarde machine
+
+`tools/device_inventory.py` reconnait un OP-1 original par ses repertoires
+`tape`, `album`, `synth` et `drum`. Il ne modifie jamais le volume et renvoie
+un inventaire JSON avec le niveau de confiance, le nombre de fichiers et la
+taille de chaque categorie. La lettre du lecteur n'est donc pas utilisee
+comme preuve suffisante.
+
+```powershell
+python tools/device_inventory.py "E:"
+```
+
+`tools/backup_manifest.py` prend ensuite le chemin explicitement confirme,
+copie chaque fichier dans un snapshot separe et verifie son SHA-256. Le
+snapshot doit rester hors du volume source :
+
+```powershell
+python tools/backup_manifest.py create "E:" backups/hardware-tests --label op1-disk
+python tools/backup_manifest.py verify backups/hardware-tests/op1-disk_<snapshot>
+```
+
+Ces deux commandes sont le socle du futur `Safe Change Engine`. Elles ne
+restaurent pas et n'ecrivent pas sur l'OP-1.
+
 ## Packs audio
 
 `tools/Build-OP1DirectPacks.ps1` prépare des packs `synth` et `drum` pour le

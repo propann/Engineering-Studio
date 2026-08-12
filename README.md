@@ -47,9 +47,14 @@ python tools/project_bridge.py --help
 python tools/firmware_bridge.py --help
 python tools/patch_bridge.py --help
 python tools/tape_bridge.py --help
+python tools/device_inventory.py "E:"
+python tools/backup_manifest.py create "E:" backups/hardware-tests --label op1-disk
 ```
 
-Les bridges travaillent dans des dossiers de sortie separes. Le transfert direct vers le volume OP-1 est volontairement bloque tant que le moteur de changement securise n'est pas termine.
+Les bridges travaillent dans des dossiers de sortie separes. `device_inventory.py`
+inspecte un volume monte en lecture seule et `backup_manifest.py` copie puis
+verifie un snapshot local. Le transfert direct vers le volume OP-1 est
+volontairement bloque tant que le moteur de changement securise n'est pas termine.
 
 ## Tests
 
