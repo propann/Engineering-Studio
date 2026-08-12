@@ -730,17 +730,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
         </button>
 
         {/* Contenu quand déplié : clone clavier */}
-        {!keyboardFolded && (
-          <StudioMachinePanel
-            pressedNotes={pressedMidiNotes}
-            mode={studioMode}
-            playing={transportPlaying}
-            position={transportTime}
-            files={files}
-            onTogglePlayback={toggleGlobalPlayback}
-            onSendMidi={onSendMidi}
-          />
-        )}
+        <StudioMachinePanel
+          pressedNotes={pressedMidiNotes}
+          mode={studioMode}
+          playing={transportPlaying}
+          position={transportTime}
+          files={files}
+          onTogglePlayback={toggleGlobalPlayback}
+          onSendMidi={onSendMidi}
+        />
 
         {/* Contenu quand replié : réglages clavier */}
         {keyboardFolded && (
