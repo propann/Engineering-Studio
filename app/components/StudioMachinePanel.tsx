@@ -86,7 +86,9 @@ export function StudioMachinePanel({
     () => saved?.cells ?? Array.from({ length: ROWS }, () => Array(COLS).fill(null))
   );
   // localStorage is read again after browser hydration.
-  const [validated, setValidated] = useState<Block[]>([]);
+  // Afficher immédiatement le clavier sauvegardé, sans attendre le second
+  // passage d'hydratation du navigateur.
+  const [validated, setValidated] = useState<Block[]>(() => saved?.validated ?? []);
   const [hydrated, setHydrated] = useState(false);
   const [painting, setPainting]   = useState(false);
   const [colorIdx, setColorIdx]   = useState(0);
