@@ -2,6 +2,11 @@
 
 Etat verifie le 12 aout 2026.
 
+La matrice detaillee des tests materiels est dans
+[`HARDWARE_TESTS.md`](HARDWARE_TESTS.md). Le mode Disk est valide pour le
+cycle sauvegarde, suppression/restauration et verification ; le mode normal
+MIDI reste le prochain jalon.
+
 Validation materielle du 12 aout 2026 : un OP-1 original en mode Disk a ete
 detecte sur `E:`. Deux sauvegardes locales de test ont copie 67 fichiers ; le
 dernier snapshot contient 282529116 octets et sa verification SHA-256 est
