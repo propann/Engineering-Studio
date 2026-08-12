@@ -33,6 +33,27 @@ La priorite n'est plus d'ajouter des prototypes isoles : il faut rendre les
 ecrans coherents, brancher les contrats existants par des actions limitees et
 fermer les portes de qualite avant toute distribution.
 
+### Architecture des fenetres
+
+`docs/FIRMWARE_LAB_FUNCTIONS.md` et `docs/WINDOW_FUNCTIONS_SPEC.md` deviennent
+la reference fonctionnelle des fenetres. La navigation produit reste organisee
+autour de sept espaces visibles dans l'accueil :
+
+| Fenetre | Perimetre retenu | Etat architectural |
+| --- | --- | --- |
+| Accueil | lancement par modules, etats machine et raccourcis | livre |
+| Firmware | source, verification, moteurs, graphismes, audio usine, plan/build et TE-boot | fusion Images decidee, sous-onglets a construire |
+| Sauvegardes | snapshots, comparaison, restauration, Time Capsule Pistes et transfert | livre en moteur, UI/bridge natif a brancher |
+| Sons | bibliotheque, preflight, patches, 24 pads et packs | pads livres, index et transfert a poursuivre |
+| Studio | Clone OP-1, MIDI, Tape, Album, mixage et projet | coeur livre, sources persistantes a poursuivre |
+| Exercices | accords, finger drumming, morceaux et performance MIDI | prototype |
+| Documentation | fiches par fenetre, procedures et recherche | fiche minimale |
+
+La carte Images ne devient pas une huitieme fenetre : ses fonctions sont
+absorbees par Firmware sous un sous-onglet Graphismes. Tant que ce sous-onglet
+n'est pas implemente, l'onglet technique Images reste conserve comme transition
+pour ne pas perdre l'editeur deja livre.
+
 ### Recalage des jalons
 
 - **M1 Firmware** : socle local et Images livres ; integration UI et flash
@@ -40,10 +61,10 @@ fermer les portes de qualite avant toute distribution.
   branche.
 - **M2 Sauvegardes** : moteur de fichiers livre et teste sur hardware ;
   l'interface affiche encore une simulation et l'ejection native manque.
-- **M3 Sons** : conversion et patches livres ; l'index, les 24 pads et le
-  transfert utilisateur sont le prochain travail produit.
-- **M4/M5 Studio** : coeur audio et projet v1 livres ; persistence des sources,
-  trim simplifie et import machine restent a fermer.
+- **M3 Sons** : conversion, patches et 24 pads livres ; l'index local, la
+  bibliotheque et le transfert utilisateur restent a fermer.
+- **M4/M5 Studio** : coeur audio, projet v1 et trim focalise livres ;
+  persistence des sources et import machine restent a fermer.
 - **M4.5 Education** : prototype de fenetre seulement ; progression et
   verification de performance restent a construire.
 - **M4.6 Visuel** : onglets, Escape et accessibilite de base livres ; le

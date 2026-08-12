@@ -8,6 +8,27 @@ Le navigateur standard ne constitue pas une base suffisante pour le firmware. We
 
 Cette architecture réduit la taille du paquet par rapport à Electron, permet de réutiliser des bibliothèques Rust liées aux patches et garde les opérations critiques dans un langage à mémoire sûre.
 
+## Architecture produit des fenetres
+
+La decomposition fonctionnelle est definie dans
+[`FIRMWARE_LAB_FUNCTIONS.md`](FIRMWARE_LAB_FUNCTIONS.md) et
+[`WINDOW_FUNCTIONS_SPEC.md`](WINDOW_FUNCTIONS_SPEC.md). Ces documents sont la
+reference avant toute extraction de composant ou ajout d'action dans l'UI.
+
+- **Firmware** absorbe **Images** sous un sous-onglet Graphismes ; le conteneur,
+  les mods, les ressources audio usine et les visuels restent dans un meme
+  ChangePlan.
+- **Sauvegardes** porte l'inventaire, les snapshots, la restauration et la
+  Time Capsule Pistes.
+- **Sons** porte les samples utilisateur, les patches, les pads et les packs.
+- **Studio** porte le clone, le MIDI, Tape, Album et le projet local.
+- **Exercices** porte l'apprentissage et la performance MIDI.
+- **Documentation** porte les fiches propres a chaque fenetre.
+
+L'accueil reste un hub de lancement, pas un moteur metier. Une fenetre peut
+preparer un plan local, mais l'execution machine passe uniquement par le coeur
+native et une confirmation explicite.
+
 ## Couches
 
 ```mermaid
