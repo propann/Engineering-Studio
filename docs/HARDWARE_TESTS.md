@@ -29,7 +29,7 @@ Ces tests ne sont pas declares valides par cette session :
 - ejection native automatique ;
 - transfert d'un pack complet prepare par l'application ;
 - reprise apres deconnexion pendant une copie ;
-- mode normal MIDI et audio USB ;
+- capture MIDI et audio USB interactifs ;
 - mode TE-boot et flux firmware.
 
 Le mode suivant est le mode normal/MIDI. Il doit etre lance apres ejection

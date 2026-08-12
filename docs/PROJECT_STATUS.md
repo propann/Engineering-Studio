@@ -6,7 +6,8 @@ La matrice detaillee des tests materiels est dans
 [`HARDWARE_TESTS.md`](HARDWARE_TESTS.md). Le mode Disk est valide pour le
 cycle sauvegarde, suppression/restauration et verification ; le mode normal
 MIDI est detecte par Windows avec audio et deux ports MIDI. La capture d'une
-note dans Chrome/Edge reste le prochain test interactif.
+note dans Chrome/Edge est reportee apres la refonte visuelle M4.6 ; le chantier
+actif est documente dans [`NEXT_STEP.md`](NEXT_STEP.md).
 
 Validation materielle du 12 aout 2026 : un OP-1 original en mode Disk a ete
 detecte sur `E:`. Deux sauvegardes locales de test ont copie 67 fichiers ; le
