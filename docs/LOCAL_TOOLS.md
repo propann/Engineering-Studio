@@ -74,6 +74,19 @@ python tools/backup_manifest.py verify backups/hardware-tests/op1-disk_<snapshot
 Ces deux commandes sont le socle du futur `Safe Change Engine`. Elles ne
 restaurent pas et n'ecrivent pas sur l'OP-1.
 
+Le troisième contrat est `tools/device_transfer_plan.py`. Il prend un pack
+local deja prepare et un volume OP-1 monte, puis renvoie un plan JSON avec les
+actions `copy` et `skip`. Seuls `tape/`, `album/`, `synth/user/` et
+`drum/user/` sont acceptes :
+
+```powershell
+python tools/device_transfer_plan.py backups/tape-import "E:"
+```
+
+Le resultat contient `machineWrite: false`. L'execution effective sera ajoutee
+separement, apres confirmation du manifeste de sauvegarde et implementation de
+l'ejection native.
+
 ## Packs audio
 
 `tools/Build-OP1DirectPacks.ps1` prépare des packs `synth` et `drum` pour le
