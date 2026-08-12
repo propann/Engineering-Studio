@@ -24,12 +24,11 @@ les fonctions cibles de chaque fenetre.
 
 Ordre de travail confirme :
 
-1. retirer l'onglet Images de transition apres validation du sous-onglet Graphismes ;
-2. decouper les autres ecrans de `app/page.tsx` sans toucher aux invariants DisplayEditor ;
-3. construire l'index local Sons et brancher le preflight ;
-4. connecter le contrat de bridge a l'execution native sans flash automatique ;
-5. persister les sources Studio et reconnecter les fichiers locaux ;
-6. reprendre les tests MIDI/audio dans Chrome ou Edge.
+1. decouper les autres ecrans de `app/page.tsx` sans toucher aux invariants DisplayEditor ;
+2. construire l'index local Sons et brancher le preflight ;
+3. connecter le contrat de bridge a l'execution native sans flash automatique ;
+4. persister les sources Studio et reconnecter les fichiers locaux ;
+5. reprendre les tests MIDI/audio dans Chrome ou Edge.
 
 Apres cette refonte, reprendre la matrice MIDI : detection Web MIDI, capture
 note-on/note-off, envoi vers l'OP-1, audio USB et exercice accompagne.

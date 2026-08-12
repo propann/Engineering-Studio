@@ -15,7 +15,7 @@ const modules: HubModule[] = [
   { id: "backups", title: "Sauvegardes", description: "Vérifier, organiser et préparer une copie de la machine.", requirement: "OP-1 REQUIS", icon: "archive" },
   { id: "sounds", title: "Sons", description: "Classer les samples et préparer des packs à transférer.", requirement: "SANS MACHINE", icon: "wave" },
   { id: "tape", title: "Studio", description: "Créer des pistes avec le clone local ou l’OP-1 en MIDI.", requirement: "SANS MACHINE", icon: "tape" },
-  { id: "display", title: "Images", description: "Explorer les écrans du firmware et préparer des variantes.", requirement: "SANS MACHINE", icon: "image" },
+  { id: "graphics", title: "Images", description: "Explorer les écrans du firmware et préparer des variantes.", requirement: "SANS MACHINE", icon: "image" },
   { id: "exercise", title: "Exercices", description: "Travailler les suites d’accords avec un retour MIDI.", requirement: "OP-1 REQUIS", icon: "settings" },
   { id: "docs", title: "Documentation", description: "Retrouver les règles et les procédures de l’atelier.", requirement: "SANS MACHINE", icon: "book" },
 ];

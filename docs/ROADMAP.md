@@ -42,7 +42,7 @@ autour de sept espaces visibles dans l'accueil :
 | Fenetre | Perimetre retenu | Etat architectural |
 | --- | --- | --- |
 | Accueil | lancement par modules, etats machine et raccourcis | livre |
-| Firmware | source, verification, moteurs, graphismes, audio usine, plan/build et TE-boot | sous-onglet Graphismes livre ; retrait de la transition et build natif a poursuivre |
+| Firmware | source, verification, moteurs, graphismes, audio usine, plan/build et TE-boot | sous-onglet Graphismes livre ; build natif a poursuivre |
 | Sauvegardes | snapshots, comparaison, restauration, Time Capsule Pistes et transfert | livre en moteur, UI/bridge natif a brancher |
 | Sons | bibliotheque, preflight, patches, 24 pads et packs | pads livres, index et transfert a poursuivre |
 | Studio | Clone OP-1, MIDI, Tape, Album, mixage et projet | coeur livre, sources persistantes a poursuivre |
@@ -50,9 +50,8 @@ autour de sept espaces visibles dans l'accueil :
 | Documentation | fiches par fenetre, procedures et recherche | fiche minimale |
 
 La carte Images ne devient pas une huitieme fenetre : ses fonctions sont
-absorbees par Firmware sous un sous-onglet Graphismes. Tant que ce sous-onglet
-n'est pas implemente, l'onglet technique Images reste conserve comme transition
-pour ne pas perdre l'editeur deja livre.
+absorbees par Firmware sous le sous-onglet Graphismes. L'ancien onglet global
+Images a ete retire apres validation de cette integration.
 
 ### Recalage des jalons
 

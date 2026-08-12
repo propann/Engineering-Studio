@@ -23,7 +23,7 @@ type IconName =
   | "book"
   | "image";
 
-type ToolWindow = "exercise" | "docs" | "editor" | "backups" | "sounds" | "tape" | "display" | null;
+type ToolWindow = "exercise" | "docs" | "editor" | "backups" | "sounds" | "tape" | null;
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -823,7 +823,7 @@ export default function Home() {
 
           </aside>
 
-          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); setToolWindow(id as ToolWindow); }} /> : <div className="content">
+          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") { setFirmwareSection("graphics"); setToolWindow("editor"); } else setToolWindow(id as ToolWindow); }} /> : <div className="content">
             <div className="page-heading">
               <div>
                 <span className="eyebrow"><Icon name="shield" size={16} /> FIRMWARE / CENTRE DE CONTRÔLE</span>
@@ -930,14 +930,13 @@ export default function Home() {
             <div className="tool-window-header">
               <div>
                 <span className="section-label">OP-1 STUDIO / OUTIL</span>
-                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "docs" ? "Documentation rapide" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "tape" ? "Studio · Tape & Album" : toolWindow === "display" ? "Éditeur d’images machine" : "Éditeur firmware"}</h2>
+                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "docs" ? "Documentation rapide" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
               </div>
               <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
             </div>
 
             <ToolWindowTabs tabs={[
                 ["editor", "Firmware", "chip"],
-                ["display", "Images", "image"],
                 ["backups", "Sauvegardes", "archive"],
                 ["sounds", "Sons", "wave"],
                 ["tape", "Studio", "tape"],
@@ -992,8 +991,6 @@ export default function Home() {
                 </>}
               </div>
             )}
-
-            {toolWindow === "display" && <DisplayEditor onNotice={setNotice} />}
 
             {toolWindow === "backups" && (
               <div className="tool-body">
