@@ -79,7 +79,8 @@ export function StudioMachinePanel({
   const [cells, setCells] = useState<(string|null)[][]>(
     () => saved?.cells ?? Array.from({ length: ROWS }, () => Array(COLS).fill(null))
   );
-  const [validated, setValidated] = useState<Block[]>(() => saved?.validated ?? []);
+  // localStorage is read again after browser hydration.
+  const [validated, setValidated] = useState<Block[]>([]);
   const [painting, setPainting]   = useState(false);
   const [colorIdx, setColorIdx]   = useState(0);
   const [erasing, setErasing]     = useState(false);
@@ -93,9 +94,13 @@ export function StudioMachinePanel({
   const svgRef = useRef<SVGSVGElement>(null);
 
   // ── Sauvegarde auto ───────────────────────────────────────────────────────
+  // The hidden editor must not overwrite the saved keyboard with an empty state.
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, validated })); } catch {}
-  }, [cells, validated]);
+    const state = loadState();
+    if (!state?.validated) return;
+    const timer = window.setTimeout(() => setValidated(state.validated), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   function saveKeyboard() {
     try {
