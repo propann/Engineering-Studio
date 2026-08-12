@@ -53,7 +53,7 @@ plutôt que le glisser silencieusement dans Sauvegardes.
 | Création de patch via `op-patch-util` | existe en CLI | `tools/patch_bridge.py` |
 | Grille de 24 pads fidèle à la disposition physique, lettres clavier visibles | existe | `SoundPadGrid` |
 | Glisser-déposer un sample sur un pad, prévisualisation clavier/`Espace`, suppression `Suppr` | existe | `SoundPadGrid` |
-| Bibliothèque avec recherche/filtre/tri/favoris | à construire (priorité déjà notée M3 dans `GUI_REDESIGN_BRIEF.md`) | — |
+| Bibliothèque avec recherche/filtre/tri/favoris | recherche, filtres et favoris existent ; tri avancé à poursuivre | `SoundLibraryIndex` |
 | Onglet multisample avec clavier piano | à construire | — |
 | Code couleur son d'origine vs importé | à construire | — |
 | Préparation de pack (`synth/user`, `drum/user`, `tape`, `album`) | existe | UI `sounds` |
