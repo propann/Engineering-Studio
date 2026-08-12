@@ -83,7 +83,8 @@ export function StudioMachinePanel({
   const [painting, setPainting]   = useState(false);
   const [colorIdx, setColorIdx]   = useState(0);
   const [erasing, setErasing]     = useState(false);
-  const [showGrid, setShowGrid]   = useState(false);
+  // La grille est le plan de construction du clavier MIDI.
+  const [showGrid, setShowGrid]   = useState(true);
   // La grille complete le clavier et reste visible a l'ouverture.
   const [editOpen, setEditOpen]   = useState(true);
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
