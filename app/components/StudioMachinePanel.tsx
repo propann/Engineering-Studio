@@ -108,7 +108,8 @@ export function StudioMachinePanel({
   const [configOpen, setConfigOpen] = useState(false);
   const [configTarget, setConfigTarget] = useState<{ type: string; index: number; label: string } | null>(null);
   const [lastPlayed, setLastPlayed] = useState("aucune touche jouée");
-  const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
+  // La surface du clavier fait partie intégrante de Studio : elle reste visible.
+  const panelOpen = true;
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -282,8 +283,8 @@ export function StudioMachinePanel({
 
       {/* Barre de contrôle */}
       <div className="mpanel-bar">
-        <button className="mpanel-bar-btn" onClick={() => setPanelOpen(v => !v)}>
-          {panelOpen ? "▼ clavier" : "▲ clavier"}
+        <button className="mpanel-bar-btn" type="button" aria-label="Clavier visible" disabled>
+          ▼ clavier
         </button>
         {panelOpen && <button className="mpanel-bar-btn" onClick={() => setEditOpen(v => !v)}>
           {editOpen ? "masquer éditeur" : "✎ éditeur"}
