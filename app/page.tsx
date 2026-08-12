@@ -164,6 +164,10 @@ function audioBufferToWav(buffer: AudioBuffer) {
   return new Blob([output], { type: "audio/wav" });
 }
 
+function WaveformOverview({ tracks, peaks }: { tracks: string[]; peaks: Record<number, number[]> }) {
+  return <section className="waveform-overview" aria-label="Formes d&apos;onde audio calculees"><div className="mod-section-heading"><div><span className="section-label">ANALYSE AUDIO</span><strong>Formes d&apos;onde réelles</strong></div><small>24 points par piste</small></div><div className="waveform-overview-grid">{tracks.map((track, index) => <div className="waveform-overview-row" key={track}><span>{track}</span><div>{(peaks[index] ?? Array.from({ length: 24 }, () => 0)).map((peak, peakIndex) => <i key={`${index}-${peakIndex}`} style={{ height: `${Math.max(4, peak * 100)}%` }} />)}</div></div>)}</div></section>;
+}
+
 function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: () => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   const [files, setFiles] = useState<Record<number, string>>({});
@@ -173,6 +177,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [clipEnds, setClipEnds] = useState<Record<number, number>>({});
   const [fadeIns, setFadeIns] = useState<Record<number, number>>({});
   const [fadeOuts, setFadeOuts] = useState<Record<number, number>>({});
+  const [waveformPeaks, setWaveformPeaks] = useState<Record<number, number[]>>({});
   const [muted, setMuted] = useState<Record<number, boolean>>({});
   const [solo, setSolo] = useState<number | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
@@ -190,6 +195,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const midiInputRef = useRef<MidiPortLike | null>(null);
   const midiStartRef = useRef(0);
   const midiTimersRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const context = new AudioContext();
+    void Promise.all(Object.entries(sources).map(async ([rawIndex, source]) => { const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer()); const data = buffer.getChannelData(0); const bins = 24; const size = Math.max(1, Math.floor(data.length / bins)); const peaks = Array.from({ length: bins }, (_, bin) => { let peak = 0; for (let sample = bin * size; sample < Math.min(data.length, (bin + 1) * size); sample += 1) peak = Math.max(peak, Math.abs(data[sample])); return peak; }); return [Number(rawIndex), peaks] as const; })).then((entries) => { if (!cancelled) setWaveformPeaks(Object.fromEntries(entries)); }).catch(() => { if (!cancelled) setWaveformPeaks({}); }).finally(() => { void context.close(); });
+    return () => { cancelled = true; void context.close(); };
+  }, [sources]);
 
   function projectData() {
     return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null } };
@@ -360,6 +372,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       <TrackGainControls tracks={tracks} gains={gains} onChange={(index, value) => setGains((current) => ({ ...current, [index]: value }))} />
       <TrackEditControls tracks={tracks} durations={durations} clipEnds={clipEnds} fadeIns={fadeIns} fadeOuts={fadeOuts} onChange={(kind, index, value) => { if (kind === "end") setClipEnds((current) => ({ ...current, [index]: Math.max(0.1, value) })); if (kind === "fadeIn") setFadeIns((current) => ({ ...current, [index]: Math.max(0, value) })); if (kind === "fadeOut") setFadeOuts((current) => ({ ...current, [index]: Math.max(0, value) })); }} />
       <GlobalArrangement files={files} position={transportTime} playing={transportPlaying} onSeek={seekTransport} onTogglePlay={toggleGlobalPlayback} />
+      <WaveformOverview tracks={tracks} peaks={waveformPeaks} />
       <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV offline</button><small>Mixe les pistes locales avec le gain, le trim et les fades actuels.</small></div>
       <MidiRoll events={midiEvents} onToggleNote={toggleRollNote} />
       <div className="tape-editor-head"><div><span className="section-label">STUDIO OP-1</span><strong>Tape & Album · 4 pistes</strong><small>{studioMode === "clone" ? "Clone local · édition non destructive" : "OP-1 MIDI · machine utilisée comme contrôleur"}</small></div><span className="midi-badge"><i /> {studioMode === "clone" ? "CLONE" : "MIDI"}</span></div>
