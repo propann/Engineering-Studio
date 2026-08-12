@@ -29,7 +29,9 @@ Ordre de travail confirme :
 3. construire le createur de dessin original dans Firmware > Graphismes apres validation SVG ;
 4. brancher l'interface native/Tauri au `profile.json` du coffre ; le bridge
    local de lecture/ecriture et son format sont maintenant livres ;
-5. connecter le contrat de bridge a l'execution native sans flash automatique ;
+5. connecter les plans Firmware/Sauvegardes/Sons au pont natif, sans flash
+   automatique ; `profile_read/profile_write` est maintenant le premier pont
+   Tauri livré ;
 6. persister les sources Studio et reconnecter les fichiers locaux ;
 7. reprendre les tests MIDI/audio dans Chrome ou Edge.
 
