@@ -10,6 +10,8 @@
  *   #FF3A5D  rouge   → transport / spécial
  */
 import { useEffect, useRef, useState } from "react";
+import keyboardTemplate from "../../data/keyboard/default.json";
+import { hasNativeStorage, readNativeKeyboard, writeNativeKeyboard } from "../lib/nativeStorage";
 
 // ── Grille éditeur ────────────────────────────────────────────────────────────
 const COLS = 64;
@@ -28,11 +30,8 @@ type Block = { col: number; row: number; w: number; h: number; color: string; ty
 
 // Clavier visible par défaut quand le stockage local est absent. Il donne une
 // surface jouable immédiatement ; une configuration sauvegardée reste prioritaire.
-const DEFAULT_BLOCKS: Block[] = [
-  ...Array.from({ length: 14 }, (_, index) => ({ col: index * 4 + 1, row: 8, w: 4, h: 7, color: "#DFD9FF", type: "white" })),
-  ...[1, 2, 4, 5, 6, 8, 9, 11, 12, 13].map((index) => ({ col: index * 4 - 1, row: 8, w: 2, h: 4, color: "#e8a020", type: "black" })),
-  ...Array.from({ length: 4 }, (_, index) => ({ col: index * 16 + 2, row: 1, w: 4, h: 4, color: ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"][index], type: "enc" })),
-];
+const DEFAULT_BLOCKS: Block[] = keyboardTemplate.validated as Block[];
+const DEFAULT_CELLS = keyboardTemplate.cells as (string|null)[][];
 
 // ── Mappage note MIDI par position gauche→droite ──────────────────────────────
 // Blanches : C3 D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4
@@ -58,6 +57,7 @@ function midiNoteName(note: number) {
 function loadState(): { cells: (string|null)[][]; validated: Block[] } | null {
   try {
     if (typeof window === "undefined") return null;
+    if (hasNativeStorage()) return null;
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data = JSON.parse(raw);
@@ -91,7 +91,7 @@ export function StudioMachinePanel({
 
   // ── État éditeur ──────────────────────────────────────────────────────────
   const [cells, setCells] = useState<(string|null)[][]>(
-    () => saved?.cells ?? Array.from({ length: ROWS }, () => Array(COLS).fill(null))
+    () => saved?.cells ?? DEFAULT_CELLS
   );
   // localStorage is read again after browser hydration.
   // Afficher immédiatement le clavier sauvegardé, sans attendre le second
@@ -117,17 +117,29 @@ export function StudioMachinePanel({
   // ── Sauvegarde auto ───────────────────────────────────────────────────────
   // The hidden editor must not overwrite the saved keyboard with an empty state.
   useEffect(() => {
-    const state = loadState();
-    const timer = window.setTimeout(() => {
-      setValidated(state?.validated ?? (state === null ? DEFAULT_BLOCKS : []));
+    let active = true;
+    const applyState = (state: { cells: (string|null)[][]; validated: Block[] } | null) => {
+      if (!active) return;
+      setCells(state?.cells ?? DEFAULT_CELLS);
+      setValidated(state?.validated ?? DEFAULT_BLOCKS);
       setHydrated(true);
-    }, 0);
-    return () => window.clearTimeout(timer);
+    };
+    if (hasNativeStorage()) {
+      void readNativeKeyboard()?.then((raw) => {
+        try { applyState(raw ? JSON.parse(raw) as { cells: (string|null)[][]; validated: Block[] } : null); } catch { applyState(null); }
+      }).catch(() => applyState(null));
+      return () => { active = false; };
+    }
+    const state = loadState();
+    const timer = window.setTimeout(() => applyState(state), 0);
+    return () => { active = false; window.clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
     if (!editOpen || !hydrated) return;
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, validated })); } catch {}
+    const content = JSON.stringify({ cells, validated });
+    if (hasNativeStorage()) { void writeNativeKeyboard(content)?.catch(() => undefined); return; }
+    try { localStorage.setItem(STORAGE_KEY, content); } catch {}
   }, [cells, validated, editOpen, hydrated]);
 
   function saveKeyboard() {
@@ -140,7 +152,8 @@ export function StudioMachinePanel({
     };
     try {
       const content = JSON.stringify(backup, null, 2);
-      localStorage.setItem(STORAGE_KEY, content);
+      if (hasNativeStorage()) void writeNativeKeyboard(content)?.catch(() => undefined);
+      else localStorage.setItem(STORAGE_KEY, content);
       const blob = new Blob([content], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
