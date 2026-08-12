@@ -98,7 +98,7 @@ encore etre imposee par l'UI/coeur natif.
   verification de performance restent a construire.
 - **M4.6 Visuel** : onglets, Escape et accessibilite de base livres ; le
   `SoundControlsPanel`, `FirmwareSubtabs`, `LocalProfilePanel`,
-  `ExercisePanel` et `DocumentationPanel` sont extraits
+  `ExercisePanel`, `DocumentationPanel` et `BackupPanel` sont extraits
   de `app/page.tsx` sans changement de rendu. Le hub d'accueil par modules est
   maintenant livre ; le decoupage des autres ecrans reste a poursuivre.
 

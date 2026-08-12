@@ -8,7 +8,7 @@ import { HomeHub } from "./components/HomeHub";
 import { FirmwareSubtabs } from "./components/FirmwareSubtabs";
 import { DocumentationPanel } from "./components/DocumentationPanel";
 import { ExercisePanel } from "./components/ExercisePanel";
-import { LocalProfilePanel } from "./components/LocalProfilePanel";
+import { BackupPanel } from "./components/BackupPanel";
 import { SoundPadGrid } from "./components/SoundPadGrid";
 import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
 import { SoundControlsPanel } from "./components/SoundControlsPanel";
@@ -984,23 +984,7 @@ export default function Home() {
               </div>
             )}
 
-            {toolWindow === "backups" && (
-              <div className="tool-body">
-                <label className="backup-root"><span className="section-label">DOSSIER RACINE</span><input value={backupRoot} onChange={(event) => setBackupRoot(event.target.value)} /><small>Sous-dossiers : machine, firmware, time-capsule-pistes et exports. La Time Capsule contient uniquement Tape et Album.</small></label>
-                <LocalProfilePanel profile={profile} onChange={updateProfile} />
-                <div className="backup-summary">
-                  <span className="backup-check"><Icon name="check" size={19} /></span>
-                  <div><span className="section-label">DERNIÈRE SAUVEGARDE</span><strong>OP-1 · 12 août 2026 à 01:04</strong><small>Vérifiée · 65 fichiers · 269,44 Mo</small></div>
-                </div>
-                <div className="backup-scope"><strong>Time Capsule Pistes</strong><span>Tape et Album uniquement · pistes, prises et exports audio · sans firmware ni samples utilisateur</span></div>
-                <div className="backup-tree">
-                  <div><Icon name="archive" size={15} /><strong>OP-1_2026-08-12_01-00</strong></div>
-                  <span>tape/ · 4 pistes AIFF</span><span>album/ · 2 faces AIFF</span><span>synth/user/ · 44 samples</span><span>drum/user/ · 15 samples</span>
-                </div>
-                <div className="editor-footer"><span>Copie locale vérifiée par taille et nombre de fichiers</span><button className="primary-action" onClick={() => setNotice(describeLocalBridgeAction(prepareLocalBridgeAction("backup.plan", { root: backupRoot })))}><Icon name="archive" />Préparer une sauvegarde</button></div>
-                <div className="backup-actions"><button className="secondary-action" onClick={() => setNotice("La connexion Drive sera proposée après validation du dossier local.")}><Icon name="download" />Connecter Drive</button><button className="secondary-action" onClick={() => setNotice("Time Capsule Pistes : compression de Tape et Album uniquement. Aucun firmware ni sample utilisateur n’est inclus.")}><Icon name="tape" />Time Capsule Pistes</button><button className="secondary-action" onClick={() => setToolWindow("sounds")}><Icon name="wave" />Bibliothèque Sons</button></div>
-              </div>
-            )}
+            {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => describeLocalBridgeAction(prepareLocalBridgeAction("backup.plan", { root }))} />}
 
             {toolWindow === "tape" && <TapeEditor onNotice={setNotice} onConnectMidi={connectMidiDevice} onSendMidi={(data) => midiOutputRef.current?.send?.(data)} />}
 
