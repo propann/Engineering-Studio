@@ -718,9 +718,10 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 
 /* ── Zone interface interactive — s'adapte à la fenêtre ── */
 .machine-layout-zone {
-  width: 100%;
-  max-width: 100%;
-  margin-left: 0;
+  /* Meme empreinte horizontale que l'ecran OP-1 juste au-dessus. */
+  width: calc(100% + 20px);
+  max-width: none;
+  margin-left: -10px;
   flex: 1;
   min-height: 0;
   aspect-ratio: 64 / 16;
