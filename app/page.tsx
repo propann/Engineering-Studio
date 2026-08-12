@@ -7,6 +7,7 @@ import { DEFAULT_PROFILE, parseProfile, serializeProfile, type LocalProfile } fr
 import { HomeHub } from "./components/HomeHub";
 import { FirmwareSubtabs } from "./components/FirmwareSubtabs";
 import { DocumentationPanel } from "./components/DocumentationPanel";
+import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
 import { ExercisePanel } from "./components/ExercisePanel";
 import { BackupPanel } from "./components/BackupPanel";
 import { SoundsPanel } from "./components/SoundsPanel";
@@ -968,7 +969,7 @@ export default function Home() {
             {toolWindow === "editor" && (
               <div className="tool-body">
                 <FirmwareSubtabs section={firmwareSection} onSelect={setFirmwareSection} />
-                {firmwareSection === "graphics" ? <DisplayEditor onNotice={setNotice} /> : <>
+                {firmwareSection === "graphics" ? <><DisplayCreatorPanel Icon={Icon} onNotice={setNotice} /><DisplayEditor onNotice={setNotice} /></> : <>
                 <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a href={officialFirmwareUrl} target="_blank" rel="noreferrer">Télécharger depuis Teenage Engineering</a></div>
                 <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
                 <div className="mod-section">

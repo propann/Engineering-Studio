@@ -490,6 +490,18 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .display-editor-intro code { padding: 1px 4px; color: #26302d; background: #dfe6e1; border-radius: 3px; font: 10px var(--font-geist-mono), monospace; }
 .display-loader { margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .display-loader small { color: #83898b; font: 9px var(--font-geist-mono), monospace; }
+.display-creator { margin-bottom: 18px; padding: 13px 14px; background: #eef3f0; border: 1px solid #c8d8d0; border-radius: 7px; }
+.display-creator-grid { display: grid; grid-template-columns: minmax(210px, .8fr) minmax(260px, 1.2fr); gap: 14px; margin-top: 12px; }
+.display-creator-controls { display: grid; gap: 10px; align-content: start; }
+.display-creator-controls label { display: grid; gap: 5px; color: #52605a; font-size: 10px; font-weight: 700; }
+.display-creator-controls input:not([type="color"]), .display-creator-controls select { min-height: 32px; padding: 0 8px; color: #29322f; background: #fff; border: 1px solid #c8d8d0; border-radius: 4px; font: 11px var(--font-geist-mono), monospace; }
+.display-creator-controls input[type="range"] { accent-color: #267c65; }
+.display-color-input { width: 44px; height: 30px; padding: 2px; background: #fff; border: 1px solid #c8d8d0; border-radius: 4px; }
+.display-creator-controls output { color: #267c65; font: 10px var(--font-geist-mono), monospace; }
+.display-creator-controls .editor-footer { margin-top: 2px; padding-top: 10px; border-top: 1px solid #d1ddd6; }
+.display-creator-controls .editor-footer span { display: inline-flex; align-items: center; gap: 5px; color: #267c65; font: 9px var(--font-geist-mono), monospace; }
+.display-creator-preview { min-height: 220px; display: grid; place-items: center; padding: 10px; background: #101418; border: 1px solid #3d4947; border-radius: 4px; }
+.display-creator-preview svg { width: 100%; max-height: 250px; }
 .display-groups { display: grid; gap: 16px; }
 .display-category h3 { margin: 0 0 8px; display: flex; align-items: baseline; gap: 8px; color: #35443b; font-size: 12px; }
 .display-category h3 small { color: #849088; font: 9px var(--font-geist-mono), monospace; }
@@ -576,6 +588,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   .safety-footer { align-items: flex-start; flex-direction: column; }
   .safety-footer > a { margin-left: 28px; }
   .display-edit-columns { grid-template-columns: 1fr; }
+  .display-creator-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
   .home-module-grid { grid-template-columns: 1fr; }

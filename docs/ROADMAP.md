@@ -55,10 +55,10 @@ Images a ete retire apres validation de cette integration.
 
 ### Decisions issues des analyses
 
-- **Graphismes originaux** : le createur de dessin est une sous-section de
-  Firmware > Graphismes. Il utilise un canevas 320x160, la palette OP-1
-  documentee et `op1svg` avant tout export ; il ne devient pas un importeur
-  libre de fichiers tiers.
+- **Graphismes originaux** : le createur de dessin est livre dans Firmware >
+  Graphismes. Il genere un SVG local en 320x160, echappe le texte utilisateur
+  et valide les invariants avant export ; il ne devient pas un importeur libre
+  de fichiers tiers.
 - **Outils prioritaires** : `op1aiff` pour inspecter les AIFF en lecture seule
   dans Sons et `op1svg` pour valider les SVG avant patch. Les replis locaux
   `tools/aiff_inspector.py` et `tools/svg_preflight.py` sont maintenant livres
@@ -101,7 +101,8 @@ encore etre imposee par l'UI/coeur natif.
   `SoundControlsPanel`, `FirmwareSubtabs`, `LocalProfilePanel`,
   `ExercisePanel`, `DocumentationPanel`, `BackupPanel`, `SoundsPanel`,
   `StudioModeHeader`, `StudioProjectToolbar`, `StudioTransportPanel` et
-  `StudioTrackList` sont extraits
+  `StudioTrackList` sont extraits ; `DisplayCreatorPanel` est livre dans
+  Firmware > Graphismes
   de `app/page.tsx` sans changement de rendu. Le hub d'accueil par modules est
   maintenant livre ; le decoupage des autres ecrans reste a poursuivre.
 
