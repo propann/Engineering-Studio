@@ -25,10 +25,12 @@ les fonctions cibles de chaque fenetre.
 Ordre de travail confirme :
 
 1. decouper les autres ecrans de `app/page.tsx` sans toucher aux invariants DisplayEditor ;
-2. construire l'index local Sons et brancher le preflight ;
-3. connecter le contrat de bridge a l'execution native sans flash automatique ;
-4. persister les sources Studio et reconnecter les fichiers locaux ;
-5. reprendre les tests MIDI/audio dans Chrome ou Edge.
+2. brancher le preflight AIFF/SVG en lecture seule via `op1aiff` et `op1svg` apres audit d'installation ;
+3. construire le createur de dessin original dans Firmware > Graphismes ;
+4. definir et persister le `profile.json` local, sans compte ni synchronisation ;
+5. connecter le contrat de bridge a l'execution native sans flash automatique ;
+6. persister les sources Studio et reconnecter les fichiers locaux ;
+7. reprendre les tests MIDI/audio dans Chrome ou Edge.
 
 Apres cette refonte, reprendre la matrice MIDI : detection Web MIDI, capture
 note-on/note-off, envoi vers l'OP-1, audio USB et exercice accompagne.

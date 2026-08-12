@@ -53,6 +53,27 @@ La carte Images ne devient pas une huitieme fenetre : ses fonctions sont
 absorbees par Firmware sous le sous-onglet Graphismes. L'ancien onglet global
 Images a ete retire apres validation de cette integration.
 
+### Decisions issues des analyses
+
+- **Graphismes originaux** : le createur de dessin est une sous-section de
+  Firmware > Graphismes. Il utilise un canevas 320x160, la palette OP-1
+  documentee et `op1svg` avant tout export ; il ne devient pas un importeur
+  libre de fichiers tiers.
+- **Outils prioritaires** : `op1aiff` pour inspecter les AIFF en lecture seule
+  dans Sons et `op1svg` pour valider les SVG avant patch. `teoperator` reste
+  une fixture de comparaison ; les autres outils restent des references.
+- **Profil utilisateur** : `profile.json` local, sans compte ni reseau, pour le
+  pseudo, les machines nommees, le coffre, les marqueurs de partage et les
+  preferences. Il reference `DeviceIdentity` et `BackupManifest` sans les
+  remplacer.
+- **Cloud et licence** : Studio Cloud reste M6, apres validation de l'usage
+  local. L'ecart MIT/AGPL signale dans l'analyse tooling est un point legal a
+  trancher avant toute communication de service ; aucune licence n'est
+  modifiee automatiquement.
+- **Dependance structurante** : le coeur Rust/Safe Change Engine reste le
+  vrai chantier derriere l'installation Tauri et l'execution native. Les
+  bridges Python servent au labo et aux fixtures, pas de coeur final cache.
+
 ### Recalage des jalons
 
 - **M1 Firmware** : socle local et Images livres ; integration UI et flash

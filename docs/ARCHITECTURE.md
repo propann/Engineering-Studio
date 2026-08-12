@@ -29,6 +29,11 @@ L'accueil reste un hub de lancement, pas un moteur metier. Une fenetre peut
 preparer un plan local, mais l'execution machine passe uniquement par le coeur
 native et une confirmation explicite.
 
+Le profil utilisateur local est un fichier `profile.json` dans le coffre
+choisi. Il contient uniquement des preferences et des references vers les
+machines, snapshots et projets ; il ne contient ni secret ni identifiant de
+compte. L'index Sons reste local et separe d'un eventuel service Cloudflare.
+
 ## Couches
 
 ```mermaid

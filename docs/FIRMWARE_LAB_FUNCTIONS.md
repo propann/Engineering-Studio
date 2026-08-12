@@ -75,6 +75,7 @@ Source : `FIRMWARE_LAB.md`, observation reproductible sur OS 246.
 | Lost Art | partiel, fixture de repack encore manquante | contrôlé |
 | Tape invert | vérifié en labo | contrôlé |
 | Import d'un SVG arbitraire dessiné par l'utilisateur | expérimental (classé ainsi dans `CONTEXT.md`) | nécessite validation `op1svg` avant toute injection |
+| Créateur de dessin original 320x160, palette machine et manifeste d'attribution | cible retenue, non commencée | sous-section Graphismes ; validation `op1svg` obligatoire |
 
 ## D. Audio d'usine embarqué (`content/audio/*.raw`)
 
