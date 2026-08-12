@@ -47,7 +47,9 @@ fermer les portes de qualite avant toute distribution.
 - **M4.5 Education** : prototype de fenetre seulement ; progression et
   verification de performance restent a construire.
 - **M4.6 Visuel** : onglets, Escape et accessibilite de base livres ; le
-  decoupage de `app/page.tsx` et l'accueil sont les prochaines taches.
+  premier composant (`SoundControlsPanel`) est extrait de `app/page.tsx` sans
+  changement de rendu. Le decoupage des autres ecrans et l'accueil restent les
+  prochaines taches.
 
 Le projet dispose aujourd'hui d'un prototype fonctionnel et de bridges locaux
 testés pour firmware, samples, patches et préparation Tape. Les écrans sont

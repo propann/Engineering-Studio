@@ -15,6 +15,9 @@ Le chantier actif devient M4.6 :
 - rendre la disposition Clone OP-1 plus lisible ;
 - preparer les etats de connexion et les controles MIDI avant les tests live.
 
+Ordre de travail confirme. Le premier sous-jalon du decoupage est livre : les
+controles audio sont maintenant dans `app/components/SoundControlsPanel.tsx`.
+
 Ordre de travail confirme :
 
 1. decouper `app/page.tsx` en composants sans toucher a DisplayEditor ;
