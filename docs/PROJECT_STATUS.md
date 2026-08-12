@@ -3,9 +3,11 @@
 Etat verifie le 12 aout 2026.
 
 Validation materielle du 12 aout 2026 : un OP-1 original en mode Disk a ete
-detecte sur `E:`. Une sauvegarde locale de test a copie 67 fichiers pour
-282528916 octets dans `backups/hardware-tests/`; la verification SHA-256 du
-manifeste est valide. Cette operation n'a rien ecrit sur la machine.
+detecte sur `E:`. Deux sauvegardes locales de test ont copie 67 fichiers ; le
+dernier snapshot contient 282529116 octets et sa verification SHA-256 est
+valide. Entre les deux lectures, `tape/track_1.aif`, `tape/track_2.aif` et
+neuf presets sous `synth/user/` ont change. Aucune operation n'a ecrit sur la
+machine.
 
 ## Fonctionne reellement
 

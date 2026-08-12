@@ -43,8 +43,9 @@ officiel reste à terminer dans le bridge local.
 - plan étape par étape : backup, validation, TE‑boot, copie, sync, éjection ;
 - journal local et simulation complète sur fixtures ;
 - matrice de tests Windows/macOS/Linux puis hardware-in-loop ;
-- validation matérielle réalisée : 67 fichiers, 282528916 octets, manifeste
-  SHA-256 relu avec succès, sans écriture sur l'OP-1.
+- validation matérielle réalisée : deux snapshots de 67 fichiers, dernier
+  snapshot de 282529116 octets, manifeste SHA-256 relu avec succès, sans
+  écriture sur l'OP-1.
 
 **Sortie :** une alpha qui guide une mise à jour officielle et refuse toute précondition ambiguë.
 
