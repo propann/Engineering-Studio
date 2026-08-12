@@ -219,6 +219,12 @@ export function StudioMachinePanel({
   const fnBlocks    = [...validated.filter(b => b.type === "fn")   ].sort((a,b) => a.col - b.col);
   const transBlocks = [...validated.filter(b => b.type === "trans" )].sort((a,b) => a.col - b.col);
 
+  // Cadre automatiquement le clavier construit pour utiliser toute la largeur
+  // disponible sans modifier les blocs sauvegardes.
+  const layoutMinX = validated.length ? Math.max(0, Math.min(...validated.map((b) => b.col)) - 1) : 0;
+  const layoutMaxX = validated.length ? Math.min(COLS, Math.max(...validated.map((b) => b.col + b.w)) + 1) : COLS;
+  const layoutViewBox = `${layoutMinX} 0 ${Math.max(1, layoutMaxX - layoutMinX)} ${ROWS}`;
+
   function noteOn(note: number) {
     setPressed(s => new Set(s).add(note));
     if (mode === "midi") onSendMidi([0x90, Math.max(0, Math.min(127, note)), 100]);
@@ -329,7 +335,7 @@ export function StudioMachinePanel({
       {/* ── Interface interactive — plein écran ── */}
       {panelOpen && (
         <div className="machine-layout-zone">
-          <svg viewBox={`0 0 ${COLS} ${ROWS}`} preserveAspectRatio="none"
+          <svg viewBox={layoutViewBox} preserveAspectRatio="none"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
               // Note-off global si pointer lâché hors bouton
