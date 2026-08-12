@@ -486,6 +486,18 @@ export default function Home() {
   const folderInputRef = useRef<HTMLInputElement>(null);
   const midiOutputRef = useRef<MidiPortLike | null>(null);
 
+  useEffect(() => {
+    if (!toolWindow && !selectedMod && !expertOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (selectedMod) setSelectedMod(null);
+      else if (expertOpen) setExpertOpen(false);
+      else setToolWindow(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [expertOpen, selectedMod, toolWindow]);
+
   async function chooseLibraryFolder() {
     const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
     if (picker) {
@@ -759,7 +771,7 @@ export default function Home() {
                 ["tape", "Studio", "tape"],
                 ["exercise", "Exercices", "settings"],
                 ["docs", "Documentation", "book"],
-              ].map(([id, label, icon]) => <button key={id} type="button" className={toolWindow === id ? "is-active" : ""} onClick={() => setToolWindow(id as ToolWindow)}><Icon name={icon as IconName} size={14} />{label}</button>)}
+              ].map(([id, label, icon]) => <button key={id} type="button" aria-current={toolWindow === id ? "page" : undefined} className={toolWindow === id ? "is-active" : ""} onClick={() => setToolWindow(id as ToolWindow)}><Icon name={icon as IconName} size={14} />{label}</button>)}
             </nav>
 
             {toolWindow === "exercise" && (

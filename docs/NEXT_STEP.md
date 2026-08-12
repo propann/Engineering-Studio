@@ -8,6 +8,7 @@ Le chantier actif devient M4.6 :
 
 - barre d'outils persistante avec onglets Firmware, Sauvegardes, Sons, Studio,
   Exercices et Documentation ;
+- fermeture uniforme des fenetres avec `Echap` et etat actif accessible ;
 - refondre le visuel des fenetres sans bulles imbriquees ;
 - separer les ecrans Firmware, Sauvegardes, Sons, Studio et Exercices ;
 - extraire les composants et tokens visuels reutilisables ;
