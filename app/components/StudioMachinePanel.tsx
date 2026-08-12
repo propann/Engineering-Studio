@@ -42,6 +42,11 @@ function colorToType(color: string): string {
   return "white";
 }
 
+function midiNoteName(note: number) {
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  return `${names[note % 12]}${Math.floor(note / 12) - 1}`;
+}
+
 function loadState(): { cells: (string|null)[][]; validated: Block[] } | null {
   try {
     if (typeof window === "undefined") return null;
@@ -92,6 +97,7 @@ export function StudioMachinePanel({
   const [editOpen, setEditOpen]   = useState(true);
   const [configOpen, setConfigOpen] = useState(false);
   const [configTarget, setConfigTarget] = useState<{ type: string; index: number; label: string } | null>(null);
+  const [lastPlayed, setLastPlayed] = useState("aucune touche jouée");
   const [panelOpen, setPanelOpen] = useState(true);   // déployé par défaut
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
@@ -217,7 +223,10 @@ export function StudioMachinePanel({
 
   // Reflète les notes reçues de l'OP-1 sur le clavier construit.
   useEffect(() => {
-    const timer = window.setTimeout(() => setPressed(new Set(pressedNotes)), 0);
+    const timer = window.setTimeout(() => {
+      setPressed(new Set(pressedNotes));
+      if (pressedNotes.length) setLastPlayed(`jouée : ${midiNoteName(pressedNotes[pressedNotes.length - 1])}`);
+    }, 0);
     return () => window.clearTimeout(timer);
   }, [pressedNotes]);
 
@@ -240,8 +249,10 @@ export function StudioMachinePanel({
 
   function noteOn(note: number) {
     setPressed(s => new Set(s).add(note));
+    setLastPlayed(`jouée : ${midiNoteName(note)}`);
     if (mode === "midi") onSendMidi([0x90, Math.max(0, Math.min(127, note)), 100]);
   }
+
   function noteOff(note: number) {
     setPressed(s => { const ns = new Set(s); ns.delete(note); return ns; });
     if (mode === "midi") onSendMidi([0x80, Math.max(0, Math.min(127, note)), 0]);
@@ -271,6 +282,7 @@ export function StudioMachinePanel({
           {configOpen ? "fermer config" : "config"}
         </button>}
         <span className="mgrid-hint">{validated.length} blocs</span>
+        {configOpen && <span className="mgrid-feedback" aria-live="polite">{lastPlayed}</span>}
         {editOpen && panelOpen && (
           <>
             {PALETTE.map((p,i) => (
