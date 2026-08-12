@@ -713,7 +713,8 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 /* ── Zone grille éditeur ── */
 .machine-grid-zone {
   width: 100%;
-  aspect-ratio: 64 / 16;
+  aspect-ratio: 64 / 18;
+  min-height: 180px;
   background: #181c1d;
 }
 

@@ -309,12 +309,12 @@ export function StudioMachinePanel({
             {/* Grille */}
             {showGrid && Array.from({length:COLS+1},(_,i) => (
               <line key={`v${i}`} x1={i} y1={0} x2={i} y2={ROWS}
-                stroke={i%4===0?"rgba(220,40,40,0.6)":"rgba(220,40,40,0.2)"}
+                stroke={i%4===0?"rgba(220,40,40,0.78)":"rgba(220,40,40,0.34)"}
                 strokeWidth={i%4===0?.05:.02} />
             ))}
             {showGrid && Array.from({length:ROWS+1},(_,i) => (
               <line key={`h${i}`} x1={0} y1={i} x2={COLS} y2={i}
-                stroke={i%2===0?"rgba(220,40,40,0.6)":"rgba(220,40,40,0.2)"}
+                stroke={i%2===0?"rgba(220,40,40,0.78)":"rgba(220,40,40,0.34)"}
                 strokeWidth={i%2===0?.05:.02} />
             ))}
             {/* Indicateur couleur */}
