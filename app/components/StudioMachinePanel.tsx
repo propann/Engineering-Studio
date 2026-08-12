@@ -111,8 +111,23 @@ export function StudioMachinePanel({
   }, [cells, validated, editOpen, hydrated]);
 
   function saveKeyboard() {
+    const backup = {
+      schema: "op1-studio-keyboard",
+      version: 1,
+      saved_at: new Date().toISOString(),
+      cells,
+      validated,
+    };
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ cells, validated }));
+      const content = JSON.stringify(backup, null, 2);
+      localStorage.setItem(STORAGE_KEY, content);
+      const blob = new Blob([content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `op1-keyboard-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
       setSavedNotice(true);
       window.setTimeout(() => setSavedNotice(false), 1400);
     } catch {}
