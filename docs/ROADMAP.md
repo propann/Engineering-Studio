@@ -2,6 +2,8 @@
 
 Le firmware est le premier écran et le premier sujet de confiance. Techniquement, une sauvegarde minimale et une identification sûre de la machine sont des prérequis du même jalon, pas des détours.
 
+**Référence consolidée (14 août 2026)** : [`OP1_FIRMWARE_BIBLE.md`](OP1_FIRMWARE_BIBLE.md) réunit tout ce qui est su sur le firmware et la machine (conteneur, base de données d'usine, format patch, boutons ↔ champs JSON, comportement Tape, graphismes, modes de connexion, catalogue de mods) avec, pour chaque fait, ce qui est déjà codé / codable maintenant / hors périmètre — un seul document à consulter avant de démarrer un chantier firmware/machine plutôt que de relire chaque étude séparément.
+
 ## Etat de livraison
 
 Etat de pilotage : 13 aout 2026 (maj apres verification TypeScript).
