@@ -180,7 +180,21 @@ encore etre imposee par l'UI/coeur natif.
   section « Clavier MIDI construit » en fin de document décrit un état
   antérieur (64 colonnes, éditeur+clavier affichés ensemble) — toujours
   correcte pour la géométrie de `StudioMachinePanel` lui-même, mais ne
-  mentionne pas encore le partage avec Exercices.
+  mentionne pas encore le partage avec Exercices. **Liste de référence des
+  touches réelles (14 août 2026, après-midi)** : le panneau « config » du
+  clavier construit affiche maintenant, en plus du clic-pour-configurer déjà
+  existant, deux colonnes fixes — « câblé ici » (notes construites, T1-T4,
+  boutons verts génériques, transport, chacun avec son dernier message
+  envoyé en direct) et une vraie référence complète des boutons OP-1 (SYNTH/
+  DRUM/TAPE/MIXER, SOUND 1-8, SEQUENCER, SHIFT, ALBUM/COM, HELP, TEMPO,
+  VOLUME, transport/édition/navigation bande, MIC/LINE, micro intégré,
+  haut-parleur, écran, VU/batterie), chacune avec un petit pictogramme et une
+  note de source (guide officiel `teenage.engineering/guides/op-1/original/
+  layout`, recoupé avec `OP1_KNOWLEDGE_BASE.md`). Volontairement honnête :
+  les 27 boutons verts génériques du clavier construit ne sont **pas**
+  remappés un par un sur ces vrais noms (aucune source fiable pour une
+  correspondance position→bouton réel), la liste reste donc une référence
+  informative à côté de ce qui est réellement câblé, pas un remplacement.
 
 Le projet dispose aujourd'hui d'un prototype fonctionnel et de bridges locaux
 testés pour firmware, samples, patches et préparation Tape. Les écrans sont
