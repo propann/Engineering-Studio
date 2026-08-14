@@ -74,6 +74,28 @@ Images a ete retire apres validation de cette integration.
   `tools/profile_bridge.py` sont livres ; la coque Tauri expose maintenant
   `profile_read` et `profile_write` avec confirmation, validation de schema et
   aucune ecriture machine.
+  **Idée notée le 14 août 2026, pas construite** : une vraie « fiche
+  personnage » sur la page d'accueil qui regroupe ce qui est aujourd'hui
+  dispersé (le pseudo et le nom de machine ne sont édités que dans la
+  fenêtre Sauvegardes) — un seul endroit pour éditer le pseudo, le dossier
+  de travail (`localSpace.root`, déjà dans `LocalProfile`), et les machines
+  nommées (`profile.machines[]` est déjà un tableau côté schéma, donc déjà
+  prêt pour plusieurs machines — seule l'UI actuelle n'en montre qu'une).
+  Deux ajouts pas encore dans `LocalProfile` : un petit avatar SVG par
+  profil/machine (cohérent avec la direction « un peu débile assumé » de
+  `GUI_REDESIGN_BRIEF.md` §6, et avec la contrainte déjà posée dans
+  `DRAWING_CREATOR_CONCEPT.md`/`OP1_IMAGE_BIBLE.md` §8 : palette machine,
+  canevas contraint, jamais un import externe non vérifié) ; et un résumé
+  des scores/progression du module Exercices (déjà persistés localement,
+  clé `op1-studio-exercise-progress-v1`, jamais envoyés hors de l'appareil)
+  affiché sur cette fiche plutôt que seulement dans la fenêtre Exercices.
+  Nécessite : étendre `LocalProfile`/`normalizeProfile`
+  (`app/lib/profile.ts`) avec un champ avatar et une référence de lecture
+  vers la progression Exercices, une nouvelle section sur la page d'accueil
+  (`HomeHub.tsx` ou une carte dédiée), et probablement un bouton par
+  machine plutôt qu'un seul champ texte. Pas cadré plus finement pour
+  l'instant — à reprendre avec la même rigueur que le reste (schéma d'abord,
+  UI ensuite, tests de round-trip du profil).
 - **Cloud et service en ligne** : comptes, synchronisation, partage et
   commercialisation sont gelés hors périmètre. La priorité est un outil local
   fiable, installable et vérifiable ; aucune décision de service ne doit
