@@ -2,7 +2,7 @@
 
 Le firmware est le premier écran et le premier sujet de confiance. Techniquement, une sauvegarde minimale et une identification sûre de la machine sont des prérequis du même jalon, pas des détours.
 
-**Référence consolidée (14 août 2026)** : [`OP1_FIRMWARE_BIBLE.md`](OP1_FIRMWARE_BIBLE.md) réunit tout ce qui est su sur le firmware et la machine (conteneur, base de données d'usine, format patch, boutons ↔ champs JSON, comportement Tape, graphismes, modes de connexion, catalogue de mods) avec, pour chaque fait, ce qui est déjà codé / codable maintenant / hors périmètre — un seul document à consulter avant de démarrer un chantier firmware/machine plutôt que de relire chaque étude séparément.
+**Référence consolidée (14 août 2026)** : [`OP1_FIRMWARE_BIBLE.md`](OP1_FIRMWARE_BIBLE.md) réunit tout ce qui est su sur le firmware et la machine (conteneur, base de données d'usine, format patch, boutons ↔ champs JSON, comportement Tape, graphismes, modes de connexion, catalogue de mods) avec, pour chaque fait, ce qui est déjà codé / codable maintenant / hors périmètre — un seul document à consulter avant de démarrer un chantier firmware/machine plutôt que de relire chaque étude séparément. [`OP1_IMAGE_BIBLE.md`](OP1_IMAGE_BIBLE.md) approfondit spécifiquement les 61 écrans SVG (inventaire complet par catégorie, palette exacte, patrons visuels d'éditeur de moteur, dictionnaire de codenames) pour servir directement l'éditeur d'images.
 
 ## Etat de livraison
 

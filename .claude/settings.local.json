@@ -44,7 +44,10 @@
       "Bash(git fetch *)",
       "Bash(git merge *)",
       "Bash(git commit *)",
-      "Bash(git branch *)"
+      "Bash(git branch *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('tools/display_bridge.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -m unittest tests.test_display_bridge -v)",
+      "Bash(python tools/display_bridge.py sort --input .cache/firmware/op1_246 --output-dir backups/display-sorted)"
     ]
   }
 }

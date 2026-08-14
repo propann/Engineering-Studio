@@ -88,6 +88,18 @@ CATEGORY_MAP: dict[str, tuple[str, str, str]] = {
     "slump": ("moteurs_sonores", "high", "op1-glitter THEME_CREATION.md : moteur synthe Voltage."),
     "st": ("moteurs_sonores", "high", "op1-glitter THEME_CREATION.md : moteur synthe String."),
     "t10": ("moteurs_sonores", "high", "op1-glitter THEME_CREATION.md : moteur synthe Digital."),
+    # Corrections du 13 aout 2026 (FIRMWARE_CONTAINER_STUDY.md, session 2) :
+    # identifiees en ouvrant chaque fichier et en croisant sa structure interne
+    # (groupes SVG nommes) avec les tables deja lues dans op1_factory.db, pas
+    # une source communautaire externe cette fois.
+    "tombola": ("sequenceurs", "high", "Groupes speed/bouncebar/rotation/crank : sequenceur Tombola (seq_types id 3), lu directement dans le fichier."),
+    "sketch": ("sequenceurs", "high", "391 lignes, groupes dots/mult_times/mult_div/grid_icon/erase : sequenceur Sketch (seq_types id 5)."),
+    "dbox": ("moteurs_sonores", "high", "36 groupes, nom correspond directement a drum_types.dbox : ecran du moteur drum."),
+    "grid": ("effets", "high", "Groupes grid/x/y/blue/green/white : effet Grid (fx_types id 3)."),
+    "in": ("connectivite", "high", "Groupes line/radio/whatuhear/mic/usb : selecteur d'entree audio."),
+    "micline": ("connectivite", "medium", "Groupes triglevel/gain/mhz/standby/recording : reglages d'enregistrement (seuil, gain, frequence radio) ; categorie tape possible aussi, non tranchee."),
+    "dsynth": ("moteurs_sonores", "high", "58 groupes, nom de fichier correspond directement a synth_types.dsynth."),
+    "drw": ("moteurs_sonores", "medium", "Correspond probablement a synth_types.drwave, mais fichier vide (497 octets) sur OS 246 - a confirmer."),
 }
 
 DEFAULT_CATEGORY = ("non_identifie", "low", "Codename interne du firmware, aucune source externe ne le confirme.")
