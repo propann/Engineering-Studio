@@ -53,21 +53,6 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   padding: 28px;
 }
 
-.prototype-ribbon {
-  width: max-content;
-  max-width: 100%;
-  margin: 0 auto 10px;
-  padding: 7px 14px;
-  color: #565a5d;
-  font: 700 10px/1 var(--font-geist-mono), monospace;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  background: rgba(255,255,255,.58);
-  border: 1px solid rgba(255,255,255,.82);
-  border-radius: 999px;
-  box-shadow: 0 2px 10px rgba(40,43,45,.07);
-}
-
 .machine-shell {
   max-width: 1500px;
   min-height: calc(100vh - 74px);
@@ -661,21 +646,20 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .firmware-file-picker small { color: #7d8782; font-size: 10px; }
 .firmware-file-picker input { margin-top: 4px; color: #697273; font-size: 10px; }
 .firmware-editor-inline { margin-top: 29px; padding: 20px; background: #eef3f0; border: 1px solid #c8d8d0; border-radius: 8px; }
-.firmware-steps { margin-top: 18px; display: grid; grid-template-columns: 1fr 30px 1fr 30px 1fr 30px 1fr; align-items: start; gap: 6px; }
-.firmware-steps span { display: flex; flex-direction: column; align-items: center; gap: 5px; color: #9aa39f; text-align: center; }
-.firmware-steps b { width: 24px; height: 24px; display: grid; place-items: center; color: #737d79; background: #dce3df; border: 1px solid #c8d2cc; border-radius: 50%; font: 700 10px var(--font-geist-mono), monospace; }
-.firmware-steps small { font: 8px var(--font-geist-mono), monospace; }
-.firmware-steps i { height: 1px; margin-top: 12px; background: #ccd6d0; }
-.firmware-steps .is-current { color: #267c65; }
-.firmware-steps .is-current b, .firmware-steps .is-done b { color: #fff; background: #267c65; border-color: #267c65; }
-.firmware-steps .is-done + i { background: #8fc9b4; }
-.inline-editor-grid { margin-top: 15px; display: grid; grid-template-columns: minmax(260px, 1fr) minmax(220px, .8fr); gap: 14px; }
+/* Trois colonnes toujours visibles (actions / mods / outils), inspiré
+   d'op1REpackerGUI — voir docs/FIRMWARE_PAGE_UI_SPEC.md. Remplace l'ancien
+   suivi à 4 étapes (.firmware-steps, retiré) et la grille 2 colonnes
+   (.inline-editor-grid, retirée). */
+.firmware-panes { margin-top: 18px; display: grid; grid-template-columns: minmax(220px, .85fr) minmax(320px, 1.4fr) minmax(210px, .85fr); align-items: start; gap: 16px; }
+.firmware-pane { display: flex; flex-direction: column; gap: 14px; }
+.firmware-pane-actions .inline-editor-options { margin-top: 0; }
+.firmware-pane-mods, .firmware-pane-tools { padding: 15px; background: #f4f5f2; border: 1px solid #d7dad7; border-radius: 6px; }
+.firmware-tool-link { width: 100%; justify-content: center; }
 .inline-editor-options { padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #fff; border: 1px solid #d7dad7; border-radius: 6px; }
 .inline-editor-options > label { padding: 8px 0; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--soft-line); color: #596365; font-size: 10px; }
 .inline-editor-options > label input { accent-color: var(--green); }
 .inline-editor-options .primary-action { justify-content: center; margin-top: 5px; }
 .inline-editor-options .primary-action:disabled { cursor: not-allowed; }
-.inline-mods { margin-top: 14px; background: #f8f9f7; }
 .mod-section { margin-top: 17px; padding: 15px; background: #f4f5f2; border: 1px solid #d7dad7; border-radius: 6px; }
 .mod-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .mod-section-heading div { display: flex; flex-direction: column; gap: 6px; }
@@ -1149,7 +1133,6 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 
 @media (max-width: 760px) {
   .site-canvas { padding: 8px; }
-  .prototype-ribbon { margin-top: 4px; font-size: 8px; }
   .machine-shell { min-height: calc(100vh - 45px); border-radius: 9px; }
   .machine-strip { height: auto; min-height: 88px; grid-template-columns: 1fr auto; padding: 12px; }
   .mini-screen { grid-column: 1 / -1; grid-row: 2; height: 58px; }
@@ -1175,6 +1158,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   .heading-actions { flex-direction: column; align-items: stretch; }
   .editor-launch { justify-content: center; }
   .mod-grid { grid-template-columns: 1fr; }
+  .firmware-panes { grid-template-columns: 1fr; }
   .sound-categories { grid-template-columns: repeat(2, 1fr); }
   .sound-library-columns { grid-template-columns: 1fr; }
   .tool-window { width: calc(100vw - 14px); height: calc(100vh - 14px); }

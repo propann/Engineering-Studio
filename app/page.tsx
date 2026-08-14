@@ -920,7 +920,6 @@ type MidiNavigator = Navigator & {
 
 export default function Home() {
   const [stage, setStage] = useState(0);
-  const [scanning, setScanning] = useState(false);
   const [expertOpen, setExpertOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [deviceName, setDeviceName] = useState<string | null>(null);
@@ -939,7 +938,6 @@ export default function Home() {
   const [firmwareSection, setFirmwareSection] = useState<"build" | "graphics">("build");
   const [studioSection, setStudioSection] = useState<"tape" | "graphics">("tape");
   const [firmwareFile, setFirmwareFile] = useState<{ name: string; size: number } | null>(null);
-  const [firmwarePlanReady, setFirmwarePlanReady] = useState(false);
   const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
   const [selectedMod, setSelectedMod] = useState<FirmwareMod | null>(null);
   const [soundPackReady, setSoundPackReady] = useState(false);
@@ -1063,42 +1061,9 @@ export default function Home() {
     void notifyLocalPlan("backup.plan", { root: backupRoot });
   }
 
-  async function runPrimaryAction() {
-    if (stage === 0) {
-      await connectMidiDevice();
-      return;
-    }
-    if (stage === 1) {
-      setScanning(true);
-      setNotice(null);
-      window.setTimeout(() => {
-        setStage(2);
-        setScanning(false);
-      }, 850);
-      return;
-    }
-    if (stage === 2) {
-      setStage(3);
-      setNotice("Plan prêt. La vraie version demandera une sauvegarde vérifiée avant TE-boot.");
-      return;
-    }
-    setNotice("Le prototype s’arrête volontairement avant toute écriture firmware.");
-  }
-
-  const primaryLabel = scanning
-    ? "Contrôle en cours…"
-    : stage === 0
-      ? "Détecter l’OP-1 en MIDI"
-      : stage === 1
-        ? "Contrôler la machine"
-        : stage === 2
-          ? "Préparer la mise à jour"
-          : "Voir l’étape TE-boot";
 
   return (
     <main className="site-canvas">
-      <div className="prototype-ribbon">Prototype interactif · aucune écriture matérielle</div>
-
       <section className="machine-shell" aria-label="OP-1 Studio">
         <header className="machine-strip">
           <div className="brand-block">
@@ -1136,7 +1101,7 @@ export default function Home() {
                 <button
                   key={item.label}
                   className={item.active ? "nav-item active" : "nav-item"}
-                    onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else if (item.label === "Images") setToolWindow("editor"); else setToolWindow("editor"); }}
+                    onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else if (item.label === "Images") setToolWindow("editor"); else setToolWindow(null); }}
                 >
                   <Icon name={item.icon} />
                   <span>{item.label}</span>
@@ -1159,18 +1124,12 @@ export default function Home() {
 
           </aside>
 
-          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") setToolWindow("editor"); else setToolWindow(id as ToolWindow); }} /> : <div className="content">
+          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") setToolWindow("editor"); else if (id === "firmware") setToolWindow(null); else setToolWindow(id as ToolWindow); }} /> : <div className="content">
             <div className="page-heading">
               <div>
                 <span className="eyebrow"><Icon name="shield" size={16} /> FIRMWARE / CENTRE DE CONTRÔLE</span>
                 <h1>Votre OP‑1, sous contrôle.</h1>
                 <p>Identifier, sauvegarder, vérifier et mettre à jour avec un plan lisible à chaque étape.</p>
-              </div>
-              <div className="heading-actions">
-                <button className="primary-action" onClick={runPrimaryAction} disabled={scanning}>
-                  {stage === 0 ? <Icon name="plug" /> : stage < 3 ? <Icon name="shield" /> : <Icon name="terminal" />}
-                  {primaryLabel}
-                </button>
               </div>
             </div>
 
@@ -1212,17 +1171,36 @@ export default function Home() {
               </div>
             </section>
 
+            {/* Disposition inspirée d'op1REpackerGUI (référence UX uniquement,
+                voir docs/FIRMWARE_PAGE_UI_SPEC.md) : trois colonnes toujours
+                visibles plutôt qu'un parcours à 4 étapes à dérouler —
+                actions à gauche, mods au centre, outils secondaires à
+                droite. Logique et données inchangées, seule la disposition
+                change. */}
             <section id="firmware-editor" className="firmware-editor-inline" aria-labelledby="firmware-editor-title">
               <div className="section-heading"><div><span className="section-label">ÉDITEUR INTÉGRÉ</span><h2 id="firmware-editor-title">Préparer un firmware</h2></div><div className="editor-status-pills"><span className="release-pill"><i /> MODS LOCAUX</span><span className="engine-pill"><i /> OP1REPACKER 0.2.6 · TROUVÉ</span></div></div>
-              <div className="firmware-steps" aria-label="Progression de préparation"><span className={firmwareFile ? "is-done" : "is-current"}><b>1</b><small>Source</small></span><i /><span className={Object.values(selectedMods).some(Boolean) ? "is-done" : firmwareFile ? "is-current" : ""}><b>2</b><small>Mods</small></span><i /><span className={firmwarePlanReady ? "is-done" : firmwareFile ? "is-current" : ""}><b>3</b><small>Contrôles</small></span><i /><span className={firmwarePlanReady ? "is-current" : ""}><b>4</b><small>Exporter</small></span></div>
-              <div className="inline-editor-grid">
-                <div>
+
+              <div className="firmware-panes">
+                <div className="firmware-pane firmware-pane-actions">
                   <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a className="firmware-download-button" href={officialFirmwareUrl} target="_blank" rel="noreferrer" download={`op1_${recommendedFirmware.version}.op1`}><Icon name="download" size={17} />Télécharger le firmware officiel</a></div>
                   <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
+                  <div className="inline-editor-options"><div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>{Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}<button className="primary-action" disabled={!firmwareFile} onClick={() => { if (firmwareFile) { void notifyLocalPlan("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify }); setNotice("Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype."); } else setNotice("Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button></div>
                 </div>
-                <div className="inline-editor-options"><div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>{Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}<button className="primary-action" disabled={!firmwareFile} onClick={() => { setFirmwarePlanReady(Boolean(firmwareFile)); if (firmwareFile) void notifyLocalPlan("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify }); else setNotice("Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button></div>
+
+                <div className="firmware-pane firmware-pane-mods">
+                  <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
+                  {["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}
+                </div>
+
+                <div className="firmware-pane firmware-pane-tools">
+                  <div className="mod-section-heading"><div><span className="section-label">IMAGES &amp; SVG</span><strong>Outils graphiques</strong></div></div>
+                  <button type="button" className="secondary-action firmware-tool-link" onClick={() => setToolWindow("editor")}><Icon name="image" size={15} />Ouvrir l’atelier graphique</button>
+                  <p className="tool-note"><code>tools/display_bridge.py</code> trie les écrans et exporte un patch non destructif par fichier ; <code>tools/svg_preflight.py</code> valide un SVG avant modification.</p>
+
+                  <div className="mod-section-heading"><div><span className="section-label">VÉRIFICATION</span><strong>Bridges locaux</strong></div></div>
+                  <p className="tool-note"><code>tools/firmware_inspector.py</code> revalide CRC/LZMA/TAR sans jamais extraire de chemin dangereux ; <code>tools/firmware_fetch.py</code> ne télécharge que depuis l’hôte officiel. Détail complet des commandes dans <code>README.md</code>.</p>
+                </div>
               </div>
-              <div className="mod-section inline-mods"><div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>{["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}</div>
             </section>
 
           </div>}

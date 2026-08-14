@@ -52,7 +52,8 @@
       "Bash(cp __TRACKED_VAR__/screenshot-1786697466457-0.jpg docs/assets/screenshots/accueil.jpg)",
       "Bash(cp __TRACKED_VAR__/screenshot-1786697489003-1.jpg docs/assets/screenshots/studio.jpg)",
       "Bash(cp __TRACKED_VAR__/screenshot-1786697571948-4.jpg docs/assets/screenshots/sons.jpg)",
-      "Bash(cp __TRACKED_VAR__/screenshot-1786697582194-6.jpg docs/assets/screenshots/exercices.jpg)"
+      "Bash(cp __TRACKED_VAR__/screenshot-1786697582194-6.jpg docs/assets/screenshots/exercices.jpg)",
+      "Bash(git ls-tree *)"
     ]
   }
 }

@@ -11,7 +11,7 @@ type HubModule = {
 };
 
 const modules: HubModule[] = [
-  { id: "editor", title: "Firmware", description: "Préparer une mise à jour et sélectionner les mods locaux.", requirement: "SANS MACHINE", icon: "chip" },
+  { id: "firmware", title: "Firmware", description: "Préparer une mise à jour et sélectionner les mods locaux.", requirement: "SANS MACHINE", icon: "chip" },
   { id: "backups", title: "Sauvegardes", description: "Vérifier, organiser et préparer une copie de la machine.", requirement: "OP-1 REQUIS", icon: "archive" },
   { id: "sounds", title: "Sons", description: "Classer les samples et préparer des packs à transférer.", requirement: "SANS MACHINE", icon: "wave" },
   { id: "tape", title: "Studio", description: "Créer des pistes avec le clone local ou l’OP-1 en MIDI.", requirement: "SANS MACHINE", icon: "tape" },
