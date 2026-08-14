@@ -23,6 +23,17 @@ pas, il liste juste ce qu'il reste à faire sur **cette page précise**.
 - Bandeau « Prototype interactif » retiré.
 - Disposition en trois colonnes toujours visibles (actions / mods / outils)
   à la place du suivi à 4 étapes, inspirée d'`op1REpackerGUI`.
+- **Jauge de danger** : chaque mod porte un niveau de risque (`controlled` —
+  vérifié sur OS 246, ou `unclassified` pour les remplacements d'écran/
+  paquets de ressources pas encore audités un par un ; `high`/`critical`
+  existent dans le type mais aucun mod ainsi classé n'est exposé dans cette
+  UI pour l'instant, voir `OP1_FIRMWARE_BIBLE.md` §11). La jauge agrège le
+  poids de **toute la sélection**, pas un mod isolé — au-delà du seuil
+  « Risque élevé », une case à cocher de confirmation explicite devient
+  obligatoire avant que « Préparer le plan » soit cliquable, et elle se
+  réinitialise automatiquement si la sélection change entre-temps.
+  Vérifié en direct : sélection de 6 mods non classés → jauge rouge,
+  case de confirmation apparue, bouton bloqué tant qu'elle n'est pas cochée.
 
 ## 1. Charger un firmware de base comme source de travail active
 

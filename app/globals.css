@@ -682,6 +682,30 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .mod-option small { overflow-wrap: anywhere; color: #858d8e; font: 8px/1.35 var(--font-geist-mono), monospace; }
 .mod-option em { overflow-wrap: anywhere; color: #a0a6a7; font: 7px/1.25 var(--font-geist-mono), monospace; font-style: normal; }
 .mod-option em.mod-availability { color: #b16c32; }
+.mod-risk-badge { display: inline-block; margin-left: 5px; padding: 2px 4px; border-radius: 3px; font: 700 7px/1 var(--font-geist-mono), monospace; letter-spacing: .03em; vertical-align: 1px; }
+.mod-risk-badge.is-unclassified { color: #5a5230; background: #f0e2a9; }
+.mod-risk-badge.is-high { color: #5c1f10; background: #f3b48f; }
+.mod-risk-badge.is-critical { color: #fff; background: #c23b2e; }
+
+/* Jauge de danger — feuille de route Firmware, 14 août 2026. Un seul jeu de
+   couleurs pour badge de mod (.mod-risk-badge ci-dessus) et jauge agrégée,
+   du vert (verifié/faible) au rouge (élevé), jamais de fausse neutralité. */
+.firmware-risk-gauge { margin-top: 4px; padding: 10px; background: #fff; border: 1px solid #d7dad7; border-radius: 6px; }
+.firmware-risk-gauge-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.firmware-risk-gauge-head span { color: #85898b; font: 700 8px/1 var(--font-geist-mono), monospace; letter-spacing: .1em; }
+.firmware-risk-gauge-head strong { font-size: 10px; }
+.firmware-risk-gauge-bar { height: 5px; margin-top: 7px; background: #eceeeb; border-radius: 3px; overflow: hidden; }
+.firmware-risk-gauge-bar i { display: block; height: 100%; background: #68c9a7; transition: width .2s ease; }
+.firmware-risk-gauge small { display: block; margin-top: 6px; color: #9aa39f; font-size: 9px; }
+.firmware-risk-gauge.is-faible .firmware-risk-gauge-head strong { color: #267c65; }
+.firmware-risk-gauge.is-faible .firmware-risk-gauge-bar i { background: #68c9a7; }
+.firmware-risk-gauge.is-modere .firmware-risk-gauge-head strong { color: #96631c; }
+.firmware-risk-gauge.is-modere .firmware-risk-gauge-bar i { background: #e0a34f; }
+.firmware-risk-gauge.is-eleve { border-color: #eab3a8; background: #fdf2ef; }
+.firmware-risk-gauge.is-eleve .firmware-risk-gauge-head strong { color: #b23a2a; }
+.firmware-risk-gauge.is-eleve .firmware-risk-gauge-bar i { background: #d8503c; }
+.firmware-risk-ack { margin-top: 4px; padding: 9px 10px; display: flex; align-items: flex-start; gap: 8px; color: #7a3d0e; background: #fff3e0; border: 1px solid #f0c789; border-radius: 5px; font-size: 10px; line-height: 1.5; }
+.firmware-risk-ack input { margin-top: 2px; }
 .mod-detail-window { position: relative; width: min(680px, calc(100vw - 28px)); padding: 22px; color: var(--ink); background: var(--surface); border: 1px solid #b6b8b7; border-radius: 10px; box-shadow: 0 24px 70px rgba(0,0,0,.28); }
 .mod-detail-close { position: absolute; top: 14px; right: 14px; }
 .mod-detail-image, .mod-detail-placeholder { width: 100%; height: 280px; margin-bottom: 18px; display: grid; place-items: center; object-fit: contain; color: #72d9b5; background: #202529; border: 1px solid #111; border-radius: 6px; }

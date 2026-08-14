@@ -884,22 +884,44 @@ const nav = [
 const recommendedFirmware = firmwareCatalog.releases[0];
 const officialFirmwareUrl = recommendedFirmware.officialUrl;
 
-type FirmwareMod = { id: string; category: string; title: string; detail: string; source: string; availability?: string; preview?: string; isNew?: boolean };
+// Niveau de risque : repris de data/mods/catalog.json (colonne "risk") pour
+// les mods qui y sont individuellement audités ; "unclassified" pour les
+// remplacements d'écran isolés et les paquets de ressources en bloc
+// (Écrans/Audio/Ressources), qui ne sont pas encore passés par un audit
+// mod par mod — ne pas les présenter comme "controlled" par confort. Aucun
+// mod "high"/"critical" du catalogue n'est exposé dans cette UI (ils
+// restent recherche/candidat, voir OP1_FIRMWARE_BIBLE.md §11) — la jauge
+// ci-dessous reste donc prête à réagir le jour où l'un d'eux serait ajouté.
+type FirmwareModRisk = "controlled" | "unclassified" | "high" | "critical";
+type FirmwareMod = { id: string; category: string; title: string; detail: string; source: string; risk: FirmwareModRisk; availability?: string; preview?: string; isNew?: boolean };
+
+const FIRMWARE_RISK_WEIGHT: Record<FirmwareModRisk, number> = { controlled: 1, unclassified: 2, high: 4, critical: 7 };
+const FIRMWARE_RISK_LABEL: Record<FirmwareModRisk, string> = { controlled: "Vérifié", unclassified: "Non classé", high: "Risque élevé", critical: "Risque critique" };
+
+// Jauge agrégée (pas un mod pris isolément) : la somme des poids ci-dessus
+// pour tous les mods sélectionnés à la fois. Seuils choisis pour qu'une
+// sélection de quelques mods "controlled" reste "faible", et qu'il faille
+// une confirmation explicite avant de partir sur une combinaison chargée —
+// voir docs/FIRMWARE_PAGE_ROADMAP.md.
+type FirmwareRiskLevel = "aucun" | "faible" | "modere" | "eleve";
+const FIRMWARE_GAUGE_LABEL: Record<FirmwareRiskLevel, string> = {
+  aucun: "Aucun mod sélectionné", faible: "Risque faible", modere: "Risque modéré", eleve: "Risque élevé",
+};
 
 const firmwareMods: FirmwareMod[] = [
-  { id: "playmode", category: "Écrans", title: "Écran Play Mode", detail: "Remplace l’écran du mode lecture.", source: "SOURCE_MODIFIEE/content/display/playmode.svg", preview: "/firmware-mods/playmode.svg" },
-  { id: "rymd", category: "Écrans", title: "Écran RYMD", detail: "Modifie l’écran et les repères du mode RYMD.", source: "SOURCE_MODIFIEE/content/display/rymd.svg", preview: "/firmware-mods/rymd.svg" },
-  { id: "tapeconfig", category: "Écrans", title: "Écran Tape Config", detail: "Remplace l’écran de configuration Tape.", source: "SOURCE_MODIFIEE/content/display/tapeconfig.svg", preview: "/firmware-mods/tapeconfig.svg" },
-  { id: "op1patch", category: "Audio", title: "Patch vocal OP-1", detail: "Ajoute la ressource audio de speech modifiée.", source: "SOURCE_MODIFIEE/content/audio/speech/op1patch.raw" },
-  { id: "audio", category: "Ressources", title: "Ressources audio du pack", detail: "40 RAW : synth, drum, presets et speech.", source: "SOURCE_MODIFIEE/content/audio/" },
-  { id: "display", category: "Ressources", title: "Ressources graphiques du pack", detail: "61 SVG d’interface et d’écrans.", source: "SOURCE_MODIFIEE/content/display/" },
-  { id: "iter", category: "Fonctions", title: "Synthé Iter", detail: "Active le synthé Iter caché dans le firmware original.", source: "op1repacker --options iter", availability: "Moteur local trouvé", isNew: true },
-  { id: "presets-iter", category: "Fonctions", title: "Presets Iter", detail: "Ajoute 11 presets AIF fournis avec le moteur Iter.", source: "op1repacker --options presets-iter", availability: "Moteur local trouvé · dépend de Iter", isNew: true },
-  { id: "filter", category: "Fonctions", title: "Effet Filter", detail: "Rend disponible l’effet Filter pour le traitement sonore.", source: "op1repacker --options filter", availability: "Moteur local trouvé", isNew: true },
-  { id: "subtle-fx", category: "Fonctions", title: "Subtle FX", detail: "Modifie les réglages par défaut des effets pour un rendu plus léger.", source: "op1repacker --options subtle-fx", availability: "Moteur local trouvé", isNew: true },
-  { id: "gfx-tape-invert", category: "Thèmes", title: "Tape inversé", detail: "Applique le patch graphique d’inversion de l’écran Tape.", source: "op1repacker --options gfx-tape-invert", availability: "Moteur local trouvé", isNew: true },
-  { id: "gfx-cwo-moose", category: "Thèmes", title: "CWO Moose", detail: "Applique le patch graphique Moose au visuel CWO.", source: "op1repacker --options gfx-cwo-moose", availability: "Moteur local trouvé", isNew: true },
-  { id: "gfx-iter-lab", category: "Thèmes", title: "Iter Lab", detail: "Remplace le visuel Iter par l’asset Iter Lab fourni.", source: "op1repacker --options gfx-iter-lab", availability: "Moteur local trouvé · dépend de Iter", isNew: true },
+  { id: "playmode", category: "Écrans", title: "Écran Play Mode", detail: "Remplace l’écran du mode lecture.", source: "SOURCE_MODIFIEE/content/display/playmode.svg", preview: "/firmware-mods/playmode.svg", risk: "unclassified" },
+  { id: "rymd", category: "Écrans", title: "Écran RYMD", detail: "Modifie l’écran et les repères du mode RYMD.", source: "SOURCE_MODIFIEE/content/display/rymd.svg", preview: "/firmware-mods/rymd.svg", risk: "unclassified" },
+  { id: "tapeconfig", category: "Écrans", title: "Écran Tape Config", detail: "Remplace l’écran de configuration Tape.", source: "SOURCE_MODIFIEE/content/display/tapeconfig.svg", preview: "/firmware-mods/tapeconfig.svg", risk: "unclassified" },
+  { id: "op1patch", category: "Audio", title: "Patch vocal OP-1", detail: "Ajoute la ressource audio de speech modifiée.", source: "SOURCE_MODIFIEE/content/audio/speech/op1patch.raw", risk: "unclassified" },
+  { id: "audio", category: "Ressources", title: "Ressources audio du pack", detail: "40 RAW : synth, drum, presets et speech.", source: "SOURCE_MODIFIEE/content/audio/", risk: "unclassified" },
+  { id: "display", category: "Ressources", title: "Ressources graphiques du pack", detail: "61 SVG d’interface et d’écrans.", source: "SOURCE_MODIFIEE/content/display/", risk: "unclassified" },
+  { id: "iter", category: "Fonctions", title: "Synthé Iter", detail: "Active le synthé Iter caché dans le firmware original.", source: "op1repacker --options iter", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
+  { id: "presets-iter", category: "Fonctions", title: "Presets Iter", detail: "Ajoute 11 presets AIF fournis avec le moteur Iter.", source: "op1repacker --options presets-iter", availability: "Moteur local trouvé · dépend de Iter", isNew: true, risk: "controlled" },
+  { id: "filter", category: "Fonctions", title: "Effet Filter", detail: "Rend disponible l’effet Filter pour le traitement sonore.", source: "op1repacker --options filter", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
+  { id: "subtle-fx", category: "Fonctions", title: "Subtle FX", detail: "Modifie les réglages par défaut des effets pour un rendu plus léger.", source: "op1repacker --options subtle-fx", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
+  { id: "gfx-tape-invert", category: "Thèmes", title: "Tape inversé", detail: "Applique le patch graphique d’inversion de l’écran Tape.", source: "op1repacker --options gfx-tape-invert", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
+  { id: "gfx-cwo-moose", category: "Thèmes", title: "CWO Moose", detail: "Applique le patch graphique Moose au visuel CWO.", source: "op1repacker --options gfx-cwo-moose", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
+  { id: "gfx-iter-lab", category: "Thèmes", title: "Iter Lab", detail: "Remplace le visuel Iter par l’asset Iter Lab fourni.", source: "op1repacker --options gfx-iter-lab", availability: "Moteur local trouvé · dépend de Iter", isNew: true, risk: "controlled" },
 ];
 
 type DirectoryPickerWindow = Window & {
@@ -940,6 +962,7 @@ export default function Home() {
   const [firmwareFile, setFirmwareFile] = useState<{ name: string; size: number } | null>(null);
   const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
   const [selectedMod, setSelectedMod] = useState<FirmwareMod | null>(null);
+  const [firmwareRiskAck, setFirmwareRiskAck] = useState(false);
   const [soundPackReady, setSoundPackReady] = useState(false);
   const [backupRoot, setBackupRoot] = useState("backups/");
   const [profile, setProfile] = useState<LocalProfile>(() => {
@@ -949,6 +972,27 @@ export default function Home() {
   });
   const folderInputRef = useRef<HTMLInputElement>(null);
   const midiOutputRef = useRef<MidiOutputLike | null>(null);
+
+  // Jauge de danger (feuille de route Firmware, 14 août 2026) : la somme du
+  // poids de chaque mod sélectionné, pas seulement son nombre — un mod non
+  // classé pèse plus qu'un mod vérifié, un mod à risque élevé pèse
+  // nettement plus. Recalculée à chaque rendu (12 mods au maximum, calcul
+  // trivial) plutôt que mémoïsée.
+  const selectedFirmwareModList = firmwareMods.filter((mod) => selectedMods[mod.id]);
+  const firmwareRiskWeight = selectedFirmwareModList.reduce((total, mod) => total + FIRMWARE_RISK_WEIGHT[mod.risk], 0);
+  const firmwareRiskLevel: FirmwareRiskLevel =
+    firmwareRiskWeight === 0 ? "aucun" : firmwareRiskWeight <= 4 ? "faible" : firmwareRiskWeight <= 9 ? "modere" : "eleve";
+  const firmwareRiskBlocked = firmwareRiskLevel === "eleve" && !firmwareRiskAck;
+
+  // Un changement de sélection invalide une confirmation déjà donnée — un
+  // "je confirme" ne doit jamais couvrir une sélection différente de celle
+  // qui a été acquittée. Différé dans une image (requestAnimationFrame)
+  // plutôt qu'appelé en direct dans le corps de l'effet, pour rester en
+  // dehors du rendu synchrone (règle react-hooks/set-state-in-effect).
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setFirmwareRiskAck(false));
+    return () => cancelAnimationFrame(raf);
+  }, [selectedMods]);
 
   function updateProfile(next: LocalProfile) {
     setProfile(next);
@@ -1184,12 +1228,33 @@ export default function Home() {
                 <div className="firmware-pane firmware-pane-actions">
                   <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a className="firmware-download-button" href={officialFirmwareUrl} target="_blank" rel="noreferrer" download={`op1_${recommendedFirmware.version}.op1`}><Icon name="download" size={17} />Télécharger le firmware officiel</a></div>
                   <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
-                  <div className="inline-editor-options"><div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>{Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}<button className="primary-action" disabled={!firmwareFile} onClick={() => { if (firmwareFile) { void notifyLocalPlan("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify }); setNotice("Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype."); } else setNotice("Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button></div>
+                  <div className="inline-editor-options">
+                    <div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>
+                    {Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}
+
+                    {/* Jauge de danger (feuille de route Firmware, 14 août 2026) :
+                        pas un mod isolé, la combinaison sélectionnée dans son
+                        ensemble — plus il y en a, et plus certains sont non
+                        classés/à risque, plus la jauge monte. */}
+                    <div className={`firmware-risk-gauge is-${firmwareRiskLevel}`} role="status">
+                      <div className="firmware-risk-gauge-head"><span>DANGER MODS</span><strong>{FIRMWARE_GAUGE_LABEL[firmwareRiskLevel]}</strong></div>
+                      <div className="firmware-risk-gauge-bar"><i style={{ width: `${Math.min(100, (firmwareRiskWeight / 12) * 100)}%` }} /></div>
+                      <small>{selectedFirmwareModList.length} mod{selectedFirmwareModList.length > 1 ? "s" : ""} sélectionné{selectedFirmwareModList.length > 1 ? "s" : ""}{selectedFirmwareModList.some((mod) => mod.risk === "unclassified") ? " · certains non classés" : ""}</small>
+                    </div>
+                    {firmwareRiskLevel === "eleve" && (
+                      <label className="firmware-risk-ack">
+                        <input type="checkbox" checked={firmwareRiskAck} onChange={(event) => setFirmwareRiskAck(event.target.checked)} />
+                        <span>Combinaison chargée ({selectedFirmwareModList.length} mods) — je confirme vouloir préparer ce plan.</span>
+                      </label>
+                    )}
+
+                    <button className="primary-action" disabled={!firmwareFile || firmwareRiskBlocked} onClick={() => { if (firmwareFile) { void notifyLocalPlan("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify }); setNotice("Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype."); } else setNotice("Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button>
+                  </div>
                 </div>
 
                 <div className="firmware-pane firmware-pane-mods">
                   <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
-                  {["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}
+                  {["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>} {mod.risk !== "controlled" && <em className={`mod-risk-badge is-${mod.risk}`}>{FIRMWARE_RISK_LABEL[mod.risk]}</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}
                 </div>
 
                 <div className="firmware-pane firmware-pane-tools">
@@ -1280,14 +1345,25 @@ export default function Home() {
                 <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile?.name ?? "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${((firmwareFile?.size ?? 0) / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
                 <div className="mod-section">
                   <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE</span><strong>Mods disponibles</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
-                  <div className="mod-grid">{firmwareMods.map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <img src={mod.preview} alt={`Aperçu ${mod.title}`} /> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title}</strong><small>{mod.detail}</small><em>{mod.source}</em></span></label>)}</div>
+                  <div className="mod-grid">{firmwareMods.map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <img src={mod.preview} alt={`Aperçu ${mod.title}`} /> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.risk !== "controlled" && <em className={`mod-risk-badge is-${mod.risk}`}>{FIRMWARE_RISK_LABEL[mod.risk]}</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em></span></label>)}</div>
                 </div>
                 <div className="editor-options">
                   <label><input type="checkbox" checked={firmwareOptions.verify} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, verify: event.target.checked })} /><span><strong>Vérifier l’origine et le CRC</strong><small>Refuser un fichier incomplet ou non reconnu.</small></span></label>
                   <label><input type="checkbox" checked={firmwareOptions.backup} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, backup: event.target.checked })} /><span><strong>Exiger une sauvegarde</strong><small>Créer un snapshot avant toute opération sensible.</small></span></label>
                   <label><input type="checkbox" checked={firmwareOptions.teBoot} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, teBoot: event.target.checked })} /><span><strong>Préparer le mode TE-boot</strong><small>Afficher les étapes manuelles avant la mise à jour.</small></span></label>
                 </div>
-                <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
+                <div className={`firmware-risk-gauge is-${firmwareRiskLevel}`} role="status">
+                  <div className="firmware-risk-gauge-head"><span>DANGER MODS</span><strong>{FIRMWARE_GAUGE_LABEL[firmwareRiskLevel]}</strong></div>
+                  <div className="firmware-risk-gauge-bar"><i style={{ width: `${Math.min(100, (firmwareRiskWeight / 12) * 100)}%` }} /></div>
+                  <small>{selectedFirmwareModList.length} mod{selectedFirmwareModList.length > 1 ? "s" : ""} sélectionné{selectedFirmwareModList.length > 1 ? "s" : ""}{selectedFirmwareModList.some((mod) => mod.risk === "unclassified") ? " · certains non classés" : ""}</small>
+                </div>
+                {firmwareRiskLevel === "eleve" && (
+                  <label className="firmware-risk-ack">
+                    <input type="checkbox" checked={firmwareRiskAck} onChange={(event) => setFirmwareRiskAck(event.target.checked)} />
+                    <span>Combinaison chargée ({selectedFirmwareModList.length} mods) — je confirme vouloir préparer ce plan.</span>
+                  </label>
+                )}
+                <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile || firmwareRiskBlocked} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
                 
               </div>
             )}
