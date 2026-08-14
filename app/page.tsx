@@ -1169,14 +1169,6 @@ export default function Home() {
           </aside>
 
           {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") setToolWindow("editor"); else if (id === "firmware") setToolWindow(null); else setToolWindow(id as ToolWindow); }} /> : <div className="content">
-            <div className="page-heading">
-              <div>
-                <span className="eyebrow"><Icon name="shield" size={16} /> FIRMWARE / CENTRE DE CONTRÔLE</span>
-                <h1>Votre OP‑1, sous contrôle.</h1>
-                <p>Identifier, sauvegarder, vérifier et mettre à jour avec un plan lisible à chaque étape.</p>
-              </div>
-            </div>
-
             {notice && <div className="notice" role="status"><Icon name="shield" size={17} /><span>{notice}</span><button aria-label="Fermer" onClick={() => setNotice(null)}>×</button></div>}
 
             <section className="library-folder" aria-labelledby="library-folder-title">
@@ -1221,9 +1213,7 @@ export default function Home() {
                 actions à gauche, mods au centre, outils secondaires à
                 droite. Logique et données inchangées, seule la disposition
                 change. */}
-            <section id="firmware-editor" className="firmware-editor-inline" aria-labelledby="firmware-editor-title">
-              <div className="section-heading"><div><span className="section-label">ÉDITEUR INTÉGRÉ</span><h2 id="firmware-editor-title">Préparer un firmware</h2></div><div className="editor-status-pills"><span className="release-pill"><i /> MODS LOCAUX</span><span className="engine-pill"><i /> OP1REPACKER 0.2.6 · TROUVÉ</span></div></div>
-
+            <section id="firmware-editor" className="firmware-editor-inline" aria-label="Préparer un firmware">
               <div className="firmware-panes">
                 <div className="firmware-pane firmware-pane-actions">
                   <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a className="firmware-download-button" href={officialFirmwareUrl} target="_blank" rel="noreferrer" download={`op1_${recommendedFirmware.version}.op1`}><Icon name="download" size={17} />Télécharger le firmware officiel</a></div>
