@@ -38,7 +38,12 @@
       "Bash(python3 -)",
       "Bash(grep -vi \"aiff\\\\|audioBufferToAiffMono\\\\|encodeAiffPcm16\\\\|track_\\\\${index\\\\|side_\\\\${face\\\\|channels: 1\\\\|Un AIFF mono\\\\|Deux faces AIFF\")",
       "Bash(grep -n \"audioBufferToAiffMono\\\\|track_\\\\${index + 1}.aif\\\\|side_\\\\${face\\\\|AIFF mono par piste\\\\|Deux faces AIFF\" app/page.tsx)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(git commit *)"
     ]
   }
 }
