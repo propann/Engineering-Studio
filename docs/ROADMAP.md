@@ -531,6 +531,16 @@ alignés sur ceux du disque OP-1 (`track_1.aif`…`track_4.aif`,
 WAV » (mixdown générique d'écoute, pas un nom de fichier OP-1) reste
 volontairement en WAV — rien à corriger là.
 
+**Correction (14 août 2026)** : `Cannot close a closed AudioContext` —
+erreur console réelle repérée en testant l'app en direct (capture
+d'écrans pour `README.md`), pas un rapport utilisateur. L'effet qui calcule
+les niveaux audio de la vue globale (24 points/piste) fermait
+l'`AudioContext` deux fois : une fois dans son `.finally()` à la fin normale
+du calcul, une deuxième fois dans le nettoyage de l'effet au changement de
+fenêtre ou de `sources`. Corrigé avec un garde `closeOnce()` idempotent —
+même `AudioContext` jamais fermé plus d'une fois, quel que soit l'ordre
+entre la fin du calcul et le démontage.
+
 - définir un format `Project` JSON versionné ;
 - stocker sources, clips, événements MIDI, tempo et mixage ;
 - calculer les waveforms depuis les fichiers, sans décorations ;

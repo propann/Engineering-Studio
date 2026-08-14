@@ -509,9 +509,16 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   useEffect(() => {
     let cancelled = false;
+    // Fermé au plus une fois : sans ce garde, le .finally() (fin normale du
+    // calcul) et le nettoyage de l'effet (changement de sources/démontage)
+    // appellent tous les deux context.close() sur le même AudioContext,
+    // et le second lève "Cannot close a closed AudioContext" — vu en
+    // pratique en changeant de fenêtre pendant que le calcul avait déjà fini.
+    let closed = false;
     const context = new AudioContext();
-    void Promise.all(Object.entries(sources).map(async ([rawIndex, source]) => { const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer()); const data = buffer.getChannelData(0); const bins = 24; const size = Math.max(1, Math.floor(data.length / bins)); const peaks = Array.from({ length: bins }, (_, bin) => { let peak = 0; for (let sample = bin * size; sample < Math.min(data.length, (bin + 1) * size); sample += 1) peak = Math.max(peak, Math.abs(data[sample])); return peak; }); return [Number(rawIndex), peaks] as const; })).then((entries) => { if (!cancelled) setWaveformPeaks(Object.fromEntries(entries)); }).catch(() => { if (!cancelled) setWaveformPeaks({}); }).finally(() => { void context.close(); });
-    return () => { cancelled = true; void context.close(); };
+    const closeOnce = () => { if (!closed) { closed = true; void context.close(); } };
+    void Promise.all(Object.entries(sources).map(async ([rawIndex, source]) => { const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer()); const data = buffer.getChannelData(0); const bins = 24; const size = Math.max(1, Math.floor(data.length / bins)); const peaks = Array.from({ length: bins }, (_, bin) => { let peak = 0; for (let sample = bin * size; sample < Math.min(data.length, (bin + 1) * size); sample += 1) peak = Math.max(peak, Math.abs(data[sample])); return peak; }); return [Number(rawIndex), peaks] as const; })).then((entries) => { if (!cancelled) setWaveformPeaks(Object.fromEntries(entries)); }).catch(() => { if (!cancelled) setWaveformPeaks({}); }).finally(() => { closeOnce(); });
+    return () => { cancelled = true; closeOnce(); };
   }, [sources]);
 
   function projectData() {
