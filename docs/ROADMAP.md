@@ -28,7 +28,7 @@ Le projet a trois niveaux de maturite :
 | Bibliotheque Sons | preflight, patches CLI, grille 24 pads, index UI et plan UI borne livres | pre-ecoute fichier et transfert natif |
 | Studio | projet v1, mixage, fades, piano-roll, stems, Album, trim focalise et refs sources livres | reconnexion automatique et import UI |
 | MIDI/audio | detection Windows, capture MIDI et auto-detection silencieuse dans Studio | sortie live et essai OP-1 dans Chrome/Edge |
-| Education | 4 modes (Drumkit/Melodie/Accord/Morceau import MIDI), ecran notes qui tombent, clavier aligne, jugement note/timing, progression locale et boucle par section livres (14 aout 2026) | exercices touches d'effet, niveaux combos |
+| Education | 5 modes (Drumkit/Melodie/Accord/Effets/Morceau import MIDI), ecran notes qui tombent, clavier aligne, jugement note/timing, progression locale, boucle par section et pad Effet T3 livres (14 aout 2026) | niveaux combos |
 | Distribution | dev server et build web | Tauri, installation et permissions |
 
 La priorite n'est plus d'ajouter des prototypes isoles : il faut rendre les
@@ -427,18 +427,22 @@ suit reste la cible originale du jalon, une partie est donc déjà couverte :
 - trois entrées visibles dès l'ouverture (apprentissage structuré / leçons
   ciblées / morceaux), plutôt que cachées dans un menu.
 
-**Idées notées le 13 août 2026 (soir), pas construites** — prochaine passe
-possible sur ce module :
+**Touches d'effet : livré (14 août 2026).** Vérifié : T3 bascule
+l'effet on/off sur la machine
+([`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md) §1,
+[`OP1_FIRMWARE_BIBLE.md`](OP1_FIRMWARE_BIBLE.md) §6). 5e mode « Effets »
+dans `ExercisePanel.tsx` : un seul pad cible (« T3 · EFFET »), suites
+on/off qui tombent comme les autres modes, même mécanique de jugement/score
+que le reste (`EFFECT_NOTE`, une note MIDI sentinelle hors de toute plage
+utilisée ailleurs, pour réutiliser le modèle de jugement existant sans le
+dupliquer). Vérifié en direct dans le navigateur (exercice lancé, pad
+cliqué, jugement et score corrects, aucune erreur console).
 
-- **touches d'effet** : vérifier s'il existe des touches/boutons dédiés aux
-  effets sur l'OP-1 (voir T3/Shift+T3 dans
-  [`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md)) et, si oui,
-  en faire un 4e mode d'exercice (au même titre que Drumkit/Mélodie/Accord) ;
-- **niveaux plus difficiles par combos** : un mode « difficile » qui demande
-  plusieurs entrées simultanées (accord + bouton d'effet, ou tempo plus
-  rapide avec enchaînements), plutôt qu'une seule note/pad à la fois — à
-  concevoir après le point précédent, puisque ça dépend de savoir ce qu'il y
-  a réellement à combiner.
+**Reste ouvert : niveaux plus difficiles par combos** — un mode « difficile »
+qui demande plusieurs entrées simultanées (accord + pad Effet, ou tempo plus
+rapide avec enchaînements), plutôt qu'une seule note/pad à la fois. Peut
+maintenant s'appuyer sur le mode Effets livré ci-dessus pour la partie
+« bouton d'effet » de la combinaison.
 
 **Sortie :** un parcours d'apprentissage qui ne dépend pas de posséder la
 machine pour s'entraîner, et qui rend la disposition clavier de l'OP-1

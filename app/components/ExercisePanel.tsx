@@ -47,8 +47,21 @@ const DRUM_STEPS: Record<string, Step> = {
 };
 const DRUM_NOTE_ORDER = [36, 38, 42, 46];
 
-type ExerciseMode = "drumkit" | "melodie" | "accord" | "morceau";
-const MODE_LABEL: Record<ExerciseMode, string> = { drumkit: "DRUMKIT", melodie: "MÉLODIE", accord: "ACCORD", morceau: "MORCEAU" };
+// Mode Effets (feuille de route M4.5, idée du 13 août 2026 : « touches
+// d'effet ») — T3 bascule l'effet on/off sur la machine
+// (SYNTH_DRUM_MODE_REFERENCE.md §1) ; ici, un seul pad cible plutôt qu'une
+// note ou un clavier, avec une note MIDI sentinelle (99, hors de toute
+// plage utilisée par les autres modes) pour rester compatible avec le
+// modèle de jugement existant (`pressed`/`targetNotes`) sans le dupliquer.
+const EFFECT_NOTE = 99;
+const EFFECT_STEPS: Record<string, Step> = {
+  on: { label: "FX ON", notes: [EFFECT_NOTE] },
+  off: { label: "FX OFF", notes: [EFFECT_NOTE] },
+};
+const EFFECT_NOTE_ORDER = [EFFECT_NOTE];
+
+type ExerciseMode = "drumkit" | "melodie" | "accord" | "morceau" | "effets";
+const MODE_LABEL: Record<ExerciseMode, string> = { drumkit: "DRUMKIT", melodie: "MÉLODIE", accord: "ACCORD", morceau: "MORCEAU", effets: "EFFETS" };
 const EXERCISES: Record<ExerciseMode, Record<string, { steps: string[]; beatsPerStep: number }>> = {
   drumkit: {
     "Groove simple": { steps: ["kick", "hat", "snare", "hat", "kick", "hat", "snare", "open"], beatsPerStep: 1 },
@@ -68,6 +81,11 @@ const EXERCISES: Record<ExerciseMode, Record<string, { steps: string[]; beatsPer
     "vi–IV–I–V": { steps: ["Am", "F", "C", "G"], beatsPerStep: 4 },
     "I–vi–IV–V": { steps: ["C", "Am", "F", "G"], beatsPerStep: 4 },
   },
+  effets: {
+    "Rythme simple": { steps: ["on", "off", "on", "off", "on", "off", "on", "off"], beatsPerStep: 1 },
+    "Contretemps": { steps: ["off", "on", "off", "on", "off", "on", "off", "on"], beatsPerStep: 1 },
+    "Doubles": { steps: ["on", "on", "off", "off", "on", "on", "off", "off"], beatsPerStep: 1 },
+  },
   // Pas de suite prédéfinie : le morceau vient d'un fichier .mid importé (state `song`).
   morceau: {},
 };
@@ -76,6 +94,7 @@ const STEP_BY_MODE: Record<ExerciseMode, Record<string, Step>> = {
   drumkit: DRUM_STEPS,
   melodie: STEP,
   accord: STEP,
+  effets: EFFECT_STEPS,
   morceau: {},
 };
 
@@ -323,13 +342,16 @@ export function ExercisePanel({
   }, [elapsed, running]);
 
   const best = progress[progressKey];
-  // Drumkit garde un repère 0-100 (pas de touches piano à aligner, juste 4
-  // pads) ; mélodie/accord utilisent le repère colonne du clavier construit,
-  // pour que chaque note tombe exactement au-dessus de sa touche.
-  const screenMinX = mode === "drumkit" ? 0 : bounds.minX;
-  const screenWidth = mode === "drumkit" ? 100 : bounds.width;
-  const xForExerciseNote = (note: number) => mode === "drumkit"
-    ? ((DRUM_NOTE_ORDER.indexOf(note) + 0.5) / DRUM_NOTE_ORDER.length) * 100
+  // Drumkit et Effets gardent un repère 0-100 (pas de touches piano à
+  // aligner, juste des pads) ; mélodie/accord utilisent le repère colonne
+  // du clavier construit, pour que chaque note tombe exactement au-dessus
+  // de sa touche.
+  const usesPadLayout = mode === "drumkit" || mode === "effets";
+  const padOrder = mode === "effets" ? EFFECT_NOTE_ORDER : DRUM_NOTE_ORDER;
+  const screenMinX = usesPadLayout ? 0 : bounds.minX;
+  const screenWidth = usesPadLayout ? 100 : bounds.width;
+  const xForExerciseNote = (note: number) => usesPadLayout
+    ? ((padOrder.indexOf(note) + 0.5) / padOrder.length) * 100
     : xForKeyboardNote(note);
 
   return (
@@ -390,18 +412,18 @@ export function ExercisePanel({
           <line x1={screenMinX} y1={HIT_LINE} x2={screenMinX + screenWidth} y2={HIT_LINE} stroke="#FF3A5D" strokeWidth={0.6} strokeDasharray="2 1.4" opacity={.75} />
           {blocks.map((b) => {
             const xs = b.step.notes.map(xForExerciseNote);
-            const margin = mode === "drumkit" ? (b.step.notes.length === 1 ? 2.5 : 4) : 0.15;
+            const margin = usesPadLayout ? (b.step.notes.length === 1 ? 2.5 : 4) : 0.15;
             const x0 = Math.max(screenMinX + 0.3, Math.min(...xs) - margin);
             const x1 = Math.min(screenMinX + screenWidth - 0.3, Math.max(...xs) + margin);
             const isHit = running && b === active && b.distanceToHit < 3;
             const single = b.step.notes.length === 1;
             return (
               <g key={b.key} transform={`translate(0 ${b.y})`}>
-                <rect x={x0} y={-4} width={x1 - x0} height={8} rx={mode === "drumkit" ? 2 : 0.3}
+                <rect x={x0} y={-4} width={x1 - x0} height={8} rx={usesPadLayout ? 2 : 0.3}
                   fill={isHit ? "#00ED95" : single ? "#DFD9FF" : "#698EFF"} opacity={isHit ? .95 : .75}
-                  stroke={isHit ? "#00ED95" : single ? "#8f89aa" : "#4c6fd9"} strokeWidth={mode === "drumkit" ? 0.4 : 0.1} />
+                  stroke={isHit ? "#00ED95" : single ? "#8f89aa" : "#4c6fd9"} strokeWidth={usesPadLayout ? 0.4 : 0.1} />
                 <text x={(x0 + x1) / 2} y={.5} textAnchor="middle" dominantBaseline="middle"
-                  fontSize={mode === "drumkit" ? 4.2 : 1.2} fontFamily="monospace" fontWeight={700} fill="#0c1011">
+                  fontSize={usesPadLayout ? 4.2 : 1.2} fontFamily="monospace" fontWeight={700} fill="#0c1011">
                   {b.step.label}
                 </text>
               </g>
@@ -411,7 +433,17 @@ export function ExercisePanel({
       </div>
 
       <div className="exercise-instrument" aria-label="Clavier OP-1 compact pour exercice">
-        {mode === "drumkit" ? <div className="exercise-drum-pads">{DRUM_NOTE_ORDER.map((note) => <button type="button" key={note} aria-label={`Jouer le pad MIDI ${note}`} className={`exercise-drum-pad${pressed.has(note) ? " is-down" : ""}${targetNotes.has(note) ? " is-target" : ""}`} onPointerDown={() => pressLocal(note)} onPointerUp={() => releaseLocal(note)} onPointerLeave={() => releaseLocal(note)}><strong>{DRUM_STEPS[Object.keys(DRUM_STEPS).find((key) => DRUM_STEPS[key].notes[0] === note) ?? "kick"].label}</strong><small>{note}</small></button>)}</div> : (
+        {mode === "drumkit" ? <div className="exercise-drum-pads">{DRUM_NOTE_ORDER.map((note) => <button type="button" key={note} aria-label={`Jouer le pad MIDI ${note}`} className={`exercise-drum-pad${pressed.has(note) ? " is-down" : ""}${targetNotes.has(note) ? " is-target" : ""}`} onPointerDown={() => pressLocal(note)} onPointerUp={() => releaseLocal(note)} onPointerLeave={() => releaseLocal(note)}><strong>{DRUM_STEPS[Object.keys(DRUM_STEPS).find((key) => DRUM_STEPS[key].notes[0] === note) ?? "kick"].label}</strong><small>{note}</small></button>)}</div> : mode === "effets" ? (
+          // T3 bascule l'effet on/off sur la machine (voir la constante
+          // EFFECT_NOTE ci-dessus) : un seul pad cible, pas un clavier.
+          <div className="exercise-effect-pad-row">
+            <button type="button" aria-label="Basculer l'effet (touche T3)"
+              className={`exercise-effect-pad${pressed.has(EFFECT_NOTE) ? " is-down" : ""}${targetNotes.has(EFFECT_NOTE) ? " is-target" : ""}`}
+              onPointerDown={() => pressLocal(EFFECT_NOTE)} onPointerUp={() => releaseLocal(EFFECT_NOTE)} onPointerLeave={() => releaseLocal(EFFECT_NOTE)}>
+              <strong>T3</strong><small>EFFET</small>
+            </button>
+          </div>
+        ) : (
           // Même clavier que la fenêtre Studio, pas une copie : construit une
           // fois dans l'éditeur (mis de côté pour l'instant), affiché ici et
           // là identiquement.
