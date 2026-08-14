@@ -16,8 +16,11 @@ Le projet a trois niveaux de maturite :
   normal, sauvegarde, comparaison et delete/restore ont ete verifies sur un
   vrai volume ;
 - **integration produit manquante** : l'interface web ne declenche pas encore
-  les bridges locaux, le MIDI/audio interactif n'est pas valide dans le
-  navigateur et le pont natif d'ejection n'existe pas.
+  les bridges locaux et le pont natif d'ejection n'existe pas. Le MIDI
+  interactif, lui, est valide (voir plus bas et
+  [`HARDWARE_TESTS.md`](HARDWARE_TESTS.md), session du 18 aout 2026) : il
+  reste a rattacher les associations apprises aux vraies fonctions du
+  Studio, pas a prouver que la capture marche.
 
 ### Tableau de bord
 
@@ -27,7 +30,7 @@ Le projet a trois niveaux de maturite :
 | Sauvegardes | backup/verify/plan/execute/restore livres ; plan UI borne ; delete/restore valide sur hardware | bridge natif + ejection |
 | Bibliotheque Sons | preflight, patches CLI, grille 24 pads, index UI et plan UI borne livres | pre-ecoute fichier et transfert natif |
 | Studio | projet v1, mixage, fades, piano-roll, stems, Album, trim focalise et refs sources livres | reconnexion automatique et import UI |
-| MIDI/audio | detection Windows, capture MIDI et auto-detection silencieuse dans Studio | sortie live et essai OP-1 dans Chrome/Edge |
+| MIDI/audio | detection Windows, capture MIDI validee en reel (OP-1 en `CTRL`, bug `requestMIDIAccess` corrige, notes/CC mesures sur le materiel, journal MIDI, procedure d'association fonctions/encodeurs/clic) | rattacher les associations apprises aux fonctions reelles du Studio |
 | Education | 5 modes (Drumkit/Melodie/Accord/Effets/Morceau import MIDI), ecran notes qui tombent, clavier aligne, jugement note/timing, progression locale, boucle par section et pad Effet T3 livres (14 aout 2026) | niveaux combos |
 | Distribution | dev server et build web | Tauri, installation et permissions |
 

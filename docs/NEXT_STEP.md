@@ -1,8 +1,10 @@
 # Prochaine etape
 
 Le mode Disk est valide et le mode normal est detecte par Windows. Les tests
-interactifs MIDI/audio sont reportes pour eviter de valider un flux dans une
-interface qui va encore changer.
+interactifs MIDI sont faits (18 aout 2026, voir `HARDWARE_TESTS.md` et
+`PROJECT_STATUS.md`) : capture reelle, bug `requestMIDIAccess` corrige,
+notes/CC mesures sur le materiel. L'audio interactif (sortie USB) reste a
+valider.
 
 Le chantier actif devient le branchement progressif des plans locaux au pont
 Tauri, tout en conservant les garde-fous de lecture seule et de confirmation :
@@ -38,7 +40,10 @@ Ordre de travail confirme :
 6. construire le Safe Change Engine sur fixtures : identité du volume, plan,
    copie temporaire, hash après copie et reprise récupérable ;
 7. persister les sources Studio et reconnecter les fichiers locaux ;
-8. reprendre les tests MIDI/audio dans Chrome ou Edge.
+8. ~~reprendre les tests MIDI/audio dans Chrome ou Edge~~ — fait pour le MIDI
+   (18 aout 2026) ; reste l'audio interactif et le rattachement des
+   associations apprises aux fonctions reelles du Studio.
 
-Apres cette refonte, reprendre la matrice MIDI : detection Web MIDI, capture
-note-on/note-off, envoi vers l'OP-1, audio USB et exercice accompagne.
+Apres cette refonte, reprendre la matrice MIDI restante : audio USB et
+exercice accompagne (detection Web MIDI, capture note-on/note-off et envoi
+vers l'OP-1 sont valides, voir `HARDWARE_TESTS.md` du 18 aout 2026).

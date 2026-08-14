@@ -69,7 +69,9 @@
       "WebFetch(domain:midi.guide)",
       "Bash(awk 'NR==86' app/components/StudioMachinePanel.tsx)",
       "Bash(xxd)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-Process -Id 12520 | Select-Object Id,ProcessName,Path\")",
+      "Bash(powershell -Command \"Stop-Process -Id 12520 -Force\")"
     ]
   }
 }

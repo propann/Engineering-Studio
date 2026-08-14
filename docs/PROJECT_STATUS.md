@@ -80,6 +80,34 @@ collision constatée jusqu'ici (fichiers touchés à des horaires différents,
 vérifié avant chaque édition). Rien de tout ça n'est committé — tout reste
 dans l'arbre de travail au 14 août 2026 matin.
 
+## Point du 18 août 2026 — MIDI validé en réel, clavier Studio recalé
+
+Première session avec l'OP-1 réellement branché en mode `CTRL` et une
+capture MIDI interactive de bout en bout. Détail complet dans
+[`HARDWARE_TESTS.md`](HARDWARE_TESTS.md) ; résumé :
+
+- bug bloquant corrigé (`navigator.requestMIDIAccess` appelé détaché,
+  `Illegal invocation` avalé silencieusement par les `.catch` existants —
+  le journal MIDI restait à 0 quel que soit le mode de la machine) ;
+- notes du clavier construit recalées sur la vraie machine (F3 sur la
+  première touche, pas C3) ;
+- couleurs des 4 encodeurs T1-T4 corrigées (bleu/vert/blanc/orange, pas
+  rouge) d'après une photo produit officielle, VOLUME distingué comme
+  potentiomètre analogique séparé (pas de MIDI) ;
+- icônes des boutons redessinées sur le diagramme officiel TE
+  (`teenage.engineering/guides/op-1/original/layout`) ;
+- procédure d'association étendue aux encodeurs (rotation et clic,
+  auparavant seuls les boutons verts/rouges l'acceptaient) ;
+- panneau de configuration simplifié : ne montre plus que les boutons non
+  encore associés, journal MIDI réduit à une ligne ;
+- une vingtaine de boutons/encodeurs réels associés avec leurs vraies
+  valeurs CC/note mesurées (pas supposées) ; SHIFT, VOLUME et les boutons
+  de navigation bande confirmés silencieux en mode `CTRL`.
+
+Reste à faire, explicitement reporté par l'utilisateur : rattacher ces
+associations apprises aux fonctions réelles du Studio (actuellement elles
+ne pilotent que le retour visuel du clavier construit).
+
 ## Fonctionne reellement
 
 - Firmware : moteur `op1repacker` vendored, bridge de build par copie temporaire, mods selectionnes, manifeste SHA-256 et validation CRC/TAR/LZMA.
@@ -89,7 +117,7 @@ dans l'arbre de travail au 14 août 2026 matin.
 - Tape : bridge quatre pistes, conversion six minutes maximum, manifeste et sortie separee `tape/`.
 - Projet Studio : format JSON `op1-studio-project` v1, creation, validation, enregistrement et rechargement du mixage, des clips et des evenements MIDI.
 - Studio audio : quatre pistes, transport commun, position audio maitre, gain, trim de fin, fade-in et fade-out non destructifs.
-- MIDI : détection Web MIDI OP-1, entrée/sortie identifiées, décodage note-on/note-off isolé dans `app/lib/midi.ts`, capture temporelle, piano-roll éditable et relecture MIDI programmée. Windows voit actuellement l’OP-1 et son audio USB ; l’autorisation Web MIDI et la capture Chrome/Edge restent à valider manuellement.
+- MIDI : détection Web MIDI OP-1, entrée/sortie identifiées, décodage note-on/note-off isolé dans `app/lib/midi.ts`, capture temporelle, piano-roll éditable et relecture MIDI programmée. Capture Chrome validée en réel le 18 août 2026 (voir `HARDWARE_TESTS.md`) : bug `requestMIDIAccess` détaché corrigé, notes et CC de la plupart des boutons/encodeurs mesurés sur le matériel, procédure d'association (dont le clic distinct des encodeurs) opérationnelle. Reste à faire : rattacher ces associations aux fonctions réelles du Studio.
 - Clone : clavier ordinateur, touches visuelles, synthese locale de secours, sortie MIDI OP-1 et ecoute audio USB quand le navigateur expose l'interface.
 - Clone Studio lateral : panneau retractable avec ecrans issus de la bibliotheque display,
   touches colorees sur les notes MIDI recues et commandes d'ecran marquees comme reperes
