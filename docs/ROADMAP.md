@@ -112,9 +112,19 @@ Images a ete retire apres validation de cette integration.
   créé par erreur s'est glissé dans le `FIRMWARE/` déjà existant de
   l'utilisateur (sa propre convention `OFFICIEL/TRAVAIL/DOCUMENTATION/
   HACKS`) ; supprimé, la convention existante de l'utilisateur a été
-  gardée telle quelle plutôt que d'imposer celle des outils. Pas cadré plus finement pour
-  l'instant — à reprendre avec la même rigueur que le reste (schéma d'abord,
-  UI ensuite, tests de round-trip du profil).
+  gardée telle quelle plutôt que d'imposer celle des outils.
+  **Rangement du contenu existant (14 août 2026)** : les fichiers de
+  l'outil personnel (« OP-1 Fun Collector ») regroupés dans
+  `outils_op1_fun/` (5 fichiers, avant épars à la racine — `lancer.bat`
+  continue de fonctionner, il change lui-même de dossier au démarrage) ;
+  `PACKS_OP1_AVEC_SONS_PRESENTS/`, `PERCU/`, `SYNTH/`, `bibliotheque/`
+  laissés à leur emplacement d'origine mais rendus visibles aussi sous
+  `packs/`/`samples/` via des jonctions NTFS (`New-Item -ItemType
+  Junction`) — même contenu, zéro copie, zéro octet en plus. `A_TRIER/`
+  laissé tel quel (déjà son propre dossier « à trier »). Détail complet
+  dans le `README.md` de ce dossier (hors dépôt). Pas cadré plus finement
+  pour l'instant — à reprendre avec la même rigueur que le reste (schéma
+  d'abord, UI ensuite, tests de round-trip du profil).
 - **Cloud et service en ligne** : comptes, synchronisation, partage et
   commercialisation sont gelés hors périmètre. La priorité est un outil local
   fiable, installable et vérifiable ; aucune décision de service ne doit

@@ -63,7 +63,9 @@
       "Bash(python tools/backup_manifest.py create \"E:/\" \"C:/Users/azoth/Music/OP-1/backups\" --label op1)",
       "Read(//c/Users/azoth/Music/**)",
       "Read(//c/Users/azoth/Music/OP-1/**)",
-      "Bash(grep -n \"localSpace.root\\\\`, déjà dans\" docs/ROADMAP.md)"
+      "Bash(grep -n \"localSpace.root\\\\`, déjà dans\" docs/ROADMAP.md)",
+      "Bash(mkdir -p outils_op1_fun)",
+      "Bash(mv app.py lancer.bat op1_fun.sqlite op1_fun_catalogue.csv requirements.txt outils_op1_fun/)"
     ]
   }
 }
