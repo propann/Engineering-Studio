@@ -545,10 +545,16 @@ Dotting/Piskel étudiés dans
 [`PIXEL_EDITOR_ARCHITECTURE.md`](PIXEL_EDITOR_ARCHITECTURE.md)) est le
 premier prototype d'éditeur pixel — grille, zoom, outils de dessin de base,
 export SVG déterministe, **aucun export firmware à ce stade**.
-**Candidat, pas commencé** : mode « thème » (une table couleur→couleur
-appliquée à tous les écrans d'un coup, mécanisme déjà documenté par
-`op1-glitter`, §12) ; validation `op1svg` avant tout import de SVG
-utilisateur arbitraire (garde‑fou manquant, pas un choix produit).
+**Correction (14 août 2026)** : le mode « thème » (table couleur→couleur
+appliquée à tous les écrans d'un coup, mécanisme documenté par
+`op1-glitter`, §12) est en fait **déjà codé** — vérifié en direct dans
+l'UI (`app/page.tsx`, `THEME_PRESETS`, export du bundle de patches),
+`FIRMWARE_LAB_FUNCTIONS.md` le donnait par erreur comme « à construire ».
+Détail dans [`OP1_IMAGE_BIBLE.md`](OP1_IMAGE_BIBLE.md) §10. **Reste
+candidat, pas commencé** : validation `op1svg` avant tout import de SVG
+utilisateur arbitraire (garde‑fou manquant, pas un choix produit) — y
+compris pour l'export du thème et du créateur de dessin, pas seulement
+l'import.
 
 ## 11. Catalogue des mods firmware — vérifié / candidat / exclu
 
@@ -570,7 +576,7 @@ confirmés à chaque fois.
 | P2 | Iter Lab | **vérifié** | contrôlé |
 | P2 | Iter Lost Art | partiel (fixture repack manquante) | contrôlé |
 | P2 | CWO moose/cat/dog/wizard | **vérifiés séparément**, choix exclusif | contrôlé |
-| P2 | Thème Glitter (couleur globale) | mécanisme documenté, **moteur pas encore écrit** | contrôlé/élevé |
+| P2 | Thème Glitter (couleur globale) | moteur écrit côté UI le 14 août 2026 (§10.4) ; ce statut `data/mods/catalog.json` reste `community-verified-not-integrated` tant qu'un round‑trip fixture via `op1repacker` n'a pas été rejoué sur le bundle exporté | contrôlé/élevé |
 | P3 | Moteur compilé supplémentaire | aucune preuve reproductible | critique |
 | P3 | flash/OTP/ECC/bootloader | **exclu** | rouge |
 

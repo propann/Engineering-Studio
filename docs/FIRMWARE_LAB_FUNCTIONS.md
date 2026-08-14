@@ -68,14 +68,14 @@ Source : `FIRMWARE_LAB.md`, observation reproductible sur OS 246.
 | Édition non destructive du code SVG avec aperçu en direct | existe | écran Images |
 | Export d'un patch JSON par fichier (`op1_gfx.patch_image_file`) | existe | `display_bridge.py patch` |
 | Légende des codenames SVG dans l'UI (`bode.svg` = CWO, `cls.svg` = Cluster, etc.) | à construire | table déjà intégrée dans `display_bridge.py`, pas encore affichée |
-| Mode "thème" : une seule table couleur → couleur appliquée à tous les écrans d'un coup | à construire (piste sourcée `op1-glitter`) | à ajouter dans `display_bridge.py` |
+| Mode "thème" : une seule table couleur → couleur appliquée à tous les écrans d'un coup | **codé (14 août 2026)**, vérifié en direct (presets dont « Neon OP-1 », export du bundle patches) | `app/page.tsx` (`THEME_PRESETS`), délègue toujours à `display_bridge.py`/`op1_gfx.patch_image_file` |
 | Palette réelle de la machine comme référence visuelle (vert `#00ed95`, rouge `#ff3a5d`, bleu `#698eff`, blanc `#dfd9ff`, fond `#9256d7`) | à construire | corrige aussi le bug orange/blanc noté dans `FIRMWARE_MOD_RESOURCES.md` |
 | Variantes CWO (moose / cat / dog / wizard) comme choix exclusif avec aperçu comparatif côte à côte | partiel — actuellement des cases indépendantes, rien n'empêche d'en cocher plusieurs alors qu'elles ciblent la même ressource | à corriger dans l'UI le jour du chantier |
 | Iter Lab | vérifié | contrôlé |
 | Lost Art | partiel, fixture de repack encore manquante | contrôlé |
 | Tape invert | vérifié en labo | contrôlé |
 | Import d'un SVG arbitraire dessiné par l'utilisateur | expérimental (classé ainsi dans `CONTEXT.md`) | nécessite validation `op1svg` avant toute injection |
-| Créateur de dessin original 320x160, palette machine et manifeste d'attribution | cible retenue, non commencée | sous-section Graphismes ; validation `op1svg` obligatoire |
+| Créateur de dessin original 320x160, palette machine et manifeste d'attribution | **codé (14 août 2026)**, vérifié en direct (texte/motif/couleur/taille, export SVG) | `DisplayCreatorPanel.tsx` ; validation `op1svg` avant export toujours à confirmer |
 
 ## D. Audio d'usine embarqué (`content/audio/*.raw`)
 

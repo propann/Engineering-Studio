@@ -1,6 +1,16 @@
 # Le créateur de dessin — contenu original plutôt qu'importé
 
-Document d'organisation, pas de code. Idée posée le 12 août 2026, en
+**Livré (14 août 2026)** — vérifié en direct dans l'UI :
+`DisplayCreatorPanel.tsx`, dans la fenêtre Images/Firmware, section
+« Créateur original ». Texte, motif, couleur, taille, canevas 320×160,
+export SVG contrôlé — ce document décrivait encore la fonction comme non
+commencée, ce n'est plus le cas. Détail à jour dans
+[`OP1_IMAGE_BIBLE.md`](OP1_IMAGE_BIBLE.md) §8. Reste ouvert : confirmer que
+l'export passe par une validation `op1svg` avant de devenir un patch
+utilisable (garde‑fou toujours manquant, `TOOLING_GAP_ANALYSIS.md`).
+
+Document d'organisation initial, pas de code au moment de la rédaction.
+Idée posée le 12 août 2026, en
 remplacement direct de la piste refusée plus tôt le même jour (chercher des
 firmwares modifiés en ligne pour en extraire les images) : au lieu d'aller
 récupérer des dessins dont on ne connaît ni l'auteur ni la licence, OP‑1

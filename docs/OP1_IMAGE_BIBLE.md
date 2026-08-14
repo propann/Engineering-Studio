@@ -254,7 +254,15 @@ pas la composition entière.
 
 ## 8. Contraintes pour tout dessin original (créateur de dessin)
 
-Détail complet : [`DRAWING_CREATOR_CONCEPT.md`](DRAWING_CREATOR_CONCEPT.md).
+**Livré (14 août 2026)** — vérifié en direct dans l'UI (`DisplayCreatorPanel.tsx`,
+fenêtre Images/Firmware, section « Créateur original ») : texte, motif,
+couleur, taille, canevas 320×160, export SVG. `DRAWING_CREATOR_CONCEPT.md`
+et `FIRMWARE_LAB_FUNCTIONS.md` §C décrivaient encore cette fonction comme
+« non commencée » au moment de leur rédaction — corrigé dans ces deux
+documents. Reste à vérifier : que l'export passe bien par une validation
+`op1svg` avant de devenir un patch utilisable (§10, garde‑fou toujours
+manquant). Détail conceptuel complet :
+[`DRAWING_CREATOR_CONCEPT.md`](DRAWING_CREATOR_CONCEPT.md).
 Un dessin fait dans l'app plutôt qu'importé règle le problème de licence à
 la racine (rien téléchargé, rien extrait d'un tiers). Trois garde‑fous pour
 qu'un dessin libre ressemble à la machine plutôt qu'à un éditeur SVG
@@ -298,10 +306,10 @@ une action manuelle et explicite, cohérent avec `FIRMWARE_SAFETY.md`.
 | Lecture native (Tauri) / route locale (`npm run dev`) du coffre | **codé** | `app/lib/nativeStorage.ts`, `app/api/display-library/route.ts`, `src-tauri/src/main.rs` |
 | Éditeur pixel (grille, zoom, crayon/gomme/pipette/remplissage, export SVG déterministe) | **codé, prototype** | `Op1PixelEditor.tsx` — pas encore d'export firmware |
 | Légende des codenames affichée dans l'UI | **candidat** | table déjà en mémoire (`CATEGORY_MAP`), pas encore affichée |
-| Mode « thème » global (1 table couleur→couleur → patch pour tous les écrans) | **candidat, mécanisme documenté** | inspiré `op1-glitter`, moteur à écrire dans `display_bridge.py` |
+| Mode « thème » global (1 table couleur→couleur → patch pour tous les écrans) | **codé (14 août 2026)**, vérifié en direct dans l'UI (« Thème global — Recolorer les fenêtres du firmware », presets dont « Neon OP‑1 », export du bundle patches) | `app/page.tsx` (`THEME_PRESETS`), délègue toujours à `tools/display_bridge.py`/`op1_gfx.patch_image_file` pour l'application réelle |
 | Variantes CWO comme choix exclusif avec aperçu comparatif | **partiel** | actuellement des cases indépendantes, à corriger |
-| Validation `op1svg` avant import d'un SVG arbitraire | **manquant, garde‑fou identifié** | `TOOLING_GAP_ANALYSIS.md` priorité 1 |
-| Créateur de dessin original (§8) | **cible retenue, non commencé** | — |
+| Validation `op1svg` avant import d'un SVG arbitraire | **manquant, garde‑fou identifié** | `TOOLING_GAP_ANALYSIS.md` priorité 1 — **reste vrai même après le mode thème** : pas encore vérifié que l'export theme/dessin original passe par cette validation avant de produire un patch |
+| Créateur de dessin original (§8) | **codé (14 août 2026)**, vérifié en direct : texte/motif/couleur/taille, canevas 320×160, export SVG contrôlé | `DisplayCreatorPanel.tsx` |
 | Correction couleur orange→blanc (§6.3) | **connue, pas corrigée** | `app/globals.css`, `docs/assets/op1-studio-mark.svg` |
 
 ## Référence croisée
