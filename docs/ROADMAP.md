@@ -97,7 +97,22 @@ Images a ete retire apres validation de cette integration.
   (`app/lib/profile.ts`) avec un champ avatar et une référence de lecture
   vers la progression Exercices, un nouveau contenu derrière le bouton
   Réglages (remplace la notice actuelle), et probablement un bouton par
-  machine plutôt qu'un seul champ texte. Pas cadré plus finement pour
+  machine plutôt qu'un seul champ texte.
+  **Dossier de travail réel confirmé le 14 août 2026** : l'utilisateur a un
+  dossier `Music\OP-1\` sur sa machine (hors dépôt), déjà utilisé par un
+  outil personnel séparé (« OP-1 Fun Collector », scraping op1.fun) — voir
+  le `README.md` de ce dossier pour le détail. La structure de travail de
+  l'app (`images/`, `patches/`, `sample-preflight/`, `samples/`, `tapes/`,
+  `packs/`, `themes/`, `quarantine/`, `manifests/`, `content/`,
+  `display-sorted/`, mêmes noms que les sous-dossiers déjà utilisés par
+  `tools/*.py` dans `backups/` côté dépôt) y a été créée, plus une première
+  vraie sauvegarde matérielle dans `backups/` (67 fichiers, ~269 Mo, SHA-256
+  vérifié, `tools/backup_manifest.py`). Piège rencontré et déjà réglé :
+  Windows ne distingue pas la casse des noms de dossier — un `firmware/`
+  créé par erreur s'est glissé dans le `FIRMWARE/` déjà existant de
+  l'utilisateur (sa propre convention `OFFICIEL/TRAVAIL/DOCUMENTATION/
+  HACKS`) ; supprimé, la convention existante de l'utilisateur a été
+  gardée telle quelle plutôt que d'imposer celle des outils. Pas cadré plus finement pour
   l'instant — à reprendre avec la même rigueur que le reste (schéma d'abord,
   UI ensuite, tests de round-trip du profil).
 - **Cloud et service en ligne** : comptes, synchronisation, partage et

@@ -53,7 +53,17 @@
       "Bash(cp __TRACKED_VAR__/screenshot-1786697489003-1.jpg docs/assets/screenshots/studio.jpg)",
       "Bash(cp __TRACKED_VAR__/screenshot-1786697571948-4.jpg docs/assets/screenshots/sons.jpg)",
       "Bash(cp __TRACKED_VAR__/screenshot-1786697582194-6.jpg docs/assets/screenshots/exercices.jpg)",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Read(//e/synth/**)",
+      "Read(//e/synth/user/**)",
+      "Read(//e/drum/user/**)",
+      "Bash(python tools/backup_manifest.py --help)",
+      "Bash(python tools/backup_manifest.py create --help)",
+      "Bash(mkdir -p \"/c/Users/azoth/Music/OP-1/backups\")",
+      "Bash(python tools/backup_manifest.py create \"E:/\" \"C:/Users/azoth/Music/OP-1/backups\" --label op1)",
+      "Read(//c/Users/azoth/Music/**)",
+      "Read(//c/Users/azoth/Music/OP-1/**)",
+      "Bash(grep -n \"localSpace.root\\\\`, déjà dans\" docs/ROADMAP.md)"
     ]
   }
 }
