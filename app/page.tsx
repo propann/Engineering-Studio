@@ -963,6 +963,10 @@ export default function Home() {
   const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
   const [selectedMod, setSelectedMod] = useState<FirmwareMod | null>(null);
   const [firmwareRiskAck, setFirmwareRiskAck] = useState(false);
+  // Explorateur de mods (feuille de route Firmware, 14 août 2026) : une
+  // catégorie ouverte à la fois, comme un dossier qu'on déplie — pas toutes
+  // les catégories dépliées en même temps.
+  const [openModCategory, setOpenModCategory] = useState<string | null>(null);
   const [soundPackReady, setSoundPackReady] = useState(false);
   const [backupRoot, setBackupRoot] = useState("backups/");
   const [profile, setProfile] = useState<LocalProfile>(() => {
@@ -1244,7 +1248,41 @@ export default function Home() {
 
                 <div className="firmware-pane firmware-pane-mods">
                   <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
-                  {["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>} {mod.risk !== "controlled" && <em className={`mod-risk-badge is-${mod.risk}`}>{FIRMWARE_RISK_LABEL[mod.risk]}</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}
+                  {/* Explorateur façon dossiers (feuille de route Firmware,
+                      14 août 2026) : une catégorie à la fois se déplie, sans
+                      vignette dans la liste — cliquer un mod ouvre son
+                      "cadre de simulation" (l'écran SVG réel + ses infos,
+                      voir plus bas .mod-detail-window) plutôt que d'étaler
+                      des images dans la liste elle-même. */}
+                  <div className="mod-explorer">
+                    {["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => {
+                      const modsInCategory = firmwareMods.filter((mod) => mod.category === category);
+                      const selectedInCategory = modsInCategory.filter((mod) => selectedMods[mod.id]).length;
+                      const isOpen = openModCategory === category;
+                      return (
+                        <div className="mod-folder" key={category}>
+                          <button type="button" className={`mod-folder-head${isOpen ? " is-open" : ""}`} onClick={() => setOpenModCategory(isOpen ? null : category)} aria-expanded={isOpen}>
+                            <Icon name={isOpen ? "chip" : "archive"} size={14} />
+                            <span>{category}</span>
+                            <small>{selectedInCategory > 0 ? `${selectedInCategory}/${modsInCategory.length} activés` : `${modsInCategory.length} mod${modsInCategory.length > 1 ? "s" : ""}`}</small>
+                          </button>
+                          {isOpen && (
+                            <div className="mod-folder-list">
+                              {modsInCategory.map((mod) => (
+                                <div className="mod-row" key={mod.id}>
+                                  <input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} aria-label={`Activer ${mod.title}`} />
+                                  <button type="button" className="mod-row-open" onClick={() => setSelectedMod(mod)}>
+                                    <strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>} {mod.risk !== "controlled" && <em className={`mod-risk-badge is-${mod.risk}`}>{FIRMWARE_RISK_LABEL[mod.risk]}</em>}</strong>
+                                    <small>{mod.detail}</small>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="firmware-pane firmware-pane-tools">
@@ -1266,11 +1304,17 @@ export default function Home() {
         <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelectedMod(null)}>
           <section className="mod-detail-window" role="dialog" aria-modal="true" aria-labelledby="mod-detail-title" onMouseDown={(event) => event.stopPropagation()}>
             <button className="window-close mod-detail-close" aria-label="Fermer" onClick={() => setSelectedMod(null)}>×</button>
+            {/* "Cadre de simulation" : l'écran SVG réel du mod, vu en direct
+                au-dessus de ses informations — pas une vignette décorative. */}
             {selectedMod.preview ? <img className="mod-detail-image" src={selectedMod.preview} alt={`Aperçu agrandi ${selectedMod.title}`} /> : <div className="mod-detail-placeholder"><Icon name={selectedMod.id === "op1patch" ? "wave" : "archive"} size={34} /></div>}
-            <span className="section-label">{selectedMod.category} · SOURCE_MODIFIEE</span>
+            <span className="section-label">{selectedMod.category} · SOURCE_MODIFIEE{selectedMod.risk !== "controlled" && <> · <em className={`mod-risk-badge is-${selectedMod.risk}`}>{FIRMWARE_RISK_LABEL[selectedMod.risk]}</em></>}</span>
             <h2 id="mod-detail-title">{selectedMod.title}</h2>
             <p>{selectedMod.detail}</p>
             <div className="mod-detail-meta"><strong>Source</strong><code>{selectedMod.source}</code><strong>État</strong><span>Disponible pour sélection · aucune écriture automatique</span></div>
+            <label className="mod-detail-enable">
+              <input type="checkbox" checked={selectedMods[selectedMod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [selectedMod.id]: event.target.checked })} />
+              <span>Activer ce mod dans le plan</span>
+            </label>
           </section>
         </div>
       )}
