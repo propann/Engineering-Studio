@@ -163,25 +163,67 @@ un nouveau chantier Firmware. (2) reste possible plus tard mais commence
 au même stade que « Presets/samples d'usine personnalisés » déjà listé en
 risque élevé dans `FIRMWARE_MOD_CATALOG.md`.
 
-## 9. Entête compact des fenêtres (chantier séparé, déjà demandé)
+## 9. Entête compact + navigation horizontale — livré (14 août 2026)
 
-Demandé dans la foulée mais concerne **toutes** les fenêtres, pas
-seulement Firmware : bouton de sortie déplacé dans le premier bloc de
-l'entête (à gauche, façon retour plutôt que croix flottante), entête
-réduit en hauteur, petit écran de statut machine toujours visible, mode de
-connexion affiché, une mini-représentation de la bande. Pas encore
-implémenté — chantier à part entière qui touche
-`.tool-window-header`/`.machine-strip` dans `app/globals.css` et la
-structure de `app/page.tsx` partagée par toutes les fenêtres. Sera traité
-séparément de la présente feuille de route Firmware, avec sa propre
-vérification live avant de le considérer fait.
+Concerne **toutes** les fenêtres, pas seulement Firmware. Livré :
+
+- Bandeau machine (`.machine-strip`) réduit de 106px à 82px de hauteur
+  (74px sur mobile → 58px), tous les éléments internes (mini-écran,
+  encodeurs, haut-parleur, pont local) réduits proportionnellement plutôt
+  que rognés.
+- Colonne latérale (`.sidebar`/`.nav-item`) entièrement retirée, remplacée
+  par une bande de navigation horizontale (`.nav-strip`) sous le bandeau
+  machine — même liste de destinations (Accueil, Firmware, Sauvegardes,
+  Sons, Studio, Images, Documentation, Exercices, Réglages).
+- **La destination actuelle ne montre plus son propre bouton** — inutile
+  d'afficher « Firmware » quand on y est déjà, ça libère de la place sur
+  la bande. Calculé dynamiquement (`homeOpen`/`toolWindow` → nom de la
+  destination courante), pas une liste codée en dur par écran.
+- Le petit écran de statut (mini-écran, mode de connexion) reste dans le
+  bandeau principal, donc toujours visible en haut — pas dupliqué dans
+  chaque fenêtre outil pour l'instant (l'idée d'un mini-écran *dans* les
+  fenêtres outil, §2, reste une idée séparée, pas ce chantier-ci).
+- Vérifié en direct : header compact sans chevauchement, bande de
+  navigation avec masquage dynamique fonctionnel sur Accueil et Firmware,
+  zéro erreur console.
+
+**Reste ouvert** : le bouton de sortie « façon retour dans le premier bloc
+de l'entête » ne s'applique qu'aux fenêtres modales (`.tool-window-header`,
+le `×` en haut à droite) — pas encore touché, ce chantier-ci a porté sur le
+bandeau principal et la navigation, pas sur l'entête des fenêtres modales
+elles-mêmes. Une mini-représentation de la bande (tape) dans l'entête reste
+aussi une idée non cadrée.
+
+## 10. Idées notées le 14 août 2026, pas construites
+
+- **Couvrir toutes les possibilités réelles d'`op1repacker`** : le
+  catalogue de mods exposé dans l'UI (13 entrées) est une sélection
+  curatée, pas l'exhaustivité de ce que l'outil sait faire. Avant d'ajouter
+  quoi que ce soit, relire `op1repacker` lui-même (déjà vendored dans
+  `tools/vendor/op1repacker/`, voir aussi le code source cloné dans
+  `.cache/community-tools/op1repacker/`) pour lister precisément toutes ses
+  options, pas seulement celles déjà retenues dans
+  `data/mods/catalog.json`. Risque à garder en tête : toute option
+  nouvellement exposée doit d'abord passer par la même colonne « risque »
+  que les mods actuels (§ jauge de danger, déjà livrée) — ne pas exposer
+  un mod non vérifié sans le classer `unclassified`/`high` selon le cas.
+- **Maîtriser le format SVG « sous tous ses aspects »** pour l'éditeur
+  d'images : déjà largement couvert par
+  [`OP1_IMAGE_BIBLE.md`](OP1_IMAGE_BIBLE.md) (palette, profils de
+  dimension, règle "pas de balise `<text>`", patrons visuels par moteur) —
+  reste à vérifier que `Op1PixelEditor`/`DisplayCreatorPanel` respectent
+  bien chacune de ces contraintes à l'usage, pas seulement en théorie. Pas
+  de nouveau chantier de recherche identifié pour l'instant, plutôt une
+  vérification de conformité à faire.
 
 ## Ordre de travail proposé
 
-1. §3 (catégories repliables) — gain immédiat, faible risque, données déjà là.
-2. §4 (fiche détail = case à cocher) — cohérent avec §3, même zone de code.
-3. §1 (firmware source active) — condition pour que §2 et §5 aient un sens.
-4. §2 (mini-écran de statut) — une fois §1 fait, il y a quelque chose à afficher.
-5. §5 (simulation) — après le reste, la portée exacte reste à trancher.
-6. §9 (entête compact) — chantier transverse, en parallèle si besoin, pas bloquant sur 1-5.
+1. ~~§3 (catégories repliables)~~ — livré.
+2. ~~§4 (fiche détail = case à cocher)~~ — livré.
+3. ~~§9 (entête compact + navigation horizontale)~~ — livré.
+4. §1 (firmware source active) — condition pour que §2 et §5 aient un sens.
+5. §2 (mini-écran de statut *dans* les fenêtres outil) — une fois §1 fait.
+6. §5 (simulation combinée) — portée encore à trancher.
+7. §10 (couvrir tout op1repacker, vérifier la conformité SVG) — recherche
+   avant code, pas bloquant sur le reste.
 7. §7/§8 — pas un chantier de code immédiat, juste la clarification déjà écrite ci-dessus ; la vraie prochaine étape est l'éditeur de moteur déjà dans `ROADMAP.md` (M3).

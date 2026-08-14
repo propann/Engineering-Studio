@@ -1138,39 +1138,60 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="workspace">
-          <aside className="sidebar">
-            <nav aria-label="Navigation principale">
-              <p className="nav-label">CONTRÔLE</p>
-              <button className={`nav-item ${homeOpen ? "active" : ""}`} onClick={() => { setHomeOpen(true); setToolWindow(null); }}>
-                <Icon name="archive" /><span>Accueil</span>
-              </button>
-              {nav.map((item) => (
+        {/* Bande de navigation horizontale (feuille de route, 14 août 2026) :
+            remplace la colonne latérale pour gagner de la place à
+            l'affichage — même liste de destinations, disposée sous le
+            bandeau machine plutôt qu'à gauche du contenu. */}
+        {/* La destination actuelle n'affiche pas son propre bouton — inutile
+            d'y retourner depuis là où on est déjà, et ça libère de la place
+            sur la bande (demandé le 14 août 2026). */}
+        {(() => {
+          const currentDestination = homeOpen ? "Accueil"
+            : toolWindow === "backups" ? "Sauvegardes"
+            : toolWindow === "sounds" ? "Sons"
+            : toolWindow === "tape" ? "Studio"
+            : toolWindow === "editor" ? "Images"
+            : toolWindow === "docs" ? "Documentation"
+            : toolWindow === "exercise" ? "Exercices MIDI"
+            : toolWindow === null ? "Firmware"
+            : null;
+          return (
+            <nav className="nav-strip" aria-label="Navigation principale">
+              {currentDestination !== "Accueil" && (
+                <button className="nav-strip-item" onClick={() => { setHomeOpen(true); setToolWindow(null); }}>
+                  <Icon name="archive" size={16} /><span>Accueil</span>
+                </button>
+              )}
+              {nav.filter((item) => item.label !== currentDestination).map((item) => (
                 <button
                   key={item.label}
-                  className={item.active ? "nav-item active" : "nav-item"}
-                    onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else if (item.label === "Images") setToolWindow("editor"); else setToolWindow(null); }}
+                  className="nav-strip-item"
+                  onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else if (item.label === "Images") setToolWindow("editor"); else setToolWindow(null); }}
                 >
-                  <Icon name={item.icon} />
+                  <Icon name={item.icon} size={16} />
                   <span>{item.label}</span>
                   {!item.active && <small>BIENTÔT</small>}
                 </button>
               ))}
+              <div className="nav-strip-spacer" />
+              {currentDestination !== "Documentation" && (
+                <button className="nav-strip-item" onClick={() => { setHomeOpen(false); setToolWindow("docs"); }}>
+                  <Icon name="book" size={16} /><span>Documentation</span>
+                </button>
+              )}
+              {currentDestination !== "Exercices MIDI" && (
+                <button className="nav-strip-item" onClick={() => { setHomeOpen(false); setToolWindow("exercise"); }}>
+                  <Icon name="wave" size={16} /><span>Exercices MIDI</span>
+                </button>
+              )}
+              <button className="nav-strip-item" onClick={() => setNotice("Les réglages restent locaux dans la version de base.")}>
+                <Icon name="settings" size={16} /><span>Réglages</span>
+              </button>
             </nav>
+          );
+        })()}
 
-            <div className="sidebar-spacer" />
-
-            <button className="nav-item" onClick={() => { setHomeOpen(false); setToolWindow("docs"); }}>
-              <Icon name="book" /><span>Documentation</span>
-            </button>
-            <button className="nav-item" onClick={() => { setHomeOpen(false); setToolWindow("exercise"); }}>
-              <Icon name="wave" /><span>Exercices MIDI</span>
-            </button>
-            <button className="nav-item" onClick={() => setNotice("Les réglages restent locaux dans la version de base.")}>
-              <Icon name="settings" /><span>Réglages</span>
-            </button>
-
-          </aside>
+        <div className="workspace">
 
           {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") setToolWindow("editor"); else if (id === "firmware") setToolWindow(null); else setToolWindow(id as ToolWindow); }} /> : <div className="content">
             {notice && <div className="notice" role="status"><Icon name="shield" size={17} /><span>{notice}</span><button aria-label="Fermer" onClick={() => setNotice(null)}>×</button></div>}
