@@ -87,6 +87,38 @@ barre d'outils, voir `NEXT_STEP.md`) touche la même zone de `app/page.tsx` —
 vérifier après chaque changement côté navigation que l'onglet "Images"
 reste bien câblé.
 
+## 7ter. Quadrillage machine et arrondis produit — appliqué le 13 août 2026
+
+Demande : uniformiser les fenêtres avec une ambiance qui prolonge la
+machine, un quadrillage rouge quasi transparent en fond, des formes plus
+arrondies. Fait, en ciblant les changements globaux/additifs pour ne pas
+croiser le travail en cours d'un autre agent sur `app/page.tsx` et les
+composants — même logique de prudence que la section 7bis ci-dessus.
+
+- **`--red` corrigé** dans `app/globals.css` : `#e3473f` → `#ff3a5d`, la
+  vraie couleur du 4e encodeur documentée en section 2 ci-dessus (source
+  `op1-glitter`). Le token n'était utilisé nulle part avant ce changement —
+  aucune régression visuelle possible, seulement l'ajout ci-dessous qui s'en
+  sert maintenant.
+- **Quadrillage** : `body` a maintenant un calque `linear-gradient` en plus
+  du dégradé existant, `24px` de pas, `var(--grid-line)` = rouge machine à
+  5 % d'opacité — visible dans les marges/espaces entre panneaux, pas dessus
+  (les panneaux gardent leur fond opaque). Classe `.machine-grid`
+  réutilisable si un panneau plein écran veut le même fond.
+- **Arrondi produit** : nouveau token `--radius-product: 18px`, pas encore
+  appliqué nulle part — à utiliser sur les futurs conteneurs "vitrine"
+  (cartes d'accueil, fenêtres pleine largeur) plutôt que sur les petits
+  contrôles, qui gardent `--radius-control`.
+
+**Volontairement pas fait ici** — c'est la vraie « uniformisation » demandée
+et elle touche chaque composant, pas juste les tokens partagés : reprendre
+un par un les rayons codés en dur (`border-radius: 4px/5px/6px/7px...`
+dispersés dans tout `app/globals.css`) pour les remplacer par l'échelle de
+tokens, et vérifier que chaque fenêtre (Firmware, Sauvegardes, Sons, Studio,
+Exercices, Documentation) rend bien la même famille de formes une fois les
+tokens en place. À faire une fois que le chantier `app/page.tsx` en cours
+est stabilisé, pour ne pas re-toucher les mêmes lignes que lui.
+
 ## 7. Prochaines étapes concrètes
 
 1. Découper `app/page.tsx` en composants par écran (prérequis déjà identifié en M4.6, à faire avant d'ajouter l'écran d'accueil pour ne pas alourdir un fichier déjà trop gros).

@@ -1,6 +1,6 @@
 # OP-1 Studio - analyse globale
 
-Etat verifie le 12 aout 2026.
+Etat verifie le 13 aout 2026.
 
 Point d'avancement apres integration du Display Editor : les outils locaux
 sont plus avances que leur branchement dans l'interface. Le tableau de bord
@@ -22,6 +22,64 @@ machine. Un test delete/restore controle a ensuite supprime puis restaure
 `synth/user/8.aif` depuis le snapshot : 88778 octets, SHA-256 valide, aucun
 fichier `.partial` restant.
 
+## Point du 13-14 août 2026 — deux agents en parallèle
+
+Session longue avec deux agents actifs en même temps sur ce dépôt : Codex
+(déjà présent, cf. `.openai/`) et Claude (moi, arrivé en cours de route).
+Coordination purement asynchrone via les fichiers du dépôt — pas de canal
+direct entre les deux agents, voir `CONTEXT.md`. Répartition réelle,
+vérifiée par `git status` et lecture des fichiers, pas de mémoire seule :
+
+**Côté Claude** — documentation machine puis code Sons/Studio/Exercices :
+- Références techniques : [`TAPE_MODE_REFERENCE.md`](TAPE_MODE_REFERENCE.md),
+  [`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md),
+  [`AUDIO_FILE_FORMAT_REFERENCE.md`](AUDIO_FILE_FORMAT_REFERENCE.md) (formats
+  patch/AIFF, vérifiés contre le code source de 3 implémentations
+  communautaires, pas seulement leurs README).
+- `app/lib/audioOracle.ts` (oracle WAV porté du dépôt compagnon EP-133 K.O.
+  II, voir [`RAPPORT_REUTILISATION_EP133_POUR_OP1.md`](RAPPORT_REUTILISATION_EP133_POUR_OP1.md))
+  et `app/lib/aiffPatchOracle.ts` (AIFF + marqueurs de patch, code original) —
+  16 tests entre les deux (`tests/audio-oracle.test.mjs`,
+  `tests/aiff-patch-oracle.test.mjs`), branchés dans `SoundControlsPanel`
+  avec affichage des marqueurs dans `WaveformMarkers.tsx`.
+- Fenêtre Sons réorganisée en deux colonnes (Son machine / Son ordinateur),
+  5 catégories réelles au lieu de 2, grille 24 pads retirée de cette vue.
+- `app/lib/keyboardLayout.ts` : module partagé qui évite que le clavier
+  (`StudioMachinePanel`) et l'écran d'exercice divergent sur la disposition.
+- Fenêtre Exercices reconstruite (écran « notes qui tombent », clavier
+  aligné colonne par colonne avec l'écran, mode `notesOnly`).
+- `app/lib/audioConvert.ts` (`convertToOp1Audio`) : trim/downmix/
+  rééchantillonnage/fondus + bouton « Préparer le fichier » dans
+  `SoundControlsPanel`. Boucle par section ajoutée au mode « Morceau »
+  d'Exercices.
+- Corrections de dérive documentaire trouvées en vérifiant plutôt qu'en
+  supposant : commit `op1aiff` épinglé sur un dépôt vide (`tools/sources.yml`),
+  plusieurs sections de `ROADMAP.md` qui décrivaient un état déjà dépassé,
+  et deux vraies régressions du même type détectées avant usage, pas par un
+  rapport utilisateur : la première version de `convertToOp1Audio` (Sons) et
+  les exports Stems/Album du Studio (`app/page.tsx`) ne produisaient que du
+  WAV, alors que l'OP-1 lit l'AIFF (mono, en plus, pour Stems/Album) pour ses
+  samples et ses pistes. Les deux corrigés avec le même encodeur AIFF
+  (`encodeAiffPcm16`, exporté depuis `app/lib/audioConvert.ts`, réutilisé tel
+  quel dans `page.tsx` plutôt que dupliqué), vérifié par aller-retour via le
+  parseur AIFF existant.
+
+**Côté Codex** — d'après les fichiers qu'il a écrits, pas vérifié en détail
+par Claude : éditeur pixel `Op1PixelEditor.tsx` pour les images firmware,
+avec étude comparative de 6 éditeurs pixel open-source dans
+[`PIXEL_EDITOR_ARCHITECTURE.md`](PIXEL_EDITOR_ARCHITECTURE.md) ; organisation
+du coffre d'images ([`IMAGE_LIBRARY.md`](IMAGE_LIBRARY.md)) ; matrice des
+modes de connexion USB de l'OP-1
+([`OP1_CONNECTION_MODES.md`](OP1_CONNECTION_MODES.md)) ; route API
+`app/api/display-library/route.ts` ; itérations sur les bridges Python
+(`sample_preflight.py`, `device_transfer_plan.py`, `backup_manifest.py`,
+`content_catalog.py`) et sur `src-tauri/src/main.rs`.
+
+Les deux agents ont édité `app/globals.css` et `docs/ROADMAP.md` sans
+collision constatée jusqu'ici (fichiers touchés à des horaires différents,
+vérifié avant chaque édition). Rien de tout ça n'est committé — tout reste
+dans l'arbre de travail au 14 août 2026 matin.
+
 ## Fonctionne reellement
 
 - Firmware : moteur `op1repacker` vendored, bridge de build par copie temporaire, mods selectionnes, manifeste SHA-256 et validation CRC/TAR/LZMA.
@@ -41,9 +99,12 @@ fichier `.partial` restant.
 ## Reste a construire
 
 - aucune copie, sauvegarde ou restauration n'est declenchee par l'interface ;
-- le bridge natif et l'ejection controlee ne sont pas encore disponibles ;
+  l'execution des copies, le Safe Change Engine et l'ejection controlee restent a construire ;
+- les manifestes de sauvegarde portent maintenant une empreinte structurelle du
+  volume ; un transfert refuse une sauvegarde provenant d'un autre volume ;
 - le decoupage complet de `app/page.tsx` et l'accueil par modules restent a faire ;
-- la bibliotheque Sons n'a pas encore son index, ses 24 pads et sa pre-ecoute ;
+- l'index Sons et les 24 pads existent dans l'interface ; la pre-ecoute des fichiers
+  importes et le transfert machine restent a fermer ;
 - edition avancee du piano-roll ;
 - reconnexion manuelle des sources audio locales à partir des références persistées ;
 - transfert machine et écriture finale dans `tape/` ;
@@ -52,11 +113,11 @@ fichier `.partial` restant.
 
 ## Qualite connue
 
-- `npm test`, le build et les 36 tests Python passent ;
-- le lint passe avec quatre avertissements non bloquants ;
-- `npx tsc --noEmit` ne remonte plus d'erreur dans `app/` ; les trois erreurs
-  restantes concernent uniquement les types Cloudflare manquants
-  (`cloudflare:workers`, `Fetcher`, `D1Database`).
+- `npm test`, le build, `npx tsc --noEmit` et les 39 tests Python passent ;
+- le lint passe avec 19 avertissements non bloquants, principalement du code
+  Studio ancien ou non utilise ;
+- les types Cloudflare utilises par `db/` et `worker/` sont declares dans
+  `types/cloudflare-workers.d.ts`, sans modifier le runtime.
 
 ## Limites connues
 

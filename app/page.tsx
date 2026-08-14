@@ -4,11 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
+import { hasNativeStorage, initialiseNativeLibrary, prepareNativeLocalPlan, readDisplayLibrary, readNativeProfile, writeNativeProfile } from "./lib/nativeStorage";
 import { DEFAULT_PROFILE, parseProfile, serializeProfile, type LocalProfile } from "./lib/profile";
+import { encodeAiffPcm16 } from "./lib/audioConvert";
 import { HomeHub } from "./components/HomeHub";
-import { FirmwareSubtabs } from "./components/FirmwareSubtabs";
 import { DocumentationPanel } from "./components/DocumentationPanel";
 import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
+import { Op1PixelEditor } from "./components/Op1PixelEditor";
 import { ExercisePanel } from "./components/ExercisePanel";
 import { BackupPanel } from "./components/BackupPanel";
 import { SoundsPanel } from "./components/SoundsPanel";
@@ -110,6 +112,12 @@ function categorizeDisplayAsset(fileName: string) {
   return { category, confidence, note };
 }
 
+function displayDimensions(svg: string) {
+  const match = svg.match(/viewBox\s*=\s*["']\s*(-?[\d.]+)\s+(-?[\d.]+)\s+([\d.]+)\s+([\d.]+)\s*["']/i);
+  if (!match) return { width: 0, height: 0, viewBox: "inconnu" };
+  return { width: Number(match[3]), height: Number(match[4]), viewBox: `${match[1]} ${match[2]} ${match[3]} ${match[4]}` };
+}
+
 // Doit produire exactement le meme contrat que build_patch() dans tools/display_bridge.py,
 // pour rester compatible avec op1_gfx.patch_image_file côté Python.
 function pyRegexEscape(text: string) {
@@ -119,20 +127,53 @@ function buildDisplayPatch(file: string, original: string, edited: string) {
   return { file, changes: [{ type: "substitute", find: pyRegexEscape(original), replace: edited.replace(/\\/g, "\\\\") }] };
 }
 
-type DisplayAsset = { file: string; category: string; confidence: DisplayConfidence; note: string; original: string; edited: string };
+const THEME_SOURCE_COLORS = ["#010101", "#3b2d49", "#87839c", "#b4aecf", "#ff3a5d", "#00ed95", "#698eff", "#dfd9ff"];
+const THEME_PRESETS: Record<string, Record<string, string>> = {
+  "Neon OP-1": { "#010101": "#101418", "#3b2d49": "#202729", "#87839c": "#8aa29a", "#b4aecf": "#d9f0e4", "#ff3a5d": "#ff3a5d", "#00ed95": "#00ed95", "#698eff": "#698eff", "#dfd9ff": "#f4fff8" },
+  "Sunset studio": { "#010101": "#160f1e", "#3b2d49": "#4b244d", "#87839c": "#a05d72", "#b4aecf": "#f0b18d", "#ff3a5d": "#ff6b5b", "#00ed95": "#ffd166", "#698eff": "#e07aff", "#dfd9ff": "#fff1d6" },
+  "Mono console": { "#010101": "#080b0b", "#3b2d49": "#202727", "#87839c": "#6e7d79", "#b4aecf": "#a9bab3", "#ff3a5d": "#d8e5df", "#00ed95": "#d8e5df", "#698eff": "#a9bab3", "#dfd9ff": "#f0f7f2" },
+};
 
-function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
+function applyDisplayTheme(svg: string, colors: Record<string, string>) {
+  return THEME_SOURCE_COLORS.reduce((result, source) => result.replace(new RegExp(source, "gi"), colors[source] ?? source), svg);
+}
+
+type DisplayAsset = { file: string; category: string; confidence: DisplayConfidence; note: string; original: string; edited: string; width: number; height: number; viewBox: string };
+
+function DisplayEditor({ onNotice, root }: { onNotice: (message: string) => void; root: string }) {
   const [assets, setAssets] = useState<DisplayAsset[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [pixelEditorOpen, setPixelEditorOpen] = useState(false);
+  const [themeName, setThemeName] = useState("Neon OP-1");
+  const [themeScope, setThemeScope] = useState<"all" | "synth">("all");
+  const [themeColors, setThemeColors] = useState<Record<string, string>>(THEME_PRESETS["Neon OP-1"]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const firmwareDisplayInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    void readDisplayLibrary(root).then((files) => {
+      if (!active || !files.length) return;
+      const loaded = files.map(({ file, contents }) => {
+        const { category, confidence, note } = categorizeDisplayAsset(file);
+        return { file, category, confidence, note, original: contents, edited: contents, ...displayDimensions(contents) };
+      });
+      setAssets((current) => {
+        const byName = new Map(current.map((asset) => [asset.file, asset]));
+        loaded.forEach((asset) => byName.set(asset.file, asset));
+        return [...byName.values()];
+      });
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [root]);
 
   async function loadFiles(files: FileList) {
-    const svgFiles = Array.from(files).filter((file) => file.name.toLowerCase().endsWith(".svg"));
+    const svgFiles = Array.from(files).filter((file) => file.name.toLowerCase().endsWith(".svg") && (!((file as File & { webkitRelativePath?: string }).webkitRelativePath) || (file as File & { webkitRelativePath?: string }).webkitRelativePath?.replaceAll("\\", "/").includes("/content/display/")));
     if (!svgFiles.length) { onNotice("Aucun fichier .svg dans la sélection."); return; }
     const loaded = await Promise.all(svgFiles.map(async (file) => {
       const text = await file.text();
       const { category, confidence, note } = categorizeDisplayAsset(file.name);
-      return { file: file.name, category, confidence, note, original: text, edited: text } as DisplayAsset;
+      return { file: file.name, category, confidence, note, original: text, edited: text, ...displayDimensions(text) };
     }));
     setAssets((current) => {
       const byName = new Map(current.map((asset) => [asset.file, asset]));
@@ -171,6 +212,24 @@ function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
     onNotice("Patch JSON exporté. Il s’applique avec tools/display_bridge.py ou op1_gfx.patch_image_file, jamais directement sur l’OP-1.");
   }
 
+  function isThemeAllowed(asset: DisplayAsset) {
+    return asset.width === 320 && asset.height === 160 && (themeScope === "all" || asset.category === "moteurs_sonores");
+  }
+
+  function applyThemeToAssets() {
+    if (!assets.length) { onNotice("Chargez d’abord un dossier content/display."); return; }
+    const changed = assets.filter((asset) => isThemeAllowed(asset) && applyDisplayTheme(asset.edited, themeColors) !== asset.edited).length;
+    setAssets((current) => current.map((asset) => isThemeAllowed(asset) ? { ...asset, edited: applyDisplayTheme(asset.edited, themeColors) } : asset));
+    onNotice(`${changed} image${changed > 1 ? "s" : ""} préparée${changed > 1 ? "s" : ""} avec le thème ${themeName}. Les profils atypiques restent verrouillés.`);
+  }
+
+  function exportThemeBundle() {
+    const modified = assets.filter((asset) => asset.edited !== asset.original);
+    if (!modified.length) { onNotice("Aucune modification à exporter."); return; }
+    const bundle = { schema: "op1-studio-display-theme-bundle", version: 1, theme: themeName, scope: themeScope, safety: "patches-only-no-machine-write", source: "local-firmware-display-assets", allowedProfile: "320x160-exact", rejectedAssets: assets.filter((asset) => !isThemeAllowed(asset)).map((asset) => ({ file: asset.file, viewBox: asset.viewBox, width: asset.width, height: asset.height, reason: "profile-not-allowed" })), assets: modified.map((asset) => ({ file: asset.file, viewBox: asset.viewBox, width: asset.width, height: asset.height, patch: buildDisplayPatch(asset.file, asset.original, asset.edited) })) };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" })); const link = document.createElement("a"); link.href = url; link.download = `op1-${themeName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-display-patches.json`; link.click(); URL.revokeObjectURL(url); onNotice(`${modified.length} patch${modified.length > 1 ? "s" : ""} exporté${modified.length > 1 ? "s" : ""} dans un bundle contrôlé.`);
+  }
+
   return (
     <div className="tool-body display-editor">
       <div className="display-editor-intro">
@@ -184,8 +243,17 @@ function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
       <div className="display-loader">
         <button className="secondary-action" onClick={() => fileInputRef.current?.click()}><Icon name="download" size={14} />Charger des écrans .svg</button>
         <input ref={fileInputRef} className="visually-hidden" type="file" accept=".svg" multiple onChange={(event) => { const files = event.target.files; if (files?.length) void loadFiles(files); event.currentTarget.value = ""; }} />
+        <button className="secondary-action" onClick={() => firmwareDisplayInputRef.current?.click()}><Icon name="archive" size={14} />Importer tout content/display</button>
+        <input ref={firmwareDisplayInputRef} className="visually-hidden" type="file" multiple accept=".svg" {...{ webkitdirectory: "true", directory: "true" }} onChange={(event) => { const files = event.target.files; if (files?.length) void loadFiles(files); event.currentTarget.value = ""; }} />
         <small>{assets.length ? `${assets.length} écran${assets.length > 1 ? "s" : ""} en mémoire, sur cet appareil uniquement.` : "Aucun écran chargé pour l’instant."}</small>
       </div>
+
+      <section className="display-theme-panel" aria-label="Créateur de thèmes firmware">
+        <div className="mod-section-heading"><div><span className="section-label">THÈME GLOBAL</span><strong>Recolorer les fenêtres du firmware</strong></div><small>{assets.filter(isThemeAllowed).length} assets compatibles · profils atypiques exclus</small></div>
+        <div className="display-theme-controls"><label>Preset <select value={themeName} onChange={(event) => { const next = event.target.value; setThemeName(next); setThemeColors(THEME_PRESETS[next] ?? themeColors); }}><option value="Neon OP-1">Neon OP-1</option><option value="Sunset studio">Sunset studio</option><option value="Mono console">Mono console</option><option value="Personnalisé">Personnalisé</option></select></label><label>Périmètre <select value={themeScope} onChange={(event) => setThemeScope(event.target.value as "all" | "synth")}><option value="all">Tous les écrans 320×160</option><option value="synth">Fenêtres synthèse uniquement</option></select></label><button type="button" className="secondary-action" onClick={applyThemeToAssets} disabled={!assets.length}><Icon name="check" size={14} />Prévisualiser le thème</button><button type="button" className="primary-action" onClick={exportThemeBundle} disabled={!assets.some((asset) => asset.edited !== asset.original)}><Icon name="download" size={14} />Exporter le bundle patches</button></div>
+        <div className="display-theme-swatches">{THEME_SOURCE_COLORS.map((source) => <label key={source}><span style={{ background: source }} title={`Source ${source}`} /><input type="color" value={themeColors[source] ?? source} aria-label={`Remplacer ${source}`} onChange={(event) => { setThemeName("Personnalisé"); setThemeColors((current) => ({ ...current, [source]: event.target.value })); }} /></label>)}</div>
+        <small className="display-theme-note">Le thème recolore le texte SVG connu sans toucher aux dimensions. Les images originales restent conservées et chaque résultat sera exporté comme patch séparé.</small>
+      </section>
 
       {grouped.length > 0 && (
         <div className="display-groups">
@@ -196,6 +264,7 @@ function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
                 {group.items.map((asset) => (
                   <button type="button" key={asset.file} className={`display-card ${activeFile === asset.file ? "is-active" : ""} ${asset.edited !== asset.original ? "is-edited" : ""}`} onClick={() => setActiveFile(asset.file)}>
                     <span className="display-card-preview" dangerouslySetInnerHTML={{ __html: asset.edited }} />
+                    <span className="display-card-dimensions">{asset.width}×{asset.height}</span>
                     <span className="display-card-meta"><strong>{asset.file}</strong><em className={`confidence-badge confidence-${asset.confidence}`}>{asset.confidence === "high" ? "confirmé" : asset.confidence === "medium" ? "probable" : "non confirmé"}</em></span>
                   </button>
                 ))}
@@ -208,6 +277,8 @@ function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
       {active && (
         <section className="display-edit-panel" aria-label={`Édition de ${active.file}`}>
           <div className="mod-section-heading"><div><span className="section-label">{DISPLAY_CATEGORY_LABELS[active.category].toUpperCase()}</span><strong>{active.file}</strong></div><small>{active.note}</small></div>
+          <div className="display-pixel-safety"><Icon name="shield" size={14} /><span>Édition pixel bridée : aucune mise à l’échelle automatique. Les dimensions hors profil sont verrouillées.</span></div>
+          <button type="button" className="primary-action display-open-pixel" onClick={() => setPixelEditorOpen(true)}><Icon name="image" size={14} />Ouvrir l’éditeur pixel dans sa fenêtre</button>
           <div className="display-edit-columns">
             <textarea className="display-edit-textarea" value={active.edited} onChange={(event) => updateActiveEdit(event.target.value)} spellCheck={false} aria-label="Code SVG éditable" />
             <div className="display-edit-preview" aria-label="Aperçu en direct" dangerouslySetInnerHTML={{ __html: active.edited }} />
@@ -219,6 +290,7 @@ function DisplayEditor({ onNotice }: { onNotice: (message: string) => void }) {
           </div>
         </section>
       )}
+      {active && pixelEditorOpen && <div className="display-editor-modal" role="dialog" aria-modal="true" aria-label={`Éditeur pixel ${active.file}`}><div className="display-editor-modal-card"><div className="display-editor-modal-head"><div><span className="section-label">ÉDITEUR PIXEL OP-1</span><strong>{active.file}</strong></div><button type="button" className="secondary-action" onClick={() => setPixelEditorOpen(false)}>Fermer</button></div><Op1PixelEditor width={active.width} height={active.height} sourceSvg={active.edited} filename={active.file} onNotice={onNotice} /></div></div>}
     </div>
   );
 }
@@ -339,6 +411,24 @@ function audioBufferToWav(buffer: AudioBuffer) {
   const channels = Math.min(2, buffer.numberOfChannels); const frames = buffer.length; const bytes = 2; const dataSize = frames * channels * bytes; const output = new ArrayBuffer(44 + dataSize); const view = new DataView(output); const write = (offset: number, value: string) => [...value].forEach((character, index) => view.setUint8(offset + index, character.charCodeAt(0))); write(0, "RIFF"); view.setUint32(4, 36 + dataSize, true); write(8, "WAVE"); write(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true); view.setUint32(24, buffer.sampleRate, true); view.setUint32(28, buffer.sampleRate * channels * bytes, true); view.setUint16(32, channels * bytes, true); view.setUint16(34, 16, true); write(36, "data"); view.setUint32(40, dataSize, true);
   let offset = 44; for (let frame = 0; frame < frames; frame += 1) for (let channel = 0; channel < channels; channel += 1) { const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[frame])); view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true); offset += 2; }
   return new Blob([output], { type: "audio/wav" });
+}
+
+// Stems Tape (`track_N.aif`) et faces Album (`side_a.aif`/`side_b.aif`) sont
+// de l'AIFF mono, pas du WAV stéréo (docs/AUDIO_FILE_FORMAT_REFERENCE.md
+// §1, §3) — repéré avant d'être livré : ces exports imitaient déjà les noms
+// de fichiers réels de l'OP-1 sans en avoir le format, ce qui les aurait
+// rendus inutilisables tels quels sur la machine. `encodeAiffPcm16` est le
+// même encodeur que `app/lib/audioConvert.ts` (Sons), un seul endroit dans
+// le dépôt qui écrit de l'AIFF.
+function audioBufferToAiffMono(buffer: AudioBuffer): Blob {
+  const frames = buffer.length;
+  const channels = buffer.numberOfChannels;
+  const mono = new Float32Array(frames);
+  for (let channel = 0; channel < channels; channel += 1) {
+    const data = buffer.getChannelData(channel);
+    for (let frame = 0; frame < frames; frame += 1) mono[frame] += data[frame] / channels;
+  }
+  return new Blob([encodeAiffPcm16(mono, 1, buffer.sampleRate)], { type: "audio/aiff" });
 }
 
 function WaveformOverview({ tracks, peaks }: { tracks: string[]; peaks: Record<number, number[]> }) {
@@ -515,6 +605,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       Object.values(audioRefs.current).forEach((audio) => audio?.pause());
       midiTimersRef.current.forEach((timer) => window.clearTimeout(timer));
       midiTimersRef.current = [];
+      // Relâche visuellement les touches encore actives si on coupe la lecture en cours de route.
+      setPressedMidiNotes([]);
       setTransportPlaying(false);
       return;
     }
@@ -523,7 +615,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     loaded.forEach((audio) => { audio.currentTime = transportTime < audio.duration ? transportTime : 0; void audio.play(); });
     midiEvents.forEach((event) => {
       const delay = Math.max(0, (event.time - transportTime) * 1000);
-      const timer = window.setTimeout(() => onSendMidi([event.type === "note_on" ? 0x90 : 0x80, event.note, event.type === "note_on" ? event.velocity : 0]), delay);
+      const timer = window.setTimeout(() => {
+        onSendMidi([event.type === "note_on" ? 0x90 : 0x80, event.note, event.type === "note_on" ? event.velocity : 0]);
+        // Anime aussi le clavier construit pendant la relecture logicielle du
+        // piano-roll, pas seulement pour les notes reçues d'un OP-1 physique.
+        if (event.type === "note_on") setPressedMidiNotes((current) => current.includes(event.note) ? current : [...current, event.note]);
+        else setPressedMidiNotes((current) => current.filter((note) => note !== event.note));
+      }, delay);
       midiTimersRef.current.push(timer);
     });
     setTransportPlaying(true);
@@ -575,9 +673,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const soloed = solo !== null;
       for (const { index, buffer } of decoded) {
         if (muted[index] || (soloed && solo !== index)) continue;
-        const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const offline = new OfflineAudioContext(2, Math.ceil(end * sampleRate), sampleRate); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); const rendered = await offline.startRendering(); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToWav(rendered)); link.download = `track_${index + 1}.wav`; link.click(); URL.revokeObjectURL(link.href); await new Promise((resolve) => window.setTimeout(resolve, 120));
+        const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const offline = new OfflineAudioContext(2, Math.ceil(end * sampleRate), sampleRate); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); const rendered = await offline.startRendering(); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToAiffMono(rendered)); link.download = `track_${index + 1}.aif`; link.click(); URL.revokeObjectURL(link.href); await new Promise((resolve) => window.setTimeout(resolve, 120));
       }
-      onNotice("Stems Tape exportés : quatre fichiers WAV séparés, prêts pour validation.");
+      onNotice("Stems Tape exportés : quatre fichiers AIFF mono (track_1.aif…track_4.aif), prêts pour validation.");
     } catch { onNotice("L'export Tape a échoué. Vérifiez les fichiers audio locaux."); }
   }
 
@@ -587,8 +685,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     try {
       const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const maxEnd = Math.min(360, Math.max(...decoded.map(({ index, buffer }) => clipEnds[index] ?? durations[index] ?? buffer.duration), 1)); const offline = new OfflineAudioContext(2, Math.ceil(maxEnd * sampleRate), sampleRate); const soloed = solo !== null;
       decoded.forEach(({ index, buffer }) => { if (muted[index] || (soloed && solo !== index)) return; const end = Math.min(maxEnd, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); });
-      const rendered = await offline.startRendering(); const faceLength = 180; const downloads: string[] = []; for (let face = 0; face < 2; face += 1) { const start = face * faceLength; const length = Math.max(0, Math.min(faceLength, maxEnd - start)); const faceBuffer = new AudioBuffer({ length: Math.max(1, Math.ceil(length * sampleRate)), numberOfChannels: 2, sampleRate }); for (let channel = 0; channel < 2; channel += 1) faceBuffer.copyToChannel(rendered.getChannelData(channel).subarray(Math.ceil(start * sampleRate), Math.ceil(start * sampleRate) + faceBuffer.length), channel); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToWav(faceBuffer)); link.download = `album_face_${face === 0 ? "a" : "b"}.wav`; link.click(); URL.revokeObjectURL(link.href); downloads.push(link.download); await new Promise((resolve) => window.setTimeout(resolve, 120)); }
-      const manifest = new Blob([JSON.stringify({ schema: "op1-album-export", version: 1, project: projectName, tempo, sample_rate: sampleRate, faces: downloads, source_tracks: entries.map(([rawIndex]) => Number(rawIndex) + 1) }, null, 2)], { type: "application/json" }); const manifestLink = document.createElement("a"); manifestLink.href = URL.createObjectURL(manifest); manifestLink.download = "album-manifest.json"; manifestLink.click(); URL.revokeObjectURL(manifestLink.href); onNotice("Album exporté : deux faces WAV et manifeste générés.");
+      const rendered = await offline.startRendering(); const faceLength = 180; const downloads: string[] = []; for (let face = 0; face < 2; face += 1) { const start = face * faceLength; const length = Math.max(0, Math.min(faceLength, maxEnd - start)); const faceBuffer = new AudioBuffer({ length: Math.max(1, Math.ceil(length * sampleRate)), numberOfChannels: 2, sampleRate }); for (let channel = 0; channel < 2; channel += 1) faceBuffer.copyToChannel(rendered.getChannelData(channel).subarray(Math.ceil(start * sampleRate), Math.ceil(start * sampleRate) + faceBuffer.length), channel); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToAiffMono(faceBuffer)); link.download = `side_${face === 0 ? "a" : "b"}.aif`; link.click(); URL.revokeObjectURL(link.href); downloads.push(link.download); await new Promise((resolve) => window.setTimeout(resolve, 120)); }
+      const manifest = new Blob([JSON.stringify({ schema: "op1-album-export", version: 1, project: projectName, tempo, sample_rate: sampleRate, channels: 1, faces: downloads, source_tracks: entries.map(([rawIndex]) => Number(rawIndex) + 1) }, null, 2)], { type: "application/json" }); const manifestLink = document.createElement("a"); manifestLink.href = URL.createObjectURL(manifest); manifestLink.download = "album-manifest.json"; manifestLink.click(); URL.revokeObjectURL(manifestLink.href); onNotice("Album exporté : deux faces AIFF mono (side_a.aif, side_b.aif) et manifeste générés.");
     } catch { onNotice("L'export Album a échoué. Vérifiez les sources audio locales."); }
   }
 
@@ -707,8 +805,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
             <div className="studio-render-actions">
               <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV</button><small>Mixe les pistes.</small></div>
-              <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Stems</button><small>Un WAV par piste.</small></div>
-              <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Album</button><small>Deux faces + manifeste.</small></div>
+              <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Stems</button><small>Un AIFF mono par piste.</small></div>
+              <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Album</button><small>Deux faces AIFF + manifeste.</small></div>
             </div>
 
             <div className="tape-import-note">
@@ -773,6 +871,7 @@ const nav = [
   { label: "Sauvegardes", icon: "archive" as IconName },
   { label: "Sons", icon: "wave" as IconName },
   { label: "Studio", icon: "tape" as IconName },
+  { label: "Images", icon: "image" as IconName },
 ];
 
 const recommendedFirmware = firmwareCatalog.releases[0];
@@ -831,6 +930,7 @@ export default function Home() {
     teBoot: false,
   });
   const [firmwareSection, setFirmwareSection] = useState<"build" | "graphics">("build");
+  const [studioSection, setStudioSection] = useState<"tape" | "graphics">("tape");
   const [firmwareFile, setFirmwareFile] = useState<{ name: string; size: number } | null>(null);
   const [firmwarePlanReady, setFirmwarePlanReady] = useState(false);
   const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
@@ -847,8 +947,26 @@ export default function Home() {
 
   function updateProfile(next: LocalProfile) {
     setProfile(next);
-    window.localStorage.setItem("op1-studio-profile", serializeProfile(next));
+    const serialized = serializeProfile({ ...next, localSpace: { ...next.localSpace, root: backupRoot } });
+    window.localStorage.setItem("op1-studio-profile", serialized);
+    if (hasNativeStorage()) {
+      void writeNativeProfile(backupRoot, serialized)?.catch(() => {
+        setNotice("Profil local modifié dans l’interface, mais le coffre Tauri n’est pas accessible.");
+      });
+    }
   }
+
+  useEffect(() => {
+    if (!hasNativeStorage()) return;
+    let active = true;
+    void Promise.resolve(initialiseNativeLibrary(backupRoot))
+      .then(() => readNativeProfile(backupRoot))
+      .then((serialized) => {
+        if (active && serialized) setProfile(parseProfile(serialized));
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [backupRoot]);
 
   useEffect(() => {
     if (!toolWindow && !selectedMod && !expertOpen) return;
@@ -918,9 +1036,24 @@ export default function Home() {
     }
   }
 
+  async function notifyLocalPlan(action: "firmware.plan" | "backup.plan" | "sounds.transfer-plan", payload: Record<string, string | number | boolean>) {
+    const request = prepareLocalBridgeAction(action, payload);
+    try {
+      const nativePlan = await prepareNativeLocalPlan(action, payload);
+      if (nativePlan) {
+        setNotice(`${describeLocalBridgeAction(request)} Validé par le pont Tauri.`);
+        return;
+      }
+      setNotice(describeLocalBridgeAction(request));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Validation native refusée.";
+      setNotice(`Le pont Tauri a refusé le plan : ${message}`);
+    }
+  }
+
   function testBackupPlan() {
     setBackupTested(true);
-    setNotice("Plan de sauvegarde vérifié en simulation. La copie réelle nécessite encore le pont local et le volume OP-1 autorisé.");
+    void notifyLocalPlan("backup.plan", { root: backupRoot });
   }
 
   async function runPrimaryAction() {
@@ -996,7 +1129,7 @@ export default function Home() {
                 <button
                   key={item.label}
                   className={item.active ? "nav-item active" : "nav-item"}
-                  onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else setToolWindow("editor"); }}
+                    onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else if (item.label === "Images") setToolWindow("editor"); else setToolWindow("editor"); }}
                 >
                   <Icon name={item.icon} />
                   <span>{item.label}</span>
@@ -1019,7 +1152,7 @@ export default function Home() {
 
           </aside>
 
-          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") { setFirmwareSection("graphics"); setToolWindow("editor"); } else setToolWindow(id as ToolWindow); }} /> : <div className="content">
+          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") setToolWindow("editor"); else setToolWindow(id as ToolWindow); }} /> : <div className="content">
             <div className="page-heading">
               <div>
                 <span className="eyebrow"><Icon name="shield" size={16} /> FIRMWARE / CENTRE DE CONTRÔLE</span>
@@ -1080,7 +1213,7 @@ export default function Home() {
                   <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a className="firmware-download-button" href={officialFirmwareUrl} target="_blank" rel="noreferrer" download={`op1_${recommendedFirmware.version}.op1`}><Icon name="download" size={17} />Télécharger le firmware officiel</a></div>
                   <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
                 </div>
-                <div className="inline-editor-options"><div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>{Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}<button className="primary-action" disabled={!firmwareFile} onClick={() => { setFirmwarePlanReady(Boolean(firmwareFile)); setNotice(firmwareFile ? describeLocalBridgeAction(prepareLocalBridgeAction("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify })) : "Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button></div>
+                <div className="inline-editor-options"><div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>{Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}<button className="primary-action" disabled={!firmwareFile} onClick={() => { setFirmwarePlanReady(Boolean(firmwareFile)); if (firmwareFile) void notifyLocalPlan("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify }); else setNotice("Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button></div>
               </div>
               <div className="mod-section inline-mods"><div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>{["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => <div className="mod-category" key={category}><h3>{category}</h3><div className="mod-grid">{firmwareMods.filter((mod) => mod.category === category).map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <button type="button" className="mod-preview-button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); setSelectedMod(mod); }}><img src={mod.preview} alt={`Aperçu ${mod.title}`} /></button> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" || mod.category === "Audio" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em>{mod.availability && <em className="mod-availability">{mod.availability}</em>}</span></label>)}</div></div>)}</div>
             </section>
@@ -1132,7 +1265,7 @@ export default function Home() {
             </div>
 
             <ToolWindowTabs tabs={[
-                ["editor", "Firmware", "chip"],
+                ["editor", "Images", "image"],
                 ["backups", "Sauvegardes", "archive"],
                 ["sounds", "Sons", "wave"],
                 ["tape", "Studio", "tape"],
@@ -1140,16 +1273,26 @@ export default function Home() {
                 ["docs", "Documentation", "book"],
               ].map(([id, label, icon]) => ({ id, label, icon: <Icon name={icon as IconName} size={14} /> }))} activeId={toolWindow ?? ""} onSelect={(id) => setToolWindow(id as ToolWindow)} />
 
+            {/* pressedNotes pas encore branché : l'état MIDI (pressedMidiNotes) vit
+                dans TapeEditor, un composant frère, pas dans ce scope. À faire
+                remonter d'un niveau si on veut que les touches jouées en vrai
+                s'allument ici aussi ; la cible qui tombe fonctionne déjà sans. */}
             {toolWindow === "exercise" && <ExercisePanel Icon={Icon} selectedExercise={selectedExercise} running={exerciseRunning} onExerciseChange={setSelectedExercise} onToggle={() => setExerciseRunning((running) => !running)} />}
 
             {toolWindow === "docs" && <DocumentationPanel />}
 
             {toolWindow === "editor" && (
+              <div className="tool-body image-studio-page">
+                <div className="image-studio-hero"><div><span className="section-label">OP-1 STUDIO / IMAGES</span><strong>L’atelier graphique</strong><small>Dessine, explore et prépare tes écrans OP-1 avec les bonnes dimensions.</small></div><span className="image-studio-count">BANQUE DYNAMIQUE</span></div>
+                <DisplayCreatorPanel Icon={Icon} onNotice={setNotice} /><DisplayEditor root={backupRoot} onNotice={setNotice} />
+                {/* L’éditeur image est autonome : le build firmware reste dans sa page dédiée. */}
+                <div className="image-studio-note"><Icon name="shield" size={14} /><span>Les originaux restent conservés. Les dimensions et profils machine sont contrôlés avant tout export.</span></div>
+              </div>
+            )}
+            {false && (
               <div className="tool-body">
-                <FirmwareSubtabs section={firmwareSection} onSelect={setFirmwareSection} />
-                {firmwareSection === "graphics" ? <><DisplayCreatorPanel Icon={Icon} onNotice={setNotice} /><DisplayEditor onNotice={setNotice} /></> : <>
                 <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a href={officialFirmwareUrl} target="_blank" rel="noreferrer">Télécharger depuis Teenage Engineering</a></div>
-                <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
+                <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile?.name ?? "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${((firmwareFile?.size ?? 0) / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
                 <div className="mod-section">
                   <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE</span><strong>Mods disponibles</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
                   <div className="mod-grid">{firmwareMods.map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <img src={mod.preview} alt={`Aperçu ${mod.title}`} /> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title}</strong><small>{mod.detail}</small><em>{mod.source}</em></span></label>)}</div>
@@ -1160,15 +1303,18 @@ export default function Home() {
                   <label><input type="checkbox" checked={firmwareOptions.teBoot} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, teBoot: event.target.checked })} /><span><strong>Préparer le mode TE-boot</strong><small>Afficher les étapes manuelles avant la mise à jour.</small></span></label>
                 </div>
                 <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
-                </>}
+                
               </div>
             )}
 
-            {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => describeLocalBridgeAction(prepareLocalBridgeAction("backup.plan", { root }))} />}
+            {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
 
-            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onPreparePack={() => { setSoundPackReady(true); setNotice(describeLocalBridgeAction(prepareLocalBridgeAction("sounds.transfer-plan", { packReady: true }))); }} onTransfer={() => setNotice(soundPackReady ? describeLocalBridgeAction(prepareLocalBridgeAction("sounds.transfer-plan", { packReady: true })) : "Préparez d’abord le pack de sons.")} />}
+            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
 
-            {toolWindow === "tape" && <TapeEditor onNotice={setNotice} onConnectMidi={connectMidiDevice} onSendMidi={(data) => midiOutputRef.current?.send?.(data)} />}
+            {toolWindow === "tape" && <>
+              <nav className="studio-main-tabs" aria-label="Section principale du Studio"><button type="button" className="is-active"><Icon name="tape" size={14} />Tape &amp; Album</button></nav>
+              {studioSection === "tape" ? <TapeEditor onNotice={setNotice} onConnectMidi={connectMidiDevice} onSendMidi={(data) => midiOutputRef.current?.send?.(data)} /> : <div className="studio-graphics-workspace"><div className="studio-graphics-head"><div><span className="section-label">STUDIO / GRAPHISMES</span><strong>Éditeur des écrans OP-1</strong><small>Thèmes, fenêtres de synthèse et assets firmware sous contrôle des dimensions.</small></div><span className="studio-graphics-badge">53 × 320×160</span></div><DisplayCreatorPanel Icon={Icon} onNotice={setNotice} /><DisplayEditor root={backupRoot} onNotice={setNotice} /></div>}
+            </>}
 
           </section>
         </div>

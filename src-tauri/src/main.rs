@@ -43,6 +43,12 @@ struct LocalPlan {
     payload: serde_json::Value,
 }
 
+#[derive(Debug, Serialize)]
+struct DisplayFile {
+    file: String,
+    contents: String,
+}
+
 /// Prépare un plan connu pour le cœur natif sans exécuter d'écriture.
 #[tauri::command]
 fn prepare_local_plan(action: String, payload: serde_json::Value) -> Result<LocalPlan, String> {
@@ -104,6 +110,58 @@ fn profile_write(root: String, contents: String, confirm: bool) -> Result<(), St
     Ok(())
 }
 
+/// Initialise l'espace de travail local sans toucher à la machine ni aux sources.
+#[tauri::command]
+fn library_initialise(root: String) -> Result<(), String> {
+    let root_path = Path::new(&root);
+    if root_path.parent().is_none() || root_path.to_string_lossy().trim().is_empty() {
+        return Err("Dossier de travail invalide.".into());
+    }
+    fs::create_dir_all(root_path).map_err(|error| format!("Création du coffre impossible: {error}"))?;
+    let root = root_path.canonicalize().map_err(|error| format!("Coffre inaccessible: {error}"))?;
+    if root.parent().is_none() {
+        return Err("Un volume racine ne peut pas servir de coffre.".into());
+    }
+    for relative in [
+        "backups", "content", "exports", "firmware/official", "firmware/modded",
+        "manifests", "packs", "patches/drum", "patches/sampler", "patches/synth",
+        "quarantine", "samples", "tapes", "themes", "images/library", "images/original",
+        "images/workspace", "images/themes", "images/exports", "images/manifests",
+    ] {
+        fs::create_dir_all(root.join(relative)).map_err(|error| format!("Création de {relative} impossible: {error}"))?;
+    }
+    Ok(())
+}
+
+fn collect_display_files(directory: &Path, files: &mut Vec<DisplayFile>) -> Result<(), String> {
+    let entries = fs::read_dir(directory).map_err(|error| format!("Lecture de la bibliothèque image impossible: {error}"))?;
+    for entry in entries {
+        let entry = entry.map_err(|error| format!("Lecture d'une entrée image impossible: {error}"))?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_display_files(&path, files)?;
+        } else if path.extension().and_then(|extension| extension.to_str()).is_some_and(|extension| extension.eq_ignore_ascii_case("svg")) {
+            let file = path.file_name().and_then(|name| name.to_str()).ok_or_else(|| "Nom d'image invalide.".to_string())?;
+            files.push(DisplayFile { file: file.to_string(), contents: fs::read_to_string(&path).map_err(|error| format!("Lecture de {file} impossible: {error}"))? });
+        }
+    }
+    Ok(())
+}
+
+/// Lit les SVG déjà importés dans le coffre local, sans modifier le disque.
+#[tauri::command]
+fn display_library_read(root: String) -> Result<Vec<DisplayFile>, String> {
+    let root = Path::new(&root).canonicalize().map_err(|error| format!("Coffre inaccessible: {error}"))?;
+    let directory = root.join("images").join("original");
+    if !directory.is_dir() {
+        return Ok(Vec::new());
+    }
+    let mut files = Vec::new();
+    collect_display_files(&directory, &mut files)?;
+    files.sort_by(|left, right| left.file.cmp(&right.file));
+    Ok(files)
+}
+
 fn keyboard_path(app: &AppHandle) -> Result<PathBuf, String> {
     let directory = app.path().app_config_dir().map_err(|error| format!("Dossier de configuration inaccessible: {error}"))?;
     fs::create_dir_all(&directory).map_err(|error| format!("Création du dossier clavier impossible: {error}"))?;
@@ -132,7 +190,7 @@ fn keyboard_write(app: AppHandle, contents: String) -> Result<(), String> {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![app_info, profile_read, profile_write, keyboard_read, keyboard_write, prepare_local_plan])
+        .invoke_handler(tauri::generate_handler![app_info, profile_read, profile_write, library_initialise, display_library_read, keyboard_read, keyboard_write, prepare_local_plan])
         .run(tauri::generate_context!())
         .expect("error while running OP-1 Studio");
 }

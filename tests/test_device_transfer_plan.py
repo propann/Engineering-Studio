@@ -64,6 +64,8 @@ class DeviceTransferPlanTests(unittest.TestCase):
             (source / "tape" / "track_1.aif").write_bytes(b"new track")
             (backup_source / "tape").mkdir()
             (backup_source / "tape" / "old.aif").write_bytes(b"old track")
+            (device / "tape").mkdir()
+            (device / "tape" / "old.aif").write_bytes(b"old track")
             snapshot = Path(backup_manifest.create_backup(backup_source, root / "snapshots")["snapshot"])
 
             with self.assertRaises(device_transfer_plan.TransferPlanError) as caught:
@@ -74,6 +76,25 @@ class DeviceTransferPlanTests(unittest.TestCase):
             self.assertTrue(result["machineWrite"])
             self.assertTrue(result["verified"])
             self.assertEqual((device / "tape" / "track_1.aif").read_bytes(), b"new track")
+
+    def test_execute_rejects_a_valid_backup_from_another_volume(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "pack"
+            device = root / "device"
+            backup_source = root / "backup-source"
+            (source / "tape").mkdir(parents=True)
+            (source / "tape" / "track_1.aif").write_bytes(b"new track")
+            (device / "tape").mkdir(parents=True)
+            (device / "tape" / "different.aif").write_bytes(b"different volume")
+            (backup_source / "tape").mkdir(parents=True)
+            (backup_source / "tape" / "old.aif").write_bytes(b"old track")
+            snapshot = Path(backup_manifest.create_backup(backup_source, root / "snapshots")["snapshot"])
+
+            with self.assertRaises(device_transfer_plan.TransferPlanError) as caught:
+                device_transfer_plan.execute_transfer(source, device, snapshot, confirm=True)
+            self.assertEqual(caught.exception.code, "backup_device_mismatch")
+            self.assertFalse((device / "tape" / "track_1.aif").exists())
 
     def test_restore_requires_missing_target_or_replace(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -96,6 +117,22 @@ class DeviceTransferPlanTests(unittest.TestCase):
             with self.assertRaises(device_transfer_plan.TransferPlanError) as caught:
                 device_transfer_plan.restore_file(snapshot, device, "synth/user/8.aif", confirm=True)
             self.assertEqual(caught.exception.code, "target_exists")
+
+    def test_restore_rejects_a_valid_backup_from_another_volume(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            backup_source = root / "backup-source"
+            device = root / "device"
+            (backup_source / "synth" / "user").mkdir(parents=True)
+            (device / "synth" / "user").mkdir(parents=True)
+            (backup_source / "synth" / "user" / "8.aif").write_bytes(b"restored patch")
+            (device / "synth" / "user" / "different.aif").write_bytes(b"different volume")
+            snapshot = Path(backup_manifest.create_backup(backup_source, root / "snapshots")["snapshot"])
+
+            with self.assertRaises(device_transfer_plan.TransferPlanError) as caught:
+                device_transfer_plan.restore_file(snapshot, device, "synth/user/8.aif", confirm=True)
+            self.assertEqual(caught.exception.code, "backup_device_mismatch")
+            self.assertFalse((device / "synth" / "user" / "8.aif").exists())
 
 
 if __name__ == "__main__":

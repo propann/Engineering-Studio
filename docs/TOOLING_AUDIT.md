@@ -91,6 +91,21 @@ manquent à l’extracteur historique.
 
 Le registre machine-lisible est disponible dans [`../tools/sources.yml`](../tools/sources.yml).
 
+Le format exact des fichiers patch (chunk `APPL`/`op-1`, schéma JSON) et
+piste Tape, extrait en lisant le code de ces outils plutôt que leurs seuls
+README, est documenté dans
+[`AUDIO_FILE_FORMAT_REFERENCE.md`](AUDIO_FILE_FORMAT_REFERENCE.md) — y
+compris une correction du commit épinglé pour `op1aiff` (le commit d'origine
+était un dépôt vide, le vrai code vit sur sa branche `dev`).
+
+Évaluation du dépôt compagnon [`EP-133-KO-II-Studio`](https://github.com/propann/EP-133-KO-II-Studio)
+(autre projet du même auteur, pour l'EP-133 K.O. II) : moteur audio
+réutilisable (analyse WAV déterministe, auto-trim par silence, conversion
+contrôlée), mais matériel et formats à ne pas fusionner avec l'OP-1. Détail
+et règles de sécurité dans
+[`RAPPORT_REUTILISATION_EP133_POUR_OP1.md`](RAPPORT_REUTILISATION_EP133_POUR_OP1.md) ;
+plan d'intégration repris dans `ROADMAP.md` (M3).
+
 Le registre des mods est dans [`../data/mods/catalog.json`](../data/mods/catalog.json)
 et le registre des sources de contenu dans
 [`../data/content/sources.json`](../data/content/sources.json). Les compteurs

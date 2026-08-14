@@ -23,6 +23,7 @@ from uuid import uuid4
 
 CHUNK_SIZE = 1024 * 1024
 SCHEMA_VERSION = 1
+IDENTITY_DIRECTORIES = ("tape", "album", "synth", "drum")
 
 
 class BackupError(Exception):
@@ -74,6 +75,25 @@ def _sha256(path: Path) -> str:
                 digest.update(chunk)
     except OSError as exc:
         raise BackupError("read_failed", "A source file could not be read.", path=str(path)) from exc
+    return digest.hexdigest()
+
+
+def device_fingerprint(root: Path) -> str:
+    """Return a conservative, content-independent identity for an OP-1 tree."""
+    root = root.expanduser().resolve()
+    digest = hashlib.sha256()
+    for directory in IDENTITY_DIRECTORIES:
+        digest.update(f"dir:{directory}:{int((root / directory).is_dir())}\n".encode())
+    rows: list[tuple[str, int]] = []
+    for current, directories, files in os.walk(root, topdown=True, followlinks=False):
+        current_path = Path(current)
+        directories[:] = sorted(directories)
+        for name in sorted(files):
+            candidate = current_path / name
+            if candidate.is_file() and not candidate.is_symlink():
+                rows.append((_safe_relative(candidate, root), candidate.stat().st_size))
+    for relative, size in rows:
+        digest.update(f"file:{relative}:{size}\n".encode())
     return digest.hexdigest()
 
 
@@ -135,6 +155,7 @@ def create_backup(source: Path, destination: Path, *, label: str = "op1") -> dic
             "snapshotId": snapshot.name,
             "createdAt": datetime.now(timezone.utc).isoformat(),
             "sourceLabel": label,
+            "deviceFingerprint": device_fingerprint(source),
             "fileCount": len(entries),
             "totalBytes": sum(entry["size"] for entry in entries),
             "files": entries,

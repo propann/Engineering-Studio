@@ -11,6 +11,8 @@ Dernière vérification : **11 août 2026**. Les liens officiels priment pour 
 - [Synthesizer mode](https://teenage.engineering/guides/op-1/original/synthesizer-mode) — sampler, sons utilisateur, snapshots et fichiers AIFF.
 - [Drum mode](https://teenage.engineering/guides/op-1/original/drum-mode) — sampler drum et import AIFF.
 - [Tape mode](https://teenage.engineering/guides/op-1/original/tape-mode) — quatre pistes, durée, résolution et exports.
+- [Mixer](https://teenage.engineering/guides/op-1/original/mixer) — niveau/pan par piste, EQ, effet master et drive en aval de Tape.
+- [Main modes](https://teenage.engineering/guides/op-1/original/main-modes) — Synth, Drum, Tape, Mixer et leurs raccourcis Shift.
 - [Recording external sources](https://teenage.engineering/guides/op-1/original/recording-external-sources) — line, micro, radio, USB audio et resampling.
 - [Sequencers](https://teenage.engineering/guides/op-1/original/sequencers) — séquenceurs et limites documentées.
 - [Ancien manuel officiel PDF](https://teenage.engineering/_img/54b7f9bf8681400300255cab_original.pdf) — référence historique, non redistribuée ici.

@@ -2,7 +2,8 @@
 """Validate and convert local samples for OP-1 user folders.
 
 The command never edits source files. Conversion uses FFmpeg when available;
-without it, --check-only still validates WAV and AIFF metadata.
+WAV and AIFF can be inspected without FFmpeg, while compressed formats use
+ffprobe for metadata inspection.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import sys
 import wave
 from pathlib import Path
 
-SUPPORTED = {".wav", ".aif", ".aiff"}
+SUPPORTED = {".wav", ".aif", ".aiff", ".flac", ".mp3", ".m4a", ".aac", ".ogg", ".opus"}
 TARGET_RATE = 44100
 TARGET_WIDTH = 2
 MAX_SECONDS = {"synth": 6.0, "drum": 12.0}
@@ -75,10 +76,43 @@ def aiff_info(path: Path) -> dict:
     return info
 
 
+def ffprobe_info(path: Path) -> dict:
+    ffprobe = shutil.which("ffprobe")
+    if not ffprobe:
+        raise RuntimeError("FFprobe est requis pour inspecter ce format compressé.")
+    command = [
+        ffprobe, "-v", "error", "-select_streams", "a:0",
+        "-show_entries", "stream=channels,sample_rate,bits_per_sample,duration",
+        "-of", "json", str(path),
+    ]
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    if result.returncode != 0:
+        raise ValueError(result.stderr.strip() or "fichier audio illisible")
+    try:
+        streams = json.loads(result.stdout).get("streams", [])
+        stream = streams[0]
+        rate = int(stream.get("sample_rate") or 0)
+        channels = int(stream.get("channels") or 0)
+        seconds = float(stream.get("duration") or 0)
+        if not rate or not channels or seconds <= 0:
+            raise ValueError("métadonnées audio incomplètes")
+        return {
+            "channels": channels,
+            "rate": rate,
+            "width": (int(stream.get("bits_per_sample") or 0) + 7) // 8,
+            "frames": round(seconds * rate),
+            "seconds": seconds,
+        }
+    except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise ValueError("métadonnées audio invalides") from error
+
 def inspect(path: Path) -> dict:
-    if path.suffix.lower() == ".wav":
+    suffix = path.suffix.lower()
+    if suffix == ".wav":
         return wav_info(path)
-    return aiff_info(path)
+    if suffix in {".aif", ".aiff"}:
+        return aiff_info(path)
+    return ffprobe_info(path)
 
 
 def safe_name(path: Path, used: set[str]) -> str:
@@ -120,7 +154,7 @@ def main() -> int:
         return 1
     files = sorted(path for path in args.input.rglob("*") if path.is_file() and path.suffix.lower() in SUPPORTED)
     if not files:
-        print("Aucun WAV ou AIFF trouve.", file=sys.stderr)
+        print("Aucun fichier audio supporté trouvé.", file=sys.stderr)
         return 1
     if not args.check_only:
         args.output.mkdir(parents=True, exist_ok=True)
@@ -131,7 +165,12 @@ def main() -> int:
     failures = 0
     for source in files:
         mode = classify(source, args.mode)
-        row = {"source": str(source), "source_sha256": digest(source), "mode": mode or "ignored"}
+        row = {
+            "source": str(source),
+            "source_sha256": digest(source),
+            "source_format": source.suffix.lower().lstrip("."),
+            "mode": mode or "ignored",
+        }
         if mode is None:
             row["status"] = "ignored"
             rows.append(row)
@@ -150,7 +189,12 @@ def main() -> int:
                 output_info = inspect(target)
                 if output_info["rate"] != TARGET_RATE or output_info["width"] != TARGET_WIDTH or output_info["channels"] != 1:
                     raise ValueError("sortie non conforme: mono, 44100 Hz, 16 bits attendu")
-                row.update({"output": str(target), "output_sha256": digest(target), "output_info": output_info})
+                row.update({
+                    "output": str(target),
+                    "output_format": "aif",
+                    "output_sha256": digest(target),
+                    "output_info": output_info,
+                })
         except (OSError, ValueError, RuntimeError) as error:
             failures += 1
             row.update({"status": "rejected", "error": str(error)})

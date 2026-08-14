@@ -1,6 +1,10 @@
 "use client";
 /**
- * StudioMachinePanel — interface générée depuis la matrice de boutons.
+ * StudioMachinePanel — clavier joué, construit depuis la disposition
+ * enregistrée par l'éditeur. L'éditeur de grille a été déplacé dans la
+ * fenêtre Exercices (`KeyboardEditor.tsx`, 13 août 2026) : ce composant ne
+ * fait plus que lire la disposition sauvegardée (`op1-studio-grid-v1`) et la
+ * rendre jouable — il n'écrit plus rien lui-même.
  *
  * Couleurs → types :
  *   #DFD9FF  blanc   → touche blanche piano
@@ -10,73 +14,35 @@
  *   #FF3A5D  rouge   → transport / spécial
  */
 import { useEffect, useRef, useState } from "react";
-import keyboardTemplate from "../../data/keyboard/default.json";
-import { hasNativeStorage, readNativeKeyboard, writeNativeKeyboard } from "../lib/nativeStorage";
-
-// ── Grille éditeur ────────────────────────────────────────────────────────────
-const COLS = 64;
-const ROWS = 16;
-const STORAGE_KEY = "op1-studio-grid-v1";
-
-const PALETTE = [
-  { color: "#DFD9FF", label: "Note blanche", type: "white"  },
-  { color: "#e8a020", label: "Note noire",   type: "black"  },
-  { color: "#698EFF", label: "Potentiomètre", type: "enc"    },
-  { color: "#00ED95", label: "Bouton",        type: "fn"     },
-  { color: "#FF3A5D", label: "Transport",     type: "trans"  },
-] as const;
-
-type Block = { col: number; row: number; w: number; h: number; color: string; type: string };
-
-// Clavier visible par défaut quand le stockage local est absent. Il donne une
-// surface jouable immédiatement ; une configuration sauvegardée reste prioritaire.
-const DEFAULT_BLOCKS: Block[] = keyboardTemplate.validated as Block[];
-const DEFAULT_CELLS = keyboardTemplate.cells as (string|null)[][];
-
-// ── Mappage note MIDI par position gauche→droite ──────────────────────────────
-// Blanches : C3 D3 E3 F3 G3 A3 B3 C4 D4 E4 F4 G4 A4 B4
-const WHITE_NOTES = [48,50,52,53,55,57,59,60,62,64,65,67,69,71];
-// Noires : C#3 D#3 F#3 G#3 A#3 C#4 D#4 F#4 G#4 A#4
-const BLACK_NOTES = [49,51,54,56,58,61,63,66,68,70];
-
-// Inférer le type depuis la couleur (compatibilité anciens blocs)
-function colorToType(color: string): string {
-  if (color === "#DFD9FF") return "white";
-  if (color === "#e8a020") return "black";
-  if (color === "#698EFF") return "enc";
-  if (color === "#00ED95") return "fn";
-  if (color === "#FF3A5D") return "trans";
-  return "white";
-}
+import {
+  loadKeyboardLayout, loadKeyboardLayoutSync, sortKeyBlocks, layoutBounds,
+  KEYBOARD_COLS as COLS, KEYBOARD_ROWS as ROWS,
+  KEYBOARD_WHITE_NOTES as WHITE_NOTES, KEYBOARD_BLACK_NOTES as BLACK_NOTES,
+  type KeyboardBlock as Block,
+} from "../lib/keyboardLayout";
 
 function midiNoteName(note: number) {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return `${names[note % 12]}${Math.floor(note / 12) - 1}`;
 }
 
-function loadState(): { cells: (string|null)[][]; validated: Block[] } | null {
-  try {
-    if (typeof window === "undefined") return null;
-    if (hasNativeStorage()) return null;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    // Migrer les anciens blocs sans champ type
-    if (data?.validated) {
-      data.validated = data.validated.map((b: Block & { type?: string }) => ({
-        ...b,
-        type: b.type ?? colorToType(b.color),
-      }));
-    }
-    return data;
-  } catch { return null; }
-}
+// ── Clavier ordinateur → notes (14 août 2026) ───────────────────────────────
+// `event.code` identifie la position physique de la touche, pas le caractère
+// qu'elle produit : le même mappage marche donc tel quel en AZERTY ou en
+// QWERTY (« disposition clavier ordinateur configurable » de la feuille de
+// route, sans case à cocher — la position suffit). Deux rangées, indexées
+// dans le même ordre que KEYBOARD_WHITE_NOTES/KEYBOARD_BLACK_NOTES ; ne
+// couvre donc que les premières touches construites, pas toute la gamme.
+const WHITE_KEY_CODES = ["KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash", "KeyQ", "KeyW", "KeyE", "KeyR"];
+const BLACK_KEY_CODES = ["KeyS", "KeyD", "KeyG", "KeyH", "KeyJ", "KeyL", "Semicolon", "Digit2", "Digit3", "Digit5"];
 
 export function StudioMachinePanel({
   mode = "clone",
   pressedNotes = [],
   onTogglePlayback,
   onSendMidi,
+  notesOnly = false,
+  onPressedChange,
 }: {
   pressedNotes?: number[];
   mode?: "clone" | "midi";
@@ -86,163 +52,31 @@ export function StudioMachinePanel({
   onTogglePlayback: () => void;
   onSendMidi: (data: number[]) => void;
   onConnectMidi?: () => void;
+  /** Zoome sur les touches note (blanches/noires) seulement, encodeurs/
+   * boutons/transport ni rendus ni comptés dans le cadrage — pour un usage
+   * comme Exercices où seules les notes doivent occuper toute la largeur,
+   * alignées avec l'écran au-dessus. */
+  notesOnly?: boolean;
+  /** Notifie un parent (Exercices) des notes actuellement enfoncées, clic
+   * comme clavier ordinateur — sans ça, seul le vrai MIDI entrant
+   * (`pressedNotes`) compte pour le jugement note/timing d'un exercice. */
+  onPressedChange?: (notes: Set<number>) => void;
 }) {
-  const saved = loadState();
-
-  // ── État éditeur ──────────────────────────────────────────────────────────
-  const [cells, setCells] = useState<(string|null)[][]>(
-    () => saved?.cells ?? DEFAULT_CELLS
-  );
-  // localStorage is read again after browser hydration.
-  // Afficher immédiatement le clavier sauvegardé, sans attendre le second
-  // passage d'hydratation du navigateur.
-  const [validated, setValidated] = useState<Block[]>(() => saved?.validated ?? (saved === null ? DEFAULT_BLOCKS : []));
-  const [hydrated, setHydrated] = useState(false);
-  const [painting, setPainting]   = useState(false);
-  const [colorIdx, setColorIdx]   = useState(0);
-  const [erasing, setErasing]     = useState(false);
-  // La grille est le plan de construction du clavier MIDI.
-  const [showGrid, setShowGrid]   = useState(true);
-  // L'editeur est de nouveau disponible pour modifier le clavier construit.
-  const [editOpen, setEditOpen]   = useState(true);
+  const [validated, setValidated] = useState<Block[]>(() => loadKeyboardLayoutSync());
   const [configOpen, setConfigOpen] = useState(false);
   const [configTarget, setConfigTarget] = useState<{ type: string; index: number; label: string } | null>(null);
   const [lastPlayed, setLastPlayed] = useState("aucune touche jouée");
-  // La surface du clavier fait partie intégrante de Studio : elle reste visible.
   const panelOpen = true;
-  const [selectedBlock, setSelectedBlock] = useState<number | null>(null);
-  const [savedNotice, setSavedNotice] = useState(false);
-  const svgRef = useRef<SVGSVGElement>(null);
 
-  // ── Sauvegarde auto ───────────────────────────────────────────────────────
-  // The hidden editor must not overwrite the saved keyboard with an empty state.
+  // Relit la disposition à chaque montage : reflète ce que l'éditeur (dans
+  // la fenêtre Exercices) a sauvegardé, y compris pendant que le Studio
+  // reste ouvert dans un autre onglet.
   useEffect(() => {
     let active = true;
-    const applyState = (state: { cells: (string|null)[][]; validated: Block[] } | null) => {
-      if (!active) return;
-      setCells(state?.cells ?? DEFAULT_CELLS);
-      setValidated(state?.validated ?? DEFAULT_BLOCKS);
-      setHydrated(true);
-    };
-    if (hasNativeStorage()) {
-      void readNativeKeyboard()?.then((raw) => {
-        try { applyState(raw ? JSON.parse(raw) as { cells: (string|null)[][]; validated: Block[] } : null); } catch { applyState(null); }
-      }).catch(() => applyState(null));
-      return () => { active = false; };
-    }
-    const state = loadState();
-    const timer = window.setTimeout(() => applyState(state), 0);
-    return () => { active = false; window.clearTimeout(timer); };
+    void loadKeyboardLayout().then((blocks) => { if (active) setValidated(blocks); });
+    return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    if (!editOpen || !hydrated) return;
-    const content = JSON.stringify({ cells, validated });
-    if (hasNativeStorage()) { void writeNativeKeyboard(content)?.catch(() => undefined); return; }
-    try { localStorage.setItem(STORAGE_KEY, content); } catch {}
-  }, [cells, validated, editOpen, hydrated]);
-
-  function saveKeyboard() {
-    const backup = {
-      schema: "op1-studio-keyboard",
-      version: 1,
-      saved_at: new Date().toISOString(),
-      cells,
-      validated,
-    };
-    try {
-      const content = JSON.stringify(backup, null, 2);
-      if (hasNativeStorage()) void writeNativeKeyboard(content)?.catch(() => undefined);
-      else localStorage.setItem(STORAGE_KEY, content);
-      const blob = new Blob([content], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `op1-keyboard-${new Date().toISOString().slice(0, 10)}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setSavedNotice(true);
-      window.setTimeout(() => setSavedNotice(false), 1400);
-    } catch {}
-  }
-
-  function clearKeyboard() {
-    setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
-    setValidated([]);
-    setSelectedBlock(null);
-  }
-
-  // ── Éditeur : peinture ────────────────────────────────────────────────────
-  function cellAt(e: React.MouseEvent | MouseEvent): [number,number] | null {
-    const svg = svgRef.current;
-    if (!svg) return null;
-    const r = svg.getBoundingClientRect();
-    const col = Math.floor(((e.clientX - r.left) / r.width)  * COLS);
-    const row = Math.floor(((e.clientY - r.top)  / r.height) * ROWS);
-    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return null;
-    return [col, row];
-  }
-
-  function paint(e: React.MouseEvent | MouseEvent) {
-    const pos = cellAt(e);
-    if (!pos) return;
-    const [col, row] = pos;
-    setCells(prev => {
-      const next = prev.map(r => [...r]);
-      next[row][col] = erasing ? null : PALETTE[colorIdx].color;
-      return next;
-    });
-  }
-
-  // Espace : valider la sélection
-  useEffect(() => {
-    if (!editOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.code === "Space") {
-        e.preventDefault();
-        const groups = new Map<string, { col: number; row: number }[]>();
-        cells.forEach((row, r) => row.forEach((color, col) => {
-          if (color) groups.set(color, [...(groups.get(color) ?? []), { col, row: r }]);
-        }));
-        if (groups.size) {
-          const blocks = [...groups].map(([color, points]) => {
-            const minC = Math.min(...points.map((p) => p.col));
-            const maxC = Math.max(...points.map((p) => p.col));
-            const minR = Math.min(...points.map((p) => p.row));
-            const maxR = Math.max(...points.map((p) => p.row));
-            return { col: minC, row: minR, w: maxC - minC + 1, h: maxR - minR + 1, color, type: colorToType(color) };
-          });
-          setValidated(v => [...v, ...blocks]);
-          setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
-        }
-      }
-      if (e.key >= "1" && e.key <= "5") setColorIdx(Number(e.key)-1);
-      // E efface la zone en cours sans changer le mode de peinture.
-      if (e.key === "e" || e.key === "E") {
-        if (selectedBlock !== null) {
-          setValidated((current) => current.filter((_, index) => index !== selectedBlock));
-          setSelectedBlock(null);
-        } else {
-          setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
-        }
-        setErasing(false);
-      }
-      if (e.key === "Delete" || e.key === "Backspace") {
-        e.preventDefault();
-        if (selectedBlock !== null) {
-          setValidated((current) => current.filter((_, index) => index !== selectedBlock));
-          setSelectedBlock(null);
-        } else {
-          setCells(Array.from({ length: ROWS }, () => Array(COLS).fill(null)));
-        }
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [cells, colorIdx, editOpen, selectedBlock]);
-
-  // ── Interface interactive : note mapping ──────────────────────────────────
   const [pressed, setPressed] = useState<Set<number>>(new Set(pressedNotes));
 
   // Reflète les notes reçues de l'OP-1 sur le clavier construit.
@@ -254,22 +88,22 @@ export function StudioMachinePanel({
     return () => window.clearTimeout(timer);
   }, [pressedNotes]);
 
-  // Trie les blocs par position x pour assigner les notes dans l'ordre
-  const whiteBlocks = [...validated.filter(b => b.type === "white")].sort((a,b) => a.col - b.col);
-  const blackBlocks = [...validated.filter(b => b.type === "black")].sort((a,b) => a.col - b.col);
-  const encBlocks   = [...validated.filter(b => b.type === "enc")  ].sort((a,b) => a.col - b.col);
-  const fnBlocks    = [...validated.filter(b => b.type === "fn")   ].sort((a,b) => a.col - b.col);
-  const transBlocks = [...validated.filter(b => b.type === "trans" )].sort((a,b) => a.col - b.col);
+  // Notifie le parent (ex. l'écran de jugement note/timing d'Exercices) de
+  // chaque changement, qu'il vienne d'un clic ou du MIDI entrant — sinon un
+  // clic sur ce clavier reste invisible pour qui l'utilise en dehors du Studio.
+  useEffect(() => {
+    onPressedChange?.(pressed);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pressed]);
 
-  // Cadre automatiquement le clavier construit pour utiliser toute la largeur
-  // disponible sans modifier les blocs sauvegardes.
-  const layoutMinX = validated.length ? Math.max(0, Math.min(...validated.map((b) => b.col)) - 1) : 0;
-  const layoutMaxX = validated.length ? Math.min(COLS, Math.max(...validated.map((b) => b.col + b.w)) + 1) : COLS;
-  const layoutMinY = validated.length ? Math.max(0, Math.min(...validated.map((b) => b.row)) - 1) : 0;
-  const layoutMaxY = validated.length ? Math.min(ROWS, Math.max(...validated.map((b) => b.row + b.h)) + 1) : ROWS;
-  const layoutWidth = Math.max(1, layoutMaxX - layoutMinX);
-  const layoutHeight = Math.max(1, layoutMaxY - layoutMinY);
-  const layoutViewBox = `${layoutMinX} ${layoutMinY} ${layoutWidth} ${layoutHeight}`;
+  const { white: whiteBlocks, black: blackBlocks, enc: encBlocks, fn: fnBlocks, trans: transBlocks } = sortKeyBlocks(validated);
+  // En mode notesOnly, le cadrage ignore les encodeurs/boutons/transport :
+  // sans ça, 2-3 colonnes réservées à des contrôles sans note tombante
+  // s'ajoutent sur le côté et désalignent l'écran par rapport aux touches.
+  const bounds = layoutBounds(notesOnly ? [...whiteBlocks, ...blackBlocks] : validated, COLS, ROWS);
+  const layoutWidth = bounds.width;
+  const layoutHeight = bounds.height;
+  const layoutViewBox = bounds.viewBox;
 
   function noteOn(note: number) {
     setPressed(s => new Set(s).add(note));
@@ -286,53 +120,60 @@ export function StudioMachinePanel({
     setConfigTarget({ type, index, label });
   }
 
-  // ── Encodeurs ─────────────────────────────────────────────────────────────
+  // Joue les touches note construites depuis le clavier ordinateur. Ignoré
+  // pendant la configuration, dans un champ texte, ou en cas de répétition
+  // OS (une touche maintenue ne redéclenche pas noteOn en boucle).
+  const heldKeysRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const heldKeys = heldKeysRef.current;
+    function noteForCode(code: string): number | null {
+      const whiteIdx = WHITE_KEY_CODES.indexOf(code);
+      if (whiteIdx >= 0) return whiteBlocks[whiteIdx] ? (WHITE_NOTES[whiteIdx] ?? null) : null;
+      const blackIdx = BLACK_KEY_CODES.indexOf(code);
+      if (blackIdx >= 0) return blackBlocks[blackIdx] ? (BLACK_NOTES[blackIdx] ?? null) : null;
+      return null;
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (configOpen) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (heldKeys.has(e.code)) return; // répétition OS, pas un nouvel appui
+      const note = noteForCode(e.code);
+      if (note === null) return;
+      heldKeys.add(e.code);
+      noteOn(note);
+    }
+    function onKeyUp(e: KeyboardEvent) {
+      if (!heldKeys.has(e.code)) return;
+      heldKeys.delete(e.code);
+      const note = noteForCode(e.code);
+      if (note !== null) noteOff(note);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      heldKeys.clear();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configOpen, whiteBlocks.length, blackBlocks.length, mode]);
+
   const [encVals, setEncVals] = useState([64,64,64,64,64,64,64,64]);
   const encDrag = useRef<{idx:number; startY:number; startV:number}|null>(null);
 
-  // ── Rendu ─────────────────────────────────────────────────────────────────
   return (
     <aside className="studio-machine-panel">
 
-      {/* Barre de contrôle */}
       <div className="mpanel-bar">
         <button className="mpanel-bar-btn" type="button" aria-label="Clavier visible" disabled>
           ▼ clavier
         </button>
-        {panelOpen && <button className="mpanel-bar-btn" onClick={() => setEditOpen(v => !v)}>
-          {editOpen ? "masquer éditeur" : "✎ éditeur"}
-        </button>}
         {panelOpen && <button className={`mpanel-bar-btn${configOpen ? " is-active" : ""}`} onClick={() => { setConfigOpen(v => !v); setConfigTarget(null); }}>
           {configOpen ? "fermer config" : "config"}
         </button>}
         <span className="mgrid-hint">{validated.length} blocs</span>
+        <span className="mgrid-hint">clavier ordinateur : ZXCVBNM,./ QWER (+ SDGHJL;23 5)</span>
         {configOpen && <span className="mgrid-feedback" aria-live="polite">{lastPlayed}</span>}
-        {editOpen && panelOpen && (
-          <>
-            {PALETTE.map((p,i) => (
-              <button key={p.color}
-                className={`mgrid-color${colorIdx===i?" is-active":""}`}
-                style={{ background: p.color }}
-                onClick={() => { setColorIdx(i); setErasing(false); }}
-                title={p.label}
-                aria-label={p.label}
-              />
-            ))}
-            <button className={`mgrid-tool${erasing?" is-active":""}`} onClick={() => setErasing(v=>!v)}>
-              {erasing ? "✕ gomme" : "✕"}
-            </button>
-            <button className={`mgrid-tool${showGrid?" is-active":""}`} onClick={() => setShowGrid(v=>!v)}>
-              {showGrid ? "grille ON" : "grille OFF"}
-            </button>
-            <button className="mgrid-tool" onClick={saveKeyboard}>
-              {savedNotice ? "clavier sauvegardé" : "sauvegarder clavier"}
-            </button>
-            <button className="mgrid-tool mgrid-clear-tool" onClick={clearKeyboard}>
-              nettoyer la page
-            </button>
-            <span className="mgrid-hint">Espace : valider · E / Suppr : touche sélectionnée · 1-5 : couleur</span>
-          </>
-        )}
       </div>
 
       {panelOpen && configOpen && (
@@ -345,66 +186,11 @@ export function StudioMachinePanel({
         </div>
       )}
 
-      {panelOpen && editOpen && (
-        <div className="mgrid-legend" aria-label="Légende des couleurs MIDI">
-          {PALETTE.map((p) => (
-            <span key={p.type} className="mgrid-legend-item">
-              <i style={{ background: p.color }} aria-hidden="true" />
-              {p.label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Éditeur (replié par défaut) */}
-      {panelOpen && editOpen && (
-        <div className="machine-grid-zone">
-          <svg ref={svgRef} viewBox={`0 0 ${COLS} ${ROWS}`} preserveAspectRatio="none"
-            style={{ width:"100%", height:"100%", display:"block", cursor: erasing ? "cell" : "crosshair" }}
-            onMouseDown={e => { setSelectedBlock(null); setPainting(true); paint(e); }}
-            onMouseMove={e => { if (painting) paint(e); }}
-            onMouseUp={() => setPainting(false)}
-            onMouseLeave={() => setPainting(false)}
-          >
-            {/* Blocs validés */}
-            {validated.map((v,i) => (
-              <rect key={i} x={v.col+.05} y={v.row+.05} width={v.w-.1} height={v.h-.1}
-                fill={v.color+"55"} stroke={selectedBlock === i ? "#fff" : v.color}
-                strokeWidth={selectedBlock === i ? .16 : .07} rx={.2}
-                onPointerDown={(e) => { e.stopPropagation(); setSelectedBlock(i); }}
-                aria-label={`Sélectionner ${v.type}`} />
-            ))}
-            {/* Peinture en cours */}
-            {cells.map((row,r) => row.map((c,col) => c ? (
-              <rect key={`${r}-${col}`} x={col+.08} y={r+.08} width={.84} height={.84} fill={c} rx={.12} />
-            ) : null))}
-            {/* Grille */}
-            {showGrid && Array.from({length:COLS+1},(_,i) => (
-              <line key={`v${i}`} x1={i} y1={0} x2={i} y2={ROWS}
-                stroke={i%4===0?"rgba(220,40,40,0.78)":"rgba(220,40,40,0.34)"}
-                strokeWidth={i%4===0?.05:.02} />
-            ))}
-            {showGrid && Array.from({length:ROWS+1},(_,i) => (
-              <line key={`h${i}`} x1={0} y1={i} x2={COLS} y2={i}
-                stroke={i%2===0?"rgba(220,40,40,0.78)":"rgba(220,40,40,0.34)"}
-                strokeWidth={i%2===0?.05:.02} />
-            ))}
-            {/* Indicateur couleur */}
-            <rect x={.1} y={.1} width={.8} height={.8}
-              fill={erasing?"none":PALETTE[colorIdx].color}
-              stroke={erasing?"rgba(255,60,60,0.6)":"none"} strokeWidth={.08}
-              strokeDasharray=".15 .1" rx={.15} opacity={.9} />
-          </svg>
-        </div>
-      )}
-
-      {/* ── Interface interactive — plein écran ── */}
       {panelOpen && (
         <div className="machine-layout-zone" style={{ aspectRatio: `${layoutWidth} / ${layoutHeight}` }}>
           <svg viewBox={layoutViewBox} preserveAspectRatio="xMidYMid meet"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
-              // Note-off global si pointer lâché hors bouton
               if (encDrag.current) encDrag.current = null;
             }}
             onPointerMove={e => {
@@ -416,10 +202,8 @@ export function StudioMachinePanel({
               if (mode === "midi") onSendMidi([0xb0, idx+70, v]);
             }}
           >
-            {/* Fond */}
             <rect x={0} y={0} width={COLS} height={ROWS} fill="#ffffff" />
 
-            {/* ── Touches blanches ── */}
             {whiteBlocks.map((b, i) => {
               const note = WHITE_NOTES[i] ?? (60 + i);
               const isDown = pressed.has(note);
@@ -437,7 +221,6 @@ export function StudioMachinePanel({
                     fill={isDown ? "#c9c2eb" : "#DFD9FF"}
                     stroke="#8f89aa" strokeWidth={.06}
                   />
-                  {/* Ovale central */}
                   <rect
                     x={b.col + b.w*.22} y={b.row + b.h*.25}
                     width={b.w*.56} height={b.h*.45}
@@ -445,7 +228,6 @@ export function StudioMachinePanel({
                     fill={isDown?"#b8b0d9":"#f5f2ff"}
                     stroke="#aaa2c5" strokeWidth={.04}
                   />
-                  {/* Nom de la note */}
                   <text x={b.col+b.w/2} y={b.row+b.h*.16}
                     textAnchor="middle" dominantBaseline="middle"
                     fontSize={.55} fill="#5a5e5a" fontFamily="monospace" fontWeight="700">
@@ -455,7 +237,6 @@ export function StudioMachinePanel({
               );
             })}
 
-            {/* ── Touches noires ── */}
             {blackBlocks.map((b, i) => {
               const note = BLACK_NOTES[i] ?? (61 + i*2);
               const isDown = pressed.has(note);
@@ -470,7 +251,6 @@ export function StudioMachinePanel({
                     fill={isDown?"#555":"#171a1b"}
                     stroke="#050606" strokeWidth={.06}
                   />
-                  {/* Cercle noir */}
                   <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
                     r={Math.min(b.w, b.h)*.32}
                     fill={isDown?"#777":"#000000"}
@@ -479,8 +259,7 @@ export function StudioMachinePanel({
               );
             })}
 
-            {/* ── Encodeurs (bleu) ── */}
-            {encBlocks.map((b, i) => {
+            {!notesOnly && encBlocks.map((b, i) => {
               const v = encVals[i] ?? 64;
               const angle = ((v/127)*270 - 135) * Math.PI/180;
               const cx = b.col + b.w/2;
@@ -499,7 +278,6 @@ export function StudioMachinePanel({
                 >
                   <circle cx={cx} cy={cy} r={r} fill={`${ec}44`} stroke={ec} strokeWidth={.07}/>
                   <circle cx={cx} cy={cy} r={r*.75} fill="#ffffff" stroke="#8d9690" strokeWidth={.04}/>
-                  {/* Arc valeur */}
                   <circle cx={cx} cy={cy} r={r*.88}
                     fill="none" stroke={ec} strokeWidth={.18}
                     strokeDasharray={`${(v/127)*5.5} 6.3`}
@@ -507,13 +285,11 @@ export function StudioMachinePanel({
                     strokeLinecap="round"
                     transform={`rotate(-135 ${cx} ${cy})`}
                   />
-                  {/* Indicateur */}
                   <line x1={cx} y1={cy}
                     x2={cx + r*.65*Math.sin(angle)}
                     y2={cy - r*.65*Math.cos(angle)}
                     stroke="#444" strokeWidth={.1} strokeLinecap="round"/>
                   <circle cx={cx} cy={cy} r={.15} fill={ec}/>
-                  {/* Label */}
                   <text x={cx} y={b.row+b.h+.55} textAnchor="middle"
                     fontSize={.55} fill={ec} fontFamily="monospace" fontWeight="700">
                     T{i+1}
@@ -522,8 +298,7 @@ export function StudioMachinePanel({
               );
             })}
 
-            {/* ── Boutons de fonction (vert) ── */}
-            {fnBlocks.map((b, i) => (
+            {!notesOnly && fnBlocks.map((b, i) => (
               <g key={`fn${i}`} style={{ cursor: "pointer" }}
                 onPointerDown={(e) => { if (configOpen) { e.stopPropagation(); selectConfig("button", i, `Bouton ${i + 1}`); return; } if (mode==="midi") onSendMidi([0x99, 36+i, 100]); }}
               >
@@ -534,8 +309,7 @@ export function StudioMachinePanel({
               </g>
             ))}
 
-            {/* ── Transport / spécial (rouge) ── */}
-            {transBlocks.map((b, i) => (
+            {!notesOnly && transBlocks.map((b, i) => (
               <g key={`tr${i}`} style={{ cursor: "pointer" }}
                 onPointerDown={(e) => { if (configOpen) { e.stopPropagation(); selectConfig("transport", i, `Transport ${i + 1}`); return; } if (i===0) onTogglePlayback(); }}
               >
@@ -546,7 +320,6 @@ export function StudioMachinePanel({
               </g>
             ))}
 
-            {/* Dégradés */}
             <defs>
               <linearGradient id="wkeyGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"   stopColor="#d8dbd8"/>

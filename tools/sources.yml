@@ -82,10 +82,11 @@ tools:
   - name: op1aiff
     url: https://github.com/op1hacks/op1aiff
     license: MIT
-    reviewed_commit: db742a1bbd42c324b1996f1abbdee755f2cfd3d5
+    reviewed_commit: 881f1d9fef77257325fcb50996c57df20cfe65f9
     role: OP-1 preset AIFF study
     integration: future-isolated-sidecar
     risk: medium
+    findings: The previously pinned commit (db742a1) is the empty initial scaffold (README + LICENSE only) shared by master and dev; the actual op_aiff.py code (APPL/"op-1" chunk read/write) only exists on the dev branch, never merged to master. Repointed to dev's tip; fetching this bare SHA works fine since GitHub serves the tip commit of any advertised branch, not just the default one (verified against a fresh clone).
 
   - name: opie
     url: https://github.com/op1hacks/opie

@@ -2,7 +2,12 @@
 
 ## Choix directeur
 
-Le produit est d’abord une application **Tauri 2** avec interface React/TypeScript et cœur Rust. Elle porte toutes les opérations matérielles, les sauvegardes, le firmware et la bibliothèque locale. Une synchronisation distante pourra être ajoutée plus tard comme extension indépendante.
+Le produit est d’abord et volontairement une application **Tauri 2 locale** avec
+interface React/TypeScript et cœur Rust. Elle porte toutes les opérations
+matérielles, les sauvegardes, le firmware et la bibliothèque locale. Aucun
+compte, serveur ou service commercial n’est requis. Une éventuelle extension
+distante est gelée hors périmètre jusqu’à ce que le cœur local soit fiable,
+installable et validé sur plusieurs systèmes.
 
 Le navigateur standard ne constitue pas une base suffisante pour le firmware. WebUSB protège notamment la classe USB Mass Storage, et la File System Access API dépend du navigateur et d’un choix manuel de dossier ; elle ne fournit pas une stratégie portable d’identification et d’éjection sûre. L’app native est donc le produit matériel de référence. Un pont local navigateur pourra être étudié plus tard, après sécurisation du protocole.
 
@@ -32,7 +37,8 @@ native et une confirmation explicite.
 Le profil utilisateur local est un fichier `profile.json` dans le coffre
 choisi. Il contient uniquement des preferences et des references vers les
 machines, snapshots et projets ; il ne contient ni secret ni identifiant de
-compte. L'index Sons reste local et separe d'un eventuel service Cloudflare.
+compte. L'index Sons reste local. La pile Cloudflare/D1 existante est conservée
+comme artefact isolé de recherche et ne participe pas au produit local.
 
 ## Couches
 
@@ -134,7 +140,17 @@ Une version exacte du sidecar doit être épinglée et son SHA‑256 vérifié �
 
 ## Firmware
 
-Le cœur standard sait uniquement : lire un catalogue, télécharger depuis une origine officielle, valider le conteneur connu, confirmer le mode TE‑boot, préparer le fichier et guider sa copie manuelle, puis demander l’éjection et l’étape physique suivante. Il ne décompresse ni ne modifie le code du firmware dans le parcours normal et n’écrit pas automatiquement le volume TE‑boot. Toute opération de contenu est bloquée tant qu’une sauvegarde vérifiée n’est pas liée au `ChangePlan`.
+Le cœur standard sait uniquement : lire un catalogue, télécharger depuis une
+origine officielle, valider le conteneur connu et conserver localement le
+fichier avec ses métadonnées et ses empreintes. Il guide ensuite l’utilisateur
+pour déplacer manuellement le fichier sur le volume TE‑boot, demander
+l’éjection et suivre l’étape physique suivante.
+
+OP‑1 Studio ne flashe pas le firmware, ne pilote pas le bootloader et ne
+prétend pas installer une mise à jour. Il ne décompresse ni ne modifie le
+firmware officiel dans le parcours normal et n’écrit pas automatiquement le
+volume TE‑boot. Toute opération de contenu est bloquée tant qu’une sauvegarde
+vérifiée n’est pas liée au `ChangePlan`.
 
 L’analyse/repack communautaire est un module séparé, désactivé par défaut et incapable d’écrire directement sur un volume. Voir [FIRMWARE_SAFETY.md](FIRMWARE_SAFETY.md).
 

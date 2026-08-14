@@ -45,7 +45,7 @@ livrés — ne pas préremplir avec des réponses non vérifiées)*
 
 ## Pages à venir (une par espace, dès livraison réelle)
 
-- [ ] Firmware — mise à jour guidée
+- [ ] Firmware — Time Capsule et déplacement manuel guidé
 - [ ] Sauvegardes — créer et vérifier une Time Capsule
 - [ ] Sons & patches — importer, convertir, transférer
 - [ ] Studio — Tape, Album, export

@@ -66,6 +66,25 @@ exporte doit encore etre applique localement :
 python tools/display_bridge.py patch --file tapeconfig.svg --original original.svg --edited edite.svg --output tapeconfig.patch.json
 ```
 
+Pour importer les images d'un firmware deja ouvert localement, le catalogue
+cree automatiquement l'arborescence de travail puis copie les SVG sans
+modifier la source :
+
+```powershell
+python tools/content_catalog.py import-display backups .cache/firmware/op1_246 --firmware op1_246
+```
+
+Les originaux sont conserves dans
+`backups/images/original/<firmware>/`, les copies triees dans
+`backups/images/library/<firmware>/`, et les empreintes SHA-256 dans
+`backups/images/manifests/`. L'application native recree aussi ces dossiers
+(ainsi que les dossiers sons, patches, tapes, exports et firmware) quand un
+nouveau dossier de travail est configure. Cette initialisation ne supprime
+aucun fichier existant.
+
+La description complète de cette organisation et du chargement automatique
+est dans [`IMAGE_LIBRARY.md`](IMAGE_LIBRARY.md).
+
 ## Outils a integrer ensuite
 
 - `opie` : backup et restauration complete, a relier a la fenetre Sauvegardes.
@@ -154,13 +173,26 @@ minutes. Il cree un manifeste et ne copie jamais directement vers la machine.
 python tools/tape_bridge.py --inputs track1.wav track2.wav --output backups/tape-import
 ```
 
+Le firmware officiel validé est conservé dans la bibliothèque locale avec sa
+version, sa source et ses empreintes. OP-1 Studio ne flashe pas le firmware et
+ne l'installe pas à distance : l'utilisateur déplace lui-même le fichier sur le
+volume TE-boot, puis l'éjecte selon la procédure Teenage Engineering.
+
 ## Controle des samples
 
-`tools/sample_preflight.py` inspecte les WAV/AIFF, ignore les pistes `tape` et
-`album`, classe automatiquement les fichiers sous `synth/user` ou `drum/user`,
-applique les limites 6 s / 12 s et produit `MANIFESTE_SAMPLES.json`. Avec
-FFmpeg installe, il convertit les sources en AIFF mono 44,1 kHz / 16 bits sans
-modifier les originaux.
+`tools/sample_preflight.py` inspecte les WAV, AIFF, FLAC, MP3, M4A/AAC, OGG et
+Opus, ignore les pistes `tape` et `album`, classe automatiquement les fichiers
+sous `synth/user` ou `drum/user`, applique les limites 6 s / 12 s et produit
+`MANIFESTE_SAMPLES.json`. Avec FFmpeg installé, il convertit les sources en
+AIFF mono 44,1 kHz / 16 bits sans modifier les originaux. Les formats
+compressés sont lus via `ffprobe` pour vérifier durée, canaux et fréquence
+avant conversion.
+
+La sortie est volontairement unique : le PC peut accepter plusieurs formats,
+mais le gestionnaire ne transfère vers l'OP-1 qu'un fichier compatible et
+contrôlé. Les presets OP-1 synth/drum utilisent en plus un `.aif` spécial qui
+peut contenir des données de son ; un simple fichier audio ne doit donc pas
+être présenté comme un preset complet.
 
 ### Preflight AIFF et SVG
 

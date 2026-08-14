@@ -8,6 +8,10 @@ départ : on n'a pas besoin d'inventer le langage visuel d'un éditeur de
 moteur — la machine l'a déjà dessiné, à trois endroits précis. Ce document
 décrit ce qui a été trouvé et ce que ça permettrait de construire.
 
+Le mapping boutons machine (T1–T4, encodeurs) → champs JSON du patch, utile
+pour brancher cet éditeur une fois construit, est dans
+[`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md).
+
 ## Les trois pièces déjà dessinées par Teenage Engineering
 
 ### 1. `cls.svg` (écran du moteur Cluster) — le patron des 4 knobs
@@ -109,6 +113,22 @@ composition entière.
 | Widget ADSR partagé, points accrochables | `adsr.svg` | à construire, un seul composant pour les 10 moteurs |
 | Lecture d'un preset réel pour piloter l'affichage | `op1_factory.db` → `synth_presets.patch` | déjà lisible, SQLite standard |
 | Vue "routage" optionnelle | `signalflow.svg` comme référence | idée annexe, pas prioritaire |
+| Contrôle de compatibilité avant export (valeurs hors plage refusées ou clampées) | plages `AllowedADSR`/`AllowedEngine`/`AllowedEffects`/`AllowedLFO` documentées dans [`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md) §2.7 | idée notée le 13 août 2026, pas construite |
+
+## Idée notée — éditeur de son qui fabrique le son, pas juste l'importe
+
+Dans la fenêtre Sons, à côté de l'import de samples existant
+(`SoundControlsPanel`), il manque un vrai **éditeur de synthèse** : créer un
+son depuis les moteurs de la machine (Cluster, Digital, DNA...), pas
+seulement préparer un fichier importé. C'est l'éditeur décrit ci-dessus
+(4 knobs + ADSR + FX + LFO), mais avec une exigence explicite : **chaque
+valeur réglée doit rester dans la plage que la machine accepte**, pour que
+le patch exporté soit un fichier `.aif` valide et pas juste un JSON qui
+ressemble à un patch. Le contrôle de compatibilité n'est pas une option
+cosmétique de l'éditeur, c'est ce qui le rend utilisable : sans lui,
+l'utilisateur peut construire un patch qui semble correct dans l'app et
+plante ou sonne mal une fois sur l'OP-1. Pas construit — noté ici pour
+rester dans la feuille de route du prochain chantier Sons/M3.
 
 ## Corollaire trouvé en creusant : deux écrans moteur mal classés
 

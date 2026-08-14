@@ -4,7 +4,7 @@ Le firmware est le premier écran et le premier sujet de confiance. Techniquemen
 
 ## Etat de livraison
 
-Etat de pilotage : 12 aout 2026 (maj soir).
+Etat de pilotage : 13 aout 2026 (maj apres verification TypeScript).
 
 Le projet a trois niveaux de maturite :
 
@@ -21,12 +21,12 @@ Le projet a trois niveaux de maturite :
 
 | Zone | Etat reel | Prochaine preuve |
 | --- | --- | --- |
-| Firmware + Images | moteurs locaux livres, plans UI bornes et non destructifs | bridge de build natif, sans flash |
+| Firmware + Images | moteurs locaux livres, sauvegarde locale et plans UI non destructifs | bridge de préparation natif, sans flash |
 | Sauvegardes | backup/verify/plan/execute/restore livres ; plan UI borne ; delete/restore valide sur hardware | bridge natif + ejection |
 | Bibliotheque Sons | preflight, patches CLI, grille 24 pads, index UI et plan UI borne livres | pre-ecoute fichier et transfert natif |
 | Studio | projet v1, mixage, fades, piano-roll, stems, Album, trim focalise et refs sources livres | reconnexion automatique et import UI |
 | MIDI/audio | detection Windows, capture MIDI et auto-detection silencieuse dans Studio | sortie live et essai OP-1 dans Chrome/Edge |
-| Education | fenetre prototype | exercices notes/timing/progression |
+| Education | 4 modes (Drumkit/Melodie/Accord/Morceau import MIDI), ecran notes qui tombent, clavier aligne, jugement note/timing, progression locale et boucle par section livres (14 aout 2026) | exercices touches d'effet, niveaux combos |
 | Distribution | dev server et build web | Tauri, installation et permissions |
 
 La priorite n'est plus d'ajouter des prototypes isoles : il faut rendre les
@@ -42,7 +42,7 @@ autour de sept espaces visibles dans l'accueil :
 | Fenetre | Perimetre retenu | Etat architectural |
 | --- | --- | --- |
 | Accueil | lancement par modules, etats machine et raccourcis | livre |
-| Firmware | source, verification, moteurs, graphismes, audio usine, plan/build et TE-boot | sous-onglet Graphismes livre ; build natif a poursuivre |
+| Firmware | source, verification, sauvegarde locale, graphismes, audio usine et guide TE-boot | sous-onglet Graphismes livre ; préparation native à poursuivre |
 | Sauvegardes | snapshots, comparaison, restauration, Time Capsule Pistes et transfert | livre en moteur, UI/bridge natif a brancher |
 | Sons | bibliotheque, preflight, patches, 24 pads et packs | pads livres, index et transfert a poursuivre |
 | Studio | Clone OP-1, MIDI, Tape, Album, mixage et projet | coeur livre, sources persistantes a poursuivre |
@@ -72,10 +72,10 @@ Images a ete retire apres validation de cette integration.
   `tools/profile_bridge.py` sont livres ; la coque Tauri expose maintenant
   `profile_read` et `profile_write` avec confirmation, validation de schema et
   aucune ecriture machine.
-- **Cloud et licence** : Studio Cloud reste M6, apres validation de l'usage
-  local. L'ecart MIT/AGPL signale dans l'analyse tooling est un point legal a
-  trancher avant toute communication de service ; aucune licence n'est
-  modifiee automatiquement.
+- **Cloud et service en ligne** : comptes, synchronisation, partage et
+  commercialisation sont gelés hors périmètre. La priorité est un outil local
+  fiable, installable et vérifiable ; aucune décision de service ne doit
+  influencer le domaine matériel ou les formats locaux.
 - **Dependance structurante** : le coeur Rust/Safe Change Engine reste le
   vrai chantier derriere l'installation Tauri et l'execution native. Les
   bridges Python servent au labo et aux fixtures, pas de coeur final cache.
@@ -90,13 +90,14 @@ encore etre imposee par l'UI/coeur natif.
 
 ### Recalage des jalons
 
-- **M1 Firmware** : socle local et Images livres ; integration UI et flash
-  restent explicitement hors perimetre tant que le ChangePlan natif n'est pas
-  branche.
+- **M1 Firmware** : socle local et Images livres ; flash et installation
+  automatique restent explicitement hors périmètre. Le travail restant porte
+  sur le contrôle du fichier, sa conservation locale et le guidage du
+  déplacement manuel.
 - **M2 Sauvegardes** : moteur de fichiers livre et teste sur hardware ;
   l'interface affiche encore une simulation et l'ejection native manque.
-- **M3 Sons** : conversion, patches et 24 pads livres ; l'index local, la
-  bibliotheque et le transfert utilisateur restent a fermer.
+- **M3 Sons** : conversion, patches, index local et 24 pads livres ; la
+  pre-ecoute des fichiers importes et le transfert utilisateur restent a fermer.
 - **M4/M5 Studio** : coeur audio, projet v1 et trim focalise livres ;
   persistence des sources et import machine restent a fermer.
 - **M4.5 Education** : prototype de fenetre seulement ; progression et
@@ -108,12 +109,25 @@ encore etre imposee par l'UI/coeur natif.
   `StudioTrackList` sont extraits ; `DisplayCreatorPanel` est livre dans
   Firmware > Graphismes de `app/page.tsx` sans changement de rendu. Le hub
   d'accueil par modules est maintenant livre ; le decoupage des autres ecrans
-  reste a poursuivre. **Clavier Studio** : `StudioMachinePanel` remplace le
-  clavier SVG fixe par un editeur de grille 64x16 — l'utilisateur peint les
-  blocs, les valide (Espace), ils deviennent des elements SVG interactifs en
-  mode jeu (touches piano, encodeurs, boutons) ; etat persiste en
-  localStorage, migration automatique des anciens blocs, panneau deploye par
-  defaut.
+  reste a poursuivre. **Clavier Studio — état au 14 août 2026 matin** :
+  après plusieurs allers-retours dans la même soirée, `StudioMachinePanel`
+  est revenu à son rôle d'origine (rendu jouable uniquement, retour exact à
+  la version commitée via `git checkout`) et l'éditeur de grille a été
+  extrait dans `KeyboardEditor.tsx`, un composant séparé, **non monté nulle
+  part pour l'instant** (mis de côté volontairement, pas supprimé). Le même
+  `StudioMachinePanel` est maintenant affiché à deux endroits — fenêtre
+  Studio et fenêtre Exercices (mode mélodie/accord) — plutôt qu'un clavier
+  dupliqué. Les deux lisent la disposition via un nouveau module partagé,
+  [`app/lib/keyboardLayout.ts`](../app/lib/keyboardLayout.ts)
+  (`loadKeyboardLayout`, `sortKeyBlocks`, `layoutBounds`, constantes COLS/
+  ROWS/notes communes), pour ne jamais diverger. L'écran « notes qui
+  tombent » d'Exercices utilise ce même repère de colonnes que le clavier
+  affiché juste en dessous : une note tombe dans la colonne exacte de sa
+  touche, écran et clavier partageant le même `viewBox` horizontal. La
+  section « Clavier MIDI construit » en fin de document décrit un état
+  antérieur (64 colonnes, éditeur+clavier affichés ensemble) — toujours
+  correcte pour la géométrie de `StudioMachinePanel` lui-même, mais ne
+  mentionne pas encore le partage avec Exercices.
 
 Le projet dispose aujourd'hui d'un prototype fonctionnel et de bridges locaux
 testés pour firmware, samples, patches et préparation Tape. Les écrans sont
@@ -171,8 +185,9 @@ SHA-256 sont validés sur la machine. La copie vers l'OP-1, la restauration,
 la déduplication et l'éjection contrôlée restent à finaliser. Le plan de
 transfert et son exécution confirmée sont maintenant testés sur fixtures.
 
-La Time Capsule est réservée aux pistes Tape et Album. Les firmwares restent
-dans le parcours Firmware et les samples dans la Bibliothèque Sons.
+Les pistes Tape et Album sont couvertes par une sauvegarde locale vérifiée ; une
+Time Capsule dédiée n'est pas prioritaire. Les samples restent dans la
+Bibliothèque Sons, qui devient la priorité de ce jalon.
 
 - snapshots horodatés et manifestes versionnés ;
 - comparaison visuelle de deux états ;
@@ -192,27 +207,163 @@ sont installables avec `tools/Install-OP1StudioTools.ps1`.
 `sample_preflight.py` valide et classe les samples, et `patch_bridge.py`
 produit un patch synthé de test sans modifier les sources.
 
-**Etat : socle livré.** L'index local, waveform réel, édition et transfert
-machine restent à terminer.
+**Etat : socle et interface livrés pour l'essentiel.** Index local avec
+recherche/filtres/favoris (`SoundLibraryIndex`) et grille de 24 pads
+(`SoundPadGrid`) existent déjà dans l'interface, cohérent avec la section
+Sons de [`WINDOW_FUNCTIONS_SPEC.md`](WINDOW_FUNCTIONS_SPEC.md). La pré-écoute
+des fichiers importés (bouton ▶, lecture via `Audio`/`URL.createObjectURL`)
+était déjà en place — corrigé ici, cette ligne la donnait par erreur comme
+manquante. **Tri de la bibliothèque : livré (14 août 2026)** — sélecteur nom/
+durée/statut (un statut à corriger d'abord) et bouton « ★ Favoris » pour ne
+garder que les favoris, appliqués aux deux colonnes. Seul le transfert
+machine reste à terminer (voir M5.3).
 
-- index local et import WAV/AIFF/FLAC/MP3 ;
-- waveform, écoute, trim, gain et fondus ;
-- rendu 44,1 kHz / 16 bits ;
+- index local et import WAV/AIFF/FLAC/MP3/M4A/AAC/OGG/Opus ;
+- **conversion automatique vers l'AIFF OP-1, avec contrôle durée, canaux,
+  fréquence et profondeur : livrée côté conversion (M3.1 Phase B/C,
+  `convertToOp1Audio` + bouton « Préparer le fichier » dans
+  `SoundControlsPanel`) ; « avant transfert » reste ouvert, aucun transfert
+  machine n'existe encore (voir M5.3) ;**
+- **waveform, écoute (bouton ▶ sur chaque carte, déjà en place avant
+  M3.1), trim (suggestion + application) et fondus : livrés.** Reste ouvert :
+  application automatique du gain suggéré (affichage seul pour l'instant) ;
+- **rendu 44,1 kHz / 16 bits : livré (M3.1 Phase B)** ;
 - modes synth 6 s et drum 12 s ;
-- lecture/écriture de patches avec tests croisés ;
+- **lecture de patches : livrée** (`readOp1PatchJson`/`isDrumPatch`/
+  `drumMarkersInSeconds`, `app/lib/aiffPatchOracle.ts`). **Écriture** :
+  décision déjà actée dans `TOOLING_AUDIT.md` de déléguer à `op-patch-util`
+  via `tools/patch_bridge.py` plutôt que réimplémenter l'écriture du chunk
+  `APPL` côté JS (voir la recette et les 3 implémentations recoupées dans
+  `AUDIO_FILE_FORMAT_REFERENCE.md` §2, §5) — les « tests croisés » restent à
+  faire côté `patch_bridge.py`, pas un chantier JS ;
 - transfert par le Safe Change Engine ;
-- tableau de bibliothèque avec recherche, filtre par type, favoris et tri
-  par colonne ;
+- **tableau de bibliothèque avec recherche, filtre par type, favoris et tri :
+  livré (14 août 2026)** — tri nom/durée/statut, filtre favoris ;
 - grille de pads fidèle à la disposition physique de l'OP-1 (réutilisée
   ensuite par M4.5) ;
-- code couleur distinguant un son d'origine d'un son importé.
+- code couleur distinguant un son d'origine d'un son importé ;
+- éditeur de synthèse qui **fabrique** un son (moteurs, ADSR, FX, LFO), pas
+  seulement l'import de sample, avec contrôle de compatibilité qui refuse
+  les valeurs hors plage machine avant export — idée notée le 13 août 2026,
+  détaillée dans [`ENGINE_EDITOR_CONCEPT.md`](ENGINE_EDITOR_CONCEPT.md) ;
+- **agent IA de rangement/création**, idée volontairement large notée le
+  13 août 2026 dans [`PRODUCT_VISION.md`](PRODUCT_VISION.md) : classer/
+  étiqueter la bibliothèque, proposer un rangement, générer des patches
+  brouillons. Garde-fous déjà actés (propositions seulement, jamais
+  d'écriture machine directe, local par défaut) — pas un jalon chiffré,
+  reste au stade idée tant que le périmètre n'est pas resserré.
+
+### M3.1 — Oracle audio, porté depuis EP-133 K.O. II · complexité M
+
+Plan issu de l'évaluation du dépôt compagnon `EP-133-KO-II-Studio` (détail et
+règles de sécurité dans
+[`RAPPORT_REUTILISATION_EP133_POUR_OP1.md`](RAPPORT_REUTILISATION_EP133_POUR_OP1.md)) :
+porter les **algorithmes** audio génériques, pas le modèle matériel EP-133
+(slots, groupes A-D, SysEx, fréquences 26250/32000/46875 Hz — tout ça reste
+propre à l'EP-133, à ne jamais brancher sur les racines OP-1).
+
+- **Phase A — Oracle audio OP-1 : livrée (13 août 2026).** Portée depuis le
+  fichier source réel (`src/core/audio/wavAnalysis.ts`, MIT, même auteur),
+  pas seulement depuis sa description, dans
+  [`app/lib/audioOracle.ts`](../app/lib/audioOracle.ts) :
+  `analyzeWavBuffer`, `computeWaveformPeaks`, `detectSilenceTrim`,
+  `suggestNormalizationGainDb`, `parseWavFormat`/`readSignedSample`
+  partagés, plus `OP1_AUDIO_LIMITS`/`exceedsOp1Duration` (6 s synth/12 s
+  drum, propres à ce projet). Lecture RIFF/WAVE directe, pas
+  `AudioContext.decodeAudioData()` seul. 9 tests synthétiques dans
+  [`tests/audio-oracle.test.mjs`](../tests/audio-oracle.test.mjs)
+  (profondeurs 8/16/24/32 bits + float32, canaux, écrêtage exact, silence,
+  limites de durée, fichier illisible) ; `npm test` build + fait tourner
+  cette suite.
+- **Phase C — branché dans `SoundControlsPanel` (13 août 2026), v1 minimale.**
+  Sélection d'un WAV → analyse immédiate côté client (durée vs limite
+  synth/drum du mode actif, fréquence, canaux, profondeur, crête et
+  écrêtage, trim par silence suggéré, gain de normalisation suggéré).
+  Affichage seulement : rien n'est coupé, converti ni transféré depuis ce
+  panneau. Les fichiers non-WAV (AIFF, FLAC…) affichent un message clair au
+  lieu d'un faux résultat — ils passent toujours par
+  `tools/sample_preflight.py`.
+- **AIFF + marqueurs de patch (13 août 2026).** L'OP-1 utilise l'AIFF, pas
+  le WAV, pour ses patches et pistes — ajouté dans
+  [`app/lib/aiffPatchOracle.ts`](../app/lib/aiffPatchOracle.ts) (code
+  original, pas porté) : parseur AIFF big-endian (dont le flottant étendu 80
+  bits du sample rate, vérifié contre l'exemple documenté d'`op-patch-util`),
+  lecture du chunk `APPL`/`op-1`, et conversion des marqueurs `start`/`end`
+  d'un patch drum (jusqu'à 24 sons différents dans un seul fichier) en
+  secondes réelles. **Matérialisé visuellement** dans
+  [`WaveformMarkers.tsx`](../app/components/WaveformMarkers.tsx) : forme
+  d'onde réelle + ligne colorée et numérotée à chaque découpe, branché dans
+  `SoundControlsPanel` (accepte maintenant WAV et AIFF, AIFF en priorité).
+  7 tests dans
+  [`tests/aiff-patch-oracle.test.mjs`](../tests/aiff-patch-oracle.test.mjs),
+  dont un avec le JSON d'un vrai patch drum documenté. Trim par silence
+  (`detectAiffSilenceTrim`) ajouté côté AIFF aussi (14 août 2026, même
+  logique que le WAV, 2 tests de plus) — le préflight client couvre
+  maintenant le format que l'OP-1 utilise réellement, pas seulement le WAV
+  d'import. **Reste ouvert** : la conversion `start`/`end` suppose une
+  échelle interne fixe de 12 s (§2.5 du rapport de format), non vérifiée sur
+  matériel — à confirmer avant de s'en servir pour autre chose que de
+  l'affichage. Branché dans `SoundLibraryIndex` (14 août 2026) : l'import
+  d'un fichier y utilise maintenant le même oracle AIFF/WAV déterministe
+  (repli `AudioContext.decodeAudioData` seulement pour les formats hors
+  AIFF/WAV, ex. MP3/FLAC), avec les marqueurs de patch affichés sur la forme
+  d'onde de chaque carte et un badge de type de patch (`drum`, `sampler`…)
+  quand un chunk `APPL`/`op-1` est détecté ;
+- **Phase B — Conversion OP-1 : livrée (14 août 2026).** Dans
+  [`app/lib/audioConvert.ts`](../app/lib/audioConvert.ts) :
+  `convertToOp1Audio(sourceBytes, options)` — extraction AIFF (priorité) ou
+  WAV via les oracles existants, trim optionnel par sélection en secondes,
+  repli de canaux (mono par défaut quel que soit l'entrée — c'est la cible
+  documentée, pas un choix de confort), rééchantillonnage vers 44,1 kHz par
+  interpolation linéaire, fondus entrée/sortie optionnels, encodage PCM 16
+  bits avec dither TPDF **en AIFF par défaut** (`targetFormat: "wav"`
+  disponible pour un usage hors machine). Jamais les cibles EP-133
+  (26250/32000/46875 Hz) ; jamais d'écriture sur un volume OP-1 — produit un
+  tampon en mémoire, rien d'autre. **Correction (14 août 2026, même
+  chantier)** : la première version ne produisait que du WAV — repérée avant
+  d'être utilisée, en relisant `AUDIO_FILE_FORMAT_REFERENCE.md` §1-2 :
+  l'OP-1 lit l'AIFF pour `synth/user/*.aif`, `drum/user/*.aif` et les pistes
+  Tape/Album, pas le WAV, donc un fichier « préparé » en WAV n'aurait pas été
+  utilisable tel quel sur la machine. Corrigé en ajoutant un encodeur AIFF
+  (`encodeAiffPcm16`, FORM/COMM/SSND big-endian) avec son propre encodeur du
+  flottant étendu 80 bits du sample rate (`writeExtended80`, l'inverse exact
+  du décodeur déjà dans `aiffPatchOracle.ts`), vérifié par un aller-retour :
+  encoder puis reparser avec `parseAiffFormat` retombe bien sur 44100 Hz
+  exactement. 7 tests dans
+  [`tests/audio-convert.test.mjs`](../tests/audio-convert.test.mjs)
+  (round-trip AIFF par défaut, round-trip WAV explicite, downmix
+  stéréo→mono, rééchantillonnage avec durée préservée, trim, fondu, fichier
+  illisible → `null`). **Reste ouvert** : interpolation linéaire moins
+  fidèle qu'un sinc-resampler (`@alexanderolsen/libsamplerate-js`, utilisé
+  côté EP-133) — upgrade possible mais pas prise ici, nécessite une
+  dépendance en plus.
+- **Phase C — Gestionnaire de samples (UI) : v1 branchée (14 août 2026).**
+  Bouton « Préparer le fichier (AIFF mono 44,1 kHz/16 bits) » dans
+  `SoundControlsPanel`, distinct de tout « transférer sur l'OP-1 » (qui
+  n'existe pas encore) : case à cocher « appliquer le trim suggéré »
+  (décochée par défaut — jamais appliqué seul), conversion locale via
+  `convertToOp1Audio`, aperçu du résultat (format/durée/fréquence/canaux) et
+  lien de téléchargement du fichier `.aif` produit (`URL.createObjectURL`,
+  révoqué au changement de fichier ou au démontage). **Reste ouvert** : pas
+  d'alerte d'écrêtage dédiée au fichier *converti* (seulement sur la source
+  avant conversion) ; pas de gain de normalisation appliqué automatiquement,
+  la valeur suggérée reste affichage seul ;
+- **Phase D — Safe Change Engine** : rejoint M5.3, pas un chantier séparé —
+  le plan de transfert `synth/user`/`drum/user` passe par les mêmes
+  garde-fous (identité de volume, sauvegarde liée, confirmation explicite).
+
+Phases A/B/C livrées (13-14 août 2026). Reste : Phase D quand M5.3 (transfert
+réel vers l'OP-1) sera attaqué — pas avant, ça suppose du matériel branché
+pour être vérifié.
 
 ## M4 — Studio · Tape & Album · complexité M/L
 
-Avancement : première interface de Studio ajoutée dans l'application.
-Elle prépare quatre pistes locales, mute/solo, lecture et import contrôlé vers
-`tape/`. Le rendu non destructif et la copie machine complète restent à
-brancher sur le pont local.
+Avancement : dépassé par M5.2 ci-dessous, gardé ici pour l'historique du
+périmètre. Ne pas lire ce paragraphe seul pour évaluer l'état du Studio —
+le format projet v1, le piano-roll, le rendu offline et l'export Album sont
+déjà livrés (voir M5.2). Ce qui reste vrai depuis ce jalon : la copie
+machine complète (écriture réelle dans `tape/`) n'est toujours pas branchée
+sur le pont local.
 
 Le Studio propose deux modes : `Clone OP-1` pour travailler sans la machine et
 `OP-1 MIDI` pour connecter l'appareil comme contrôleur et source de capture.
@@ -225,22 +376,67 @@ Le Studio propose deux modes : `Clone OP-1` pour travailler sans la machine et
 
 ## M4.5 — Éducation & disposition clavier · complexité M
 
-Nouveau jalon, construit sur la surface clavier déjà jouable (`CloneSurface`)
-et sur la détection Web MIDI existante. Objectif : rendre l'OP-1 plus facile
-à apprendre, avec ou sans machine branchée.
+**Avancement réel au 14 août 2026 matin**, largement au-delà du prototype
+annoncé plus bas dans ce jalon : `ExercisePanel` a maintenant un écran
+« notes qui tombent » façon Guitar Hero (SVG, vitesse réglable en BPM),
+3 modes (Drumkit avec 4 pads, Mélodie avec gammes/arpège, Accord avec 5
+suites), et le clavier joué est le **même composant** que celui du Studio
+(`StudioMachinePanel`, prop `notesOnly`) — pas une copie, pour ne jamais
+diverger. L'écran et le clavier partagent désormais le même repère de
+colonnes ([`app/lib/keyboardLayout.ts`](../app/lib/keyboardLayout.ts)) :
+une note tombe exactement au-dessus de sa touche. **Jugement note/timing et
+progression livrés (14 août 2026)** : chaque pas est jugé une seule fois par
+passage (réussi si toutes les notes cibles sont tenues au moment où le bloc
+atteint la ligne de jeu), score en direct (réussis/total, précision, série,
+meilleure série), et un record par exercice persisté en local
+(`op1-studio-exercise-progress-v1`, jamais envoyé hors de l'appareil). Ce qui
+suit reste la cible originale du jalon, une partie est donc déjà couverte :
 
-- disposition clavier ordinateur configurable (AZERTY/QWERTY) et disposition
-  des pads calquée sur le mode Drum ;
+- **disposition clavier ordinateur : livrée (14 août 2026)**, sans case à
+  cocher AZERTY/QWERTY — `StudioMachinePanel` écoute `event.code` (position
+  physique de la touche, pas le caractère produit), donc le même mappage
+  fonctionne tel quel sur les deux dispositions. Corrige au passage un vrai
+  bug trouvé en construisant ceci : cliquer une note sur le clavier affiché
+  dans Exercices (mode Mélodie/Accord/Morceau) ne remontait pas vers le
+  score — `StudioMachinePanel` a maintenant un callback `onPressedChange`
+  pour ça, plus seulement le vrai MIDI entrant. Disposition des pads déjà
+  calquée sur le mode Drum côté `SoundPadGrid` (pas encore réutilisée
+  directement ici, drumkit garde sa propre grille 4 pads) ;
 - exercices de finger drumming avec retour visuel et rythmique, inspirés du
   séquenceur Finger recréé par [`sampi/finger`](https://github.com/sampi/finger) ;
-- mode « apprendre un morceau » : import d'un fichier MIDI, surbrillance des
-  touches à jouer, ralenti et boucle par section ;
+- **mode « apprendre un morceau » : livré (14 août 2026)** — import d'un
+  fichier `.mid` (parseur Standard MIDI File original dans
+  [`app/lib/midiFileImport.ts`](../app/lib/midiFileImport.ts), chunks
+  `MThd`/`MTrk`, running status, changements de tempo, 5 tests dans
+  [`tests/midi-file-import.test.mjs`](../tests/midi-file-import.test.mjs)),
+  notes affichées comme un 4e mode « Morceau » sur le même écran/clavier que
+  les autres, vitesse de lecture réglable en % (ralenti compris). **Boucle
+  par section : livrée (14 août 2026)** — case « morceau entier » cochée par
+  défaut (même comportement qu'avant) ; décochée, deux champs « début »/« fin »
+  en secondes réelles du fichier (avant application de la vitesse)
+  restreignent la boucle à un passage choisi, notes hors de la section
+  filtrées avant même d'être placées sur l'écran de chute. **Reste ouvert** :
+  toutes les pistes du fichier sont fusionnées en une seule performance, pas
+  de choix de piste ;
 - fonctionne en mode Clone OP-1 seul ou avec la machine connectée en entrée
   MIDI de contrôle ;
 - fenêtre de travail dédiée « Exercices & Éducation », journal de progression
   local, aucune donnée envoyée hors de l'appareil ;
 - trois entrées visibles dès l'ouverture (apprentissage structuré / leçons
   ciblées / morceaux), plutôt que cachées dans un menu.
+
+**Idées notées le 13 août 2026 (soir), pas construites** — prochaine passe
+possible sur ce module :
+
+- **touches d'effet** : vérifier s'il existe des touches/boutons dédiés aux
+  effets sur l'OP-1 (voir T3/Shift+T3 dans
+  [`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md)) et, si oui,
+  en faire un 4e mode d'exercice (au même titre que Drumkit/Mélodie/Accord) ;
+- **niveaux plus difficiles par combos** : un mode « difficile » qui demande
+  plusieurs entrées simultanées (accord + bouton d'effet, ou tempo plus
+  rapide avec enchaînements), plutôt qu'une seule note/pad à la fois — à
+  concevoir après le point précédent, puisque ça dépend de savoir ce qu'il y
+  a réellement à combiner.
 
 **Sortie :** un parcours d'apprentissage qui ne dépend pas de posséder la
 machine pour s'entraîner, et qui rend la disposition clavier de l'OP-1
@@ -254,8 +450,10 @@ et l'étend proprement aux nouvelles fenêtres (Éducation, Documentation).
 
 - extraire les valeurs répétées (tailles, espacements, couleurs) dans un
   jeu de tokens unique au lieu de les réécrire à chaque endroit ;
-- découper `app/page.tsx` (actuellement un seul fichier de près de 700
-  lignes) en composants par écran, sans changer le rendu visuel ;
+- découper `app/page.tsx` (plus de 1 200 lignes au 13 août 2026, en
+  croissance malgré l'extraction déjà en cours — voir la liste de
+  composants extraits sous « Recalage des jalons ») en composants par
+  écran, sans changer le rendu visuel ;
 - redessiner le clavier du clone pour refléter la vraie disposition de
   l'OP-1 (rangées colorées, zone batterie séparée de la zone synthé), requis
   pour que le module Éducation (M4.5) soit crédible ;
@@ -309,11 +507,27 @@ audio maître. Le piano-roll est éditable, les événements MIDI sont rejoués
 pendant le transport, la quantification 1/16 dépendante du BPM est livrée et
 le rendu WAV offline applique gain, trim, mute/solo et fades, la vue globale
 calcule les niveaux audio en 24 points par piste, les stems Tape sont
-  exportables séparément et l'Album produit deux faces WAV avec manifeste ; les
+  exportables séparément et l'Album produit deux faces AIFF avec manifeste ; les
   références `source_refs` sont persistées et affichées comme à reconnecter au
   chargement ; le transfert machine reste à faire. Les types Web MIDI natifs
-  de l'application sont maintenant stricts ; seuls les types Cloudflare du
-  worker bloquent encore `tsc` global.
+  de l'application sont maintenant stricts ; les types Cloudflare locaux
+  déclarés dans `types/cloudflare-workers.d.ts` permettent à `tsc` global
+  de passer sans modifier le runtime.
+
+**Correction (14 août 2026)** : les exports « Stems » et « Album » imitaient
+déjà les noms de fichiers réels de l'OP-1 (`track_N`, faces d'album) mais en
+WAV stéréo, alors que `track_N.aif`/`side_a.aif`/`side_b.aif` sont de l'AIFF
+**mono** 44,1 kHz/16 bits (`AUDIO_FILE_FORMAT_REFERENCE.md` §1, §3) — un
+fichier ainsi nommé aurait semblé prêt à copier sur la machine sans l'être.
+Repéré en revérifiant ce jalon après la même correction sur M3.1 (conversion
+Sons), pas par un rapport utilisateur. Corrigé dans `app/page.tsx` :
+`audioBufferToAiffMono` (downmix + `encodeAiffPcm16`, le même encodeur AIFF
+que `app/lib/audioConvert.ts`, un seul endroit dans le dépôt qui écrit de
+l'AIFF) remplace l'export WAV pour ces deux boutons ; noms de fichiers
+alignés sur ceux du disque OP-1 (`track_1.aif`…`track_4.aif`,
+`side_a.aif`/`side_b.aif`, au lieu de `album_face_a.wav`). Le bouton « Rendu
+WAV » (mixdown générique d'écoute, pas un nom de fichier OP-1) reste
+volontairement en WAV — rien à corriger là.
 
 - définir un format `Project` JSON versionné ;
 - stocker sources, clips, événements MIDI, tempo et mixage ;
@@ -324,7 +538,9 @@ calcule les niveaux audio en 24 points par piste, les stems Tape sont
 
 ## M5.3 — Safe Change Engine machine
 
-- identifier un volume par preuves combinées, jamais par son seul nom ;
+- identifier un volume par preuves combinées, jamais par son seul nom ; une
+  empreinte structurelle est maintenant enregistrée dans les manifestes et
+  comparée avant transfert ;
 - créer et relire une sauvegarde avant écriture ;
 - préparer un plan Tape/Sons avec liste exacte des fichiers ;
 - copier vers un volume temporaire contrôlé, synchroniser, vérifier les hash ;
@@ -332,14 +548,17 @@ calcule les niveaux audio en 24 points par piste, les stems Tape sont
 - éjecter avec l'API système et afficher le résultat ;
 - tester déconnexion, volume disparu et fichier partial.
 
-## M6 — Studio Cloud · après validation de la rétention
+Le premier garde-fou est livré sur fixtures. Les anciens manifestes sans
+empreinte exacte ; les restaurations autorisent seulement les fichiers
+manquants, jamais un fichier existant divergent. Les anciens manifestes sans
+`deviceFingerprint` sont refusés et doivent être recréés.
 
-- compte optionnel et jumelage app/service ;
-- chiffrement côté client ;
-- synchronisation multi‑ordinateur ;
-- historique distant et politique de rétention ;
-- partage privé et révocable ;
-- abonnement et facturation seulement après validation d’usage.
+## M6 — Service en ligne éventuel · gelé
+
+Ce jalon n'est pas un objectif de développement actuel. Il restera vide tant
+que les jalons locaux — Safe Change Engine, distribution desktop, tests
+matériels et restauration — ne seront pas validés. Toute future étude devra
+être une extension séparée, sans dépendance du produit local.
 
 ## M7 — Écosystème
 

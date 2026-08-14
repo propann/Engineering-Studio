@@ -155,14 +155,11 @@ des sauvegardes fréquentes sur un gros volume.
   (`unexpected_path`), y compris pendant `execute`.
 
 **Point de vigilance réel, le plus important de cet audit** : `execute`
-vérifie que la sauvegarde passée en argument est **valide** (hashes
-cohérents), mais rien dans le code ne vérifie qu'elle correspond **au même
-volume `device`** que celui qu'on s'apprête à écrire. Un opérateur (ou une
-UI mal câblée) pourrait fournir une sauvegarde d'un autre OP-1 ou d'un ancien
-état sans que l'outil s'en aperçoive — la vérification porte sur
-l'intégrité de la sauvegarde, pas sur sa correspondance avec la cible. Tant
-que l'UI ne relie pas explicitement "ce volume" à "cette sauvegarde-là", ça
-reste une responsabilité humaine, pas un filet de sécurité automatique.
+vérifie maintenant l'empreinte structurelle de la sauvegarde contre celle du
+volume cible. Elle combine les répertoires attendus, les chemins relatifs et
+les tailles de fichiers, sans dépendre du nom de lecteur. Une différence
+déclenche `backup_device_mismatch` avant toute copie. Les anciens manifestes
+sans empreinte déclenchent `backup_identity_missing` et doivent être recréés.
 
 ## `sample_preflight.py` / `patch_bridge.py` / `tape_bridge.py`
 
@@ -217,9 +214,8 @@ signaler, c'est le plus simple des bridges après `device_inventory.py`.
 ## Synthèse — les trois choses à retenir pour ne pas faire de connerie
 
 1. **Un seul outil écrit sur la machine** (`device_transfer_plan.py execute`/
-   `restore`), toujours derrière `--confirm` + vérification de sauvegarde —
-   mais cette vérification ne prouve pas que la sauvegarde correspond au bon
-   volume. C'est le point le plus important de cet audit.
+   `restore`), toujours derrière `--confirm` + vérification de sauvegarde et
+   contrôle d'identité structurelle du volume.
 2. **`firmware_bridge.py` ne propose aujourd'hui qu'une seule variante CWO**
    (`gfx-cwo-moose`) malgré ce que la doc du catalogue de mods laisse
    entendre sur les quatre variantes.

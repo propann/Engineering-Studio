@@ -40,6 +40,24 @@ def _hash(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _device_fingerprint(root: Path) -> str:
+    """Match the backup identity without hashing file contents."""
+    digest = hashlib.sha256()
+    for directory in ("tape", "album", "synth", "drum"):
+        digest.update(f"dir:{directory}:{int((root / directory).is_dir())}\n".encode())
+    rows: list[tuple[str, int]] = []
+    for current, directories, names in os.walk(root, topdown=True, followlinks=False):
+        current_path = Path(current)
+        directories[:] = sorted(directories)
+        for name in sorted(names):
+            path = current_path / name
+            if path.is_file() and not path.is_symlink():
+                rows.append((_relative(path, root), path.stat().st_size))
+    for relative, size in rows:
+        digest.update(f"file:{relative}:{size}\n".encode())
+    return digest.hexdigest()
+
+
 def _relative(path: Path, root: Path) -> str:
     relative = path.relative_to(root).as_posix()
     parsed = PurePosixPath(relative)
@@ -71,7 +89,32 @@ def _verify_backup(snapshot: Path) -> dict[str, Any]:
             raise TransferPlanError("backup_invalid", "A backup file is missing or changed.", path=relative)
         if _hash(target) != str(entry["sha256"]):
             raise TransferPlanError("backup_invalid", "A backup file failed SHA-256 verification.", path=relative)
-    return {"snapshot": str(manifest_path.parent), "checkedFiles": len(manifest.get("files", []))}
+    fingerprint = manifest.get("deviceFingerprint")
+    if not isinstance(fingerprint, str) or not fingerprint:
+        raise TransferPlanError("backup_identity_missing", "The backup has no device identity fingerprint.")
+    return {
+        "snapshot": str(manifest_path.parent),
+        "checkedFiles": len(manifest.get("files", [])),
+        "deviceFingerprint": fingerprint,
+        "files": {str(entry.get("path", "")): int(entry["size"]) for entry in manifest.get("files", [])},
+    }
+
+
+def _restore_target_compatible(device: Path, backup_files: dict[str, int]) -> bool:
+    """Allow missing files, but reject any existing file absent or divergent in the snapshot."""
+    for current, directories, names in os.walk(device, topdown=True, followlinks=False):
+        current_path = Path(current)
+        directories[:] = sorted(directories)
+        for name in sorted(names):
+            path = current_path / name
+            if path.is_symlink() or not path.is_file():
+                return False
+            relative = _relative(path, device)
+            if not _allowed(relative) or relative not in backup_files:
+                return False
+            if path.stat().st_size != backup_files[relative]:
+                return False
+    return True
 
 
 def _files(root: Path) -> list[tuple[Path, str]]:
@@ -123,6 +166,7 @@ def prepare_transfer(source: Path, device: Path) -> dict[str, Any]:
         "machineWrite": False,
         "source": str(source),
         "device": str(device),
+        "deviceFingerprint": _device_fingerprint(device),
         "fileCount": len(actions),
         "copyCount": sum(action["action"] == "copy" for action in actions),
         "skipCount": sum(action["action"] == "skip" for action in actions),
@@ -136,6 +180,8 @@ def execute_transfer(source: Path, device: Path, backup_snapshot: Path, *, confi
         raise TransferPlanError("confirmation_required", "Pass --confirm to enable machine writes.")
     backup = _verify_backup(backup_snapshot)
     plan = prepare_transfer(source, device)
+    if backup["deviceFingerprint"] != plan["deviceFingerprint"]:
+        raise TransferPlanError("backup_device_mismatch", "The verified backup does not match the target OP-1 volume.")
     copied = 0
     skipped = 0
     for action in plan["actions"]:
@@ -172,10 +218,13 @@ def restore_file(backup_snapshot: Path, device: Path, relative: str, *, confirm:
         raise TransferPlanError("unexpected_path", "The restore path is outside an OP-1 content directory.", path=relative)
     backup = _verify_backup(backup_snapshot)
     snapshot = Path(backup["snapshot"])
-    source = snapshot / "files" / parsed
-    target = device.expanduser().resolve() / parsed
-    if not device.expanduser().resolve().is_dir():
+    resolved_device = device.expanduser().resolve()
+    if not resolved_device.is_dir():
         raise TransferPlanError("device_unavailable", "The target OP-1 volume must be mounted.", path=str(device))
+    if not _restore_target_compatible(resolved_device, backup["files"]):
+        raise TransferPlanError("backup_device_mismatch", "The verified backup does not match the target OP-1 volume.")
+    source = snapshot / "files" / parsed
+    target = resolved_device / parsed
     if not source.is_file():
         raise TransferPlanError("backup_file_missing", "The requested file is not in the backup.", path=relative)
     if target.exists() and not replace:

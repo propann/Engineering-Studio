@@ -4,6 +4,11 @@ La mise à jour firmware est le parcours le plus sensible du produit. Le but n�
 
 ## Deux espaces strictement séparés
 
+OP‑1 Studio ne contient pas de fonction de flash firmware. La mise à jour
+officielle reste une procédure constructeur : l'application prépare et
+archive le fichier, puis l'utilisateur le déplace lui-même sur le volume
+TE‑boot et l'éjecte.
+
 ### Firmware officiel
 
 Parcours standard, visible dans l’application. Il accepte seulement une version répertoriée pour l’OP‑1 original et téléchargée depuis `teenage.engineering` à la demande de l’utilisateur.

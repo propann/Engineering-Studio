@@ -1,15 +1,20 @@
 # Modèle économique proposé
 
-## Décision
+## Statut
 
-Le produit devient **hybride** :
+Ce document est **gelé comme étude de marché**. Il ne constitue pas une
+spécification produit et ne doit pas entraîner de développement en ligne.
+La décision actuelle est local-first :
 
-- une application de bureau gratuite gère l’OP‑1 et les données locales ;
-- un service web optionnel apporte continuité, cloud et fonctions communautaires ;
-- la même interface React et le même compte peuvent être utilisés dans l’app et le navigateur ;
-- le navigateur seul ne promet jamais un contrôle matériel qu’il ne peut pas sécuriser.
+- une application desktop locale gère l’OP‑1 et les données locales ;
+- aucun compte, serveur, synchronisation ou abonnement n’est requis ;
+- la fiabilité, la sécurité et la récupérabilité priment sur toute
+  fonctionnalité commerciale ;
+- le navigateur reste une façade de présentation et de test.
 
-Cette séparation rend l’outil utile sans serveur et donne à l’abonnement une valeur continue. Elle évite aussi de bloquer une restauration urgente derrière un paiement.
+Une éventuelle offre en ligne sera réévaluée uniquement après une version
+locale fiable et installable. Elle ne pourra jamais être nécessaire pour une
+sauvegarde, une restauration ou une opération de sécurité.
 
 ## Offres à tester
 

@@ -14,7 +14,7 @@ tools=(
   "op1REpackerGUI|https://github.com/op1hacks/op1REpackerGUI.git|3f54f41c771c6045df8e6771fd965b055cef1084"
   "op1-docs|https://github.com/sualk/op1-docs.git|38685982be029f678d9da1d01034a7331ec77808"
   "op1svg|https://github.com/op1hacks/op1svg.git|50a3b01ebb74fd07b33d91c08b1e59e11494801d"
-  "op1aiff|https://github.com/op1hacks/op1aiff.git|db742a1bbd42c324b1996f1abbdee755f2cfd3d5"
+  "op1aiff|https://github.com/op1hacks/op1aiff.git|881f1d9fef77257325fcb50996c57df20cfe65f9"
   "opie|https://github.com/op1hacks/opie.git|90b20ecf43003813d6d46e2e450c45af58d36f36"
 )
 

@@ -58,6 +58,8 @@ Un fichier de patch OP‑1 est un AIFF qui peut combiner un aperçu audio et des
 
 Pour un drum patch, des outils comme `teoperator` et `op-patch-util` savent placer ou découper plusieurs sons et écrire les métadonnées attendues. Leur sortie doit être testée sur des fixtures avant intégration.
 
+Le schéma binaire exact (chunk `APPL`/`op-1`, champs JSON, plages de valeurs) est dans [`AUDIO_FILE_FORMAT_REFERENCE.md`](AUDIO_FILE_FORMAT_REFERENCE.md), obtenu en lisant le code de trois implémentations indépendantes plutôt que leurs seuls README. Le mapping entre les touches T1-T4 des modes Synth/Drum et ces mêmes champs JSON est dans [`SYNTH_DRUM_MODE_REFERENCE.md`](SYNTH_DRUM_MODE_REFERENCE.md).
+
 ## Tape
 
 - quatre pistes ;
@@ -67,6 +69,8 @@ Pour un drum patch, des outils comme `teoperator` et `op-patch-util` savent plac
 - un export individuel ne contient pas le mix, l’EQ, l’effet master ni le drive appliqués par l’OP‑1.
 
 Conséquence produit : l’aperçu de Tape doit aligner les quatre fichiers sur la même origine temporelle. Le futur Studio peut rendre quatre stems compatibles, mais ne doit pas prétendre recréer toutes les décisions de mixage internes.
+
+Le comportement d'usage (LIFT/DROP, overdub par défaut, SPLIT/SPLICE, vitesse de bande, Tape Tricks, Mixer) est détaillé dans [TAPE_MODE_REFERENCE.md](TAPE_MODE_REFERENCE.md), avec l'état d'implémentation actuel du clone Studio en regard.
 
 ## Album
 
@@ -84,7 +88,7 @@ Pour une première fonction de création de morceau, le modèle fiable est donc 
 4. préparer un plan de remplacement des pistes ;
 5. laisser l’utilisateur finaliser et mixer sur l’OP‑1.
 
-La modification directe de `tape.db` reste hors périmètre tant que son format et son comportement de reconstruction ne sont pas suffisamment maîtrisés.
+La modification directe de `tape.db` reste hors périmètre tant que son format et son comportement de reconstruction ne sont pas suffisamment maîtrisés. Confirmation étendue à 12 dépôts communautaires (pas seulement `op1-docs`) dans [`AUDIO_FILE_FORMAT_REFERENCE.md`](AUDIO_FILE_FORMAT_REFERENCE.md) §4 : aucun n'a percé ce format.
 
 ## Firmware officiel
 

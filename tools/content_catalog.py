@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,6 +35,12 @@ LAYOUT = (
     Path("samples"),
     Path("tapes"),
     Path("themes"),
+    Path("images/library"),
+    Path("images/original"),
+    Path("images/workspace"),
+    Path("images/themes"),
+    Path("images/exports"),
+    Path("images/manifests"),
 )
 SKIP_DIRECTORIES = {".git", ".cache", "node_modules", "__pycache__"}
 AUDIO_EXTENSIONS = {".aif", ".aiff", ".aifc", ".wav", ".flac", ".mp3", ".ogg", ".m4a"}
@@ -236,6 +243,45 @@ def command_verify(args: argparse.Namespace) -> int:
     return code
 
 
+def display_source_directory(source: Path) -> Path:
+    source = source.expanduser().resolve()
+    candidates = [source / "content" / "display", source]
+    for candidate in candidates:
+        if candidate.is_dir() and any(candidate.glob("*.svg")):
+            return candidate
+    raise ValueError(f"no SVG display directory found in: {source}")
+
+
+def command_import_display(args: argparse.Namespace) -> int:
+    root = normalise_root(args.root)
+    source = display_source_directory(Path(args.source))
+    initialise(root)
+    destination = root / "images" / "original" / (args.firmware or source.parent.parent.name)
+    destination.mkdir(parents=True, exist_ok=True)
+    copied = []
+    skipped = []
+    for svg in sorted(source.glob("*.svg")):
+        target = destination / svg.name
+        if target.exists() and sha256_file(target) == sha256_file(svg):
+            skipped.append(svg.name)
+            continue
+        shutil.copy2(svg, target)
+        copied.append(svg.name)
+    manifest = {
+        "schema": "op1-studio-display-library",
+        "version": 1,
+        "source": str(source),
+        "firmware": args.firmware or source.parent.parent.name,
+        "destination": str(destination),
+        "assetCount": len(list(destination.glob("*.svg"))),
+        "assets": [{"file": path.name, "sha256": sha256_file(path), "bytes": path.stat().st_size} for path in sorted(destination.glob("*.svg"))],
+    }
+    manifest_path = root / "images" / "manifests" / f"{manifest['firmware']}-display.json"
+    atomic_write_json(manifest_path, manifest)
+    print(json.dumps({"root": str(root), "source": str(source), "destination": str(destination), "manifest": str(manifest_path), "copied": len(copied), "unchanged": len(skipped), "assetCount": manifest["assetCount"]}, ensure_ascii=False))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -247,6 +293,11 @@ def build_parser() -> argparse.ArgumentParser:
         subparser = subparsers.add_parser(name, help=help_text)
         subparser.add_argument("root", help="local library directory")
         subparser.set_defaults(function=function)
+    import_parser = subparsers.add_parser("import-display", help="copy display SVGs from a local unpacked firmware")
+    import_parser.add_argument("root", help="local backup/library directory")
+    import_parser.add_argument("source", help="firmware directory or content/display directory")
+    import_parser.add_argument("--firmware", help="stable firmware label for the destination folder")
+    import_parser.set_defaults(function=command_import_display)
     return parser
 
 

@@ -47,4 +47,6 @@ Un patch modifié est toujours traité comme un nouveau fichier. L’application
 3. brancher le catalogue firmware et l’assistant TE‑boot ;
 4. préparer le remplissage de la machine avec aperçu des changements ;
 5. ajouter l’éditeur de patch et les conversions audio ;
-6. seulement ensuite ouvrir Tape, Album et les extensions distantes.
+6. seulement ensuite ouvrir Tape et Album ; les extensions distantes restent
+   explicitement hors périmètre jusqu'à validation complète de l'application
+   locale.

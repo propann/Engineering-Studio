@@ -54,20 +54,18 @@ dépendance bloquante — `op1aiff` et `op1svg`. Tout le reste est soit déjà
 couvert par nos propres bridges, soit correctement laissé en référence par
 choix, pas par oubli.
 
-## 3. Notre propre stack logicielle — décision prise le 12 août : on garde, orienté service en ligne
+## 3. Notre propre stack logicielle — orientation locale (service en ligne gelé)
 
-Mise à jour suite à décision produit du 12 août 2026 : le projet part sur un
+Le service hébergé, les comptes et la commercialisation sont gelés hors
+périmètre. Cette pile reste un artefact isolé de recherche et ne doit pas
+devenir une dépendance de l'application locale.
+
+Mise à jour historique suite à décision produit du 12 août 2026 : le projet part sur un
 **service** — hébergé en ligne, avec une offre payante/location — en plus de
-l'app locale. Ça referme la question laissée ouverte plus haut dans une
-première version de ce document, et ça confirme que `worker/index.ts`,
-`db/schema.ts`, `wrangler`, `@cloudflare/vite-plugin`, `drizzle-orm/kit` et
-`examples/d1/` ne sont pas du poids mort de starter : c'est le socle
-technique cohérent avec ce que `BUSINESS_MODEL.md` décrit déjà depuis le
-départ sous le nom **Studio Cloud** (4–6 €/mois ou 35–49 €/an — historique
-chiffré distant, synchronisation multi-ordinateur, partage privé) et avec le
-jalon **M6 Studio Cloud** de `ROADMAP.md`. Personne n'improvise : la doc
-business avait déjà prévu ce modèle hybride, seule la stack technique n'était
-pas encore reliée dessus.
+l'application locale. `worker/index.ts`, `db/schema.ts`, `wrangler` et les
+exemples D1 restent isolés, non appelés par l'interface et hors périmètre du
+produit local. Ils ne doivent pas entraîner de développement de comptes, de
+synchronisation ou de facturation.
 
 | Élément | État réel | Rôle dans le plan service |
 |---|---|---|
