@@ -490,7 +490,12 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   // doit rester actif même quand aucune capture n'est en cours.
   useEffect(() => {
     if (recording) return;
-    const request = (navigator as MidiNavigator).requestMIDIAccess;
+    // `.bind(navigator)` est nécessaire : une fonction native extraite de son
+    // objet perd son `this` à l'appel et `requestMIDIAccess()` lève alors
+    // silencieusement « Illegal invocation » (rejet de promesse, avalé par le
+    // .catch ci-dessous) — repéré le 14 août 2026, journal MIDI toujours à 0
+    // malgré des messages MIDI bruts reçus par ailleurs dans le même onglet.
+    const request = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
     if (!request) return;
     let disposed = false;
     let inputs: MidiInputLike[] = [];
@@ -568,7 +573,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       return;
     }
     if (!await onConnectMidi()) return;
-    const request = (navigator as MidiNavigator).requestMIDIAccess;
+    const request = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
     if (!request) return;
     const access = await request();
     const inputs = [...access.inputs.values()].filter((port) => port.name?.toUpperCase().includes("OP-1"));
@@ -1071,7 +1076,7 @@ export default function Home() {
   }, [stage]);
 
   async function connectMidiDevice(options: { silent?: boolean } = {}) {
-    const requestMIDIAccess = (navigator as MidiNavigator).requestMIDIAccess;
+    const requestMIDIAccess = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
     if (!requestMIDIAccess) {
       if (!options.silent) setNotice("Ce navigateur ne propose pas Web MIDI. Utilisez Chrome ou Edge en local pour connecter l’OP-1.");
       return false;

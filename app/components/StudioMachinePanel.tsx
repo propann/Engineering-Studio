@@ -50,15 +50,22 @@ type ControlVisual =
   // Familles génériques ci-dessus ; formes propres ci-dessous pour chaque
   // vrai bouton qu'on connaît avec certitude (14 août 2026, demande :
   // « faut cloner un maximum les bouton officiel que nos logo soit top »).
+  // Formes recalées le 14 août 2026 (soir) sur le diagramme officiel
+  // teenage.engineering/guides/op-1/original/layout (inspection zoomée x3
+  // du SVG de la page) : « on ameliore les icone de nos bouton on les fait
+  // le plus resemblant a la machine ». `rewind`/`forward` sont un seul
+  // chevron (pas double) sur la vraie machine ; `octave-up/down` et
+  // `step-back/fwd` retirés — ce sont les MÊMES deux boutons `<`/`>`
+  // (Shift change juste la fonction), pas des boutons séparés.
   | "synth" | "drum" | "tape-mode" | "mixer" | "seq" | "shift" | "help" | "tempo"
-  | "play" | "rec" | "stop" | "rewind" | "forward" | "octave-up" | "octave-down" | "step-back" | "step-fwd";
+  | "play" | "rec" | "stop" | "rewind" | "forward" | "split" | "drop" | "join";
 type ControlRefEntry = { id: string; label: string; visual: ControlVisual; note: string };
 const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
   { label: "Modes principaux", entries: [
-    { id: "synth", label: "SYNTH", visual: "synth", note: "guide TE « main modes »" },
-    { id: "drum", label: "DRUM", visual: "drum", note: "guide TE « main modes »" },
-    { id: "tape", label: "TAPE", visual: "tape-mode", note: "guide TE « main modes »" },
-    { id: "mixer", label: "MIXER", visual: "mixer", note: "guide TE « main modes »" },
+    { id: "synth", label: "SYNTH", visual: "synth", note: "" },
+    { id: "drum", label: "DRUM", visual: "drum", note: "" },
+    { id: "tape", label: "TAPE", visual: "tape-mode", note: "" },
+    { id: "mixer", label: "MIXER", visual: "mixer", note: "" },
   ] },
   { label: "Sélection de son", entries: [
     { id: "sound1", label: "SOUND 1", visual: "fn", note: "choix moteur/échantillon" },
@@ -72,32 +79,44 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
     { id: "sequencer", label: "SEQUENCER", visual: "seq", note: "bouton dédié" },
   ] },
   { label: "Système", entries: [
-    { id: "shift", label: "SHIFT", visual: "shift", note: "accès secondaire de chaque bouton" },
-    { id: "com", label: "ALBUM / COM", visual: "plug", note: "disque, MIDI, TE-boot — Shift+COM" },
+    { id: "com", label: "COM", visual: "plug", note: "connectivité : disque, MIDI, TE-boot" },
     { id: "help", label: "HELP", visual: "help", note: "aide contextuelle" },
     { id: "tempo", label: "TEMPO", visual: "tempo", note: "horloge interne" },
-    { id: "volume", label: "VOLUME", visual: "knob", note: "potentiomètre général" },
   ] },
   { label: "Bande", entries: [
-    { id: "transport-play", label: "Lecture / Pause", visual: "play", note: "guide TE « tape transport »" },
-    { id: "transport-rec", label: "Enregistrement", visual: "rec", note: "guide TE « tape transport »" },
-    { id: "transport-stop", label: "Stop", visual: "stop", note: "guide TE « tape transport »" },
-    { id: "tapeedits", label: "Édition (cut/copy/loop…)", visual: "button", note: "guide TE « tape edits », pas détaillé bouton par bouton" },
-    { id: "nav-rewind", label: "Rewind « << »", visual: "rewind", note: "guide TE « navigation buttons »" },
-    { id: "nav-forward", label: "Avance rapide « >> »", visual: "forward", note: "guide TE « navigation buttons »" },
-    { id: "nav-octave-down", label: "Octave −", visual: "octave-down", note: "guide TE « navigation buttons »" },
-    { id: "nav-octave-up", label: "Octave +", visual: "octave-up", note: "guide TE « navigation buttons »" },
-    { id: "nav-step-back", label: "Pas arrière", visual: "step-back", note: "guide TE « navigation buttons »" },
-    { id: "nav-step-fwd", label: "Pas avant", visual: "step-fwd", note: "guide TE « navigation buttons »" },
+    { id: "transport-play", label: "Lecture", visual: "play", note: "" },
+    { id: "transport-rec", label: "Enregistr.", visual: "rec", note: "" },
+    { id: "transport-stop", label: "Stop", visual: "stop", note: "" },
+    { id: "tape-split", label: "Split", visual: "split", note: "" },
+    { id: "tape-drop", label: "Drop", visual: "drop", note: "" },
+    { id: "tape-join", label: "Join", visual: "join", note: "" },
+    // Sélection de piste (CC 11-14, capturés à la suite de MIXER le 18 août
+    // 2026 : « 1 2 3 4 la selection des track »).
+    { id: "track1", label: "Piste 1", visual: "fn", note: "" },
+    { id: "track2", label: "Piste 2", visual: "fn", note: "" },
+    { id: "track3", label: "Piste 3", visual: "fn", note: "" },
+    { id: "track4", label: "Piste 4", visual: "fn", note: "" },
   ] },
   { label: "Audio", entries: [
-    { id: "micin", label: "Entrée MIC/LINE", visual: "mic", note: "jack d'entrée" },
-    { id: "micbuiltin", label: "Micro intégré", visual: "mic", note: "capture interne" },
-    { id: "speaker", label: "Haut-parleur", visual: "speaker", note: "sortie intégrée" },
+    { id: "micin", label: "MIC/LINE", visual: "mic", note: "" },
   ] },
   { label: "Affichage", entries: [
-    { id: "display", label: "Écran", visual: "screen", note: "interface graphique" },
-    { id: "vu", label: "VU / batterie", visual: "battery", note: "niveau + charge" },
+    // T1-T4 : 4 encodeurs colores alignes sous l'ecran (soft keys, on
+    // tourne ET on clique) - absents de cette liste jusqu'ici, on ne
+    // pouvait les associer qu'en cliquant directement le cercle du clavier
+    // construit (18 aout 2026, demande : « il manque le 1 2 3 4 qui est
+    // sous l'ecran »).
+    { id: "t1", label: "T1", visual: "enc", note: "sous l'écran" },
+    { id: "t2", label: "T2", visual: "enc", note: "sous l'écran" },
+    { id: "t3", label: "T3", visual: "enc", note: "sous l'écran" },
+    { id: "t4", label: "T4", visual: "enc", note: "sous l'écran" },
+    // Clic (pas rotation) du même encodeur - un contrôle à part, voir
+    // `pressedEncPush`/`asPressSignature` (18 août 2026, demande : « il y a
+    // aussi sur les 4 encodeur un bouton »).
+    { id: "t1-push", label: "1", visual: "enc", note: "" },
+    { id: "t2-push", label: "2", visual: "enc", note: "" },
+    { id: "t3-push", label: "3", visual: "enc", note: "" },
+    { id: "t4-push", label: "4", visual: "enc", note: "" },
   ] },
 ];
 
@@ -115,6 +134,15 @@ const FN_REAL_LABELS = [
   "SYN", "DRM", "TAP", "MIX",
   "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8",
   "SEQ", "SFT", "COM", "HLP",
+];
+// Même ordre, identifiants de OP1_CONTROL_GROUPS - sert à reconnaître un
+// bouton SOUND (associé ou non) pour lui donner un petit chiffre plutôt
+// qu'un point plein générique (18 août 2026, demande : « les logo des son
+// de 1 à 8 faut mettre des petit chiffre »).
+const FN_REAL_IDS = [
+  "synth", "drum", "tape", "mixer",
+  "sound1", "sound2", "sound3", "sound4", "sound5", "sound6", "sound7", "sound8",
+  "sequencer", "shift", "com", "help",
 ];
 // Même ordre que FN_REAL_LABELS : la vraie forme quand on la connaît avec
 // certitude (les 8 SOUND n'ont pas de pictogramme distinct connu — un
@@ -159,12 +187,16 @@ const MIDI_LOG_LIMIT = 300;
 function hexBytes(data: number[]) {
   return data.map((b) => b.toString(16).padStart(2, "0")).join(" ");
 }
-function arraysEqual(a: number[], b: number[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return false;
-  return true;
+/** Une association apprise capture le premier message different de la
+ * reference - ce peut etre le relachement (valeur 0) plutot que l'appui.
+ * Envoyer tel quel un CC/Note ON a 0 ne declenche rien sur la vraie
+ * machine ; on force donc la valeur a fond pour rejouer un vrai "appui"
+ * (18 aout 2026, SEQUENCER capture avec la valeur 0). */
+function asPressSignature(midi: number[]): number[] {
+  const status = midi[0] & 0xf0;
+  if ((status === 0x90 || status === 0xb0) && midi[2] === 0) return [midi[0], midi[1], 127];
+  return midi;
 }
-
 const CONTROL_GLYPH_COLORS: Record<ControlVisual, string> = {
   key: "#8f89aa", enc: "#698EFF", fn: "#00ED95", trans: "#FF3A5D",
   knob: "#c9a227", button: "#7a8a86", arrow: "#5a7a72", speaker: "#5a7a72",
@@ -172,16 +204,42 @@ const CONTROL_GLYPH_COLORS: Record<ControlVisual, string> = {
   synth: "#00ED95", drum: "#00ED95", "tape-mode": "#00ED95", mixer: "#00ED95", seq: "#00ED95",
   shift: "#7a8a86", help: "#7a8a86", tempo: "#c9a227",
   play: "#FF3A5D", rec: "#FF3A5D", stop: "#FF3A5D",
-  rewind: "#5a7a72", forward: "#5a7a72", "octave-up": "#5a7a72", "octave-down": "#5a7a72",
-  "step-back": "#5a7a72", "step-fwd": "#5a7a72",
+  rewind: "#5a7a72", forward: "#5a7a72",
+  split: "#c9915a", drop: "#c9915a", join: "#c9915a",
 };
+// Bleu, vert, blanc, orange - couleur réelle des 4 encodeurs T1-T4 (voir
+// `encRoles` pour le rôle par bloc peint). Partagé entre le rendu du
+// clavier construit et les lignes T1-T4/T1-T4 (clic) de la liste de
+// référence, pour ne pas répéter « encodeur bleu » en toutes lettres
+// (18 août 2026, demande : « on met des encodeur de la couleur, pas besoin
+// de mettre encodeur vert tout ça c'est trop long »).
+const T_ENCODER_COLORS = ["#698EFF", "#00ED95", "#DFD9FF", "#FF7A30"];
+function tEncoderColor(id: string): string | undefined {
+  const match = /^t([1-4])(-push)?$/.exec(id);
+  return match ? T_ENCODER_COLORS[Number(match[1]) - 1] : undefined;
+}
+/** Le clic (pas la rotation) d'un encodeur T1-T4 : gros chiffre plein plutôt
+ * que le cadran générique, même logique que le gros chiffre dans le rendu
+ * de l'encodeur lui-même (18 août 2026, demande : « en icone on met des
+ * gros 1234 dedans »). */
+function tEncoderPushDigit(id: string): { digit: string; color: string } | null {
+  const match = /^t([1-4])-push$/.exec(id);
+  return match ? { digit: match[1], color: T_ENCODER_COLORS[Number(match[1]) - 1] } : null;
+}
+/** Boutons de sélection de piste (Piste 1-4, CC 11-14) : même traitement
+ * gros-chiffre que les encodeurs, en vert (couleur "fn" générique) puisque
+ * ce sont des boutons verts, pas des encodeurs colorés. */
+function trackDigit(id: string): { digit: string; color: string } | null {
+  const match = /^track([1-4])$/.exec(id);
+  return match ? { digit: match[1], color: CONTROL_GLYPH_COLORS.fn } : null;
+}
 
 /** Formes seules, coordonnées 0-18 — réutilisées telles quelles par
  * `ControlGlyph` (liste de référence) et `EmbeddedGlyph` (incrustées dans un
  * bouton du clavier construit, 14 août 2026 : « on remplace la pastille de
  * couleur par le logo de la touche » une fois une association apprise). */
-function ControlGlyphShape({ visual }: { visual: ControlVisual }) {
-  const c = CONTROL_GLYPH_COLORS[visual];
+function ControlGlyphShape({ visual, colorOverride }: { visual: ControlVisual; colorOverride?: string }) {
+  const c = colorOverride ?? CONTROL_GLYPH_COLORS[visual];
   switch (visual) {
     case "key": return (<>
       <rect x={2} y={2} width={5} height={14} rx={1} fill="#DFD9FF" stroke={c} strokeWidth={1} />
@@ -204,27 +262,36 @@ function ControlGlyphShape({ visual }: { visual: ControlVisual }) {
       <path d="M4 9h10M4 9l4-4M4 9l4 4M14 9l-4-4M14 9l-4 4" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
     case "synth": return (
-      <path d="M2 11 Q5 4 9 11 T16 11" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+      // Onde double, recalée sur le pictogramme reel de "layout" (18 aout 2026).
+      <path d="M1.5 11 Q4.5 4.5 7.5 11 T13.5 11" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
-    case "drum": return (<>
-      <rect x={2.5} y={2.5} width={5.5} height={5.5} rx={1} fill={c} />
-      <rect x={10} y={2.5} width={5.5} height={5.5} rx={1} fill={c} opacity={.5} />
-      <rect x={2.5} y={10} width={5.5} height={5.5} rx={1} fill={c} opacity={.5} />
-      <rect x={10} y={10} width={5.5} height={5.5} rx={1} fill={c} />
-    </>);
-    case "tape-mode": return (<>
-      <rect x={2} y={4} width={14} height={10} rx={1.5} fill="none" stroke={c} strokeWidth={1.4} />
-      <circle cx={6.5} cy={9} r={2} fill="none" stroke={c} strokeWidth={1.2} />
-      <circle cx={11.5} cy={9} r={2} fill="none" stroke={c} strokeWidth={1.2} />
-    </>);
-    case "mixer": return (<>
-      <line x1={5} y1={3} x2={5} y2={15} stroke={c} strokeWidth={1.2} />
-      <rect x={3.3} y={6.5} width={3.4} height={2} rx={.6} fill={c} />
-      <line x1={9} y1={3} x2={9} y2={15} stroke={c} strokeWidth={1.2} />
-      <rect x={7.3} y={10.5} width={3.4} height={2} rx={.6} fill={c} />
-      <line x1={13} y1={3} x2={13} y2={15} stroke={c} strokeWidth={1.2} />
-      <rect x={11.3} y={4} width={3.4} height={2} rx={.6} fill={c} />
-    </>);
+    case "drum": return (
+      // Note pointee (rond + hampe) - le vrai bouton DRUM n'affiche pas une
+      // grille de pads mais une note isolee.
+      <>
+        <circle cx={6.5} cy={13} r={3} fill={c} />
+        <line x1={9.3} y1={13} x2={9.3} y2={3} stroke={c} strokeWidth={1.6} strokeLinecap="round" />
+      </>
+    );
+    case "tape-mode": return (
+      // Deux bobines cote a cote, sans boitier - le vrai bouton TAPE ne
+      // montre que "OO", pas un rectangle de cassette.
+      <>
+        <circle cx={6} cy={9} r={4.3} fill="none" stroke={c} strokeWidth={1.3} />
+        <circle cx={12} cy={9} r={4.3} fill="none" stroke={c} strokeWidth={1.3} />
+        <circle cx={6} cy={9} r={1} fill={c} />
+        <circle cx={12} cy={9} r={1} fill={c} />
+      </>
+    );
+    case "mixer": return (
+      // Trois barres de hauteur differente (comme le pictogramme reel),
+      // sans curseurs rapportes.
+      <>
+        <line x1={4.5} y1={14} x2={4.5} y2={7} stroke={c} strokeWidth={2} strokeLinecap="round" />
+        <line x1={9} y1={14} x2={9} y2={3} stroke={c} strokeWidth={2} strokeLinecap="round" />
+        <line x1={13.5} y1={14} x2={13.5} y2={8.5} stroke={c} strokeWidth={2} strokeLinecap="round" />
+      </>
+    );
     case "seq": return (<>
       <circle cx={3.5} cy={9} r={1.7} fill={c} />
       <circle cx={7.7} cy={9} r={1.7} fill={c} opacity={.5} />
@@ -235,35 +302,62 @@ function ControlGlyphShape({ visual }: { visual: ControlVisual }) {
       <path d="M9 3.5 L14.5 10 L11 10 L11 14.5 L7 14.5 L7 10 L3.5 10 Z" fill={c} />
     );
     case "help": return (
-      <text x={9} y={13.5} textAnchor="middle" fontSize={12} fontFamily="monospace" fontWeight={700} fill={c}>?</text>
+      // Crochet courbe - le vrai bouton HELP affiche une virgule recourbee,
+      // pas un point d'interrogation typographique.
+      <path d="M12 5.5 Q6.5 4 6.5 8 Q6.5 10.5 10 10.8 M8.6 13.4 h.1" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
-    case "tempo": return (<>
-      <circle cx={9} cy={9} r={7} fill="none" stroke={c} strokeWidth={1.6} />
-      <line x1={9} y1={9} x2={9} y2={4.8} stroke={c} strokeWidth={1.4} strokeLinecap="round" />
-      <line x1={9} y1={9} x2={12} y2={9} stroke={c} strokeWidth={1.4} strokeLinecap="round" />
-    </>);
+    case "tempo": return (
+      // Triangle inscrit dans un cercle (metronome), pas une horloge.
+      <>
+        <circle cx={9} cy={9} r={7} fill="none" stroke={c} strokeWidth={1.4} />
+        <path d="M9 4.2 L13.2 13 L4.8 13 Z" fill="none" stroke={c} strokeWidth={1.3} strokeLinejoin="round" />
+      </>
+    );
     case "play": return (<path d="M6 4 L14 9 L6 14 Z" fill={c} />);
-    case "rec": return (<circle cx={9} cy={9} r={5.5} fill={c} />);
+    case "rec": return (
+      // Anneau + point central - le vrai bouton REC affiche un cercle
+      // creuse, pas un disque plein.
+      <>
+        <circle cx={9} cy={9} r={5.6} fill="none" stroke={c} strokeWidth={2} />
+        <circle cx={9} cy={9} r={1.8} fill={c} />
+      </>
+    );
     case "stop": return (<rect x={4} y={4} width={10} height={10} rx={1} fill={c} />);
-    case "rewind": return (<>
-      <path d="M14 4 L9 9 L14 14 Z" fill={c} />
-      <path d="M8 4 L3 9 L8 14 Z" fill={c} />
-    </>);
-    case "forward": return (<>
-      <path d="M4 4 L9 9 L4 14 Z" fill={c} />
-      <path d="M10 4 L15 9 L10 14 Z" fill={c} />
-    </>);
-    case "octave-up": return (
-      <path d="M4 12 L9 5 L14 12" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    case "rewind": return (
+      // Chevron simple "<" - le vrai bouton n'a qu'une seule fleche, pas
+      // deux ("<<").
+      <path d="M12 4 L6 9 L12 14" stroke={c} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
-    case "octave-down": return (
-      <path d="M4 6 L9 13 L14 6" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    case "forward": return (
+      <path d="M6 4 L12 9 L6 14" stroke={c} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
-    case "step-back": return (
-      <path d="M11 4 L6 9 L11 14" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    case "split": return (
+      // Fleche vers le haut + graduations - "decoupe en 1-4" du bouton reel.
+      <>
+        <path d="M9 12 V4 M6 6.5 L9 3.5 L12 6.5" stroke={c} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1={4} y1={14.5} x2={14} y2={14.5} stroke={c} strokeWidth={1.2} strokeLinecap="round" />
+        <line x1={4} y1={14.5} x2={4} y2={16} stroke={c} strokeWidth={1.1} strokeLinecap="round" />
+        <line x1={9} y1={14.5} x2={9} y2={16} stroke={c} strokeWidth={1.1} strokeLinecap="round" />
+        <line x1={14} y1={14.5} x2={14} y2={16} stroke={c} strokeWidth={1.1} strokeLinecap="round" />
+      </>
     );
-    case "step-fwd": return (
-      <path d="M7 4 L12 9 L7 14" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    case "drop": return (
+      // Fleche vers le bas + marqueur - le bouton reel depose un point de
+      // repere.
+      <>
+        <path d="M9 4 V11.5 M6 9 L9 12 L12 9" stroke={c} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={9} cy={15} r={1.4} fill={c} />
+      </>
+    );
+    case "join": return (
+      // Deux points qui convergent en un - le bouton reel fusionne deux
+      // segments de bande.
+      <>
+        <circle cx={4} cy={5.5} r={1.4} fill={c} />
+        <circle cx={4} cy={12.5} r={1.4} fill={c} />
+        <path d="M6 5.5 Q12 9 6 12.5" stroke={c} strokeWidth={1.3} fill="none" strokeLinecap="round" />
+        <circle cx={13.5} cy={9} r={1.7} fill={c} />
+      </>
     );
     case "speaker": return (<>
       <path d="M3 7h3l4-3v10l-4-3H3z" fill={c} />
@@ -282,21 +376,21 @@ function ControlGlyphShape({ visual }: { visual: ControlVisual }) {
       <rect x={14.5} y={7.5} width={2} height={3} fill={c} />
       <rect x={4} y={7} width={6} height={4} fill={c} />
     </>);
-    case "plug": return (<>
-      <rect x={5} y={7} width={8} height={6} rx={1.5} fill="none" stroke={c} strokeWidth={1.6} />
-      <line x1={7} y1={7} x2={7} y2={4} stroke={c} strokeWidth={1.6} strokeLinecap="round" />
-      <line x1={11} y1={7} x2={11} y2={4} stroke={c} strokeWidth={1.6} strokeLinecap="round" />
-    </>);
+    case "plug": return (
+      // Accolade ouverte "C" - le vrai bouton COM affiche ce crochet, pas
+      // une prise avec broches.
+      <path d="M12.5 4.5 A6 6 0 1 0 12.5 13.5" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+    );
     case "button": default: return (
       <rect x={2} y={2} width={14} height={14} rx={3} fill="none" stroke={c} strokeWidth={2} />
     );
   }
 }
 
-function ControlGlyph({ visual }: { visual: ControlVisual }) {
+function ControlGlyph({ visual, colorOverride }: { visual: ControlVisual; colorOverride?: string }) {
   return (
-    <svg viewBox="0 0 18 18" width={14} height={14} aria-hidden="true">
-      <ControlGlyphShape visual={visual} />
+    <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
+      <ControlGlyphShape visual={visual} colorOverride={colorOverride} />
     </svg>
   );
 }
@@ -381,6 +475,17 @@ export function StudioMachinePanel({
   }, [pressed]);
 
   const { white: whiteBlocks, black: blackBlocks, enc: encBlocks, fn: fnBlocks, trans: transBlocks } = sortKeyBlocks(validated);
+  // Le clavier construit contient 5 blocs "enc", mais la vraie machine n'a
+  // que 4 encodeurs colores T1-T4 (bleu/vert/blanc/orange) sous l'ecran -
+  // le 5e bloc, plus petit (h=2 contre h=4 dans le gabarit), est en realite
+  // le potentiometre VOLUME (18 aout 2026, demande : « le volume est blanc
+  // le petit encodeur »). On le repere par sa taille (le plus petit bloc
+  // "enc"), pas par son index, pour rester correct si le gabarit change.
+  const encVolumeIdx = encBlocks.length > 4
+    ? encBlocks.reduce((minI, b, i, arr) => (b.w * b.h < arr[minI].w * arr[minI].h ? i : minI), 0)
+    : -1;
+  let tCounter = 0;
+  const encRoles = encBlocks.map((_, i) => (i === encVolumeIdx ? { isVolume: true, tIndex: -1 } : { isVolume: false, tIndex: tCounter++ }));
   // En mode notesOnly, le cadrage ignore les encodeurs/boutons/transport :
   // sans ça, 2-3 colonnes réservées à des contrôles sans note tombante
   // s'ajoutent sur le côté et désalignent l'écran par rapport aux touches.
@@ -457,6 +562,11 @@ export function StudioMachinePanel({
   // « toute les touche du clavier reagisse comme les note en bougant »).
   const [pressedFn, setPressedFn] = useState<Set<number>>(new Set());
   const [pressedTrans, setPressedTrans] = useState<Set<number>>(new Set());
+  // Clic (pas rotation) d'un encodeur - la vraie machine dit « tapping an
+  // encoder usually means confirm/return to default » (guide TE synth
+  // mode) : un contrôle à part, distinct de la rotation CC (18 août 2026,
+  // demande : « il nous faut un truc pour regler les bouton des encodeur »).
+  const [pressedEncPush, setPressedEncPush] = useState<Set<number>>(new Set());
   // Minuteurs des « flashs » déclenchés par un vrai appui matériel (voir
   // plus bas) — nettoyés au démontage pour ne jamais toucher un composant
   // déjà parti.
@@ -577,18 +687,42 @@ export function StudioMachinePanel({
       const status = lastRawMidiIn[0] & 0xf0;
       if (status === 0xb0 && lastRawMidiIn.length >= 3) {
         const cc = lastRawMidiIn[1];
-        if (cc >= 70 && cc <= 73) {
-          const idx = cc - 70;
-          const v = lastRawMidiIn[2];
-          setEncVals((arr) => arr.map((x, i) => (i === idx ? v : x)));
-          setLastEnc({ idx, v });
+        const v = lastRawMidiIn[2];
+        // Une association apprise (enc-N, meme numero de CC) passe avant la
+        // convention par defaut CC7/70-73 - permet de corriger si la vraie
+        // machine envoie un autre numero (18 aout 2026, demande : « il me
+        // semble qu'il y a quelques touches qui n'envoient pas de signaux »).
+        let targetIdx = -1;
+        for (const [key, binding] of Object.entries(learnedMap)) {
+          if (!key.startsWith("enc-")) continue;
+          if ((binding.midi[0] & 0xf0) === 0xb0 && binding.midi[1] === cc) {
+            targetIdx = Number(key.split("-")[1]);
+            break;
+          }
+        }
+        if (targetIdx < 0) {
+          // CC 7 (volume standard MIDI) et CC 70-73 (T1-T4) recherches par
+          // role, pas par index brut (voir `encRoles`).
+          targetIdx = cc === 7
+            ? encRoles.findIndex((r) => r.isVolume)
+            : cc >= 70 && cc <= 73
+              ? encRoles.findIndex((r) => !r.isVolume && r.tIndex === cc - 70)
+              : -1;
+        }
+        if (targetIdx >= 0) {
+          setEncVals((arr) => arr.map((x, i) => (i === targetIdx ? v : x)));
+          setLastEnc({ idx: targetIdx, v });
         }
       }
       for (const [key, binding] of Object.entries(learnedMap)) {
-        if (!arraysEqual(binding.midi, lastRawMidiIn)) continue;
+        // Compare seulement statut+donnee1 (pas l'octet de valeur) : un
+        // bouton qui bascule 127/0 a chaque appui n'aurait matche qu'un
+        // appui sur deux sinon - repere le 18 aout 2026 en testant
+        // SEQUENCER, capture avec la valeur 0 (relachement).
+        if (binding.midi[0] !== lastRawMidiIn[0] || binding.midi[1] !== lastRawMidiIn[1]) continue;
         const [type, idxStr] = key.split("-");
         const idx = Number(idxStr);
-        const setPressed = type === "fn" ? setPressedFn : type === "trans" ? setPressedTrans : null;
+        const setPressed = type === "fn" ? setPressedFn : type === "trans" ? setPressedTrans : type === "encpush" ? setPressedEncPush : null;
         if (setPressed) {
           setPressed((s) => new Set(s).add(idx));
           const timer = window.setTimeout(() => setPressed((s) => { if (!s.has(idx)) return s; const ns = new Set(s); ns.delete(idx); return ns; }), 150);
@@ -636,58 +770,53 @@ export function StudioMachinePanel({
               <button type="button" className="control-learn-cancel" onClick={cancelLearn}>Annuler</button>
             </> : configTarget ? <>
               <strong>{configTarget.label}</strong>
-              <span>{configTarget.type === "note" ? `Note MIDI ${WHITE_NOTES[configTarget.index] ?? BLACK_NOTES[configTarget.index] ?? "-"}` : configTarget.type === "enc" ? `CC MIDI ${70 + configTarget.index}` : `Commande MIDI ${36 + configTarget.index}`}</span>
+              <span>{configTarget.type === "note" ? `Note MIDI ${WHITE_NOTES[configTarget.index] ?? BLACK_NOTES[configTarget.index] ?? "-"}` : configTarget.type === "enc" ? (encRoles[configTarget.index]?.isVolume ? "CC MIDI 7 (volume)" : `CC MIDI ${70 + (encRoles[configTarget.index]?.tIndex ?? 0)}`) : `Commande MIDI ${36 + configTarget.index}`}</span>
               <small>Cliquez un autre contrôle pour le configurer.</small>
             </> : learnFeedback ? <strong className="control-learn-done">✓ {learnFeedback}</strong>
               : <small>Cliquez un bouton virtuel, une note ou un potentiomètre — ou une touche de la liste à droite pour l&apos;associer à un bouton du clavier construit.</small>}
           </div>
 
           <div className="control-reference" aria-label="Liste complète des touches de la machine">
+            {/* Le cadre "Câblé ici" (état filaire brut, une ligne par
+               famille de contrôle) a été retiré le 18 août 2026 : il prenait
+               la moitié de la largeur pour peu d'information, au détriment
+               de la vraie liste de référence à droite (demande : « on prend
+               la place pour bien exposer les bouton »). L'état des touches
+               reste visible en direct sur le clavier construit lui-même. */}
             <div className="control-ref-section">
-              <strong>Câblé ici — envoie réellement des messages</strong>
-              <div className="control-ref-row">
-                <ControlGlyph visual="key" />
-                <span>Clavier de notes ({whiteBlocks.length + blackBlocks.length} touches construites)</span>
-                <span className="control-ref-live">{lastPlayed}</span>
-              </div>
-              {encBlocks.map((_, i) => (
-                <div className="control-ref-row" key={`refenc${i}`}>
-                  <ControlGlyph visual="enc" />
-                  <span>T{i + 1} (encodeur) — CC MIDI {70 + i}</span>
-                  <span className="control-ref-live">{lastEnc?.idx === i ? `valeur ${lastEnc.v}` : "—"}</span>
-                </div>
-              ))}
-              <div className="control-ref-row">
-                <ControlGlyph visual="fn" />
-                <span>{fnBlocks.length} boutons verts ({FN_REAL_LABELS.length} nommés, {Object.keys(learnedMap).filter(k => k.startsWith("fn-")).length} associés) — Note ON canal 10, 36+index</span>
-                <span className="control-ref-live">{lastFn !== null ? `${FN_REAL_LABELS[lastFn] ?? `Bouton ${lastFn + 1}`} → note ${36 + lastFn}` : "—"}</span>
-              </div>
-              <div className="control-ref-row">
-                <ControlGlyph visual="trans" />
-                <span>{transBlocks.length} boutons transport ({TRANS_REAL_LABELS.join("/")})</span>
-                <span className="control-ref-note">seul « lecture » est câblé pour l&apos;instant</span>
-              </div>
-            </div>
-
-            <div className="control-ref-section">
-              <strong>Référence — vraies touches OP-1 (guide officiel TE)</strong>
-              <small className="control-ref-hint">Cliquez une touche pour l&apos;associer, ou glissez-la directement sur un bouton du clavier construit.</small>
-              {OP1_CONTROL_GROUPS.map((group) => (
+              <strong>Boutons à configurer</strong>
+              <small className="control-ref-hint">Cliquez une touche, ou glissez-la sur un bouton du clavier construit.</small>
+              {OP1_CONTROL_GROUPS.map((group) => {
+                // Ne montre que ce qui reste à associer - une fois qu'un
+                // contrôle réel a une signature captée (peu importe le
+                // bouton virtuel choisi), il disparaît de cette liste
+                // (18 août 2026, demande : « on met que les bouton à
+                // configurer »).
+                const remaining = group.entries.filter((entry) => !Object.values(learnedMap).some((binding) => binding.realId === entry.id));
+                if (!remaining.length) return null;
+                return (
                 <div key={group.label} className="control-ref-group">
                   <span className="control-ref-group-label">{group.label}</span>
-                  {group.entries.map((entry) => (
+                  {remaining.map((entry) => (
                     <button type="button" key={entry.id} className={`control-ref-row control-ref-row-pick${learnReal?.id === entry.id ? " is-picking" : ""}`}
                       onClick={() => startLearn(entry)}
                       draggable
                       onDragStart={() => { dragPayloadRef.current = { kind: "real", entry }; }}
                     >
-                      <ControlGlyph visual={entry.visual} />
+                      {(() => {
+                        const bigDigit = tEncoderPushDigit(entry.id) ?? trackDigit(entry.id);
+                        return bigDigit
+                          ? <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
+                              <text x={9} y={9} textAnchor="middle" dominantBaseline="central" fontSize={14} fontFamily="monospace" fontWeight="700" fill={bigDigit.color}>{bigDigit.digit}</text>
+                            </svg>
+                          : <ControlGlyph visual={entry.visual} colorOverride={tEncoderColor(entry.id)} />;
+                      })()}
                       <span>{entry.label}</span>
-                      <span className="control-ref-note">{entry.note}</span>
                     </button>
                   ))}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -699,7 +828,7 @@ export function StudioMachinePanel({
             </div>
             <div className="midi-journal-list">
               {midiLog.length === 0 && <span className="control-ref-note">Aucun message pour l&apos;instant — jouez une touche ou branchez l&apos;OP-1 en mode contrôleur.</span>}
-              {[...midiLog].reverse().slice(0, 60).map((entry) => (
+              {[...midiLog].reverse().slice(0, 1).map((entry) => (
                 <div key={entry.id} className={`midi-journal-row midi-journal-${entry.dir}`}>
                   <span className="midi-journal-dir">{entry.dir === "in" ? "↓ IN" : "↑ OUT"}</span>
                   <span className="midi-journal-hex">{hexBytes(entry.data)}</span>
@@ -717,7 +846,20 @@ export function StudioMachinePanel({
           <svg viewBox={layoutViewBox} preserveAspectRatio="xMidYMid meet"
             style={{ width:"100%", height:"100%", display:"block" }}
             onPointerUp={() => {
-              if (encDrag.current) encDrag.current = null;
+              const drag = encDrag.current;
+              encDrag.current = null;
+              if (!drag) return;
+              // Pas de mouvement de rotation entre l'appui et le relâchement
+              // = un clic, pas un tour de molette - envoie l'association
+              // "encpush" apprise pour cet encodeur, si elle existe.
+              const moved = (encVals[drag.idx] ?? drag.startV) !== drag.startV;
+              if (moved) return;
+              const pushKey = `encpush-${drag.idx}`;
+              const pushBinding = learnedMap[pushKey];
+              setPressedEncPush((s) => new Set(s).add(drag.idx));
+              const timer = window.setTimeout(() => setPressedEncPush((s) => { if (!s.has(drag.idx)) return s; const ns = new Set(s); ns.delete(drag.idx); return ns; }), 150);
+              flashTimersRef.current.push(timer);
+              if (mode === "midi" && pushBinding) sendMidi(asPressSignature(pushBinding.midi), `${pushBinding.realLabel} (clic)`);
             }}
             onPointerMove={e => {
               if (!encDrag.current) return;
@@ -726,7 +868,9 @@ export function StudioMachinePanel({
               const v = Math.max(0, Math.min(127, startV + delta));
               setEncVals(arr => arr.map((x,i) => i===idx ? v : x));
               setLastEnc({ idx, v });
-              if (mode === "midi") sendMidi([0xb0, idx+70, v], `T${idx + 1}`);
+              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
+              const role = encRoles[idx];
+              if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
             <rect x={0} y={0} width={COLS} height={ROWS} fill="#ffffff" />
@@ -795,12 +939,32 @@ export function StudioMachinePanel({
               const cx = b.col + b.w/2;
               const cy = b.row + b.h/2;
               const r  = Math.min(b.w, b.h)/2 - .2;
-              const ENC_COLORS = ["#698EFF","#00ED95","#DFD9FF","#FF3A5D"];
-              const ec = ENC_COLORS[i % 4];
+              const role = encRoles[i];
+              // Bleu, vert, blanc, orange - ordre reel des 4 encodeurs T1-T4
+              // (verifie sur photo produit, 18 aout 2026). Le potentiometre
+              // VOLUME (bloc a part, voir `encRoles`) est blanc/neutre, pas
+              // pris dans ce cycle.
+              const ENC_COLORS = ["#698EFF","#00ED95","#DFD9FF","#FF7A30"];
+              const ec = role.isVolume ? "#DFD9FF" : ENC_COLORS[role.tIndex % 4];
+              const label = role.isVolume ? "VOL" : `T${role.tIndex + 1}`;
+              const isPushDown = pressedEncPush.has(i);
               return (
                 <g key={`enc${i}`}
+                  className={`mk-key${isPushDown ? " is-down" : ""}`}
                   onPointerDown={e => {
-                    if (configOpen) { e.stopPropagation(); selectConfig("enc", i, `Potentiomètre T${i + 1}`); return; }
+                    const encLabel = role.isVolume ? "Potentiomètre VOLUME" : `Potentiomètre T${role.tIndex + 1}`;
+                    // Les encodeurs n'acceptaient pas l'étape 2/3 de la
+                    // procédure d'association (seuls fn/trans le faisaient) -
+                    // impossible jusqu'ici d'apprendre VOLUME ou un Tn
+                    // (18 août 2026, demande : « j'ai pas les bouton pour
+                    // regler les potentiometre »).
+                    if (learnStep === "pick-virtual") {
+                      e.stopPropagation();
+                      const isPush = learnReal?.id.endsWith("-push");
+                      pickVirtualForLearn(isPush ? "encpush" : "enc", i, isPush ? `${encLabel} (clic)` : encLabel);
+                      return;
+                    }
+                    if (configOpen) { e.stopPropagation(); selectConfig("enc", i, encLabel); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     encDrag.current = {idx:i, startY:e.clientY, startV:v};
                   }}
@@ -820,9 +984,19 @@ export function StudioMachinePanel({
                     y2={cy - r*.65*Math.cos(angle)}
                     stroke="#444" strokeWidth={.1} strokeLinecap="round"/>
                   <circle cx={cx} cy={cy} r={.15} fill={ec}/>
+                  {!role.isVolume && (
+                    // Gros chiffre 1-4 dans le cadran, sous l'aiguille - les
+                    // 4 encodeurs T1-T4 sont alignes ensemble, VOLUME (le
+                    // 5e, plus petit) reste sans chiffre (18 aout 2026,
+                    // demande : « les 4 premiers […] gros chiffre 1234 »).
+                    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central"
+                      fontSize={r*.85} fill={`${ec}33`} fontFamily="monospace" fontWeight="700">
+                      {role.tIndex + 1}
+                    </text>
+                  )}
                   <text x={cx} y={b.row+b.h+.55} textAnchor="middle"
                     fontSize={.55} fill={ec} fontFamily="monospace" fontWeight="700">
-                    T{i+1}
+                    {label}
                   </text>
                 </g>
               );
@@ -833,6 +1007,8 @@ export function StudioMachinePanel({
               const binding = learnedMap[key];
               const fnLabel = binding?.realLabel ?? FN_REAL_LABELS[i];
               const fnVisual = binding?.visual ?? FN_STATIC_VISUAL[i];
+              const fnRealId = binding?.realId ?? FN_REAL_IDS[i];
+              const fnSoundNumber = fnRealId ? /^sound([1-8])$/.exec(fnRealId)?.[1] : null;
               const isFnDown = pressedFn.has(i);
               const isPickTarget = learnStep === "pick-virtual";
               return (
@@ -845,7 +1021,7 @@ export function StudioMachinePanel({
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedFn(s => new Set(s).add(i));
                     setLastFn(i);
-                    if (mode === "midi") sendMidi(binding?.midi ?? [0x99, 36 + i, 100], fnLabel ?? `Bouton ${i + 1}`);
+                    if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : [0x99, 36 + i, 100], fnLabel ?? `Bouton ${i + 1}`);
                   }}
                   onPointerUp={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
                   onPointerLeave={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
@@ -858,9 +1034,12 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
                     rx={.3} fill="#cececb" stroke={dragOverKey === key ? "#00ED95" : binding ? "#267c65" : (isPickTarget ? "#00ED95" : "#a0a3a0")} strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .07}/>
-                  {fnVisual
-                    ? <EmbeddedGlyph visual={fnVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
-                    : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#00ED95"/>
+                  {fnSoundNumber
+                    ? <text x={b.col+b.w/2} y={b.row+b.h*.42} textAnchor="middle" dominantBaseline="central"
+                        fontSize={Math.min(b.w,b.h)*.34} fill="#171a1b" fontFamily="monospace" fontWeight="700">{fnSoundNumber}</text>
+                    : fnVisual
+                      ? <EmbeddedGlyph visual={fnVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
+                      : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#00ED95"/>
                   }
                   {fnLabel && (
                     <text x={b.col+b.w/2} y={b.row+b.h*.82}
@@ -890,7 +1069,7 @@ export function StudioMachinePanel({
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedTrans(s => new Set(s).add(i));
                     if (i === 0) onTogglePlayback();
-                    if (mode === "midi" && binding) sendMidi(binding.midi, transLabel);
+                    if (mode === "midi" && binding) sendMidi(asPressSignature(binding.midi), transLabel);
                   }}
                   onPointerUp={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
                   onPointerLeave={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}

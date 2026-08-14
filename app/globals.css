@@ -885,19 +885,21 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .mgrid-feedback { margin-left: auto; color: #267c65; font: 700 9px var(--font-geist-mono), monospace; }
 
 /* Liste complète des touches de la machine, sous le panneau config (14/08) */
+/* Une seule section depuis le retrait du cadre "Câblé ici" (18 août 2026) :
+   pleine largeur, répartie en colonnes fluides plutôt que la grille fixe
+   1fr/1fr d'avant — plus de place pour bien exposer les boutons. */
 .control-reference {
-  display: grid; grid-template-columns: 1fr 1fr;
-  gap: 10px 18px;
+  display: block;
   padding: 8px 10px 10px;
   background: #fafcfa;
   border-bottom: 1px solid #d6e2d9;
-  max-height: 240px; overflow-y: auto;
+  max-height: 320px; overflow-y: auto;
 }
-.control-ref-section { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.control-ref-section > strong { font: 700 8px var(--font-geist-mono), monospace; color: #263a31; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
-.control-ref-group { display: flex; flex-direction: column; gap: 2px; margin-top: 7px; }
+.control-ref-section { column-width: 240px; column-gap: 20px; min-width: 0; }
+.control-ref-section > strong { display: block; font: 700 8px var(--font-geist-mono), monospace; color: #263a31; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 2px; }
+.control-ref-group { display: flex; flex-direction: column; gap: 2px; margin-top: 7px; break-inside: avoid; -webkit-column-break-inside: avoid; }
 .control-ref-group-label { font: 700 7.5px var(--font-geist-mono), monospace; color: #5a7a72; letter-spacing: .06em; text-transform: uppercase; }
-.control-ref-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; font: 9px var(--font-geist-mono), monospace; color: #3a5050; }
+.control-ref-row { display: flex; align-items: center; gap: 7px; padding: 3px 0; font: 10px var(--font-geist-mono), monospace; color: #3a5050; }
 .control-ref-row svg { flex-shrink: 0; }
 .control-ref-row > span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .control-ref-live { color: #267c65; font-weight: 700; white-space: nowrap; }
@@ -928,7 +930,10 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .midi-journal { padding: 8px 10px 10px; background: #fafcfa; border-bottom: 1px solid #d6e2d9; }
 .midi-journal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .midi-journal-head strong { font: 700 8px var(--font-geist-mono), monospace; color: #263a31; letter-spacing: .04em; text-transform: uppercase; }
-.midi-journal-list { display: flex; flex-direction: column; gap: 1px; max-height: 150px; overflow-y: auto; font: 9px var(--font-geist-mono), monospace; }
+/* 6 lignes rendues max (StudioMachinePanel) : la config reste compacte, pas
+   une liste à rallonge — max-height n'est qu'un filet de sécurité si une
+   ligne déborde. */
+.midi-journal-list { display: flex; flex-direction: column; gap: 1px; max-height: 96px; overflow-y: auto; font: 9px var(--font-geist-mono), monospace; }
 .midi-journal-row { display: flex; align-items: center; gap: 8px; padding: 1px 4px; border-radius: 2px; }
 .midi-journal-in { color: #3a5050; }
 .midi-journal-out { color: #267c65; }
@@ -1231,8 +1236,9 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 }
 
 @media (max-width: 760px) {
-  .control-reference { grid-template-columns: 1fr; max-height: 280px; }
-  .midi-journal-list { max-height: 120px; }
+  .control-ref-section { column-width: 100%; }
+  .control-reference { max-height: 280px; }
+  .midi-journal-list { max-height: 96px; }
   .midi-journal-time { display: none; }
   .site-canvas { padding: 8px; }
   .machine-shell { min-height: calc(100vh - 45px); border-radius: 9px; }

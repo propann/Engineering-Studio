@@ -108,3 +108,60 @@ encodeurs et son transport. Le canal d'émission se change avec `Shift` et
 l'encodeur vert ; l'application ne filtre volontairement aucun canal à la
 réception. La sélection `Mode contrôle` dans Studio active la connexion Web
 MIDI côté application, mais ne change pas le mode de l'OP-1 à distance.
+
+## Session du 18 août 2026 — mode CTRL testé en réel, bug MIDI corrigé
+
+Première session avec capture MIDI réellement interactive (OP-1 en `CTRL`
+via `COM`/`T2`, navigateur Chrome, serveur `npm run dev` sur `:5173`).
+
+**Bug bloquant trouvé et corrigé** : dans `app/page.tsx`, `requestMIDIAccess`
+était extrait de `navigator` puis appelé détaché (`const request =
+navigator.requestMIDIAccess; request()`), ce qui lève silencieusement
+`TypeError: Illegal invocation` (rejet de promesse avalé par les `.catch`
+existants) — confirmé en isolant le même appel dans la console. Résultat :
+le journal MIDI restait à 0 quel que soit le mode de la machine, aucune
+erreur visible. Corrigé avec `.bind(navigator)` aux trois endroits qui
+appelaient `requestMIDIAccess`.
+
+**Note de la première touche** : le clavier construit partait de C3 (note
+48) ; la vraie machine envoie **53 (F3)** pour sa touche la plus à gauche —
+confirmé par l'écran de l'OP-1 et par le message MIDI brut capturé
+(`[0x90, 53, ...]`) pendant qu'une seule touche était tenue. `KEYBOARD_WHITE_NOTES`/`KEYBOARD_BLACK_NOTES`
+(`app/lib/keyboardLayout.ts`) repartent de F, pas de C.
+
+**Couleurs des 4 encodeurs T1-T4** : bleu, vert, blanc, **orange** (pas
+rouge) — vérifié sur une photo produit officielle (encadré Wikipedia). Le
+clavier construit a un 5e bloc "enc" plus petit dans le gabarit
+(`data/keyboard/default.json`, `h:2` contre `h:4`) : c'est le potentiomètre
+VOLUME, distinct des 4 vrais Tn — VOLUME ne transmet aucun MIDI en `CTRL`
+(potentiomètre analogique, confirmé par un journal resté à 0 en le
+tournant).
+
+**Valeurs MIDI réelles capturées** (association apprise depuis
+l'application, canal 1 sauf note) :
+
+| Bouton réel | Message |
+| --- | --- |
+| HELP | CC 5 |
+| TEMPO | CC 6 |
+| SYNTH / DRUM / TAPE / MIXER | CC 7 / 8 / 9 / 10 |
+| Piste 1 / 2 / 3 / 4 (sélection de piste) | CC 11 / 12 / 13 / 14 |
+| Split / Drop / Join (tape edits) | CC 15 / 16 / 17 |
+| T1 / T2 / T3 / T4 (rotation) | CC 1 / 2 / 3 / 4 |
+| T1-T4 (clic, distinct de la rotation) | capturé séparément par bouton |
+| SOUND 1-8 | CC 50, 51, 52, 21, 22, 23, 24, 25 |
+| SEQUENCER | CC 26 |
+| COM | CC 49 |
+| Entrée MIC/LINE | CC 48 |
+| Lecture / Enregistrement / Stop (transport) | CC 38 / 39 / 40 |
+
+Aucun de ces numéros ne suit la convention MIDI générique (volume=CC7,
+etc.) : ce sont des CC propres au firmware OP-1, pas un mapping standard —
+confirme qu'il ne faut jamais deviner un numéro de CC sans le vérifier sur
+la machine. **SHIFT et les boutons de navigation (`<`/`>`, rembobinage /
+avance) n'ont produit aucun message** malgré plusieurs essais — probablement
+inactifs en mode `CTRL` (fonctions propres au mode `TAPE`) ou, pour SHIFT,
+sans signature propre puisqu'il ne fait que modifier un autre bouton.
+
+Ces associations vivent dans `localStorage` (`op1-studio-control-map-v1`),
+propres à chaque navigateur — pas commitées, pas dans ce dépôt.

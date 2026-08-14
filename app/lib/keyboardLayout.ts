@@ -22,8 +22,16 @@ export const KEYBOARD_ROWS = 16;
 // Mêmes tableaux que StudioMachinePanel : mappage note MIDI par position
 // gauche→droite, partagé pour que l'écran Exercices assigne la même note à
 // la même touche que le clavier joué en dessous.
-export const KEYBOARD_WHITE_NOTES = [48,50,52,53,55,57,59,60,62,64,65,67,69,71];
-export const KEYBOARD_BLACK_NOTES = [49,51,54,56,58,61,63,66,68,70];
+//
+// Recalé le 18 août 2026 : la toute première touche blanche à gauche du
+// clavier réel envoie la note MIDI 53 (F3), pas 48 (C3) — confirmé à la
+// fois par l'écran de l'OP-1 (« F3 ») et par le message brut capturé
+// (`[0x90, 53, ...]`) pendant qu'on appuyait sur cette seule touche. Les
+// deux tableaux partent donc de F, pas de C — les touches naturelles
+// (blanches) et altérées (noires) qui suivent F au lieu de C ne tombent pas
+// aux mêmes écarts (B-C et E-F n'ont pas de touche noire entre elles).
+export const KEYBOARD_WHITE_NOTES = [53,55,57,59,60,62,64,65,67,69,71,72,74,76];
+export const KEYBOARD_BLACK_NOTES = [54,56,58,61,63,66,68,70,73,75];
 
 export type KeyboardBlock = { col: number; row: number; w: number; h: number; color: string; type: string };
 
