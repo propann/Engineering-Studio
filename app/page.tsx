@@ -463,6 +463,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
   const [midiNotes, setMidiNotes] = useState(0);
   const [pressedMidiNotes, setPressedMidiNotes] = useState<number[]>([]);
+  // Octets bruts du dernier message MIDI reçu, quel que soit son type — pas
+  // seulement note on/off comme pressedMidiNotes (decodeMidiNote ignore CC
+  // et le reste). Alimente le journal MIDI et la procédure d'association de
+  // StudioMachinePanel (14 août 2026) : nouvelle référence à chaque message,
+  // même si les octets se répètent, pour que le composant distingue « rien
+  // de nouveau » de « le même message est arrivé deux fois ».
+  const [lastRawMidiIn, setLastRawMidiIn] = useState<number[] | null>(null);
   const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
   const [projectName, setProjectName] = useState("Nouveau projet OP-1");
   const projectInputRef = useRef<HTMLInputElement>(null);
@@ -488,6 +495,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     let disposed = false;
     let inputs: MidiInputLike[] = [];
     const handler = (event: MIDIMessageEvent) => {
+      if (event.data) setLastRawMidiIn([...event.data]);
       const message = decodeMidiNote(event.data);
       if (!message) return;
       if (message.type === "note_on") {
@@ -844,6 +852,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
           files={files}
           onTogglePlayback={toggleGlobalPlayback}
           onSendMidi={onSendMidi}
+          lastRawMidiIn={lastRawMidiIn}
         />
 
         {/* Contenu quand replié : réglages clavier */}

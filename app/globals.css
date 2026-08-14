@@ -902,6 +902,40 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .control-ref-row > span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .control-ref-live { color: #267c65; font-weight: 700; white-space: nowrap; }
 .control-ref-note { color: #8a978f; font-style: italic; white-space: nowrap; }
+.control-ref-hint { display: block; margin: 0 0 4px; color: #78877f; font-style: italic; font-size: 8.5px; }
+
+/* Lignes de référence cliquables/glissables : démarrent l'association
+   touche réelle → bouton construit (14 août 2026). */
+.control-ref-row-pick {
+  width: 100%;
+  background: transparent; border: none; border-radius: 3px;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.control-ref-row-pick:hover { background: #e2f3ea; }
+.control-ref-row-pick.is-picking { background: #cdeeda; }
+
+.control-learn-cancel {
+  margin-left: auto; flex-shrink: 0;
+  padding: 2px 8px;
+  background: #ffffff; border: 1px solid #b9c7bd; border-radius: 3px;
+  color: #3a5550; font: 700 8px var(--font-geist-mono), monospace; cursor: pointer;
+}
+.control-learn-cancel:hover { border-color: #267c65; color: #267c65; }
+.control-learn-cancel:disabled { opacity: .4; cursor: default; }
+.control-learn-done { color: #267c65; }
+
+/* Journal MIDI, cadre séparé de la liste des touches (14 août 2026) */
+.midi-journal { padding: 8px 10px 10px; background: #fafcfa; border-bottom: 1px solid #d6e2d9; }
+.midi-journal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.midi-journal-head strong { font: 700 8px var(--font-geist-mono), monospace; color: #263a31; letter-spacing: .04em; text-transform: uppercase; }
+.midi-journal-list { display: flex; flex-direction: column; gap: 1px; max-height: 150px; overflow-y: auto; font: 9px var(--font-geist-mono), monospace; }
+.midi-journal-row { display: flex; align-items: center; gap: 8px; padding: 1px 4px; border-radius: 2px; }
+.midi-journal-in { color: #3a5050; }
+.midi-journal-out { color: #267c65; }
+.midi-journal-dir { width: 34px; flex-shrink: 0; font-weight: 700; }
+.midi-journal-hex { flex-shrink: 0; color: #5a7a72; }
+.midi-journal-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #78877f; font-style: italic; }
+.midi-journal-time { flex-shrink: 0; color: #a3b0a8; }
 
 /* Grille SVG overlay */
 .kb-grid {
@@ -1198,6 +1232,8 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 
 @media (max-width: 760px) {
   .control-reference { grid-template-columns: 1fr; max-height: 280px; }
+  .midi-journal-list { max-height: 120px; }
+  .midi-journal-time { display: none; }
   .site-canvas { padding: 8px; }
   .machine-shell { min-height: calc(100vh - 45px); border-radius: 9px; }
   .machine-strip { height: auto; min-height: 76px; grid-template-columns: 1fr auto; padding: 10px 12px; }
