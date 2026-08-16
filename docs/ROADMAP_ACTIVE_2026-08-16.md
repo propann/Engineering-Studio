@@ -95,7 +95,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [ ] Remplacer les caches locaux dispersés par un contrat partagé versionné.
 - [x] Valider et filtrer les messages entrants par origine et source dans les deux studios.
 - [x] Formaliser l’enveloppe `studio-hub.event.v1` et vérifier la remontée EP‑133 → Hub par test navigateur.
-- [ ] Faire remonter au Hub les compteurs du coffre ; les statistiques OP‑1 et EP‑133 projets/samples/entraînement sont couvertes.
+- [x] Faire remonter au Hub les compteurs du coffre après finalisation d’un snapshot ; les statistiques OP‑1 et EP‑133 projets/samples/entraînement sont couvertes.
 - [ ] Documenter les permissions et la reconnexion du `FileSystemDirectoryHandle`.
 
 ### P2 — Finir les outils nouvellement exposés
@@ -140,4 +140,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 11 scénarios et 11 ouvertures contrôlées, dont la persistance de fiche, un cycle de coffre sélectif hors machine avec rapports JSON, la réception sécurisée des statistiques OP‑1/EP‑133, le cycle Pattern/Song sauvegarde → rechargement et une séance Rhythm Hero jouée localement avec journal et progression. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 11 scénarios et 11 ouvertures contrôlées, dont la persistance de fiche, un cycle de coffre sélectif hors machine avec rapports JSON et compteur de sauvegarde, la réception sécurisée des statistiques OP‑1/EP‑133, le cycle Pattern/Song sauvegarde → rechargement et une séance Rhythm Hero jouée localement avec journal et progression. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.

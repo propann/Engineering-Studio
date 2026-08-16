@@ -28,7 +28,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - réception par le Hub d’un événement OP‑1 versionné et filtré par origine/fenêtre, avec compteurs projets et samples ;
 - Pattern & Song EP‑133 : ouverture d’une démo, sauvegarde locale, passage en vue SONG et rechargement depuis la bibliothèque ;
 - Rhythm Hero EP‑133 : démarrage d’une vraie séance locale, compte à rebours, frappe sur pad, score, journal d’entraînement et progression remontée au Hub ;
-- coffre local : sauvegarde `tape` sélective, restauration, progression par fichiers/octets et téléchargement des rapports JSON ;
+- coffre local : sauvegarde `tape` sélective, compteur Hub, restauration, progression par fichiers/octets et téléchargement des rapports JSON ;
 - sample OP‑1 : import WAV, analyse puis préparation AIFF locale ;
 - image OP‑1 : export SVG local, et services firmware/patchs sans machine ;
 - sons EP‑133 et documentation OP‑1 ouverts hors machine.
@@ -51,5 +51,5 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   test explicitement confirmée sur P09 a été réalisée.
 - La suite centralisée `tools/hardware_validation.py` refuse une écriture sans
   `--confirm-write` et produit les rapports locaux ignorés par Git.
-- La remontée des compteurs du coffre et l’annulation d’un transfert ciblé
+- L’annulation d’un transfert ciblé et le test du coffre sur vrai gros volume
   restent dans la roadmap active.

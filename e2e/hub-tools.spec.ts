@@ -262,6 +262,8 @@ test('le coffre local sauvegarde et restaure une sélection sans machine', async
   await backupCategories.nth(3).uncheck();
   await backupCard.getByRole('button', { name: 'Sauvegarder la sélection' }).click();
   await expect(page.getByText(/Sauvegarde créée : 1 fichiers/)).toBeVisible({ timeout: 10_000 });
+  await expect(page.locator('.studio-card.blue .card-stats')).toContainText('1 sauvegardes');
+  await expect(page.locator('.quick-stats strong').first()).toHaveText('1');
   const backupReport = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Télécharger le rapport JSON' }).click();
   expect((await backupReport).suggestedFilename()).toMatch(/^studio-hub-backup-op1-/);
