@@ -98,8 +98,8 @@ export function EditorToolbar(props: EditorToolbarProps) {
             <button className="file-row" onClick={() => importInputRef.current?.click()}>Importer JSON, MIDI ou archive…</button>
             <input ref={importInputRef} type="file" accept=".json,.mid,.midi,.pak,.ppak,application/json,audio/midi,audio/x-midi,application/zip" multiple hidden onChange={(event) => { if (event.target.files?.length) props.onImportFiles(event.target.files); event.target.value = ''; closeFileMenu(); }} />
             <hr className="file-menu-divider" />
-            <button className="file-row" disabled={!props.canSave} onClick={props.onSave}>Enregistrer</button>
-            <button className="file-row" disabled={!props.canSave} onClick={props.onSaveAs}>Enregistrer sous…</button>
+            <button className="file-row" disabled={!props.canSave} onClick={() => { props.onSave(); closeFileMenu(); }}>Enregistrer</button>
+            <button className="file-row" disabled={!props.canSave} onClick={() => { props.onSaveAs(); closeFileMenu(); }}>Enregistrer sous…</button>
             <hr className="file-menu-divider" />
             <button className="file-row" disabled={!props.selectedLocalProject} onClick={props.onRename}>Renommer</button>
             <button className="file-row" disabled={!props.selectedLocalProject} onClick={props.onDuplicate}>Dupliquer</button>

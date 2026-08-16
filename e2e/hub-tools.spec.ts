@@ -312,3 +312,33 @@ test('les outils EP-133 sons et documentation OP-1 s’ouvrent hors machine', as
   await expect(op1Popup.getByText('Documentation rapide')).toBeVisible();
   await op1Popup.close();
 });
+
+test('Pattern & Song sauvegarde et recharge un projet local hors machine', async ({ page }) => {
+  await createProfile(page);
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'EP‑133 Studio' }).getByRole('button').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+  await popup.getByRole('heading', { name: 'PATTERN & SONG STUDIO' }).click();
+  await expect(popup.getByText('ÉDITEUR EP‑133 COMPLET')).toBeVisible();
+
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Ouvrir…' }).click();
+  const openDialog = popup.getByRole('dialog', { name: 'OUVRIR UN PROJET' });
+  await expect(openDialog).toBeVisible();
+  await openDialog.getByRole('button', { name: /DEMO GROOVE/ }).click();
+  await expect(popup.locator('.song-arranger')).toBeVisible();
+
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+  expect(await popup.evaluate(() => JSON.parse(localStorage.getItem('ep133-rhythm-hero:studio-projects:v1') || '[]'))).toHaveLength(1);
+
+  await popup.getByRole('button', { name: 'SONG', exact: true }).click();
+  await expect(popup.locator('.song-arranger')).toBeVisible();
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Ouvrir…' }).click();
+  const reloadDialog = popup.getByRole('dialog', { name: 'OUVRIR UN PROJET' });
+  await reloadDialog.locator('.project-open-list button.active').click();
+  await expect(popup.locator('.studio-view-switch button.active')).toHaveText('SONG');
+  await popup.close();
+});
