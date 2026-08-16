@@ -53,3 +53,16 @@ Le pont `tools/local_clone_bridge.py` a ensuite été lancé avec le venv
 `/home/azoth/Musique/OP-133`. Les routes `/health`, `/clone/status`,
 `/projects/list` et `/projects/read?slot=9` ont répondu ; l’application voit
 les 9 projets et relit P09 à 72 192 octets. Aucun endpoint POST n’a été appelé.
+
+## Dernière passe lecture seule — 16 août, 16:21 UTC
+
+- USB/MIDI/audio : OP‑1 et EP‑133 détectés simultanément ; ports ALSA
+  `OP-1 MIDI 1` (`hw:4,0,0`) et `EP-133 MIDI 1` (`hw:3,0,0`).
+- EP‑133 P09 relu sans écriture : 32 pads, 32 sons.
+- Bibliothèque EP‑133 relue sans écriture : 532 sons, 58,76 Mo.
+- Le validateur central produit désormais des étapes `skipped` explicites si
+  une machine disparaît avant un scan, au lieu d’exposer un traceback Python
+  trompeur.
+- Cette passe confirme les ports disponibles ; le démarrage/arrêt réel depuis
+  le Hub et la mesure d’horloge reçue par les deux machines restent la
+  prochaine étape, séparée de toute écriture de projet.

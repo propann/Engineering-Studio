@@ -20,6 +20,12 @@ bibliothèque sonore et l’état des routes `/health`, `/clone/status` et
 `/projects/list` du bridge. Les artefacts détaillés sont conservés à côté du
 rapport local.
 
+Si aucune EP‑133 n’est connectée, le validateur s’arrête après la détection,
+marque les scans projet/bibliothèque comme `skipped` et ne produit pas de
+traceback trompeur. Le rapport retourne alors `ok: false` avec la raison
+`EP-133 absente`; le code de sortie 2 signifie « validation matérielle non
+réalisée », pas une écriture effectuée ni une corruption du projet.
+
 ## Écriture contrôlée
 
 Une écriture doit toujours être demandée séparément et fournir à la fois le

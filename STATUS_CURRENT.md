@@ -33,6 +33,10 @@ historiques.
 - La campagne EP‑133 lecture/écriture ciblée et les essais OP‑1 documentés
   dans `docs/HARDWARE_TESTS.md` et `docs/VALIDATION_LOG_2026-08-16.md` ne
   sont pas rejoués par les tests navigateur.
+- Dernière détection réelle simultanée : OP‑1 et EP‑133 visibles en USB, MIDI
+  et audio ; la lecture EP‑133 P09 et l’inventaire de 532 sons passent encore
+  en lecture seule. La synchro Start/horloge/Stop reste à mesurer depuis le
+  Hub.
 - Restent à confirmer sur machine : paire OP‑1/EP‑133 synchronisée, gros
   volume de sauvegarde, permissions FSA, débranchement/éjection et écriture
   complète contrôlée.

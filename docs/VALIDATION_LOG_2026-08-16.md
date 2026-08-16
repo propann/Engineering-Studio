@@ -46,6 +46,8 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 ## Validation matérielle ajoutée
 
 - EP‑133 détectée en USB, MIDI et audio ; identité SysEx confirmée.
+- Dernière détection simultanée : OP‑1 et EP‑133 visibles en USB, MIDI et
+  audio ; `amidi -l` expose `OP-1 MIDI 1` et `EP-133 MIDI 1`.
 - P01 lu en lecture seule : 32 pads et 32 sons.
 - Bibliothèque sonore inventoriée : 532 sons / 58,76 Mo.
 - P01 à P09 lus ; checkpoint P09 créé et hashé localement.
@@ -63,6 +65,9 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   `--confirm-write` et produit les rapports locaux ignorés par Git.
 - L’écriture matérielle EP‑133 et le test du coffre sur vrai gros volume
   restent dans la roadmap active.
+- La synchro Start/horloge/Stop réelle entre les deux ports est encore à
+  mesurer depuis le Hub ; aucun transport matériel n’a été déclenché par cette
+  passe lecture seule.
 ## Transport MIDI central — préparation locale
 
 - `@studio-hub/midi-bridge` produit maintenant des fenêtres d’horloge

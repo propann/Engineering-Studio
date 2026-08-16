@@ -65,6 +65,23 @@ def run_command(label: str, command: list[str], timeout: int) -> dict[str, Any]:
         }
 
 
+def skipped_check(label: str, reason: str) -> dict[str, Any]:
+    """Enregistre une étape non exécutable sans fabriquer un faux traceback."""
+    now = datetime.now(timezone.utc).isoformat()
+    return {
+        "label": label,
+        "command": [],
+        "startedAt": now,
+        "finishedAt": now,
+        "exitCode": None,
+        "ok": False,
+        "status": "skipped",
+        "reason": reason,
+        "stdout": "",
+        "stderr": "",
+    }
+
+
 def bridge_check(base_url: str, path: str, timeout: int = 10) -> dict[str, Any]:
     url = f"{base_url.rstrip('/')}{path}"
     started = datetime.now(timezone.utc).isoformat()
@@ -119,32 +136,42 @@ def main() -> int:
         "checks": [],
     }
 
-    report["checks"].append(run_command("linux-device-check", ["bash", str(EP_TOOLS / "check-ep133-linux.sh")], 30))
+    device_check = run_command("linux-device-check", ["bash", str(EP_TOOLS / "check-ep133-linux.sh")], 30)
+    report["checks"].append(device_check)
+    device_present = device_check.get("ok") is True and "EP-133 détecté sur USB." in device_check.get("stdout", "")
+    report["devicePresent"] = device_present
 
-    project_artifact = artifact_dir / f"project-{args.project:02d}.json"
-    project_check = run_command(
-        "project-readonly-scan",
-        [str(args.scanner_python), str(EP_TOOLS / "scan_ep133_readonly.py"), "--project", str(args.project), "--port", "EP-133", "--out", str(project_artifact)],
-        120,
-    )
-    report["checks"].append(project_check)
-    report["artifacts"]["projectScan"] = str(project_artifact)
-    project_data = load_json(project_artifact)
-    if project_data:
-        report["projectSummary"] = {"projectName": project_data.get("projectName"), "pads": len(project_data.get("pads", [])), "sounds": len(project_data.get("sounds", {})), "readOnly": project_data.get("readOnly")}
-
-    if not args.skip_library:
-        library_artifact = artifact_dir / "sound-index.json"
-        library_check = run_command(
-            "sound-library-readonly-scan",
-            [str(args.scanner_python), str(EP_TOOLS / "scan_ep133_library_readonly.py"), "--port", "EP-133", "--out", str(library_artifact)],
-            300,
+    if device_present:
+        project_artifact = artifact_dir / f"project-{args.project:02d}.json"
+        project_check = run_command(
+            "project-readonly-scan",
+            [str(args.scanner_python), str(EP_TOOLS / "scan_ep133_readonly.py"), "--project", str(args.project), "--port", "EP-133", "--out", str(project_artifact)],
+            120,
         )
-        report["checks"].append(library_check)
-        report["artifacts"]["soundIndex"] = str(library_artifact)
-        library_data = load_json(library_artifact)
-        if library_data:
-            report["soundSummary"] = {"soundCount": library_data.get("soundCount"), "usedBytes": library_data.get("usedBytes"), "readOnly": library_data.get("readOnly")}
+        report["checks"].append(project_check)
+        report["artifacts"]["projectScan"] = str(project_artifact)
+        project_data = load_json(project_artifact)
+        if project_data:
+            report["projectSummary"] = {"projectName": project_data.get("projectName"), "pads": len(project_data.get("pads", [])), "sounds": len(project_data.get("sounds", {})), "readOnly": project_data.get("readOnly")}
+
+        if not args.skip_library:
+            library_artifact = artifact_dir / "sound-index.json"
+            library_check = run_command(
+                "sound-library-readonly-scan",
+                [str(args.scanner_python), str(EP_TOOLS / "scan_ep133_library_readonly.py"), "--port", "EP-133", "--out", str(library_artifact)],
+                300,
+            )
+            report["checks"].append(library_check)
+            report["artifacts"]["soundIndex"] = str(library_artifact)
+            library_data = load_json(library_artifact)
+            if library_data:
+                report["soundSummary"] = {"soundCount": library_data.get("soundCount"), "usedBytes": library_data.get("usedBytes"), "readOnly": library_data.get("readOnly")}
+    else:
+        reason = "EP-133 absente : scans projet et bibliothèque non exécutés."
+        report["skippedReason"] = reason
+        report["checks"].append(skipped_check("project-readonly-scan", reason))
+        if not args.skip_library:
+            report["checks"].append(skipped_check("sound-library-readonly-scan", reason))
 
     if not args.skip_bridge:
         report["bridge"] = [bridge_check(args.bridge_url, path) for path in ("/health", "/clone/status", "/projects/list")]
@@ -159,7 +186,11 @@ def main() -> int:
         report["write"] = {"slot": args.write_slot, "deviceRoot": str(args.device_root.expanduser().resolve()), "explicitConfirmation": True}
 
     report["finishedAt"] = datetime.now(timezone.utc).isoformat()
-    report["ok"] = all(check.get("ok") for check in report["checks"] if check.get("label") != "project-write-confirmed" or args.confirm_write)
+    report["ok"] = device_present and all(
+        check.get("ok") is True
+        for check in report["checks"]
+        if check.get("status") != "skipped" and (check.get("label") != "project-write-confirmed" or args.confirm_write)
+    )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"ok": report["ok"], "report": str(report_path), "artifacts": report["artifacts"], "projectSummary": report.get("projectSummary"), "soundSummary": report.get("soundSummary")}, ensure_ascii=False, indent=2))
