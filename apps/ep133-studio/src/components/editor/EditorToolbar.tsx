@@ -1,6 +1,6 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { EDITOR_GROUPS, type EditorGroup } from '../../core/project/exporters';
-import { restoreStudioProjectById, setStudioProjectTags, toggleStudioProjectFavorite } from '../../core/project/studioLibrary';
+import { setStudioProjectTags, toggleStudioProjectFavorite } from '../../core/project/studioLibrary';
 
 interface EditorToolbarProps {
   mode: 'game' | 'complete';
@@ -54,6 +54,7 @@ interface EditorToolbarProps {
   onDuplicate: () => void;
   onDelete: () => void;
   onArchive: () => void;
+  onRestore: () => void;
   onLoadMachineProject: () => void;
   onCloneMachine: () => void;
   onOpenSampleFolder: () => void;
@@ -82,7 +83,6 @@ export function EditorToolbar(props: EditorToolbarProps) {
   const filteredProjects = props.localProjects.filter((project) => (showArchived || !project.archived) && (!favoriteOnly || project.favorite) && `${project.title} ${project.tags.join(' ')}`.toLocaleLowerCase().includes(projectQuery.trim().toLocaleLowerCase()));
   const toggleFavorite = (id: string) => { toggleStudioProjectFavorite(localStorage, id); window.dispatchEvent(new Event('studio-library-changed')); };
   const editTags = (id: string) => { const project = props.localProjects.find((item) => item.id === id); const value = window.prompt('Tags du projet (séparés par des virgules)', project?.tags.join(', ') || ''); if (value === null) return; setStudioProjectTags(localStorage, id, value.split(',')); window.dispatchEvent(new Event('studio-library-changed')); };
-  const restoreArchived = (id: string) => { restoreStudioProjectById(localStorage, id); window.dispatchEvent(new Event('studio-library-changed')); };
   const formatProjectDate = (iso: string) => { const date = new Date(iso); return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }); };
   return <>
     <header><button className="editor-home-button" onClick={props.onHome}>← ACCUEIL</button><button className="hub-back compact" onClick={props.onOpenHub}>HUB OUTILS</button><div><small>{props.mode === 'game' ? 'ÉDITEUR JEU' : 'ÉDITEUR EP‑133 COMPLET'}</small><input value={props.name} maxLength={32} onChange={(event) => props.onNameChange(event.target.value.toUpperCase())} aria-label="Nom de l'exercice" /></div>{props.mode === 'complete' && <><div className="editor-groups" aria-label="Groupes EP-133">{EDITOR_GROUPS.map((group) => <button className={props.group === group ? 'active' : ''} onClick={() => props.onGroupChange(group)} key={group}><b>{group}</b><small>LN.{props.groupPatternLengths[group]}</small></button>)}</div><div className="studio-view-switch" aria-label="Vue du Studio"><button className={props.studioView === 'pattern' ? 'active' : ''} onClick={() => props.onStudioViewChange('pattern')}>PATTERNS</button><button className={props.studioView === 'arrangement' ? 'active' : ''} onClick={() => props.onStudioViewChange('arrangement')}>SONG</button></div>{props.midiConnected ? <span className="editor-midi-status online"><i />MIDI OUT</span> : <button className="editor-midi-out" onClick={props.onConnectMidi}>CONNECTER EP‑133</button>}</>}<div className="editor-vu" aria-label="VU stéréo gauche droite" onMouseMove={(event) => { const box = event.currentTarget.getBoundingClientRect(); setGaze({ x: Math.max(-1, Math.min(1, (event.clientX - (box.left + box.width / 2)) / (box.width / 2))), y: Math.max(-1, Math.min(1, (event.clientY - (box.top + box.height / 2)) / (box.height / 2))) }); }} onMouseLeave={() => setGaze({ x: 0, y: 0 })} style={{ '--gaze-x': gaze.x, '--gaze-y': gaze.y } as CSSProperties}>{['L', 'R'].map((channel) => <span className={`editor-channel-vu ${props.playing ? 'active' : ''}`} key={channel}><i /><b>{channel}</b></span>)}</div></header>
@@ -101,13 +101,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
             <button className="file-row" disabled={!props.canSave} onClick={() => { props.onSave(); closeFileMenu(); }}>Enregistrer</button>
             <button className="file-row" disabled={!props.canSave} onClick={() => { props.onSaveAs(); closeFileMenu(); }}>Enregistrer sous…</button>
             <hr className="file-menu-divider" />
-            <button className="file-row" disabled={!props.selectedLocalProject} onClick={props.onRename}>Renommer</button>
-            <button className="file-row" disabled={!props.selectedLocalProject} onClick={props.onDuplicate}>Dupliquer</button>
-            <button className="file-row" disabled={!props.selectedLocalProject} onClick={props.onArchive}>Archiver</button>
-            {props.localProjects.find((project) => project.id === props.selectedLocalProject)?.archived && <button className="file-row" onClick={() => { restoreArchived(props.selectedLocalProject); closeFileMenu(); }}>Restaurer</button>}
+            <button className="file-row" disabled={!props.selectedLocalProject} onClick={() => { props.onRename(); closeFileMenu(); }}>Renommer</button>
+            <button className="file-row" disabled={!props.selectedLocalProject} onClick={() => { props.onDuplicate(); closeFileMenu(); }}>Dupliquer</button>
+            <button className="file-row" disabled={!props.selectedLocalProject} onClick={() => { props.onArchive(); closeFileMenu(); }}>Archiver</button>
+            {props.localProjects.find((project) => project.id === props.selectedLocalProject)?.archived && <button className="file-row" onClick={() => { props.onRestore(); closeFileMenu(); }}>Restaurer</button>}
             <button className="file-row" disabled={!props.selectedLocalProject} onClick={() => { toggleFavorite(props.selectedLocalProject); closeFileMenu(); }}>★ {props.localProjects.find((project) => project.id === props.selectedLocalProject)?.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}</button>
             <button className="file-row" disabled={!props.selectedLocalProject} onClick={() => { editTags(props.selectedLocalProject); closeFileMenu(); }}>Étiqueter…</button>
-            <button className="file-row danger" disabled={!props.selectedLocalProject} onClick={props.onDelete}>Supprimer</button>
+            <button className="file-row danger" disabled={!props.selectedLocalProject} onClick={() => { props.onDelete(); closeFileMenu(); }}>Supprimer</button>
             <hr className="file-menu-divider" />
             <button className="file-row" onClick={() => { props.onExportMidi(); closeFileMenu(); }}>Exporter en MIDI (.mid)</button>
             <button className="file-row" onClick={() => { props.onExportJson(); closeFileMenu(); }}>Exporter en projet EP‑133 (.json)</button>

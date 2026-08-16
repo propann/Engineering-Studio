@@ -382,6 +382,19 @@ test('Pattern & Song sauvegarde et recharge un projet local hors machine', async
   await popup.getByRole('button', { name: 'Enregistrer', exact: true }).click();
   expect(await popup.evaluate(() => JSON.parse(localStorage.getItem('ep133-rhythm-hero:studio-projects:v1') || '[]'))).toHaveLength(1);
 
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Archiver', exact: true }).click();
+  expect(await popup.evaluate(() => JSON.parse(localStorage.getItem('ep133-rhythm-hero:studio-projects:v1') || '[]')[0].archivedAt)).toBeTruthy();
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Ouvrir…' }).click();
+  const archivedDialog = popup.getByRole('dialog', { name: 'OUVRIR UN PROJET' });
+  await archivedDialog.getByRole('button', { name: 'ARCHIVES OFF' }).click();
+  popup.once('dialog', (dialog) => void dialog.accept());
+  await archivedDialog.locator('.project-open-list').nth(1).getByRole('button').filter({ hasText: 'DEMO GROOVE' }).click();
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Restaurer', exact: true }).click();
+  expect(await popup.evaluate(() => JSON.parse(localStorage.getItem('ep133-rhythm-hero:studio-projects:v1') || '[]')[0].archivedAt)).toBeUndefined();
+
   await popup.getByRole('button', { name: 'SONG', exact: true }).click();
   await expect(popup.locator('.song-arranger')).toBeVisible();
   await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
