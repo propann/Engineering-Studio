@@ -3,6 +3,8 @@
 Unified development environment for OP-1 Studio and EP-133 KO II Studio.
 
 > **État actuel :** consulter la [feuille de route active](docs/ROADMAP_ACTIVE_2026-08-16.md).
+> Le [statut courant](STATUS_CURRENT.md) sépare les validations logicielles
+> reproductibles des essais matériels.
 > Elle remplace les anciennes projections de phases pour le suivi du produit.
 > Les commandes et résultats de la dernière passe sont dans le [journal de validation](docs/VALIDATION_LOG_2026-08-16.md).
 > La suite matérielle centralisée est décrite dans le [runbook de validation](docs/HARDWARE_VALIDATION_RUNBOOK.md) ; elle reste en lecture seule par défaut.

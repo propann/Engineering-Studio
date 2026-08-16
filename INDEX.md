@@ -8,8 +8,9 @@
 
 ### Current Product Source of Truth
 1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
-2. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
-3. **[README.md](./README.md)** - installation et commandes vérifiées
+2. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
+3. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
+4. **[README.md](./README.md)** - installation et commandes vérifiées
 
 > `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md` et `PHASE3_COMPLETION.md` sont
 > des rapports historiques de consolidation. Ils restent utiles pour le

@@ -72,21 +72,22 @@ Action : décider explicitement entre :
 
 Pour l’objectif utilisateur d’un dépôt unique, les dossiers normaux sont la voie la plus cohérente.
 
-### P1 — `midi-analysis` est un workspace vide
+### P1 — `midi-analysis` est un workspace vide — résolu
 
-`packages/midi-analysis` ne contient qu’un `package.json` et un `tsconfig` vide. Son test passe uniquement grâce à `--passWithNoTests`.
-
-Action : soit livrer une vraie API MIDI avec tests, soit retirer temporairement ce workspace et sa promesse documentaire.
+Le workspace vide a été retiré du dépôt et sa référence extraneous a été
+supprimée du `package-lock.json`. L’API MIDI réellement utilisée et testée
+est désormais `@studio-hub/midi-bridge`.
 
 ### P1 — Packages de tests présentés comme packages runtime
 
 `game-integration` et `performance-benchmarks` contiennent principalement des tests et aucun code de production. Ils sont utiles comme harnais de validation, mais ne doivent pas être comptés comme bibliothèques runtime dans une présentation produit.
 
-### P1 — Passations contradictoires selon leur date
+### P1 — Passations contradictoires selon leur date — résolu
 
 La passation OP-1 du 15 août annonce encore une migration à 40 % avec plusieurs stores et tests à faire, tandis que les rapports Phase 4 annoncent une plateforme prête pour la production. La passation EP-133 rappelle aussi que certaines compatibilités matérielles restent à valider sur machine réelle.
 
-Action : publier un seul fichier `STATUS_CURRENT.md` daté, qui sépare : livré, testé en logiciel, testé sur machine réelle et prévu.
+Action réalisée : [`STATUS_CURRENT.md`](../STATUS_CURRENT.md) sépare livré,
+testé en logiciel, preuves matérielles documentées et prochaines portes.
 
 ### Mise à jour après intégration
 
