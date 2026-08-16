@@ -63,7 +63,7 @@ import './style.css';
 import { useLanguageStore } from './core/store/languageStore';
 import { useHubInitialization } from './hooks/useHubInitialization';
 import { hubCommunication } from './core/hub/hubCommunication';
-import type { HubTransportMessage } from '@studio-hub/midi-bridge';
+import type { HubNoteMessage, HubTransportMessage } from '@studio-hub/midi-bridge';
 
 const STUDIO_DEMOS = [
   { id: 'groove', title: 'DEMO GROOVE', file: 'demo-groove.json' },
@@ -1292,6 +1292,31 @@ export default function App() {
     window.addEventListener('hub:transport', onHubTransport);
     return () => window.removeEventListener('hub:transport', onHubTransport);
   }, [editorOpen, editorPlaying, toggleEditorPlayback]);
+
+  useEffect(() => {
+    const onHubNote = (event: Event) => {
+      if (!editorOpen) return;
+      const message = (event as CustomEvent<HubNoteMessage>).detail;
+      const pad = message.note - 36;
+      if (pad < 0 || pad > 11) return;
+      if (message.action === 'note-on') {
+        setEditorMidiHit({ pad, group: editorGroup });
+        setMachineGroup(editorGroup);
+        if (editorMode === 'complete') audio.playPad(pad, message.velocity);
+        if (editorMidiFlashTimer.current !== undefined) window.clearTimeout(editorMidiFlashTimer.current);
+        editorMidiFlashTimer.current = window.setTimeout(() => setEditorMidiHit(null), 180);
+      } else {
+        setEditorMidiHit((current) => current?.pad === pad ? null : current);
+      }
+    };
+    const onHubPanic = () => setEditorMidiHit(null);
+    window.addEventListener('hub:midi-note', onHubNote);
+    window.addEventListener('hub:midi-panic', onHubPanic);
+    return () => {
+      window.removeEventListener('hub:midi-note', onHubNote);
+      window.removeEventListener('hub:midi-panic', onHubPanic);
+    };
+  }, [editorGroup, editorMode, editorOpen]);
 
   const saveEditorExercise = () => {
     const saved = { ...editorExercise(), id: `user-${Date.now()}` };

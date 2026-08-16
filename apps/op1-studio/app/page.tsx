@@ -24,7 +24,7 @@ import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
 import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY, OP1_SAMPLES_PREPARED_KEY } from "./lib/hubCommunication";
-import type { HubTransportMessage } from "@studio-hub/midi-bridge";
+import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 
 type IconName =
   | "chip"
@@ -595,6 +595,24 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     window.addEventListener("hub:transport", onHubTransport);
     return () => window.removeEventListener("hub:transport", onHubTransport);
   }, [toggleGlobalPlayback, transportPlaying]);
+
+  useEffect(() => {
+    const onHubNote = (event: Event) => {
+      const message = (event as CustomEvent<HubNoteMessage>).detail;
+      if (message.action === "note-on") {
+        setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
+      } else {
+        setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
+      }
+    };
+    const onHubPanic = () => setPressedMidiNotes([]);
+    window.addEventListener("hub:midi-note", onHubNote);
+    window.addEventListener("hub:midi-panic", onHubPanic);
+    return () => {
+      window.removeEventListener("hub:midi-note", onHubNote);
+      window.removeEventListener("hub:midi-panic", onHubPanic);
+    };
+  }, []);
 
 
   function quantizeMidi() {

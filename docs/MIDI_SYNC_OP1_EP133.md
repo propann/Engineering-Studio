@@ -39,6 +39,11 @@ vider les notes éventuellement restées actives. Ces messages sont versionnés,
 filtrés par origine et limités aux fenêtres des studios : ils ne sont pas
 envoyés aux ports Web MIDI et ne modifient aucune sauvegarde.
 
+Quand l’éditeur est ouvert, OP‑1 reflète ces notes sur son clavier local et
+EP‑133 les joue dans l’aperçu de pads (C2 à B2 → pads 1 à 12). Une note hors de
+cette plage est ignorée par l’aperçu ; le transport et le PANIC restent
+indépendants de cette visualisation.
+
 ## Réglage des machines
 
 Une seule horloge doit être maître. Pour le premier essai, le Hub est le
