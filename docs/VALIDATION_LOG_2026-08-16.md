@@ -2,7 +2,10 @@
 
 Branche : `integration/studio-hub`  
 Dépôt : `propann/OP-1-Studio`  
-Machine : aucune machine OP‑1 ou EP‑133 connectée
+Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
+
+> Mise à jour matérielle : une EP‑133 est maintenant connectée. Les résultats
+> détaillés sont dans [le rapport matériel](HARDWARE_VALIDATION_2026-08-16.md).
 
 ## Résultats
 
@@ -23,6 +26,14 @@ Machine : aucune machine OP‑1 ou EP‑133 connectée
 - sample OP‑1 : import WAV, analyse puis préparation AIFF locale ;
 - image OP‑1 : export SVG local, et services firmware/patchs sans machine ;
 - sons EP‑133 et documentation OP‑1 ouverts hors machine.
+
+## Validation matérielle ajoutée
+
+- EP‑133 détectée en USB, MIDI et audio ; identité SysEx confirmée.
+- P01 lu en lecture seule : 32 pads et 32 sons.
+- Bibliothèque sonore inventoriée : 532 sons / 58,76 Mo.
+- P01 à P09 lus ; checkpoint P09 créé et hashé localement.
+- Aucune écriture ou suppression envoyée à la machine.
 
 ## Limites assumées
 

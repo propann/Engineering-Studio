@@ -41,7 +41,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Catalogue d’outils | Sept cartes, catégories, liens directs et test navigateur des ouvertures | Les tests ne couvrent pas encore le coffre ouvert dans un vrai dossier |
 | Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression, test navigateur hors machine | Validation avec un vrai dossier et gros volume |
 | Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware | Écriture matériel, permissions FSA et remontée de statistiques |
-| Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test | Store partagé, stats bidirectionnelles et test complet Hub → modification → retour |
+| Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée | Store partagé, stats bidirectionnelles et écriture ciblée après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
 | Qualité | Typecheck, build, lint propre et 6 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
@@ -80,7 +80,7 @@ Objectif : séparer définitivement « plan préparé » et « écriture réussi
 
 - [ ] OP‑1 Disk : sauvegarde, hash, suppression/restauration d’un fichier de test, éjection et débranchement simulé.
 - [ ] OP‑1 MIDI/USB : rattacher les contrôles appris aux fonctions réelles du Studio.
-- [ ] EP‑133 : campagne lecture seule complète sur projets, pads, samples, groupes et capacité 64/128 Mo.
+- [x] EP‑133 : campagne lecture seule sur projets P01–P09, pads, samples et groupes ; la capacité 64/128 Mo reste à confirmer séparément.
 - [ ] EP‑133 : valider une écriture ciblée avec checkpoint, relecture binaire et état de retour explicite.
 - [ ] Documenter câble retiré, permission refusée, volume différent et fichier corrompu.
 
