@@ -136,7 +136,10 @@ export default function App() {
   useHubInitialization();
   const language = useLanguageStore((state) => state.language);
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
-  const [workspaceView, setWorkspaceView] = useState<'home' | 'game' | 'sounds' | 'docs' | 'machine-test'>(() => new URLSearchParams(window.location.search).get('hubTool') === 'game' ? 'game' : 'home');
+  const [workspaceView, setWorkspaceView] = useState<'home' | 'game' | 'sounds' | 'docs' | 'machine-test'>(() => {
+    const requested = new URLSearchParams(window.location.search).get('hubTool');
+    return requested === 'game' || requested === 'sounds' || requested === 'docs' || requested === 'machine-test' ? requested : 'home';
+  });
   const [hubMachine, setHubMachine] = useState(loadHubMachine);
   const [practiceLog, setPracticeLog] = useState<PracticeLogEntry[]>(() => loadPracticeLog(localStorage));
   const [styleId, setStyleId] = useState('boom');

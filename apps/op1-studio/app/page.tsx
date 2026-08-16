@@ -45,6 +45,16 @@ function hubReturnUrl() {
   return new URLSearchParams(window.location.search).get("hubReturn") || "http://127.0.0.1:5179/";
 }
 
+function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
+  if (typeof window === "undefined") return { tool: null, homeOpen: true };
+  const requested = new URLSearchParams(window.location.search).get("hubTool");
+  if (requested === "firmware") return { tool: null, homeOpen: false };
+  const tools: ToolWindow[] = ["exercise", "docs", "editor", "backups", "sounds", "services", "tape"];
+  return tools.includes(requested as ToolWindow)
+    ? { tool: requested as ToolWindow, homeOpen: false }
+    : { tool: null, homeOpen: true };
+}
+
 function returnToHub() {
   const target = hubReturnUrl();
   if (window.opener && !window.opener.closed) {
@@ -972,8 +982,8 @@ export default function Home() {
   const [midiConnected, setMidiConnected] = useState(false);
   const [backupTested, setBackupTested] = useState(false);
   const [libraryFolder, setLibraryFolder] = useState<string | null>(null);
-  const [toolWindow, setToolWindow] = useState<ToolWindow>(null);
-  const [homeOpen, setHomeOpen] = useState(true);
+  const [toolWindow, setToolWindow] = useState<ToolWindow>(() => initialHubTool().tool);
+  const [homeOpen, setHomeOpen] = useState(() => initialHubTool().homeOpen);
   const [exerciseRunning, setExerciseRunning] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
   const [firmwareOptions, setFirmwareOptions] = useState({
