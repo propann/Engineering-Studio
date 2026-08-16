@@ -106,9 +106,9 @@ async function installFakeFileSystem() {
   (window as Window & { __vaultE2E?: { target: FakeDirectoryHandle } }).__vaultE2E = { target };
 }
 
-test('la fiche persistante ouvre le Hub des sept outils', async ({ page }) => {
+test('la fiche persistante ouvre le Hub des outils et du transport MIDI', async ({ page }) => {
   await createProfile(page);
-  await expect(page.locator('.tools-grid .tool-card')).toHaveCount(7);
+  await expect(page.locator('.tools-grid .tool-card')).toHaveCount(8);
 
   for (const title of [
     'OP‑1 Studio',
@@ -118,9 +118,14 @@ test('la fiche persistante ouvre le Hub des sept outils', async ({ page }) => {
     'Services OP‑1',
     'Sons & transferts EP‑133',
     'Jeux & entraînement',
+    'Synchronisation MIDI',
   ]) {
     await expect(page.locator('.tools-grid .tool-card').filter({ hasText: title })).toBeVisible();
   }
+
+  await expect(page.locator('#midi-sync')).toContainText('Jouer OP‑1 et EP‑133 ensemble');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'Synchronisation MIDI' }).getByRole('button').click();
+  await expect(page.locator('#midi-sync')).toBeInViewport();
 
   await page.reload();
   await expect(page.getByRole('button', { name: /Ouvrir mes outils/i })).toBeVisible();
@@ -140,6 +145,36 @@ test('la fiche survit à une réouverture de contexte navigateur', async ({ page
     await expect(reopenedPage.getByRole('heading', { name: /Bienvenue, Test Hub/i })).toBeVisible();
   } finally {
     await reopenedContext.close();
+  }
+});
+
+test('le transport MIDI central envoie Start, horloge et Stop aux deux sorties', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeOutput {
+      state = 'connected';
+      sent: { data: number[]; timestamp?: number }[] = [];
+      constructor(public id: string, public name: string) {}
+      send(data: number[], timestamp?: number) { this.sent.push({ data: Array.from(data), timestamp }); }
+    }
+    const outputs = [new FakeOutput('op1', 'OP-1 MIDI'), new FakeOutput('ep133', 'EP-133 MIDI')];
+    Object.defineProperty(navigator, 'requestMIDIAccess', { configurable: true, value: async () => ({ outputs: new Map(outputs.map((output) => [output.id, output])) }) });
+    (window as Window & { __midiOutputs?: FakeOutput[] }).__midiOutputs = outputs;
+  });
+  await createProfile(page);
+  await page.locator('.midi-sync-panel').getByRole('button', { name: /Connecter les machines/i }).click();
+  await expect(page.locator('.midi-sync-panel')).toContainText('Les deux sorties sont prêtes');
+  await page.locator('.midi-sync-panel').getByRole('button', { name: /Démarrer les deux/i }).click();
+  await expect(page.locator('.midi-sync-panel')).toContainText('Synchronisation en cours');
+  await page.waitForTimeout(80);
+  await page.locator('.midi-sync-panel').getByRole('button', { name: 'Arrêter' }).click();
+  const messages = await page.evaluate(() => (window as Window & { __midiOutputs?: { sent: { data: number[]; timestamp?: number }[] }[] }).__midiOutputs?.map((output) => output.sent) ?? []);
+  expect(messages).toHaveLength(2);
+  for (const sent of messages) {
+    expect(sent[0].data).toEqual([0xfa]);
+    expect(sent.some((message) => message.data[0] === 0xf8)).toBe(true);
+    expect(sent.at(-1)?.data).toEqual([0xfc]);
+    expect(sent.every((message) => typeof message.timestamp === 'number')).toBe(true);
+    expect(sent.every((message, index) => index === 0 || message.timestamp! >= sent[index - 1].timestamp!)).toBe(true);
   }
 });
 

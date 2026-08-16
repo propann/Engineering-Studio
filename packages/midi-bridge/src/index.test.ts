@@ -1,9 +1,30 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createMidiBridge, MidiEvent } from './index';
+import { buildMidiClockWindow, buildMidiRealtimePacket, createMidiBridge, MidiEvent, MIDI_REALTIME } from './index';
 import { createOP1Adapter } from '@studio-hub/instrument-op1';
 import { createEP133Adapter } from '@studio-hub/instrument-ep133';
 
 describe('MIDI Bridge', () => {
+  it('builds a standard 24 PPQN clock window', () => {
+    const window = buildMidiClockWindow(120, 48, 1_000);
+
+    expect(window.ppqn).toBe(24);
+    expect(window.intervalMs).toBeCloseTo(20.8333, 3);
+    expect(window.packets).toHaveLength(48);
+    expect(window.packets[0]).toEqual({ type: 'clock', data: [MIDI_REALTIME.clock], timestamp: 1_000 });
+    expect(window.packets[24].timestamp - window.packets[0].timestamp).toBeCloseTo(500, 6);
+  });
+
+  it('builds transport start and stop packets', () => {
+    expect(buildMidiRealtimePacket('start', 12)).toEqual({ type: 'start', data: [0xfa], timestamp: 12 });
+    expect(buildMidiRealtimePacket('stop', 34)).toEqual({ type: 'stop', data: [0xfc], timestamp: 34 });
+  });
+
+  it('rejects invalid clock parameters', () => {
+    expect(() => buildMidiClockWindow(0)).toThrow('BPM must be a positive number');
+    expect(() => buildMidiClockWindow(120, 0)).toThrow('ticks must be a positive integer');
+    expect(() => buildMidiClockWindow(120, 1, Number.NaN)).toThrow('startAt must be a finite timestamp');
+  });
+
   it('should create bridge instance', () => {
     const bridge = createMidiBridge();
     expect(bridge).toBeDefined();

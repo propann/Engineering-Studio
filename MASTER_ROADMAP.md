@@ -19,7 +19,7 @@ COMPLETED (✅):
   Phase 3: Git Consolidation & Docs         [2026-08-16] ✅ (PR ouverte)  
   
 IN PREPARATION (→):
-  Phase 4: Outils intégrés & validation      [2026-08-16] 🔄 (11 E2E passés)
+  Phase 4: Outils intégrés & validation      [2026-08-16] 🔄 (12 E2E passés)
   
 FUTURE (🔮):
   Phase 5: Production Hardening
@@ -380,7 +380,7 @@ Total: 60 minutes to become productive
 
 ### Short Term (This Week)
 - [x] Revue de la roadmap active et alignement des rapports
-- [x] Test navigateur des sept cartes outils
+- [x] Test navigateur des huit cartes outils
 - [x] Test hors machine du coffre sélectif
 - [ ] Test du coffre sur un vrai dossier local et gros volume
 - [ ] Préparer la revue de la PR

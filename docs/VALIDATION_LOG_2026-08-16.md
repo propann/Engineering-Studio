@@ -15,14 +15,15 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 | `npm run test:all` | ✅ Tous les tests des workspaces actifs passent ; le workspace MIDI vide/non consommé a été retiré |
 | `npm run build:all` | ✅ Hub, OP‑1 Studio et EP‑133 Studio passent |
 | `npm run lint:all` | ✅ Aucun avertissement lint OP‑1 |
-| `npm run test:e2e:hub` | ✅ 11 scénarios, 11 ouvertures d’outils |
+| `npm run test:e2e:hub` | ✅ 12 scénarios, 8 cartes d’outils dont la synchronisation MIDI |
 | `git diff --check` | ✅ Aucun espace ou conflit de patch détecté |
 | `npm run hardware:validate -- --python /tmp/ep133-scan-venv/bin/python --project 9` | ✅ Rapport centralisé lecture seule : P09, 532 sons, bridge local OK |
 
 ## Parcours E2E couverts
 
-- fiche persistante → Hub des 7 outils après rechargement ;
+- fiche persistante → Hub des 8 cartes d’outils après rechargement, dont la synchronisation MIDI ;
 - fiche persistante → réouverture d’un nouveau contexte navigateur sans recréation ;
+- transport MIDI central → deux ports virtuels, Start, horloge 24 PPQN et Stop avec timestamps croissants ;
 - transmission des cibles OP‑1/EP‑133 (`hubTool`) ;
 - réception par le Hub d’un événement EP‑133 versionné et filtré par origine/fenêtre, avec compteurs projets, samples et entraînement ;
 - réception par le Hub d’un événement OP‑1 versionné et filtré par origine/fenêtre, avec compteurs projets et samples ;
@@ -53,3 +54,12 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   `--confirm-write` et produit les rapports locaux ignorés par Git.
 - L’écriture matérielle EP‑133 et le test du coffre sur vrai gros volume
   restent dans la roadmap active.
+## Transport MIDI central — préparation locale
+
+- `@studio-hub/midi-bridge` produit maintenant des fenêtres d’horloge
+  standard à 24 PPQN et des paquets Start/Stop, avec tests unitaires hors
+  machine.
+- Le Hub expose **Synchronisation MIDI** : deux sorties nommées OP‑1/EP‑133,
+  BPM, démarrage et arrêt. La commande n’écrit aucun fichier ni SysEx.
+- La validation sur ports virtuels et sur les deux machines réelles reste à
+  faire.

@@ -8,7 +8,7 @@
 
 > Ce document décrit la consolidation initiale et ne doit plus être lu comme
 > le statut complet du produit. La branche d’intégration dispose maintenant
-> de 11 scénarios E2E Hub supplémentaires ; les statistiques locales sont
+> de 12 scénarios E2E Hub supplémentaires ; les statistiques locales sont
 > couvertes, tandis que les validations matérielles et gros volumes restent
 > suivis dans la roadmap active.
 

@@ -5,6 +5,57 @@
 
 import type { InstrumentAdapter } from '@studio-hub/instrument-interface';
 
+/** MIDI realtime messages used by both studios for transport synchronisation. */
+export const MIDI_REALTIME = {
+  clock: 0xf8,
+  start: 0xfa,
+  continue: 0xfb,
+  stop: 0xfc,
+} as const;
+
+export type MidiRealtimeType = keyof typeof MIDI_REALTIME;
+
+export interface MidiRealtimePacket {
+  type: MidiRealtimeType;
+  data: number[];
+  timestamp: number;
+}
+
+export interface MidiClockWindow {
+  bpm: number;
+  ppqn: 24;
+  intervalMs: number;
+  packets: MidiRealtimePacket[];
+}
+
+/**
+ * Build a timestamped MIDI clock window without touching a device.
+ *
+ * Keeping this calculation pure gives the Hub and the hardware bridge the
+ * same timing contract, and makes it possible to validate sync without a
+ * connected machine. MIDI clock is 24 pulses per quarter note.
+ */
+export function buildMidiClockWindow(bpm: number, ticks = 24, startAt = 0): MidiClockWindow {
+  if (!Number.isFinite(bpm) || bpm <= 0) throw new Error('BPM must be a positive number');
+  if (!Number.isInteger(ticks) || ticks <= 0) throw new Error('ticks must be a positive integer');
+  if (!Number.isFinite(startAt)) throw new Error('startAt must be a finite timestamp');
+
+  const intervalMs = 60_000 / bpm / 24;
+  const packets = Array.from({ length: ticks }, (_, index): MidiRealtimePacket => ({
+    type: 'clock',
+    data: [MIDI_REALTIME.clock],
+    timestamp: startAt + index * intervalMs,
+  }));
+
+  return { bpm, ppqn: 24, intervalMs, packets };
+}
+
+/** Create a transport packet for a Web MIDI output or another MIDI sink. */
+export function buildMidiRealtimePacket(type: MidiRealtimeType, timestamp = 0): MidiRealtimePacket {
+  if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');
+  return { type, data: [MIDI_REALTIME[type]], timestamp };
+}
+
 export interface MidiEvent {
   type: 'note-on' | 'note-off' | 'control-change' | 'program-change' | 'clock' | 'start' | 'stop';
   channel: number;

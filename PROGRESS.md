@@ -13,7 +13,7 @@ The monorepo consolidation project (studio-hub) has successfully completed Phase
 
 **Current State at the time**: Both builds and the original package tests passed.
 
-> Depuis ce rapport, l’intégration Hub a ajouté 11 scénarios navigateur et le
+> Depuis ce rapport, l’intégration Hub a ajouté 12 scénarios navigateur et le
 > coffre hors machine. Ne pas utiliser les anciennes métriques ou la mention
 > « production-ready » pour conclure à une validation matérielle.
 

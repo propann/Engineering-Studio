@@ -1,0 +1,49 @@
+# Synchroniser l’OP‑1 et l’EP‑133
+
+## L’idée en une phrase
+
+Le Hub joue le rôle de métronome commun. Il envoie aux deux machines le même
+tempo, le même démarrage et le même arrêt. Les studios restent responsables
+des sons, des séquences et des sauvegardes.
+
+Dans le Hub :
+
+1. branche l’OP‑1 et l’EP‑133 en USB sur le même ordinateur ;
+2. ouvre **Synchronisation MIDI** ;
+3. clique sur **Connecter les machines** et vérifie que les deux sorties sont
+   affichées ;
+4. règle le BPM puis clique sur **Démarrer les deux** ;
+5. arrête avec **Arrêter** avant de débrancher.
+
+Le Hub envoie uniquement les messages MIDI realtime `Start`, horloge à
+24 impulsions par noire (24 PPQN) et `Stop`. Il n’envoie aucun projet, sample,
+SysEx ou firmware.
+
+## Réglage des machines
+
+Une seule horloge doit être maître. Pour le premier essai, le Hub est le
+maître et les deux machines doivent écouter l’horloge externe. Sur l’OP‑1,
+le mode `sync` écoute l’horloge MIDI externe ; le mode `beat match` sert au
+contraire à envoyer la synchronisation. Sur l’EP‑133, le réglage se trouve
+dans `Shift + Erase → MIDI → Clock` ; `On` écoute et `Out` transmet.
+
+Références constructeur : [tempo OP‑1](https://teenage.engineering/guides/op-1/original/tempo),
+[réglages MIDI EP‑133](https://teenage.engineering/guides/ep-133/how-to) et
+[système EP‑133](https://teenage.engineering/guides/ep-133/system).
+
+## Limites connues
+
+- Le navigateur doit autoriser Web MIDI ; Chrome/Chromium est le chemin
+  prévu.
+- Le Hub synchronise le transport matériel. Il ne fusionne pas encore les
+  notes internes des deux éditeurs et ne remplace pas un routage MIDI avancé.
+- Ne lance pas deux fenêtres Hub qui envoient l’horloge en même temps.
+- Le premier test doit rester sans transfert de fichiers : vérifier tempo,
+  démarrage et arrêt, puis seulement essayer le jeu réel.
+
+## Contrat technique
+
+Le calcul partagé vit dans `packages/midi-bridge/src/index.ts` :
+`buildMidiClockWindow()` produit des paquets horodatés et testables sans
+machine. La page Hub utilise ensuite l’API Web MIDI pour programmer ces
+paquets sur les sorties dont le nom contient `OP‑1` ou `EP‑133`.

@@ -44,7 +44,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée ; statistiques EP‑133 → Hub | Store partagé, statistiques Hub → EP‑133 et écriture ciblée après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
-| Qualité | Typecheck, build, lint propre et 11 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
+| Qualité | Typecheck, build, lint propre et 12 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -56,7 +56,7 @@ Objectif : ouvrir chaque outil depuis le Hub, conserver l’identité et revenir
 - [x] Ouvrir directement les écrans OP‑1 image, samples, services et firmware.
 - [x] Ouvrir directement les écrans EP‑133 jeux, sons, documentation et test machine.
 - [x] Transmettre profil, machine déclarée, capacité EP‑133, workspace et URL de retour.
-- [x] Écrire et exécuter le test navigateur du parcours landing → profil existant → Hub → sept cartes outils.
+- [x] Écrire et exécuter le test navigateur du parcours landing → profil existant → Hub → huit cartes outils, dont le transport MIDI.
 - [x] Vérifier les ouvertures hors machine : sample OP‑1, image/SVG, services, sons EP‑133 et documentation OP‑1.
 - [x] Éviter la course d’hydratation lors d’un lancement direct Hub → OP‑1 Studio.
 - [x] Vérifier la persistance après réouverture d’un contexte navigateur, sans nouvelle fiche.
@@ -108,6 +108,23 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] **Pattern & Song EP‑133** : export MIDI hors machine, archivage/restauration et test local validés ; le MIDI matériel et un vrai projet machine restent à tester.
 - [x] **Jeux & entraînement** : session locale jouable, frappe, score, journal daté et progression remontée au profil Hub validés hors machine.
 
+### P1 — Transport synchronisé OP‑1 + EP‑133
+
+Objectif : permettre un premier jeu à deux machines avec un tempo et un
+transport communs, sans mélanger cette fonction avec les sauvegardes.
+
+- [x] Formaliser le protocole MIDI realtime partagé : Start, Stop et horloge
+  24 PPQN dans `@studio-hub/midi-bridge`.
+- [x] Ajouter au Hub une commande de transport qui filtre les sorties OP‑1 et
+  EP‑133 et refuse de démarrer avec moins de deux sorties.
+- [x] Documenter le branchement, le rôle du Hub maître et le premier essai
+  sans écriture machine.
+- [x] Tester avec deux ports MIDI virtuels et vérifier les timestamps reçus.
+- [ ] Valider sur une paire OP‑1/EP‑133 réelle, d’abord tempo + Start/Stop,
+  puis séquences ; ne pas confondre cette validation avec un transfert.
+- [ ] Ajouter le routage de notes seulement après validation de l’horloge et
+  du comportement PANIC/Stop.
+
 ### P3 — Dette, code mort et documentation
 
 - [x] Supprimer les huit composants OP‑1 signalés comme non montés par le lint après vérification de leur destination.
@@ -119,7 +136,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 
 ## 4. Ordre d’exécution recommandé
 
-1. Test navigateur du portail et des sept cartes.
+1. Test navigateur du portail et des huit cartes.
 2. Test réel du coffre local sur dossier de travail, sans machine connectée.
 3. Validation matérielle OP‑1/EP‑133 en lecture seule puis sur une cible de test.
 4. Stabilisation du contrat Hub, des permissions et des statistiques.
@@ -140,4 +157,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 11 scénarios et 11 ouvertures contrôlées, dont la persistance de fiche, un cycle de coffre sélectif hors machine avec rapports JSON et compteur de sauvegarde, la réception sécurisée des statistiques OP‑1/EP‑133, le cycle Pattern/Song sauvegarde → rechargement et une séance Rhythm Hero jouée localement avec journal et progression. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 12 scénarios et 8 cartes d’outils, dont la persistance de fiche, le transport MIDI virtuellement vérifié, un cycle de coffre sélectif hors machine avec rapports JSON et compteur de sauvegarde, la réception sécurisée des statistiques OP‑1/EP‑133, le cycle Pattern/Song sauvegarde → rechargement et une séance Rhythm Hero jouée localement avec journal et progression. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
