@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
@@ -54,6 +54,8 @@ function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
     ? { tool: requested as ToolWindow, homeOpen: false }
     : { tool: null, homeOpen: true };
 }
+
+const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function returnToHub() {
   const target = hubReturnUrl();
@@ -982,8 +984,21 @@ export default function Home() {
   const [midiConnected, setMidiConnected] = useState(false);
   const [backupTested, setBackupTested] = useState(false);
   const [libraryFolder, setLibraryFolder] = useState<string | null>(null);
-  const [toolWindow, setToolWindow] = useState<ToolWindow>(() => initialHubTool().tool);
-  const [homeOpen, setHomeOpen] = useState(() => initialHubTool().homeOpen);
+  // L’état initial doit être identique au rendu serveur et au premier rendu
+  // client. Le paramètre hubTool est appliqué après hydratation pour éviter
+  // qu’un lancement direct Hub → outil ne produise un mismatch SSR/client.
+  const [toolWindow, setToolWindow] = useState<ToolWindow>(null);
+  const [homeOpen, setHomeOpen] = useState(true);
+  const [isHydrated, setIsHydrated] = useState(false);
+  // Appliquer la cible Hub avant la première interaction possible. Le premier
+  // rendu reste identique au SSR, puis l’effet de layout ouvre l’outil demandé
+  // sans laisser un clic utilisateur être écrasé par l’état initial.
+  useClientLayoutEffect(() => {
+    const initial = initialHubTool();
+    setToolWindow(initial.tool);
+    setHomeOpen(initial.homeOpen);
+    setIsHydrated(true);
+  }, []);
   const [exerciseRunning, setExerciseRunning] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
   const [firmwareOptions, setFirmwareOptions] = useState({
@@ -1133,7 +1148,7 @@ export default function Home() {
 
   return (
     <main className="site-canvas">
-      <section className="machine-shell" aria-label="OP-1 Studio">
+      <section className="machine-shell" aria-label="OP-1 Studio" data-op1-hydrated={isHydrated ? "true" : undefined}>
         <header className="machine-strip">
           <div className="brand-block">
             <span className="speaker-mark" aria-hidden="true">{Array.from({ length: 16 }).map((_, index) => <i key={index} />)}</span>

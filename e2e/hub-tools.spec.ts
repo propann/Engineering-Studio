@@ -1,5 +1,27 @@
 import { test, expect, type Page } from '@playwright/test';
 
+function makePcmWav(durationSeconds = 0.1, sampleRate = 44_100) {
+  const frames = Math.floor(durationSeconds * sampleRate);
+  const bytes = Buffer.alloc(44 + frames * 2);
+  bytes.write('RIFF', 0);
+  bytes.writeUInt32LE(36 + frames * 2, 4);
+  bytes.write('WAVE', 8);
+  bytes.write('fmt ', 12);
+  bytes.writeUInt32LE(16, 16);
+  bytes.writeUInt16LE(1, 20);
+  bytes.writeUInt16LE(1, 22);
+  bytes.writeUInt32LE(sampleRate, 24);
+  bytes.writeUInt32LE(sampleRate * 2, 28);
+  bytes.writeUInt16LE(2, 32);
+  bytes.writeUInt16LE(16, 34);
+  bytes.write('data', 36);
+  bytes.writeUInt32LE(frames * 2, 40);
+  for (let frame = 0; frame < frames; frame += 1) {
+    bytes.writeInt16LE(Math.round(Math.sin((frame / sampleRate) * Math.PI * 2 * 220) * 12_000), 44 + frame * 2);
+  }
+  return bytes;
+}
+
 async function createProfile(page: Page) {
   // Le portail peut migrer automatiquement `/legacy-profile.json` en local.
   // Le test doit commencer sans profil historique afin de couvrir la vraie
@@ -155,4 +177,66 @@ test('le coffre local sauvegarde et restaure une sélection sans machine', async
     const target = (window as Window & { __vaultE2E?: { target: { children: Map<string, unknown> } } }).__vaultE2E?.target;
     return Boolean(target?.children.has('tape'));
   })).toBe(true);
+});
+
+test('l’éditeur de samples OP-1 analyse et prépare un AIFF hors ligne', async ({ page }) => {
+  await createProfile(page);
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'Éditeur de samples' }).getByRole('button').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+  await expect(popup.locator('#sample-editor-title')).toHaveText('Préparer un sample OP‑1');
+  await popup.locator('.sample-editor-panel input[type="file"]').setInputFiles({ name: 'offline-sample.wav', mimeType: 'audio/wav', buffer: makePcmWav() });
+  await expect(popup.getByText('offline-sample.wav')).toBeVisible();
+  await expect(popup.getByText(/WAV · 1 canal · 16 bits/)).toBeVisible();
+  await popup.getByRole('button', { name: 'Préparer l’AIFF' }).click();
+  await expect(popup.getByText(/AIFF · 0.10 s · mono · 44,1 kHz/)).toBeVisible();
+  await expect(popup.getByText('Nouvelle copie en mémoire, aucune écriture machine.')).toBeVisible();
+  await popup.close();
+});
+
+test('l’éditeur d’images et les services OP-1 restent locaux', async ({ page }) => {
+  await createProfile(page);
+
+  const imagePopupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'Éditeur d’image' }).getByRole('button').click();
+  const imagePopup = await imagePopupPromise;
+  await imagePopup.waitForLoadState('domcontentloaded');
+  await expect(imagePopup.locator('.image-studio-page strong').filter({ hasText: 'L’atelier graphique' })).toBeVisible();
+  await imagePopup.getByLabel('Texte de l’écran').fill('TEST LOCAL');
+  const downloadPromise = imagePopup.waitForEvent('download');
+  await imagePopup.getByRole('button', { name: 'Exporter le SVG' }).click();
+  expect((await downloadPromise).suggestedFilename()).toBe('op1-studio-screen.svg');
+  await imagePopup.close();
+
+  const servicesPopupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'Services OP‑1' }).getByRole('button').click();
+  const servicesPopup = await servicesPopupPromise;
+  await servicesPopup.waitForLoadState('domcontentloaded');
+  await expect(servicesPopup.getByText('Portail de l’atelier')).toBeVisible();
+  await expect(servicesPopup.getByText('Préparation firmware')).toBeVisible();
+  await expect(servicesPopup.getByText('Import manuel uniquement')).toBeVisible();
+  await servicesPopup.close();
+});
+
+test('les outils EP-133 sons et documentation OP-1 s’ouvrent hors machine', async ({ page }) => {
+  await createProfile(page);
+
+  const soundsPopupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'Sons & transferts EP‑133' }).getByRole('button').click();
+  const soundsPopup = await soundsPopupPromise;
+  await soundsPopup.waitForLoadState('domcontentloaded');
+  await expect(soundsPopup.getByRole('heading', { name: 'SONS & TRANSFERT EP‑133' })).toBeVisible();
+  await expect(soundsPopup.getByRole('button', { name: 'CONNECTER EP-133' })).toBeVisible();
+  await soundsPopup.close();
+
+  const docsPopupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'OP‑1 Studio' }).getByRole('button').click();
+  const op1Popup = await docsPopupPromise;
+  await op1Popup.waitForLoadState('domcontentloaded');
+  await expect(op1Popup.getByRole('heading', { name: 'Votre atelier OP-1.' })).toBeVisible();
+  await expect(op1Popup.locator('[data-op1-hydrated="true"]')).toBeVisible();
+  await op1Popup.locator('.nav-strip').getByRole('button', { name: 'Documentation', exact: true }).click();
+  await expect(op1Popup.getByText('Documentation rapide')).toBeVisible();
+  await op1Popup.close();
 });

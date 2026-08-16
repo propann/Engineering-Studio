@@ -41,7 +41,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test | Store partagé, stats bidirectionnelles et test complet Hub → modification → retour |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine Hub côté OP‑1, confirmations locales | Revue complète des origines côté EP‑133 et route bibliothèque locale |
-| Qualité | Typecheck, build et tests monorepo passent sur la branche | 10 avertissements lint OP‑1, tests navigateur des parcours Hub manquants |
+| Qualité | Typecheck, build et 6 scénarios navigateur Hub passent sur la branche | 10 avertissements lint OP‑1, validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -54,6 +54,8 @@ Objectif : ouvrir chaque outil depuis le Hub, conserver l’identité et revenir
 - [x] Ouvrir directement les écrans EP‑133 jeux, sons, documentation et test machine.
 - [x] Transmettre profil, machine déclarée, capacité EP‑133, workspace et URL de retour.
 - [x] Écrire et exécuter le test navigateur du parcours landing → profil existant → Hub → sept cartes outils.
+- [x] Vérifier les ouvertures hors machine : sample OP‑1, image/SVG, services, sons EP‑133 et documentation OP‑1.
+- [x] Éviter la course d’hydratation lors d’un lancement direct Hub → OP‑1 Studio.
 - [ ] Vérifier la persistance après fermeture/réouverture du navigateur, sans nouvelle fiche.
 - [ ] Passer la PR d’intégration en revue puis la fusionner après ces contrôles.
 
@@ -93,10 +95,10 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 
 ### P2 — Finir les outils nouvellement exposés
 
-- [ ] **Éditeur de samples OP‑1** : test import → analyse → conversion AIFF → export, avec sources réversibles.
-- [ ] **Services/patchs OP‑1** : préciser que le module prépare/analyse les patchs ; réserver l’édition avancée à un chantier identifié.
-- [ ] **Éditeur d’images OP‑1** : tests de rejet SVG, aperçu sûr, export et bibliothèque locale.
-- [ ] **Sons & Transfert EP‑133** : test par projet cible, dépendances manquantes, écriture ciblée et annulation.
+- [x] **Éditeur de samples OP‑1** : test import → analyse → conversion AIFF → export local, sans écriture machine.
+- [x] **Services/patchs OP‑1** : préciser que le module prépare/analyse les patchs ; réserver l’édition avancée à un chantier identifié.
+- [x] **Éditeur d’images OP‑1** : test d’aperçu sûr et export SVG local ; le rejet SVG avancé reste à couvrir.
+- [x] **Sons & Transfert EP‑133** : ouverture hors machine et bouton de connexion vérifiés ; écriture ciblée et annulation restent à couvrir.
 - [ ] **Pattern & Song EP‑133** : test de sauvegarde/rechargement, MIDI, arrangement et restauration d’un projet.
 - [ ] **Jeux & entraînement** : faire remonter la progression utile au profil Hub et couvrir le parcours hors machine.
 
@@ -132,4 +134,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent ; le lint termine avec 10 avertissements non bloquants déjà identifiés. Le test navigateur Hub passe avec 2 scénarios et 7 ouvertures contrôlées. Les appels OP‑1 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent ; le lint termine avec 10 avertissements non bloquants déjà identifiés. Le test navigateur Hub passe avec 6 scénarios et 7 ouvertures contrôlées, dont un cycle de coffre sélectif hors machine. Les appels OP‑1 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
