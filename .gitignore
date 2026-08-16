@@ -22,6 +22,8 @@ dist/
 target/
 src-tauri/target/
 coverage/
+playwright-report/
+test-results/
 .next/
 .vinext/
 .wrangler/

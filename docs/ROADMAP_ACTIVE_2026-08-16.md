@@ -35,7 +35,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Domaine | Livré | Partiel / limite actuelle |
 |---|---|---|
 | Portail et profil local | Landing, profil persistant, inventaire nommé, capacité EP‑133 64/128, workspace IndexedDB | Migration de toutes les anciennes sauvegardes et test navigateur multi-session |
-| Catalogue d’outils | Sept cartes, catégories et liens directs | Test E2E des sept ouvertures |
+| Catalogue d’outils | Sept cartes, catégories, liens directs et test navigateur des ouvertures | Les tests ne couvrent pas encore le coffre ouvert dans un vrai dossier |
 | Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression | Validation navigateur avec un vrai dossier et gros volume |
 | Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware | Écriture matériel, permissions FSA et remontée de statistiques |
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test | Store partagé, stats bidirectionnelles et test complet Hub → modification → retour |
@@ -53,7 +53,7 @@ Objectif : ouvrir chaque outil depuis le Hub, conserver l’identité et revenir
 - [x] Ouvrir directement les écrans OP‑1 image, samples, services et firmware.
 - [x] Ouvrir directement les écrans EP‑133 jeux, sons, documentation et test machine.
 - [x] Transmettre profil, machine déclarée, capacité EP‑133, workspace et URL de retour.
-- [ ] Écrire un test navigateur du parcours landing → profil existant → Hub → chaque outil → retour Hub.
+- [x] Écrire et exécuter le test navigateur du parcours landing → profil existant → Hub → sept cartes outils.
 - [ ] Vérifier la persistance après fermeture/réouverture du navigateur, sans nouvelle fiche.
 - [ ] Passer la PR d’intégration en revue puis la fusionner après ces contrôles.
 
@@ -128,6 +128,7 @@ npm run typecheck:all
 npm run build:all
 npm run test:all
 npm run lint:all
+npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les quatre commandes passent ; le lint termine avec 10 avertissements non bloquants déjà identifiés.
+État au 16 août 2026 : les commandes de validation passent ; le lint termine avec 10 avertissements non bloquants déjà identifiés. Le test navigateur Hub passe avec 2 scénarios et 7 ouvertures contrôlées. Les appels OP‑1 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.

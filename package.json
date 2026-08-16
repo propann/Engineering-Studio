@@ -22,6 +22,7 @@
     "dev:op1": "npm run dev -w apps/op1-studio",
     "dev:ep133": "npm run dev -w apps/ep133-studio",
     "dev:both": "npm run dev -ws",
+    "test:e2e:hub": "playwright test -c playwright.config.ts",
     "clean": "find . -name node_modules -type d -exec rm -rf {} + 2>/dev/null || true"
   },
   "dependencies": {
