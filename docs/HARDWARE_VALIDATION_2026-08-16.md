@@ -73,3 +73,13 @@ les 9 projets et relit P09 à 72 192 octets. Aucun endpoint POST n’a été app
   Le raccord des séquences internes des studios reste à valider séparément.
   L’OP‑1 était dans son mode classique pendant cette passe ; le relais
   contrôleur `COM → T2 / CTRL` n’est donc pas encore validé physiquement.
+
+## Reprise lecture seule — 16 août, 16:54 UTC
+
+- L’OP‑1 et l’EP‑133 restent visibles simultanément en USB, MIDI et audio ;
+  les ports ALSA sont `OP-1 MIDI 1` et `EP-133 MIDI 1`.
+- Le validateur central a relu P09 sans écriture : 32 pads, 32 sons.
+- La bibliothèque EP‑133 a été relue sans écriture : 532 sons, 58 758 778
+  octets annoncés.
+- L’OP‑1 est resté en mode classique : aucune activation du relais `CTRL` et
+  aucune opération Disk, firmware ou SysEx pendant cette reprise.

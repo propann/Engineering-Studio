@@ -86,6 +86,13 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - Le raccord des séquences internes des studios et les commandes musicales
   avancées restent à faire.
 
+## Reprise matérielle en mode classique
+
+Le 16 août à 16:54 UTC, une nouvelle passe lecture seule a confirmé P09
+(32 pads, 32 sons) et la bibliothèque EP‑133 (532 sons, 58 758 778 octets).
+L’OP‑1 est resté en mode classique ; aucune écriture, opération Disk, firmware,
+SysEx ou activation du relais contrôleur n’a été exécutée.
+
 ## Audit doublons et optimisation
 
 - Le Hub expose 8 entrées distinctes ; les entrées spécialisées sont des
