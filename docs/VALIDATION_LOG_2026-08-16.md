@@ -15,7 +15,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 | `npm run test:all` | ✅ Tous les tests des workspaces actifs passent ; le workspace MIDI vide/non consommé a été retiré |
 | `npm run build:all` | ✅ Hub, OP‑1 Studio et EP‑133 Studio passent |
 | `npm run lint:all` | ✅ Aucun avertissement lint OP‑1 |
-| `npm run test:e2e:hub` | ✅ 13 scénarios, 8 cartes d’outils dont la synchronisation MIDI |
+| `npm run test:e2e:hub` | ✅ 14 scénarios, 8 cartes d’outils dont la synchronisation MIDI |
 | `git diff --check` | ✅ Aucun espace ou conflit de patch détecté |
 | `npm run hardware:validate -- --python /tmp/ep133-scan-venv/bin/python --project 9` | ✅ Rapport centralisé lecture seule : P09, 532 sons, bridge local OK |
 
@@ -27,6 +27,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - transport Hub → fenêtres OP‑1/EP‑133 ouvertes : événement versionné Start/Stop reçu dans les deux studios ;
 - mode **Tester sans machine** : transport logiciel reçu dans les deux fenêtres sans sortie MIDI ;
 - routage logiciel `C2/D2/E2` et PANIC reçu puis consommé par les deux studios sans sortie MIDI ni écriture machine ;
+- mode contrôleur OP‑1 simulé : note entrante relayée vers EP‑133 sans écho vers la sortie OP‑1, puis désactivation vérifiée ;
 - messages note/PANIC injectés avec origine, fenêtre source ou schéma invalide : rejetés dans OP-1 et EP-133 ;
 - cache Hub versionné `studio-hub.cache.v1` lu dans les deux studios, avec migration testée de l’ancien JSON brut ;
 - profil importé dans les deux studios : enveloppe locale `studio-hub.cache.v1` confirmée après ouverture depuis le Hub ;
@@ -65,9 +66,9 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   `--confirm-write` et produit les rapports locaux ignorés par Git.
 - L’écriture matérielle EP‑133 et le test du coffre sur vrai gros volume
   restent dans la roadmap active.
-- La synchro Start/horloge/Stop réelle entre les deux ports est encore à
-  mesurer depuis le Hub ; aucun transport matériel n’a été déclenché par cette
-  passe lecture seule.
+- La synchro Start/horloge/Stop réelle, le routage de notes courtes et le PANIC
+  ont été mesurés depuis le Hub sur les deux ports ; le mode contrôleur doit
+  encore être rejoué avec l’OP‑1 physiquement placé en `COM → T2 / CTRL`.
 ## Transport MIDI central — préparation locale
 
 - `@studio-hub/midi-bridge` produit maintenant des fenêtres d’horloge
@@ -79,8 +80,11 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   `OP-1 MIDI 1`, puis le Hub a envoyé Start, 24 horloges et Stop à chacune.
 - Routage réel complémentaire effectué : C2, note-off et PANIC standard ont
   été envoyés aux deux sorties ; aucune donnée de projet n’a été écrite.
-- Le raccord des séquences internes et les commandes musicales avancées restent
-  à faire après cette validation des messages courts.
+- Séquence test réelle effectuée : plusieurs pas C2/D2/E2/G2 ont produit 6
+  note-on et 6 note-off par sortie, avec Start, 120 horloges et Stop ; aucun
+  projet n’a été modifié.
+- Le raccord des séquences internes des studios et les commandes musicales
+  avancées restent à faire.
 
 ## Audit doublons et optimisation
 

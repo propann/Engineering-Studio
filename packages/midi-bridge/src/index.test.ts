@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubCacheEnvelope, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME, readHubCache } from './index';
+import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubCacheEnvelope, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME, parseMidiNotePacket, readHubCache } from './index';
 import { createOP1Adapter } from '@studio-hub/instrument-op1';
 import { createEP133Adapter } from '@studio-hub/instrument-ep133';
 
@@ -26,6 +26,13 @@ describe('MIDI Bridge', () => {
     expect(panic).toHaveLength(32);
     expect(panic[0]).toEqual({ type: 'control-change', data: [0xb0, 123, 0], timestamp: 14 });
     expect(panic.at(-1)).toEqual({ type: 'control-change', data: [0xbf, 120, 0], timestamp: 14 });
+  });
+
+  it('decodes controller-mode note messages, including velocity-zero note-off', () => {
+    expect(parseMidiNotePacket([0x91, 62, 108])).toEqual({ action: 'note-on', note: 62, velocity: 108, channel: 1 });
+    expect(parseMidiNotePacket(new Uint8Array([0x81, 62, 40]))).toEqual({ action: 'note-off', note: 62, velocity: 0, channel: 1 });
+    expect(parseMidiNotePacket([0x91, 62, 0])).toEqual({ action: 'note-off', note: 62, velocity: 0, channel: 1 });
+    expect(parseMidiNotePacket([0xb0, 7, 100])).toBeNull();
   });
 
   it('validates the Hub transport message contract', () => {

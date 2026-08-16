@@ -103,6 +103,18 @@ export function buildMidiNotePacket(action: HubNoteAction, note: number, velocit
   return { type: action, data: [status, note, velocity], timestamp };
 }
 
+/** Decode a channel MIDI note message from a Web MIDI byte array. */
+export function parseMidiNotePacket(data: ArrayLike<number> | null | undefined): { action: HubNoteAction; note: number; velocity: number; channel: number } | null {
+  if (!data || data.length < 3) return null;
+  const status = Number(data[0]);
+  const command = status & 0xf0;
+  const channel = status & 0x0f;
+  const note = Number(data[1]);
+  const velocity = Number(data[2]);
+  if ((command !== 0x80 && command !== 0x90) || ![note, velocity].every((value) => Number.isInteger(value) && value >= 0 && value <= 127)) return null;
+  return { action: command === 0x90 && velocity > 0 ? 'note-on' : 'note-off', note, velocity: command === 0x90 ? velocity : 0, channel };
+}
+
 /** Standard all-sound-off/all-notes-off pair for every MIDI channel. */
 export function buildMidiPanicPackets(timestamp = 0): Array<{ type: 'control-change'; data: number[]; timestamp: number }> {
   if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');

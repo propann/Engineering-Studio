@@ -12,7 +12,8 @@ historiques.
 - Portail Hub : fiche persistante, plusieurs machines nommées, EP‑133 64/128
   Mo, workspace local et coffre sélectif.
 - Hub → OP‑1/EP‑133 : profil, workspace, transport Start/Stop/BPM et routage
-  virtuel note/PANIC, avec filtrage origine, fenêtre source et schéma.
+  virtuel note/PANIC, avec filtrage origine, fenêtre source et schéma ; relais
+  contrôleur OP‑1 explicitement activable, sans écho vers la sortie source.
 - Cache partagé : enveloppe `studio-hub.cache.v1` commune pour profil et
   machine, avec compatibilité de lecture de l’ancien format.
 - Workspace : reconnexion, permissions `read/readwrite`, volumes retirés et
@@ -25,7 +26,7 @@ historiques.
   `@studio-hub/audio-bridge` ; les différences OP‑1/EP‑133 restent dans leurs
   adaptateurs locaux. Le détail de l’inventaire est dans
   `docs/AUDIT_DOUBLONS_ET_OPTIMISATION_2026-08-16.md`.
-- Tests : 13 scénarios E2E Hub, 18 tests unitaires MIDI, typecheck global,
+- Tests : 14 scénarios E2E Hub, 20 tests unitaires MIDI, typecheck global,
   lint OP‑1, builds Hub/OP‑1/EP‑133 et `npm ci --dry-run`.
 
 ## Validations matérielles à considérer séparément
@@ -35,12 +36,14 @@ historiques.
   sont pas rejoués par les tests navigateur.
 - Dernière détection réelle simultanée : OP‑1 et EP‑133 visibles en USB, MIDI
   et audio ; la lecture EP‑133 P09 et l’inventaire de 532 sons passent encore
-  en lecture seule. La synchro Start/horloge/Stop reste à mesurer depuis le
-  Hub.
+  en lecture seule. Une séquence test Hub a aussi envoyé plusieurs notes,
+  note-off, Start, horloge et Stop aux deux sorties sans modifier de projet.
 - Le transport réel de base OP‑1/EP‑133 est maintenant confirmé : Chromium a
-  envoyé Start, horloge 24 PPQN, Stop, une note C2, son relâchement et PANIC
-  aux deux sorties. Restent à confirmer : séquences musicales, gros volume de
-  sauvegarde, permissions FSA,
+  envoyé Start, horloge 24 PPQN, Stop, plusieurs notes, leurs relâchements et
+  PANIC aux deux sorties. Le relais contrôleur est couvert par E2E avec entrée
+  simulée, mais l’OP‑1 était en mode classique pendant la passe matérielle.
+  Restent à confirmer : test physique `COM → T2 / CTRL`, raccord des séquences internes,
+  gros volume de sauvegarde, permissions FSA,
   débranchement/éjection et écriture complète contrôlée.
 
 ## Prochaines portes
@@ -48,8 +51,8 @@ historiques.
 1. Tester le coffre sur un vrai dossier et un volume important.
 2. Documenter les refus de permission, câble retiré, volume différent et
    fichier corrompu.
-3. Valider tempo + Start/Stop sur les deux machines avant tout routage réel
-   de séquences.
+3. Raccorder les séquences internes des studios au transport déjà validé,
+   avec arrêt d’urgence et checkpoint avant toute séquence longue.
 4. Revoir puis fusionner la PR d’intégration après ces contrôles.
 
 ## Règle de sécurité

@@ -68,5 +68,8 @@ les 9 projets et relit P09 à 72 192 octets. Aucun endpoint POST n’a été app
   MIDI. Le Hub a envoyé Start, 24 horloges MIDI et Stop aux deux sorties
   `EP-133 MIDI 1` et `OP-1 MIDI 1` ; aucun fichier, projet ou SysEx n’a été
   écrit. Une note C2 courte, son relâchement et un PANIC standard ont aussi
-  été envoyés aux deux sorties. Le routage de séquences musicales reste à
-  valider séparément.
+  été envoyés aux deux sorties. Une séquence test de plusieurs pas a ensuite
+  produit 6 note-on et 6 note-off par sortie, avec 120 horloges, Start et Stop.
+  Le raccord des séquences internes des studios reste à valider séparément.
+  L’OP‑1 était dans son mode classique pendant cette passe ; le relais
+  contrôleur `COM → T2 / CTRL` n’est donc pas encore validé physiquement.

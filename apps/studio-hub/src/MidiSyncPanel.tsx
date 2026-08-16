@@ -1,21 +1,30 @@
 import { useEffect, useRef, useState } from "react";
-import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage } from "@studio-hub/midi-bridge";
+import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
 
 type SyncOutput = { id: string; name: string; output: MIDIOutput };
+type SyncInput = { id: string; name: string; input: MIDIInput };
 type TransportTarget = { target: Window; origin: string };
 
 type MidiSyncPanelProps = { getTransportTargets?: () => TransportTarget[] };
+
+const TEST_SEQUENCE = [36, 38, 40, 43, 40, 38, 36, 43];
 
 function isTargetOutput(output: MIDIOutput) {
   return output.state === "connected" && /OP[- ]?1|EP[- ]?133|K[.]O[.]?[- ]?II/i.test(output.name || "");
 }
 
+function isOp1Input(input: MIDIInput) {
+  return input.state === "connected" && /OP[- ]?1/i.test(input.name || "");
+}
+
 /**
  * Small, deliberately explicit MIDI master for the two connected machines.
- * It only sends realtime transport bytes; it never writes projects or SysEx.
+ * It sends transport and short note messages; it never writes projects or SysEx.
  */
 export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const [outputs, setOutputs] = useState<SyncOutput[]>([]);
+  const [inputs, setInputs] = useState<SyncInput[]>([]);
+  const [controllerEnabled, setControllerEnabled] = useState(false);
   const [status, setStatus] = useState("Aucune sortie MIDI détectée");
   const [bpm, setBpm] = useState(120);
   const [running, setRunning] = useState(false);
@@ -24,11 +33,28 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const hardwareRunningRef = useRef(false);
   const nextTickRef = useRef(0);
   const outputsRef = useRef<SyncOutput[]>([]);
+  const inputsRef = useRef<SyncInput[]>([]);
+  const controllerInputRef = useRef<SyncInput | null>(null);
   const noteTimersRef = useRef<number[]>([]);
+  const sequenceTimerRef = useRef<number | undefined>(undefined);
+  const sequenceStepRef = useRef(0);
+  const sequenceRunningRef = useRef(false);
+  const sequenceActiveNoteRef = useRef<number | null>(null);
+  const [sequencePlaying, setSequencePlaying] = useState(false);
 
   function clearTimer() {
     if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
     timerRef.current = undefined;
+  }
+
+  function clearSequence() {
+    if (sequenceTimerRef.current !== undefined) window.clearTimeout(sequenceTimerRef.current);
+    sequenceTimerRef.current = undefined;
+    sequenceRunningRef.current = false;
+    const activeNote = sequenceActiveNoteRef.current;
+    sequenceActiveNoteRef.current = null;
+    if (activeNote !== null) broadcastNote("note-off", activeNote, 0);
+    setSequencePlaying(false);
   }
 
   function broadcast(type: "start" | "stop", timestamp: number) {
@@ -48,6 +74,49 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     if (action === "note-on") setStatus(outputsRef.current.length || targets.length ? `Note ${note} envoyée aux machines et studios ouverts.` : "Connecte les machines ou ouvre les deux studios pour tester le routage.");
   }
 
+  function relayControllerNote(action: "note-on" | "note-off", note: number, velocity: number, channel: number) {
+    const timestamp = performance.now();
+    const hardwarePacket = buildMidiNotePacket(action, note, velocity, channel, timestamp);
+    // L’OP-1 est la source en mode CTRL : on vise seulement l’EP-133 pour
+    // empêcher qu’une note revienne vers la sortie OP-1 et crée une boucle.
+    outputsRef.current
+      .filter(({ name }) => /EP[- ]?133|K[.]O[.]?[- ]?II/i.test(name))
+      .forEach(({ output }) => {
+        try { output.send(hardwarePacket.data, hardwarePacket.timestamp); } catch { /* la machine peut disparaître pendant une note */ }
+      });
+    const message = createHubNoteMessage(action, note, velocity, channel, timestamp);
+    const targets = getTransportTargets?.() ?? [];
+    targets.forEach(({ target, origin }) => target.postMessage(message, origin));
+    if (action === "note-on") setStatus(`Contrôleur OP‑1 : note ${note} relayée vers EP‑133 et les studios ouverts.`);
+  }
+
+  function disableController() {
+    const active = controllerInputRef.current;
+    if (active) active.input.onmidimessage = null;
+    controllerInputRef.current = null;
+    setControllerEnabled(false);
+  }
+
+  function enableController() {
+    if (controllerEnabled) {
+      disableController();
+      setStatus("Mode contrôleur OP‑1 désactivé. L’OP‑1 reste en mode classique côté Hub.");
+      return;
+    }
+    const candidate = inputsRef.current[0];
+    if (!candidate) {
+      setStatus("Aucune entrée OP‑1 : passe la machine en COM → T2 / CTRL puis actualise les ports.");
+      return;
+    }
+    candidate.input.onmidimessage = (event) => {
+      const message = parseMidiNotePacket(event.data);
+      if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
+    };
+    controllerInputRef.current = candidate;
+    setControllerEnabled(true);
+    setStatus(`Mode contrôleur OP‑1 actif sur ${candidate.name}. Les notes vont vers EP‑133 sans écho vers l’OP‑1.`);
+  }
+
   function testNote(note: number) {
     broadcastNote("note-on", note);
     const timer = window.setTimeout(() => {
@@ -55,6 +124,33 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       noteTimersRef.current = noteTimersRef.current.filter((value) => value !== timer);
     }, 240);
     noteTimersRef.current.push(timer);
+  }
+
+  function scheduleSequenceStep() {
+    if (!sequenceRunningRef.current) return;
+    const note = TEST_SEQUENCE[sequenceStepRef.current % TEST_SEQUENCE.length];
+    sequenceStepRef.current += 1;
+    sequenceActiveNoteRef.current = note;
+    broadcastNote("note-on", note);
+    const noteLength = Math.max(60, 60_000 / bpm / 3);
+    const stepLength = Math.max(120, 60_000 / bpm / 2);
+    sequenceTimerRef.current = window.setTimeout(() => {
+      if (!sequenceRunningRef.current) return;
+      broadcastNote("note-off", note, 0);
+      sequenceActiveNoteRef.current = null;
+      sequenceTimerRef.current = window.setTimeout(scheduleSequenceStep, Math.max(20, stepLength - noteLength));
+    }, noteLength);
+  }
+
+  function startSequence() {
+    if (sequenceRunningRef.current) return;
+    if (!runningRef.current) start(outputsRef.current.length < 2);
+    if (!runningRef.current) return;
+    sequenceStepRef.current = 0;
+    sequenceRunningRef.current = true;
+    setSequencePlaying(true);
+    setStatus("Séquence test synchronisée en cours.");
+    scheduleSequenceStep();
   }
 
   function panic() {
@@ -95,13 +191,21 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       return;
     }
     try {
+      disableController();
       const access = await navigator.requestMIDIAccess();
       const nextOutputs = [...access.outputs.values()]
         .filter(isTargetOutput)
         .map((output) => ({ id: output.id, name: output.name || output.id, output }));
       outputsRef.current = nextOutputs;
       setOutputs(nextOutputs);
-      setStatus(nextOutputs.length >= 2 ? "Les deux sorties sont prêtes." : "Branche les sorties OP‑1 et EP‑133.");
+      // Keep the panel compatible with minimal Web MIDI test doubles that
+      // expose outputs only; real Web MIDI access always includes inputs.
+      const nextInputs = [...(access.inputs?.values?.() ?? [])]
+        .filter(isOp1Input)
+        .map((input) => ({ id: input.id, name: input.name || input.id, input }));
+      inputsRef.current = nextInputs;
+      setInputs(nextInputs);
+      setStatus(nextOutputs.length >= 2 ? (nextInputs.length ? "Les deux sorties et l’entrée OP‑1 sont prêtes." : "Les deux sorties sont prêtes.") : "Branche les sorties OP‑1 et EP‑133.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Autorisation MIDI refusée.");
     }
@@ -122,6 +226,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
 
   function stop() {
     if (!runningRef.current) return;
+    clearSequence();
     runningRef.current = false;
     clearTimer();
     const stopAt = Math.max(performance.now(), nextTickRef.current);
@@ -141,6 +246,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     clearTimer();
     noteTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     noteTimersRef.current = [];
+    clearSequence();
+    const active = controllerInputRef.current;
+    if (active) active.input.onmidimessage = null;
     if (wasRunning) {
       const stopAt = Math.max(performance.now(), nextTickRef.current);
       if (hardwareRunningRef.current) sendHardware("stop", stopAt);
@@ -174,6 +282,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
           <div className="sync-outputs" aria-live="polite">
             {outputs.length ? outputs.map((output) => <span key={output.id}>✓ {output.name}</span>) : <span>{status}</span>}
           </div>
+          {inputs.length > 0 && <div className="sync-inputs" aria-live="polite"><strong>Entrée détectée</strong>{inputs.map((input) => <span key={input.id}>↓ {input.name}</span>)}<button className="secondary-button" onClick={enableController}>{controllerEnabled ? "Désactiver CTRL" : "Activer contrôleur OP‑1"}</button></div>}
           <div className="sync-actions">
             <button className="primary-button" disabled={outputs.length < 2 || running} onClick={() => start()}>Démarrer les deux</button>
             <button className="secondary-button" disabled={running} onClick={() => start(true)}>Tester sans machine</button>
@@ -190,13 +299,15 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             <li>Lance ici, puis joue les séquences sur chaque outil.</li>
           </ol>
           <p>Cette commande n’envoie ni sauvegarde, ni sample, ni firmware : uniquement Start, horloge MIDI 24 PPQN et Stop.</p>
+          <p>Mode classique : laisse CTRL désactivé. Pour piloter l’atelier depuis l’OP‑1, choisis <strong>COM → T2 / CTRL</strong> sur la machine, actualise les ports, puis active le relais. Les notes entrantes vont vers EP‑133 et les studios ouverts, sans retour vers l’OP‑1 source.</p>
           <div className="midi-note-test">
-            <strong>Routage de notes</strong>
-            <span>Une note courte part vers les machines connectées et les studios ouverts. PANIC vide les notes bloquées.</span>
+            <strong>Routage de notes et séquence</strong>
+            <span>Les notes courtes et la séquence test partent vers les machines connectées et les studios ouverts. PANIC vide les notes bloquées.</span>
             <div className="midi-note-actions">
               <button className="midi-note-button" onClick={() => testNote(36)}>C2</button>
               <button className="midi-note-button" onClick={() => testNote(38)}>D2</button>
               <button className="midi-note-button" onClick={() => testNote(40)}>E2</button>
+              <button className="secondary-button" disabled={sequencePlaying} onClick={startSequence}>{sequencePlaying ? "SÉQUENCE EN COURS" : "SÉQUENCE TEST"}</button>
               <button className="panic-button" onClick={panic}>PANIC</button>
             </div>
           </div>

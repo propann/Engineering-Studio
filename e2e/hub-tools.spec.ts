@@ -195,6 +195,45 @@ test('le transport MIDI central envoie Start, horloge et Stop aux deux sorties',
   expect(panicPackets.every((messages) => messages.some((message) => message.data[1] === 123) && messages.some((message) => message.data[1] === 120))).toBe(true);
 });
 
+test('le mode contrôleur OP-1 relaie les notes vers EP-133 sans écho', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeOutput {
+      state = 'connected';
+      sent: { data: number[]; timestamp?: number }[] = [];
+      constructor(public id: string, public name: string) {}
+      send(data: number[], timestamp?: number) { this.sent.push({ data: Array.from(data), timestamp }); }
+    }
+    class FakeInput {
+      state = 'connected';
+      onmidimessage: ((event: { data: number[] }) => void) | null = null;
+      constructor(public id: string, public name: string) {}
+      emit(data: number[]) { this.onmidimessage?.({ data }); }
+    }
+    const outputs = [new FakeOutput('op1-out', 'OP-1 MIDI'), new FakeOutput('ep133-out', 'EP-133 MIDI')];
+    const inputs = [new FakeInput('op1-in', 'OP-1 MIDI')];
+    Object.defineProperty(navigator, 'requestMIDIAccess', { configurable: true, value: async () => ({
+      inputs: new Map(inputs.map((input) => [input.id, input])),
+      outputs: new Map(outputs.map((output) => [output.id, output])),
+    }) });
+    (window as Window & { __midiOutputs?: FakeOutput[]; __midiInputs?: FakeInput[] }).__midiOutputs = outputs;
+    (window as Window & { __midiOutputs?: FakeOutput[]; __midiInputs?: FakeInput[] }).__midiInputs = inputs;
+  });
+  await createProfile(page);
+  await page.locator('.midi-sync-panel').getByRole('button', { name: /Connecter les machines/i }).click();
+  await expect(page.locator('.midi-sync-panel')).toContainText('Les deux sorties et l’entrée OP‑1 sont prêtes');
+  await page.locator('.midi-sync-panel').getByRole('button', { name: /Activer contrôleur OP‑1/i }).click();
+  await page.evaluate(() => (window as Window & { __midiInputs?: { emit(data: number[]): void }[] }).__midiInputs?.[0].emit([0x93, 48, 90]));
+  await page.evaluate(() => (window as Window & { __midiInputs?: { emit(data: number[]): void }[] }).__midiInputs?.[0].emit([0x93, 48, 0]));
+  const messages = await page.evaluate(() => (window as Window & { __midiOutputs?: { sent: { data: number[] }[] }[] }).__midiOutputs?.map((output) => output.sent) ?? []);
+  expect(messages[0].some((message) => message.data[0] === 0x93)).toBe(false);
+  expect(messages[1].some((message) => message.data[0] === 0x93 && message.data[1] === 48 && message.data[2] === 90)).toBe(true);
+  expect(messages[1].some((message) => message.data[0] === 0x83 && message.data[1] === 48 && message.data[2] === 0)).toBe(true);
+  await page.locator('.midi-sync-panel').getByRole('button', { name: /Désactiver CTRL/i }).click();
+  await page.evaluate(() => (window as Window & { __midiInputs?: { emit(data: number[]): void }[] }).__midiInputs?.[0].emit([0x90, 50, 100]));
+  const afterDisable = await page.evaluate(() => (window as Window & { __midiOutputs?: { sent: { data: number[] }[] }[] }).__midiOutputs?.[1].sent ?? []);
+  expect(afterDisable.some((message) => message.data[1] === 50)).toBe(false);
+});
+
 test('le Hub simule le transport sans machine vers les deux studios ouverts', async ({ page }) => {
   await createProfile(page);
   const opPopupPromise = page.waitForEvent('popup');

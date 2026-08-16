@@ -45,7 +45,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée ; statistiques EP‑133 → Hub | Store partagé, statistiques Hub → EP‑133 et écriture ciblée après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
-| Qualité | Typecheck, build, lint propre et 13 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
+| Qualité | Typecheck, build, lint propre et 14 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -81,6 +81,9 @@ Objectif : séparer définitivement « plan préparé » et « écriture réussi
 
 - [ ] OP‑1 Disk : sauvegarde, hash, suppression/restauration d’un fichier de test, éjection et débranchement simulé.
 - [ ] OP‑1 MIDI/USB : rattacher les contrôles appris aux fonctions réelles du Studio.
+- [x] Hub : ajouter une activation explicite du relais contrôleur OP‑1, avec
+  routage des notes vers EP‑133 sans écho vers la sortie source ; le cas réel
+  OP‑1 placé en `COM → T2 / CTRL` reste à jouer.
 - [x] EP‑133 : campagne lecture seule sur projets P01–P09, pads, samples et groupes ; la capacité 64/128 Mo reste à confirmer séparément.
 - [x] EP‑133 : valider une écriture ciblée sur P09 avec checkpoint, relecture binaire et état de retour explicite.
 - [x] Centraliser les contrôles matériels dans `npm run hardware:validate`, lecture seule par défaut avec rapport local.
@@ -136,6 +139,16 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 - [x] Étendre le routage matériel aux messages courts : C2, note-off et PANIC
   standard ont été émis vers les deux sorties réelles après validation de
   l’horloge et du comportement Stop.
+- [x] Exécuter une séquence test matérielle de plusieurs pas avec Start,
+  horloge, note-on/note-off et Stop sur les deux sorties ; aucune donnée de
+  projet n’a été modifiée.
+- [x] Distinguer l’entrée OP‑1 du mode classique : le relais contrôleur est
+  désactivé par défaut et doit être activé après passage explicite en `CTRL` ;
+  parser note-on/note-off, routage EP‑133 et absence d’écho sont couverts par
+  le test navigateur.
+- [ ] Rejouer ce relais avec l’OP‑1 réellement en `COM → T2 / CTRL` et une
+  note physique ; Web MIDI ne permet pas de déduire ce mode uniquement du nom
+  du port.
 - [ ] Raccorder les séquences internes au routage matériel ; conserver un
   checkpoint et un bouton d’arrêt avant toute séquence longue.
 
