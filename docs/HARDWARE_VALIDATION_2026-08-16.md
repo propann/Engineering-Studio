@@ -45,3 +45,11 @@ pas être présenté comme une sauvegarde complète.
 
 Le test P09 est validé. Les autres slots et les sons restent inchangés ; toute
 nouvelle écriture exige son propre checkpoint et une confirmation explicite.
+
+## Pont local
+
+Le pont `tools/local_clone_bridge.py` a ensuite été lancé avec le venv
+`/tmp/ep133-scan-venv` sur `http://127.0.0.1:8765`, vers
+`/home/azoth/Musique/OP-133`. Les routes `/health`, `/clone/status`,
+`/projects/list` et `/projects/read?slot=9` ont répondu ; l’application voit
+les 9 projets et relit P09 à 72 192 octets. Aucun endpoint POST n’a été appelé.
