@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
@@ -24,6 +24,7 @@ import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
 import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY, OP1_SAMPLES_PREPARED_KEY } from "./lib/hubCommunication";
+import type { HubTransportMessage } from "@studio-hub/midi-bridge";
 
 type IconName =
   | "chip"
@@ -555,7 +556,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     return () => window.cancelAnimationFrame(frame);
   }, [transportPlaying]);
 
-  function toggleGlobalPlayback() {
+  const toggleGlobalPlayback = useCallback(() => {
     if (transportPlaying) {
       Object.values(audioRefs.current).forEach((audio) => audio?.pause());
       midiTimersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -580,7 +581,17 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       midiTimersRef.current.push(timer);
     });
     setTransportPlaying(true);
-  }
+  }, [midiEvents, onSendMidi, transportPlaying, transportTime]);
+
+  useEffect(() => {
+    const onHubTransport = (event: Event) => {
+      const message = (event as CustomEvent<HubTransportMessage>).detail;
+      if (message.action === "start" && !transportPlaying) toggleGlobalPlayback();
+      if (message.action === "stop" && transportPlaying) toggleGlobalPlayback();
+    };
+    window.addEventListener("hub:transport", onHubTransport);
+    return () => window.removeEventListener("hub:transport", onHubTransport);
+  }, [toggleGlobalPlayback, transportPlaying]);
 
 
   function quantizeMidi() {

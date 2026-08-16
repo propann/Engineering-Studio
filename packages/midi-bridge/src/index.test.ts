@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildMidiClockWindow, buildMidiRealtimePacket, createMidiBridge, MidiEvent, MIDI_REALTIME } from './index';
+import { buildMidiClockWindow, buildMidiRealtimePacket, createHubTransportMessage, createMidiBridge, isHubTransportMessage, MidiEvent, MIDI_REALTIME } from './index';
 import { createOP1Adapter } from '@studio-hub/instrument-op1';
 import { createEP133Adapter } from '@studio-hub/instrument-ep133';
 
@@ -17,6 +17,13 @@ describe('MIDI Bridge', () => {
   it('builds transport start and stop packets', () => {
     expect(buildMidiRealtimePacket('start', 12)).toEqual({ type: 'start', data: [0xfa], timestamp: 12 });
     expect(buildMidiRealtimePacket('stop', 34)).toEqual({ type: 'stop', data: [0xfc], timestamp: 34 });
+  });
+
+  it('validates the Hub transport message contract', () => {
+    const message = createHubTransportMessage('start', 96, 42);
+    expect(isHubTransportMessage(message)).toBe(true);
+    expect(isHubTransportMessage({ ...message, source: 'unknown' })).toBe(false);
+    expect(isHubTransportMessage({ ...message, bpm: 0 })).toBe(false);
   });
 
   it('rejects invalid clock parameters', () => {

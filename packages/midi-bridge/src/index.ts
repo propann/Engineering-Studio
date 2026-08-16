@@ -15,6 +15,34 @@ export const MIDI_REALTIME = {
 
 export type MidiRealtimeType = keyof typeof MIDI_REALTIME;
 
+export type HubTransportAction = 'start' | 'stop';
+
+export interface HubTransportMessage {
+  type: 'hub:midi-transport';
+  schema: 'studio-hub.transport.v1';
+  source: 'studio-hub';
+  action: HubTransportAction;
+  bpm: number;
+  timestamp: number;
+}
+
+export function createHubTransportMessage(action: HubTransportAction, bpm: number, timestamp: number): HubTransportMessage {
+  if (!Number.isFinite(bpm) || bpm <= 0) throw new Error('BPM must be a positive number');
+  if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');
+  return { type: 'hub:midi-transport', schema: 'studio-hub.transport.v1', source: 'studio-hub', action, bpm, timestamp };
+}
+
+export function isHubTransportMessage(value: unknown): value is HubTransportMessage {
+  if (!value || typeof value !== 'object') return false;
+  const message = value as Partial<HubTransportMessage>;
+  return message.type === 'hub:midi-transport'
+    && message.schema === 'studio-hub.transport.v1'
+    && message.source === 'studio-hub'
+    && (message.action === 'start' || message.action === 'stop')
+    && typeof message.bpm === 'number' && Number.isFinite(message.bpm) && message.bpm > 0
+    && typeof message.timestamp === 'number' && Number.isFinite(message.timestamp);
+}
+
 export interface MidiRealtimePacket {
   type: MidiRealtimeType;
   data: number[];

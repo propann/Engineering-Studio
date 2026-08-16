@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { buildMidiClockWindow, buildMidiRealtimePacket } from "@studio-hub/midi-bridge";
+import { buildMidiClockWindow, buildMidiRealtimePacket, createHubTransportMessage } from "@studio-hub/midi-bridge";
 
 type SyncOutput = { id: string; name: string; output: MIDIOutput };
+type TransportTarget = { target: Window; origin: string };
+
+type MidiSyncPanelProps = { getTransportTargets?: () => TransportTarget[] };
 
 function isTargetOutput(output: MIDIOutput) {
   return output.state === "connected" && /OP[- ]?1|EP[- ]?133|K[.]O[.]?[- ]?II/i.test(output.name || "");
@@ -11,7 +14,7 @@ function isTargetOutput(output: MIDIOutput) {
  * Small, deliberately explicit MIDI master for the two connected machines.
  * It only sends realtime transport bytes; it never writes projects or SysEx.
  */
-export function MidiSyncPanel() {
+export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const [outputs, setOutputs] = useState<SyncOutput[]>([]);
   const [status, setStatus] = useState("Aucune sortie MIDI détectée");
   const [bpm, setBpm] = useState(120);
@@ -32,6 +35,9 @@ export function MidiSyncPanel() {
     const timestamp = type === "stop" ? Math.max(performance.now(), nextTickRef.current) : performance.now();
     const packet = buildMidiRealtimePacket(type, timestamp);
     outputsRef.current.forEach(({ output }) => output.send(packet.data, packet.timestamp));
+    const message = createHubTransportMessage(type, bpm, timestamp);
+    getTransportTargets?.().forEach(({ target, origin }) => target.postMessage(message, origin));
+    return timestamp;
   }
 
   function scheduleClock() {
@@ -71,6 +77,8 @@ export function MidiSyncPanel() {
     const startAt = performance.now() + 50;
     const packet = buildMidiRealtimePacket("start", startAt);
     outputsRef.current.forEach(({ output }) => output.send(packet.data, packet.timestamp));
+    const message = createHubTransportMessage("start", bpm, startAt);
+    getTransportTargets?.().forEach(({ target, origin }) => target.postMessage(message, origin));
     nextTickRef.current = startAt + 60_000 / bpm / 24;
     scheduleClock();
     setStatus(`Synchronisation en cours à ${bpm} BPM.`);

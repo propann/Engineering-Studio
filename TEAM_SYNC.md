@@ -14,7 +14,7 @@
 La branche `integration/studio-hub` réunit le Hub, OP‑1 Studio et EP‑133 Studio.
 Les contrôles produit actuellement validés sont :
 
-✅ **12 scénarios E2E Hub** et 8 cartes d’outils passent, dont le transport MIDI virtuel  
+✅ **13 scénarios E2E Hub** et 8 cartes d’outils passent, dont le transport MIDI virtuel et la propagation aux studios  
 ✅ **Coffre hors machine** : sauvegarde sélective et restauration validées  
 ✅ **Éditeur de samples** : analyse WAV et préparation AIFF locale validées  
 ✅ **Éditeur d’image et services OP‑1** : parcours locaux validés  
@@ -234,7 +234,7 @@ These are centralized, cross-app stores. App-specific stores remain local.
 Yes! @studio-hub/shared-ui and @studio-hub/audio-bridge are ready for expansion.
 
 ### "Is this production-ready?"
-Non pour l’ensemble du produit : les tests logiciels et les 12 scénarios Hub
+Non pour l’ensemble du produit : les tests logiciels et les 13 scénarios Hub
 passent, mais le matériel, les gros volumes et les écritures contrôlées restent
 des portes ouvertes dans la roadmap active.
 

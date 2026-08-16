@@ -143,7 +143,7 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-Le test Hub couvre 12 scénarios et 8 cartes d’outils, dont la fiche
+Le test Hub couvre 13 scénarios et 8 cartes d’outils, dont la fiche
 persistante, le coffre sélectif hors machine avec compteur, l’AIFF local, l’export SVG, les
 services OP‑1, les sons EP‑133, la documentation OP‑1, le transport MIDI virtuel
 et une séance Rhythm Hero locale avec score et progression. Le lint ne contient pas d’erreur bloquante ;

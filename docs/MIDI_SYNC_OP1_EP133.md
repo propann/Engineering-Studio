@@ -3,8 +3,9 @@
 ## L’idée en une phrase
 
 Le Hub joue le rôle de métronome commun. Il envoie aux deux machines le même
-tempo, le même démarrage et le même arrêt. Les studios restent responsables
-des sons, des séquences et des sauvegardes.
+tempo, le même démarrage et le même arrêt, et relaie aussi ce transport aux
+fenêtres OP‑1 et EP‑133 ouvertes depuis le Hub. Les studios restent
+responsables des sons, des séquences et des sauvegardes.
 
 Dans le Hub :
 
@@ -18,6 +19,10 @@ Dans le Hub :
 Le Hub envoie uniquement les messages MIDI realtime `Start`, horloge à
 24 impulsions par noire (24 PPQN) et `Stop`. Il n’envoie aucun projet, sample,
 SysEx ou firmware.
+
+Quand les deux studios sont ouverts, le Hub diffuse également un événement
+`studio-hub.transport.v1` limité aux fenêtres et origines autorisées. Cela
+permet de tester le démarrage/arrêt synchronisé sans aucune machine connectée.
 
 ## Réglage des machines
 

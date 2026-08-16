@@ -24,6 +24,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@studio-hub/midi-bridge": "*",
     "@alexanderolsen/libsamplerate-js": "^2.1.2",
     "@vitejs/plugin-react": "^6.0.5",
     "fflate": "^0.8.3",

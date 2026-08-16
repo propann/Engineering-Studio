@@ -63,6 +63,7 @@ import './style.css';
 import { useLanguageStore } from './core/store/languageStore';
 import { useHubInitialization } from './hooks/useHubInitialization';
 import { hubCommunication } from './core/hub/hubCommunication';
+import type { HubTransportMessage } from '@studio-hub/midi-bridge';
 
 const STUDIO_DEMOS = [
   { id: 'groove', title: 'DEMO GROOVE', file: 'demo-groove.json' },
@@ -1273,6 +1274,19 @@ export default function App() {
       setEditorPlaybackBeat(playbackBars * 4);
     }, 60000 / tempo * playbackBars * 4 + (editorMode === 'complete' ? 80 : 0));
   };
+
+  useEffect(() => {
+    const onHubTransport = (event: Event) => {
+      const message = (event as CustomEvent<HubTransportMessage>).detail;
+      // Le Hub pilote le Studio ouvert ; il ne force pas le mode jeu et ne
+      // démarre donc pas une séance d’entraînement par surprise.
+      if (!editorOpen) return;
+      if (message.action === 'start' && !editorPlaying) void toggleEditorPlayback();
+      if (message.action === 'stop' && editorPlaying) void toggleEditorPlayback();
+    };
+    window.addEventListener('hub:transport', onHubTransport);
+    return () => window.removeEventListener('hub:transport', onHubTransport);
+  }, [editorOpen, editorPlaying, toggleEditorPlayback]);
 
   const saveEditorExercise = () => {
     const saved = { ...editorExercise(), id: `user-${Date.now()}` };

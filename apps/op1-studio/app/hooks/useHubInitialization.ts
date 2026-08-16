@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { isHubTransportMessage } from '@studio-hub/midi-bridge';
 
 const IMPORTED_PROFILE_KEY = 'studio-hub:imported-profile';
 
@@ -69,9 +70,18 @@ export function useHubInitialization() {
       }
       window.dispatchEvent(new CustomEvent('hub:workspaceLoaded', { detail: event.data.workspaceHandle ?? null }));
     };
+    const onTransport = (event: MessageEvent<unknown>) => {
+      const expectedSource = window.opener || (window.parent !== window ? window.parent : null);
+      if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource) || !isHubTransportMessage(event.data)) return;
+      window.dispatchEvent(new CustomEvent('hub:transport', { detail: event.data }));
+    };
     window.addEventListener('message', onWorkspace);
+    window.addEventListener('message', onTransport);
     const hubWindow = window.opener || (window.parent !== window ? window.parent : null);
     hubWindow?.postMessage({ type: 'studio:ready', studio: 'op1' }, hubOrigin);
-    return () => window.removeEventListener('message', onWorkspace);
+    return () => {
+      window.removeEventListener('message', onWorkspace);
+      window.removeEventListener('message', onTransport);
+    };
   }, []);
 }
