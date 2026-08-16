@@ -198,6 +198,16 @@ test('le Hub simule le transport sans machine vers les deux studios ouverts', as
   const epPopup = await epPopupPromise;
   await epPopup.waitForLoadState('domcontentloaded');
   for (const popup of [opPopup, epPopup]) {
+    await expect.poll(() => popup.evaluate(() => {
+      try {
+        const cached = JSON.parse(localStorage.getItem('studio-hub:imported-profile') || 'null');
+        return cached?.schema === 'studio-hub.cache.v1' && cached?.source === 'studio-hub' && cached?.version === 1;
+      } catch {
+        return false;
+      }
+    })).toBe(true);
+  }
+  for (const popup of [opPopup, epPopup]) {
     await popup.evaluate(() => {
       (window as Window & { __transportMessages?: unknown[] }).__transportMessages = [];
       (window as Window & { __noteMessages?: unknown[] }).__noteMessages = [];

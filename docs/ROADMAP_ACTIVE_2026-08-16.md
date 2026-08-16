@@ -97,7 +97,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] Valider et filtrer les messages entrants par origine et source dans les deux studios.
 - [x] Formaliser l’enveloppe `studio-hub.event.v1` et vérifier la remontée EP‑133 → Hub par test navigateur.
 - [x] Faire remonter au Hub les compteurs du coffre après finalisation d’un snapshot ; les statistiques OP‑1 et EP‑133 projets/samples/entraînement sont couvertes.
-- [ ] Documenter les permissions et la reconnexion du `FileSystemDirectoryHandle`.
+- [x] Documenter les permissions et la reconnexion du `FileSystemDirectoryHandle` dans `docs/WORKSPACE_PERMISSIONS.md`.
 
 ### P2 — Finir les outils nouvellement exposés
 

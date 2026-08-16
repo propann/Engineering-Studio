@@ -15,11 +15,13 @@ historiques.
   virtuel note/PANIC, avec filtrage origine, fenêtre source et schéma.
 - Cache partagé : enveloppe `studio-hub.cache.v1` commune pour profil et
   machine, avec compatibilité de lecture de l’ancien format.
+- Workspace : reconnexion, permissions `read/readwrite`, volumes retirés et
+  reprise après rechargement documentés dans `docs/WORKSPACE_PERMISSIONS.md`.
 - Coffre : chaque copie est relue depuis sa destination et comparée par
   taille/SHA‑256 avant de valider le snapshot ou la restauration.
 - Outils : OP‑1 image, samples, services/patchs ; EP‑133 sons, Pattern/Song,
   documentation et entraînement.
-- Tests : 13 scénarios E2E Hub, 17 tests unitaires MIDI, typecheck global,
+- Tests : 13 scénarios E2E Hub, 18 tests unitaires MIDI, typecheck global,
   lint OP‑1, builds Hub/OP‑1/EP‑133 et `npm ci --dry-run`.
 
 ## Validations matérielles à considérer séparément

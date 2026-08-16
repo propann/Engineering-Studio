@@ -29,6 +29,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - routage logiciel `C2/D2/E2` et PANIC reçu puis consommé par les deux studios sans sortie MIDI ni écriture machine ;
 - messages note/PANIC injectés avec origine, fenêtre source ou schéma invalide : rejetés dans OP-1 et EP-133 ;
 - cache Hub versionné `studio-hub.cache.v1` lu dans les deux studios, avec migration testée de l’ancien JSON brut ;
+- profil importé dans les deux studios : enveloppe locale `studio-hub.cache.v1` confirmée après ouverture depuis le Hub ;
 - BPM Hub : le tempo reçu est appliqué à la lecture locale EP‑133 et affiché dans OP‑1 ;
 - transmission des cibles OP‑1/EP‑133 (`hubTool`) ;
 - réception par le Hub d’un événement EP‑133 versionné et filtré par origine/fenêtre, avec compteurs projets, samples et entraînement ;
