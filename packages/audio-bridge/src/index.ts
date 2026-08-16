@@ -3,10 +3,20 @@
  * Shared audio utilities from OP-1 and EP-133
  */
 
-// Audio utilities will be added here
-// - AIFF codec (from OP-1)
-// - Audio analysis tools
-// - Format converters
-// - WaveSurfer utilities (from EP-133)
+export {
+  analyzeWavBuffer,
+  computeWaveformPeaks,
+  detectSilenceTrim,
+  parseWavFormat,
+  readSignedSample,
+  suggestNormalizationGainDb,
+} from './wavAnalysis.ts';
+
+export type {
+  ParsedWavFormat,
+  SilenceTrimSuggestion,
+  WaveformPeaks,
+  WavAnalysisReport,
+} from './wavAnalysis.ts';
 
 export const audioBridgeLoaded = true;

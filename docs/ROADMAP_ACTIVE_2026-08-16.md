@@ -19,7 +19,7 @@ Le produit est organisé en trois niveaux :
 
 ### Parcours Hub → outil
 
-Les cartes suivantes sont présentes dans la page Outils :
+Les huit cartes suivantes sont présentes dans la page Outils :
 
 1. OP‑1 Studio
 2. EP‑133 Studio
@@ -28,6 +28,7 @@ Les cartes suivantes sont présentes dans la page Outils :
 5. Services OP‑1 — firmware et patchs
 6. Sons & transferts EP‑133
 7. Jeux & entraînement EP‑133
+8. Synchronisation MIDI
 
 Le coffre de l’atelier reste accessible depuis la section Ressources partagées. Il centralise les snapshots, la sélection des catégories, la restauration et la progression, sans recréer une fiche machine.
 
@@ -142,6 +143,12 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 - [x] Clarifier la licence héritée MIT/AGPL : OP‑1 Studio est aligné sur le fichier `LICENSE` MIT ; les références AGPL restent externes.
 - [x] Ajouter un bandeau « document historique » aux anciennes roadmaps et renvoyer vers ce document.
 - [x] Générer la passe de nettoyage code mort ; aucun avertissement lint ne subsiste.
+- [x] Auditer les cartes et routes en double ; aucun doublon fonctionnel n’est
+  supprimé, et l’analyse WAV copiée OP‑1/EP‑133 est centralisée dans
+  `@studio-hub/audio-bridge` avec adaptateurs locaux.
+- [ ] Brancher les paquets Phase 4 encore expérimentaux (`save-manager`,
+  `instrument-*`, `game-*`, `types`, `shared-stores`) à des parcours utilisateur
+  réels, avec tests dédiés, avant de les présenter comme runtime produit.
 
 ## 4. Ordre d’exécution recommandé
 

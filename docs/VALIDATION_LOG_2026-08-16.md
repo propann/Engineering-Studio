@@ -72,3 +72,14 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   BPM, démarrage et arrêt. La commande n’écrit aucun fichier ni SysEx.
 - La validation sur ports virtuels et sur les deux machines réelles reste à
   faire.
+
+## Audit doublons et optimisation
+
+- Le Hub expose 8 entrées distinctes ; les entrées spécialisées sont des
+  raccourcis `hubTool`, pas des copies de studio.
+- L’analyse WAV OP‑1/EP‑133 est centralisée dans `@studio-hub/audio-bridge` ;
+  les tests audio OP‑1 et EP‑133 restent verts après extraction.
+- Les paquets Phase 4 peu importés restent conservés et sont documentés comme
+  fondations/tests à raccorder, pas comme code mort supprimable sans preuve.
+- Rapport détaillé :
+  [`AUDIT_DOUBLONS_ET_OPTIMISATION_2026-08-16.md`](AUDIT_DOUBLONS_ET_OPTIMISATION_2026-08-16.md).

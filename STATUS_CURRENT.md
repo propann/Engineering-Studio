@@ -21,6 +21,10 @@ historiques.
   taille/SHA‑256 avant de valider le snapshot ou la restauration.
 - Outils : OP‑1 image, samples, services/patchs ; EP‑133 sons, Pattern/Song,
   documentation et entraînement.
+- Doublons : l’analyse WAV commune est centralisée dans
+  `@studio-hub/audio-bridge` ; les différences OP‑1/EP‑133 restent dans leurs
+  adaptateurs locaux. Le détail de l’inventaire est dans
+  `docs/AUDIT_DOUBLONS_ET_OPTIMISATION_2026-08-16.md`.
 - Tests : 13 scénarios E2E Hub, 18 tests unitaires MIDI, typecheck global,
   lint OP‑1, builds Hub/OP‑1/EP‑133 et `npm ci --dry-run`.
 

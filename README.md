@@ -83,10 +83,13 @@ Shared React components (to be populated):
 - Common UI elements used by both studios
 
 ### @studio-hub/audio-bridge
-Audio utilities shared between projects:
-- AIFF codec (from OP-1)
-- Audio analysis tools
-- Format converters
+Utilities audio réellement partagées entre les studios :
+- analyse WAV déterministe (PCM entier/float)
+- crêtes de forme d'onde, trim de silence et suggestion de normalisation
+- parseur et lecture d'échantillons réutilisables par les convertisseurs locaux
+
+Les convertisseurs AIFF/EP‑133 restent dans leurs applications car leurs
+formats cibles et leurs contraintes ne sont pas identiques.
 
 ### @studio-hub/compression
 Compression and archive utilities:
@@ -94,9 +97,12 @@ Compression and archive utilities:
 
 ## 🔄 Workspace Dependencies
 
-- All apps import from `@studio-hub/types`
-- All apps import from `@studio-hub/shared-stores`
-- Shared code in packages/ uses workspace: protocol
+- Les contrats effectivement partagés par les applications sont importés via
+  les paquets concernés, notamment `@studio-hub/midi-bridge` et
+  `@studio-hub/audio-bridge`.
+- `@studio-hub/types` et `@studio-hub/shared-stores` restent des fondations
+  disponibles ; leur raccord complet aux écrans studios est encore planifié.
+- Le code partagé dans `packages/` utilise le protocole workspace.
 
 ## 📊 Benefits
 
