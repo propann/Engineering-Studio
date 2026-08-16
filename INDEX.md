@@ -6,15 +6,24 @@
 
 ## 🎯 Start Here
 
+### Current Product Source of Truth
+1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
+2. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
+3. **[README.md](./README.md)** - installation et commandes vérifiées
+
+> `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md` et `PHASE3_COMPLETION.md` sont
+> des rapports historiques de consolidation. Ils restent utiles pour le
+> contexte, mais ne remplacent pas la roadmap active.
+
 ### For First-Time Readers
 1. **[README.md](./README.md)** - Monorepo overview and quick start
-2. **[PROGRESS.md](./PROGRESS.md)** - Complete team alignment and tracking
-3. **[STATUS.md](./STATUS.md)** - Detailed current status and architecture
+2. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - current product status
+3. **[STATUS.md](./STATUS.md)** - historical architecture and consolidation context
 
 ### For Project Status
-1. **[STATUS.md](./STATUS.md)** - Phase 3 complete, production ready
-2. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - Completion report
-3. **[PROGRESS.md](./PROGRESS.md)** - Work log and metrics
+1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - active status and next gates
+2. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - consistency review
+3. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - historical consolidation report
 
 ---
 
@@ -29,19 +38,20 @@
   - 🔗 Workspace dependencies
 
 ### Project Phases
-- **[PROGRESS.md](./PROGRESS.md#-project-phases)** - Complete phase documentation
+- **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - Current product priorities and gates
+- **[PROGRESS.md](./PROGRESS.md#-project-phases)** - Historical phase documentation
   - ✅ Phase 1: Quick Wins (Foundation)
   - ✅ Phase 2: Monorepo Setup
   - ✅ Phase 3: EP-133 Integration
-  - 🔮 Phase 4: Optimization (Next)
+  - 🔄 Phase 4: Outils intégrés et validation (active)
 
 ### Consolidation Strategy
-- **[OP-1-Studio/CONSOLIDATION_PLAN.md](../OP-1-Studio/CONSOLIDATION_PLAN.md)** - Full consolidation strategy (566 lines)
+- **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - Audit et alignement des roadmaps
   - Detailed analysis of both projects
   - Consolidation roadmap
   - Week-by-week implementation guide
 
-- **[OP-1-Studio/OPTIMIZATION_PLAN.md](../OP-1-Studio/OPTIMIZATION_PLAN.md)** - EP-133 optimization strategies (411 lines)
+- **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)** - Décisions d’intégration des anciens outils
   - Phase 1 optimization opportunities
   - Phase 2 optimization strategies
   - Performance improvement metrics
@@ -81,19 +91,19 @@
   - Monorepo management
 
 ### OP-1 Studio
-- **[../OP-1-Studio/STATUS.md](../OP-1-Studio/STATUS.md)** - OP-1 architecture status
+- **[apps/op1-studio/README.md](./apps/op1-studio/README.md)** - OP-1 fonctionnalités et commandes
   - Core structure overview
   - Zustand stores
   - File system abstraction
   - Modernized architecture
 
-- **[../OP-1-Studio/MIGRATION_PLAN.md](../OP-1-Studio/MIGRATION_PLAN.md)** - OP-1 original migration plan
+- **[apps/op1-studio/CONTEXT.md](./apps/op1-studio/CONTEXT.md)** - Contexte et décisions OP-1
   - 8-week modernization roadmap
   - Architecture improvements
   - Component migration strategy
 
 ### EP-133 Studio
-- **[OP-1-Studio/OPTIMIZATION_PLAN.md](../OP-1-Studio/OPTIMIZATION_PLAN.md)** - EP-133 specific optimization
+- **[apps/ep133-studio/README.md](./apps/ep133-studio/README.md)** - EP-133 fonctionnalités et limites
   - Phase 1: Quick wins
   - Phase 2: Advanced optimizations
   - Performance metrics
@@ -103,8 +113,8 @@
 ## 🔍 Find Documentation By Need
 
 ### "I need to understand the current project status"
-→ Read **[PROGRESS.md](./PROGRESS.md)** first (most comprehensive)
-→ Then **[STATUS.md](./STATUS.md)** for technical details
+→ Read **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** first
+→ Then **[README.md](./README.md)** for commands and **[STATUS.md](./STATUS.md)** for historical context
 
 ### "I want to run the dev server"
 → See **[README.md](./README.md#-development)** for quick start
@@ -112,7 +122,7 @@
 
 ### "I need to understand why we made certain decisions"
 → See **[PROGRESS.md](./PROGRESS.md#-architectural-decisions-made)** for rationale
-→ Full strategy in **[CONSOLIDATION_PLAN.md](../OP-1-Studio/CONSOLIDATION_PLAN.md)**
+→ Full decision trail in **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)**
 
 ### "I want to see build and test results"
 → See **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** for detailed results
@@ -122,18 +132,18 @@
 1. Start: **[README.md](./README.md)** (structure)
 2. Then: **[PROGRESS.md](./PROGRESS.md)** (complete overview)
 3. Deep dive: **[STATUS.md](./STATUS.md)** (technical details)
-4. History: **[CONSOLIDATION_PLAN.md](../OP-1-Studio/CONSOLIDATION_PLAN.md)** (strategy)
+4. History: **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)**
 
 ### "I need to work on the next phase (Phase 4)"
 → See **[PROGRESS.md](./PROGRESS.md#-next-phase-phase-4---optimization)** for priorities
 → Reference **[STATUS.md](./STATUS.md#-optimization-opportunities-next-phase)** for specific items
 
 ### "I need to understand OP-1 Studio"
-→ See **[../OP-1-Studio/STATUS.md](../OP-1-Studio/STATUS.md)** for architecture
-→ See **[../OP-1-Studio/MIGRATION_PLAN.md](../OP-1-Studio/MIGRATION_PLAN.md)** for history
+→ See **[apps/op1-studio/README.md](./apps/op1-studio/README.md)** for the product surface
+→ See **[apps/op1-studio/CONTEXT.md](./apps/op1-studio/CONTEXT.md)** for history
 
 ### "I need to understand EP-133 Studio"
-→ See **[OP-1-Studio/OPTIMIZATION_PLAN.md](../OP-1-Studio/OPTIMIZATION_PLAN.md)** for optimization
+→ See **[apps/ep133-studio/OPTIMIZATION_PLAN.md](./apps/ep133-studio/OPTIMIZATION_PLAN.md)** for optimization
 → See current status in **[STATUS.md](./STATUS.md)** (as part of monorepo)
 
 ---
@@ -152,10 +162,10 @@
 - **Disk space**: ~800MB → ~150-180MB (**60-65% smaller**)
 
 ### Quality Metrics
-- **Tests**: ✅ 10/10 EP-133 tests passing
+- **Tests**: ✅ 10/10 EP-133 tests + 6 Hub E2E scenarios passing
 - **Builds**: ✅ Both OP-1 and EP-133 successful
 - **Types**: ✅ TypeScript strict mode enabled
-- **Docs**: ✅ 100% documented
+- **Docs**: ✅ Current roadmap aligned; historical reports labelled
 
 ---
 
@@ -187,13 +197,12 @@ studio-hub/
 └── package.json                npm workspaces root
 ```
 
-### Related Documentation (Outside Monorepo)
+### Related Documentation (historical archive)
 ```
-/OP-1-Studio/
-├── CONSOLIDATION_PLAN.md       Full consolidation strategy
-├── OPTIMIZATION_PLAN.md        EP-133 optimization
-├── MIGRATION_PLAN.md           OP-1 migration plan
-└── STATUS.md                   OP-1 current status
+archive/legacy-material/EP-133-KO-II-Studio/OP-1-Studio/
+├── CONSOLIDATION_PLAN.md       Historical consolidation strategy
+├── CONTEXT.md                  Historical OP-1 context
+└── docs/                       Historical OP-1 specifications
 ```
 
 ---
@@ -206,9 +215,9 @@ studio-hub/
 - [Current Status](./STATUS.md)
 
 ### Historical Context
-- [Consolidation Strategy](../OP-1-Studio/CONSOLIDATION_PLAN.md)
-- [OP-1 Architecture](../OP-1-Studio/MIGRATION_PLAN.md)
-- [EP-133 Optimization](../OP-1-Studio/OPTIMIZATION_PLAN.md)
+- [Roadmap audit](./AUDIT_ROADMAPS_2026-08-16.md)
+- [OP-1 architecture](./apps/op1-studio/CONTEXT.md)
+- [EP-133 optimization](./apps/ep133-studio/OPTIMIZATION_PLAN.md)
 
 ### Development
 - [Commands Reference](./PROGRESS.md#-available-commands-complete-reference)
@@ -246,12 +255,12 @@ studio-hub/
 1. **[README.md](./README.md)** - Start here
 2. **[PROGRESS.md](./PROGRESS.md)** - Full context
 3. **[STATUS.md](./STATUS.md)** - Technical details
-4. **[CONSOLIDATION_PLAN.md](../OP-1-Studio/CONSOLIDATION_PLAN.md)** - Historical context
+4. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - Historical context and current corrections
 
 #### Architect / Technical Lead
 1. **[PROGRESS.md](./PROGRESS.md#-architectural-decisions-made)** - Decisions
 2. **[STATUS.md](./STATUS.md)** - Full architecture
-3. **[CONSOLIDATION_PLAN.md](../OP-1-Studio/CONSOLIDATION_PLAN.md)** - Strategy
+3. **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)** - Strategy and integration decisions
 4. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - Validation
 
 ---
@@ -320,7 +329,7 @@ Read **[README.md](./README.md)** (complete overview with commands)
 1. Read **[README.md](./README.md)**
 2. Read **[PROGRESS.md](./PROGRESS.md)** (complete)
 3. Read **[STATUS.md](./STATUS.md)** (complete)
-4. Skim **[CONSOLIDATION_PLAN.md](../OP-1-Studio/CONSOLIDATION_PLAN.md)** (strategy)
+4. Skim **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)** (strategy)
 
 ---
 
@@ -346,12 +355,11 @@ Read **[README.md](./README.md)** (complete overview with commands)
 
 ## 📝 Last Updated
 
-- **Date**: 2026-08-15
-- **Phase**: 3 (Complete)
-- **Status**: Production Ready
-- **By**: Claude Haiku 4.5
+- **Date**: 2026-08-16
+- **Phase**: 4 — intégration et validation active
+- **Status**: 6 scénarios E2E Hub passants ; matériel et gros volumes ouverts
+- **Source**: `docs/ROADMAP_ACTIVE_2026-08-16.md`
 
 ---
 
 **Note**: This INDEX.md is a living document. It will be updated as new documentation is added and phases complete.
-

@@ -1,8 +1,13 @@
-# Rapport d’audit du code — Studio Hub
+# Rapport d’audit du code — Studio Hub (baseline du 16 août)
 
 **Date :** 16 août 2026  
 **Périmètre :** monorepo `/home/azoth/studio-hub`, applications OP‑1 Studio et EP‑133 Studio, packages TypeScript, outils Python/Rust, configuration et tests.  
 **Nature :** audit statique complété par builds et tests disponibles. Aucun changement fonctionnel n’a été appliqué.
+
+> Ce rapport est la photographie de l’audit initial. Depuis sa rédaction, la
+> branche d’intégration a ajouté les parcours E2E Hub, le coffre hors machine
+> et une correction d’hydratation OP‑1. Les priorités toujours ouvertes sont
+> suivies dans [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 ## 1. Synthèse exécutive
 

@@ -8,11 +8,26 @@ toutes le même niveau de maturité : certaines sont historiques, d’autres son
 des plans encore ouverts, tandis que les rapports racine déclarent parfois le
 projet « production ready » trop tôt.
 
+## Mise à jour après intégration — 16 août 2026
+
+La branche `integration/studio-hub` a depuis reçu la consolidation du portail,
+les sept cartes outils et six scénarios E2E navigateur. Les rapports racine ont
+été recalés pour ne plus présenter la phase 3 comme le statut produit complet.
+
+| Document | Alignement actuel |
+|---|---|
+| `docs/ROADMAP_ACTIVE_2026-08-16.md` | Source de vérité : 6 E2E passent ; matériel, gros volumes, statistiques et code mort restent ouverts. |
+| `README.md`, `INDEX.md` | Pointent vers la roadmap active et documentent `npm run test:e2e:hub`. |
+| `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md`, `PHASE3_COMPLETION.md` | Marqués historiques ; leurs chiffres de phase 3 ne remplacent plus l’état produit. |
+| `GIT_ALIGNMENT_REPORT.md` | Distingue l’ancien audit des gitlinks de l’état actuel monorepo sur `integration/studio-hub`. |
+| `MASTER_ROADMAP.md` | Conserve l’historique mais reflète les 6 E2E et les portes restantes. |
+| `apps/ep133-studio/ROADMAP_CONNECT_TO_HUB.md` | Raccord initial livré côté lancement ; store partagé, stats et round-trip complet restent ouverts. |
+
 ## État par feuille de route
 
 | Document | État vérifié | Commentaire |
 |---|---|---|
-| `MASTER_ROADMAP.md` | Partiellement vrai | La phase 3 est déclarée consolidée et le dépôt unifié, mais les deux apps restent des gitlinks `160000` dans le dépôt parent. |
+| `MASTER_ROADMAP.md` | Historique recadré | La phase 3 reste un jalon historique ; l’index renvoie maintenant vers la roadmap active et les 6 E2E validés. |
 | `PROGRESS.md`, `STATUS.md` | Obsolètes sur plusieurs points | Ils déclarent une intégration complète et aucun travail non suivi, alors que le parent contient des changements non committés et que les apps ne sont pas suivies comme des dossiers normaux. |
 | `PHASE4_FINAL_STATUS.md` | Valide pour les packages, trop large pour le produit | Les packages adaptatifs et leurs tests existent ; cela ne prouve pas que les applications OP‑1/EP‑133 consomment ces abstractions ni que le produit matériel est prêt. |
 | `PHASE4_WEEK3_PLAN.md`, `PHASE4_WEEK3_PROGRESS.md` | Packages livrés, intégration à poursuivre | Les adapters et tests existent, mais le raccordement des interfaces et la validation matériel restent séparés. |

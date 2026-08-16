@@ -494,5 +494,7 @@ Once all checks pass, you're ready to:
 
 **Last Updated**: 2026-08-15  
 **Version**: 1.0  
-**Status**: Production Ready
+**Status**: Guide de démarrage maintenu ; ne vaut pas validation matérielle
 
+> Pour le statut produit actuel et les tests réellement passés, consulter
+> [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).

@@ -1,24 +1,27 @@
-# 🔄 Team Sync - Studio Hub Consolidation Complete
+# 🔄 Team Sync - Studio Hub Integration Status
 
 **For**: All team members and other agents  
-**Date**: 2026-08-15  
-**Subject**: Phase 3 Complete - Full Documentation & Alignment Achieved
+**Date**: 2026-08-16  
+**Subject**: Parcours Hub hors machine validés — documentation recalée
+
+> La consolidation de phase 3 décrite plus bas est historique. La source de
+> vérité est [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 ---
 
 ## 🎯 Executive Summary (2 Minutes Read)
 
-The monorepo consolidation project (studio-hub) has **successfully completed Phase 3**. Both OP-1 Studio and EP-133 Studio are now integrated into a unified monorepo with:
+La branche `integration/studio-hub` réunit le Hub, OP‑1 Studio et EP‑133 Studio.
+Les contrôles produit actuellement validés sont :
 
-✅ **60-65% reduction** in total packages (~787 → ~150-180)  
-✅ **90% faster** npm install (5-7 min → 30-45 sec)  
-✅ **70% faster** dev startup (90s → 25s)  
-✅ **All tests passing** (10/10 EP-133 tests)  
-✅ **Both builds successful** (OP-1 + EP-133)  
-✅ **100% documented** with comprehensive guides  
-✅ **Full team alignment** - all decisions explained  
+✅ **6 scénarios E2E Hub** et 7 ouvertures d’outils passent  
+✅ **Coffre hors machine** : sauvegarde sélective et restauration validées  
+✅ **Éditeur de samples** : analyse WAV et préparation AIFF locale validées  
+✅ **Éditeur d’image et services OP‑1** : parcours locaux validés  
+✅ **Sons EP‑133 et documentation OP‑1** : ouverture hors machine validée  
+✅ **Typecheck et builds** Hub, OP‑1 et EP‑133 passent  
 
-**Status**: Production Ready 🚀
+⚠️ **Matériel, écritures contrôlées, gros volumes et statistiques Hub** : encore ouverts
 
 ---
 
@@ -230,7 +233,9 @@ These are centralized, cross-app stores. App-specific stores remain local.
 Yes! @studio-hub/shared-ui and @studio-hub/audio-bridge are ready for expansion.
 
 ### "Is this production-ready?"
-Yes! All tests pass, both build successfully, no errors, fully documented.
+Non pour l’ensemble du produit : les tests logiciels et les 6 scénarios Hub
+passent, mais le matériel, les gros volumes et les écritures contrôlées restent
+des portes ouvertes dans la roadmap active.
 
 ### "What about new studios?"
 Easy to add! Monorepo structure supports adding new apps with workspace protocol.
@@ -238,8 +243,9 @@ Easy to add! Monorepo structure supports adding new apps with workspace protocol
 ### "Why different build systems?"
 See "Architectural Decisions" section above.
 
-### "When is Phase 4?"
-Phase 4 (Optimization) planned for next phase. See PROGRESS.md for priorities.
+### "Where is Phase 4 now?"
+La phase active est l’intégration et la validation des outils ; voir la roadmap
+active plutôt que l’ancien calendrier d’optimisation.
 
 ---
 
@@ -394,7 +400,7 @@ All commits include detailed messages and are properly formatted.
 3. ✅ Improved performance by 70-90%
 4. ✅ Created comprehensive documentation
 5. ✅ Aligned entire team on decisions
-6. ✅ Built production-ready system
+6. ✅ Built a validated software foundation; product gates remain
 7. ✅ Planned next phase
 
 **Everyone can now:**
@@ -436,4 +442,3 @@ For questions:
 ---
 
 **Remember**: All documentation is cross-referenced. Start with INDEX.md and follow the path for your role.
-

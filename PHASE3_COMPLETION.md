@@ -1,8 +1,12 @@
-# PHASE 3: EP-133 Integration - Completion Report
+# PHASE 3: EP-133 Integration - Completion Report (historical)
 
 **Date**: 2026-08-15  
 **Phase**: PHASE 3 - Monorepo Integration Complete ✅  
 **Status**: SUCCESS
+
+> Rapport de clôture de la consolidation du 15 août 2026. Pour l’état actuel
+> du produit, des tests Hub et des limites machine, consulter
+> [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 ---
 

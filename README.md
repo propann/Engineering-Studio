@@ -4,6 +4,7 @@ Unified development environment for OP-1 Studio and EP-133 KO II Studio.
 
 > **État actuel :** consulter la [feuille de route active](docs/ROADMAP_ACTIVE_2026-08-16.md).
 > Elle remplace les anciennes projections de phases pour le suivi du produit.
+> Les commandes et résultats de la dernière passe sont dans le [journal de validation](docs/VALIDATION_LOG_2026-08-16.md).
 
 ## 📁 Structure
 
@@ -122,7 +123,7 @@ Compression and archive utilities:
 
 **Version**: 1.0.0  
 **Updated**: 2026-08-16  
-**Status**: Branche d’intégration — bases OP‑1, EP‑133 et Hub réunies
+**Status**: Branche `integration/studio-hub` — parcours Hub hors machine validés, PR ouverte
 
 ## État vérifié
 
@@ -138,8 +139,11 @@ npm run typecheck:all
 npm run build:all
 npm run test:all
 npm run lint:all
+npm run test:e2e:hub
 ```
 
-Le lint ne contient plus d’erreur bloquante ; il reste des avertissements de
-code historique non monté et deux recommandations `<img>` documentés dans le
-rapport d’audit.
+Le test Hub couvre 6 scénarios et 7 ouvertures d’outils, dont la fiche
+persistante, le coffre sélectif hors machine, l’AIFF local, l’export SVG, les
+services OP‑1, les sons EP‑133 et la documentation OP‑1. Le lint ne contient
+pas d’erreur bloquante ; les limites matérielles et les gros volumes restent
+ouvertes dans la [roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md).

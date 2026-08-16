@@ -1,4 +1,7 @@
-# ✅ Phase 4 Week 5-6 - Game Frameworks: COMPLETE
+# ✅ Phase 4 Week 5-6 - Game Frameworks: COMPLETE (historical package report)
+
+> Ce document clôt un jalon de packages, pas la validation complète du produit.
+> Voir [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 **Final Completion Date**: 2026-08-15  
 **Planned Duration**: 2026-09-06 to 2026-09-20  

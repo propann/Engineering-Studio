@@ -1,8 +1,9 @@
-# 🎵 Studio Hub - Progress Tracking & Alignment
+# 🎵 Studio Hub - Progress Tracking & Alignment (historical snapshot)
 
-**Last Updated**: 2026-08-15  
-**Status**: Phase 3 Complete - Ready for Phase 4 (Optimization)  
-**Sync Status**: ✅ All aligned and documented
+**Last Updated**: 2026-08-15 — report retained for consolidation history  
+**Current status**: Voir [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)  
+**Historical status**: Phase 3 Complete - Ready for Phase 4 (Optimization)  
+**Sync status**: Historique ; les priorités actuelles sont dans la roadmap active
 
 ---
 
@@ -10,7 +11,11 @@
 
 The monorepo consolidation project (studio-hub) has successfully completed Phase 3. Both OP-1 Studio and EP-133 Studio are now integrated into a unified `studio-hub` monorepo with shared packages, unified dependencies, and comprehensive documentation.
 
-**Current State**: Production-ready, all tests passing, both builds successful.
+**Current State at the time**: Both builds and the original package tests passed.
+
+> Depuis ce rapport, l’intégration Hub a ajouté 6 scénarios navigateur et le
+> coffre hors machine. Ne pas utiliser les anciennes métriques ou la mention
+> « production-ready » pour conclure à une validation matérielle.
 
 ---
 
@@ -434,7 +439,7 @@ Workspace Dependencies      ✅ WORKING
 
 **Output**:
 - Phase 3 complete
-- System production-ready
+- Software foundation validated; product gates remain
 - All documentation up-to-date
 - All team members aligned
 
@@ -621,7 +626,9 @@ A: OP-1 needs Next.js for server-side rendering and API routes. EP-133 is pure c
 A: Yes! @studio-hub/shared-ui and @studio-hub/audio-bridge are ready for components and utilities. Candidates identified in optimization plan.
 
 ### Q: Is this production-ready?
-A: Yes! All tests pass, both build successfully, no errors. Fully tested and documented.
+A: The software checks pass, but the complete product is not yet declared
+production-ready: hardware, real folders, large volumes and controlled writes
+remain open in the active roadmap.
 
 ### Q: What about future studios?
 A: Easy to add! The monorepo structure supports adding new apps with `npm workspace` protocol.
@@ -677,7 +684,7 @@ A: Easy to add! The monorepo structure supports adding new apps with `npm worksp
 ✅ **Everyone is aligned**
 ✅ **All decisions documented**
 ✅ **Architecture is clear**
-✅ **System is production-ready**
+✅ **Software foundation and current Hub E2E are validated**
 ✅ **Ready to move forward**
 
 ---
@@ -687,4 +694,3 @@ A: Easy to add! The monorepo structure supports adding new apps with `npm worksp
 **Alignment Status**: ✅ ALL TEAM MEMBERS SYNCHRONIZED
 
 **Next Action**: Start Phase 4 (Optimization) when ready
-

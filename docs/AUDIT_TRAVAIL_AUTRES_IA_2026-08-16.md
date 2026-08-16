@@ -88,6 +88,16 @@ La passation OP-1 du 15 août annonce encore une migration à 40 % avec plusieur
 
 Action : publier un seul fichier `STATUS_CURRENT.md` daté, qui sépare : livré, testé en logiciel, testé sur machine réelle et prévu.
 
+### Mise à jour après intégration
+
+La branche `integration/studio-hub` a depuis transformé les applications en
+dossiers suivis dans le monorepo, centralisé l’état dans
+[`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md) et ajouté 6
+scénarios E2E Hub. Les paragraphes ci-dessous décrivant les gitlinks et
+l’absence de raccord navigateur sont donc historiques ; ils restent conservés
+comme constat de l’audit initial, mais ne constituent plus une action à
+réexécuter.
+
 ### P1 — Sécurité des communications Hub / studios
 
 Les hooks de démarrage OP-1 et EP-133 répondent encore avec `postMessage(..., '*')`. Le Hub possède déjà un routage plus précis, mais les studios doivent valider `event.origin`, `event.source` et le schéma du message.

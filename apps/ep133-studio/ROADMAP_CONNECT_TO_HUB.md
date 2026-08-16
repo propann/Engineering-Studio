@@ -13,6 +13,14 @@
 
 La source de décision actuelle est [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../docs/ROADMAP_ACTIVE_2026-08-16.md).
 
+### Validation locale ajoutée le 16 août 2026
+
+- [x] Le Hub conserve la fiche et ouvre les 7 cartes d’outils dans un test navigateur.
+- [x] Le lancement EP‑133 transmet `hubProfile`, machine nommée, capacité et `hubTool`.
+- [x] L’écran **Sons & Transfert EP‑133** s’ouvre sans machine et affiche le bouton de connexion.
+- [ ] Tester un vrai dossier partagé, le retour Hub après modification et la remontée de statistiques.
+- [ ] Tester les écritures ciblées avec checkpoint, relecture et annulation.
+
 ---
 
 ## 🎯 MISSION

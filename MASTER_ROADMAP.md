@@ -2,7 +2,7 @@
 
 **Consolidated view of all roadmaps, timelines, and project organization**  
 **Date**: 2026-08-16  
-**Status**: Document historique — voir [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)
+**Status**: Index historique — voir [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)
 
 > Ce document conserve l’historique des phases et de l’organisation initiale.
 > La branche d’intégration expose maintenant sept parcours outils et reste en
@@ -19,7 +19,7 @@ COMPLETED (✅):
   Phase 3: Git Consolidation & Docs         [2026-08-16] ✅ (PR ouverte)  
   
 IN PREPARATION (→):
-  Phase 4: Outils intégrés & validation      [2026-08-16] →
+  Phase 4: Outils intégrés & validation      [2026-08-16] 🔄 (6 E2E passés)
   
 FUTURE (🔮):
   Phase 5: Production Hardening
@@ -115,7 +115,7 @@ All stored in `/home/azoth/studio-hub/`:
 ---
 
 ### Roadmap 2: Outils intégrés & validation (Phase 4)
-**Status**: 🔄 ACTIVE  
+**Status**: 🔄 ACTIVE — détail et cases à cocher dans la roadmap active  
 **File**: [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)
 
 La priorité n’est plus une promesse abstraite de réduction de taille : elle est
@@ -124,14 +124,16 @@ matérielles contrôlées. L’architecture adaptative reste une piste technique
 à reprendre après les portes P0/P1.
 
 ```
-Timeline:
-  Week 1-2:  Adaptive Core System          [PLANNED]
-  Week 3-4:  Instrument Adapters           [PLANNED]
-  Week 5-6:  Game Frameworks               [PLANNED]
-  Week 7-8:  Advanced Features & Polish    [PLANNED]
-  
-Goal: 92% size reduction (1.5GB → 120MB)
-      + unlimited app support
+État de la phase :
+  ✅ Portail → profil → 7 outils couvert dans un navigateur
+  ✅ Coffre sélectif hors machine couvert avec fausse arborescence
+  ✅ Sample OP‑1, image/SVG, services OP‑1, sons EP‑133 et docs OP‑1 couverts
+  ☐ Dossier réel et gros volume
+  ☐ Validation matérielle lecture seule puis écriture ciblée
+  ☐ Contrat de statistiques Hub/studios et nettoyage du code mort
+
+Les objectifs historiques de réduction de taille et d’architecture adaptative
+restent des pistes, pas des critères de livraison immédiats.
 ```
 
 **Weekly Breakdown**:
@@ -203,7 +205,7 @@ Day 7: GIT PROPRE
 
 **Production & History**:
 ```
-master                           (production-ready)
+master                           (production target after review gates)
   └─ Main deployment branch
   └─ All tests passing
   └─ Fully documented
@@ -377,9 +379,10 @@ Total: 60 minutes to become productive
 - [x] Align with git strategy
 
 ### Short Term (This Week)
-- [ ] Revue de la roadmap active
-- [ ] Test navigateur des sept cartes outils
-- [ ] Test du coffre sur un vrai dossier local
+- [x] Revue de la roadmap active et alignement des rapports
+- [x] Test navigateur des sept cartes outils
+- [x] Test hors machine du coffre sélectif
+- [ ] Test du coffre sur un vrai dossier local et gros volume
 - [ ] Préparer la revue de la PR
 
 ### Medium Term (This Month)
@@ -406,7 +409,8 @@ Total: 60 minutes to become productive
 - [x] Validation locale passée
 
 ### Phase 4 (Active)
-- [ ] Parcours Hub → outils validés dans un navigateur
+- [x] Parcours Hub → outils validés dans un navigateur
+- [x] Coffre local sélectif validé hors machine
 - [ ] Coffre local validé sur un vrai dossier et gros volume
 - [ ] Validation matérielle OP‑1/EP‑133 contrôlée
 - [ ] Contrat Hub/studios et statistiques stabilisés

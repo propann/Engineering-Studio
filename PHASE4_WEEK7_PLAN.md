@@ -1,4 +1,7 @@
-# 📋 Phase 4 Week 7-8 Plan - Production Hardening & Advanced Features
+# 📋 Phase 4 Week 7-8 Plan - Historical package plan
+
+> Ce plan historique ne remplace pas les priorités produit actuelles. Voir
+> [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 **Duration**: 2026-09-21 to 2026-10-04 (2 weeks)  
 **Status**: 🔄 IN PROGRESS  
@@ -226,4 +229,3 @@
 **Current**: GO for full Week 7-8 execution
 
 Proceed with all phases as planned. No blockers identified.
-

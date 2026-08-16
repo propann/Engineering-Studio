@@ -1,9 +1,15 @@
-# Studio Hub - Monorepo Status
+# Studio Hub - Monorepo Status (historical snapshot)
 
-**Last Updated**: 2026-08-15  
-**Monorepo Status**: PHASE 3 - EP-133 Integration ✅ COMPLETE  
+**Last Updated**: 2026-08-15 — report retained for consolidation history  
+**Current status**: Voir [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)  
+**Historical status**: PHASE 3 - EP-133 Integration ✅ COMPLETE  
 **Build Status**: ✅ PASSING (All builds successful)  
 **Test Status**: ✅ PASSING (EP-133: 10/10 tests passing)
+
+> Ce document décrit la consolidation initiale et ne doit plus être lu comme
+> le statut complet du produit. La branche d’intégration dispose maintenant
+> de 6 scénarios E2E Hub supplémentaires ; les validations matérielles,
+> statistiques partagées et gros volumes restent suivis dans la roadmap active.
 
 ---
 

@@ -1,11 +1,28 @@
 # 🔗 Git Alignment Report - Studio Hub
 
-**Date**: 2026-08-15  
-**Status**: PARTIAL ALIGNMENT - Action Required
+**Date**: 2026-08-16  
+**Status**: ALIGNED ON `integration/studio-hub`; PR ouverte
+
+## ✅ État vérifié après intégration
+
+La branche active de ce dépôt est `integration/studio-hub` et contient les
+sources Hub, OP‑1 Studio, EP‑133 Studio, packages partagés, tests E2E et
+documentation dans un même arbre suivi par Git. Les applications ne sont pas
+des gitlinks dans cette branche. Le dépôt distant de référence est
+`https://github.com/propann/OP-1-Studio.git` et la PR d’intégration est ouverte.
+
+Le dépôt est donc aligné pour le travail courant. Les dépôts historiques ou
+copies locales éventuelles en dehors de cet arbre ne doivent pas être utilisés
+comme source de travail concurrente. La suppression ou l’archivage de ces
+copies reste une opération séparée et n’est pas nécessaire pour la PR.
+
+> Les sections suivantes conservent l’audit de la situation observée avant la
+> fusion des sources. Elles sont historiques et ne décrivent plus la branche
+> `integration/studio-hub`.
 
 ---
 
-## 📊 Current Git Structure
+## 📜 Situation Git historique avant intégration
 
 ### ✅ Studio Hub (Main Repository)
 ```
@@ -368,9 +385,9 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 
 ### Current Status
 - ✅ Hub is primary repository
-- ⚠️ Submodules may exist (need verification)
-- ❌ Multiple .git directories present
-- ❌ Original repos still separate
+- ✅ Branche `integration/studio-hub` suivie comme dépôt monorepo normal
+- ⚠️ Les copies historiques hors dépôt restent à archiver ou ignorer selon le besoin
+- ⚠️ La fusion de la PR et le choix de la branche de production restent ouverts
 
 ### Recommended Action
 **Execute Phase 1-4 to achieve full alignment**
@@ -409,5 +426,6 @@ A: Yes, but shouldn't be necessary. Git history is preserved.
 
 ---
 
-**Recommendation**: Execute Phase 1-4 to achieve complete alignment. This will make the monorepo truly unified with a single git repository and organized branches.
-
+**Recommendation actuelle**: utiliser la roadmap active, relire la PR, puis
+fusionner après les portes P0/P1. Ne pas relancer les étapes de conversion des
+gitlinks décrites dans cet ancien audit pour la branche déjà intégrée.

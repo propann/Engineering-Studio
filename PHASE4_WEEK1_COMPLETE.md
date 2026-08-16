@@ -1,4 +1,7 @@
-# ✅ Phase 4 Week 1-2 - Adaptive Core System: COMPLETE
+# ✅ Phase 4 Week 1-2 - Adaptive Core System: COMPLETE (historical package report)
+
+> Jalon de packages adaptatifs. La validation produit actuelle est suivie dans
+> [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 **Date**: 2026-08-15  
 **Duration**: Week 1-2 (6 days effort)  

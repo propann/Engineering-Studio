@@ -1,4 +1,9 @@
-# Audit du code mort — Studio Hub
+# Audit du code mort — Studio Hub (baseline du 16 août)
+
+> Audit de référence avant la dernière passe d’intégration. Les suppressions
+> de profils locaux décrites plus bas sont déjà intégrées ; ce document reste
+> le registre des candidats à nettoyer, sans suppression automatique. L’état
+> de livraison courant est dans [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 **Date :** 16 août 2026  
 **Méthode :** lint ESLint, typecheck TypeScript, recherche des références de symboles et des imports, inventaire des workspaces et vérification des appels depuis les applications.  

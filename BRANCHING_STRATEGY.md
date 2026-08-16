@@ -2,6 +2,11 @@
 
 **Studio Hub Monorepo - Team Collaboration Workflow**
 
+> Mise à jour du 16 août 2026 : la branche de travail active est
+> `integration/studio-hub` sur `propann/OP-1-Studio`. Les branches de modules
+> décrites plus bas sont des repères historiques ; les nouvelles PR doivent
+> partir de la branche d’intégration et viser celle-ci jusqu’à sa revue.
+
 ---
 
 ## Overview
@@ -43,7 +48,7 @@ master (stable production branch)
 ### Branch Purposes
 
 #### `master` (Main Stable Branch)
-- ✓ Always production-ready
+- ✓ Branche de production après fusion de l’intégration et validation des portes
 - ✓ All tests passing
 - ✓ Complete documentation
 - ✓ Protected (2 reviewers required)
@@ -627,7 +632,6 @@ A: When adding major new functionality or studio to monorepo.
 
 ---
 
-**Status**: ✅ Strategy Ready for Team Use
+**Status**: ✅ Strategy historique à appliquer avec la branche d’intégration
 
-**Last Updated**: 2026-08-15
-
+**Last Updated**: 2026-08-16

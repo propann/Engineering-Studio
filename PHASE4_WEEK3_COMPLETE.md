@@ -1,4 +1,7 @@
-# ✅ Phase 4 Week 3-4 - Instrument Adapters: COMPLETE
+# ✅ Phase 4 Week 3-4 - Instrument Adapters: COMPLETE (historical package report)
+
+> Jalon de packages adaptatifs. La validation produit actuelle est suivie dans
+> [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 **Final Completion Date**: 2026-08-15  
 **Planned Duration**: 2026-08-22 to 2026-09-05  

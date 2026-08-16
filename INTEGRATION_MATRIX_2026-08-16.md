@@ -1,9 +1,14 @@
 # Matrice d’intégration des livrables — 16 août 2026
 
-Ce document compare les livrables de `/home/azoth/studio-ecosystem` avec le dépôt
-actuel `/home/azoth/studio-hub`. Il sert de filtre avant de recopier du code : un
+Ce document compare les livrables de l’ancien écosystème avec le dépôt
+`OP-1-Studio` sur la branche `integration/studio-hub`. Il sert de filtre avant
+de recopier du code : un
 outil n’est intégré que s’il est réellement monté, compilable et cohérent avec
 les studios OP‑1/EP‑133 actuels.
+
+> Mise à jour : la consolidation et les tests Hub sont maintenant dans la PR
+> d’intégration. Ce document ne justifie plus une recherche de gitlinks ou une
+> copie brute des anciens projets.
 
 ## Résultat de la consolidation
 
@@ -37,7 +42,8 @@ les studios OP‑1/EP‑133 actuels.
 ## Raccords encore ouverts, confirmés par les roadmaps
 
 - valider dans un navigateur le parcours complet de permission et de transfert
-  de handle (le coffre et les studios sont maintenant raccordés au même handle) ;
+  de handle sur un vrai dossier (le coffre et les studios sont raccordés au
+  même contrat, mais le test courant utilise une arborescence simulée) ;
 - faire remonter au Hub les statistiques et le dernier backup créé depuis les
   studios, au lieu de seulement compter les snapshots créés dans le coffre ;
 - ajouter le retour studio → Hub (statistiques, notifications, dernier backup)
@@ -56,8 +62,6 @@ Les anciens dépôts n’ont pas été supprimés ni écrasés. Les deux applica
 actuelles restent les sources de vérité produit ; l’ancien dépôt est conservé
 comme référence de conception jusqu’à validation du produit intégré.
 
-La consolidation parentale contient encore des gitlinks historiques pour
-`apps/op1-studio` et `apps/ep133-studio`. Le portail est bien ajouté comme dossier
-normal, mais transformer les deux gitlinks en dossiers suivis par le dépôt parent
-reste une opération séparée, à faire après validation finale pour ne pas perdre
-les historiques des sous-projets.
+La branche `integration/studio-hub` suit désormais les applications comme des
+dossiers normaux. Les copies de travail externes éventuelles sont seulement des
+références et ne font pas partie de la PR.

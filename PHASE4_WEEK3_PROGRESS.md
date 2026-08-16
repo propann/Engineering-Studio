@@ -1,4 +1,7 @@
-# ✅ Phase 4 Week 3 - Instrument Adapters: PROGRESS REPORT
+# ✅ Phase 4 Week 3 - Instrument Adapters: PROGRESS REPORT (historical package report)
+
+> Rapport historique sur les packages adaptatifs ; l’état produit actuel est
+> suivi dans [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 **Current Date**: 2026-08-15  
 **Week 3 Duration**: 2026-08-22 to 2026-09-05 (Planned)  

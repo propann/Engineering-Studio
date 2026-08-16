@@ -4,6 +4,9 @@
 **Statut :** branche `integration/studio-hub`, PR ouverte, non fusionnée  
 **Source de vérité :** ce document pour les priorités produit. Les roadmaps historiques restent utiles pour le contexte, mais ne décrivent plus seules l’état actuel.
 
+Les résultats reproductibles de la dernière passe sont consignés dans le
+[journal de validation](VALIDATION_LOG_2026-08-16.md).
+
 ## 1. Produit livré aujourd’hui
 
 Le produit est organisé en trois niveaux :
