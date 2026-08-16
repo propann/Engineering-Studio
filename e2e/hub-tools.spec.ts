@@ -157,6 +157,15 @@ test('la fiche survit à une réouverture de contexte navigateur', async ({ page
   }
 });
 
+test('le Hub bloque le routage quand aucune destination n’est connectée', async ({ page }) => {
+  await createProfile(page);
+  const panel = page.locator('.midi-sync-panel');
+  await expect(panel).toContainText('Destinations : 0 sortie');
+  await expect(panel.getByRole('button', { name: 'C2' })).toBeDisabled();
+  await expect(panel.getByRole('button', { name: 'SÉQUENCE TEST' })).toBeDisabled();
+  await expect(panel.getByRole('button', { name: 'PANIC' })).toBeDisabled();
+});
+
 test('le transport MIDI central envoie Start, horloge et Stop aux deux sorties', async ({ page }) => {
   await page.addInitScript(() => {
     class FakeOutput {

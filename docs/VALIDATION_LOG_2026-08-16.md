@@ -15,7 +15,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 | `npm run test:all` | ✅ Tous les tests des workspaces actifs passent ; le workspace MIDI vide/non consommé a été retiré |
 | `npm run build:all` | ✅ Hub, OP‑1 Studio et EP‑133 Studio passent |
 | `npm run lint:all` | ✅ Aucun avertissement lint OP‑1 |
-| `npm run test:e2e:hub` | ✅ 14 scénarios, 8 cartes d’outils dont la synchronisation MIDI |
+| `npm run test:e2e:hub` | ✅ 15 scénarios, 8 cartes d’outils dont la synchronisation MIDI |
 | `git diff --check` | ✅ Aucun espace ou conflit de patch détecté |
 | `npm run hardware:validate -- --python /tmp/ep133-scan-venv/bin/python --project 9` | ✅ Rapport centralisé lecture seule : P09, 532 sons, bridge local OK |
 

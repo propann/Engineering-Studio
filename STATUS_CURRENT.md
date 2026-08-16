@@ -26,7 +26,7 @@ historiques.
   `@studio-hub/audio-bridge` ; les différences OP‑1/EP‑133 restent dans leurs
   adaptateurs locaux. Le détail de l’inventaire est dans
   `docs/AUDIT_DOUBLONS_ET_OPTIMISATION_2026-08-16.md`.
-- Tests : 14 scénarios E2E Hub, 20 tests unitaires MIDI, typecheck global,
+- Tests : 15 scénarios E2E Hub, 20 tests unitaires MIDI, typecheck global,
   lint OP‑1, builds Hub/OP‑1/EP‑133 et `npm ci --dry-run`.
 
 ## Validations matérielles à considérer séparément
