@@ -31,7 +31,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - coffre local : sauvegarde `tape` sélective, compteur Hub, restauration, progression par fichiers/octets et téléchargement des rapports JSON ;
 - sample OP‑1 : import WAV, analyse puis préparation AIFF locale ;
 - image OP‑1 : export SVG local, et services firmware/patchs sans machine ;
-- sons EP‑133 et documentation OP‑1 ouverts hors machine.
+- sons EP‑133 : transfert démo préparé puis retiré avant confirmation, avec zéro appel d’écriture au bridge ; documentation OP‑1 ouverte hors machine.
 
 ## Validation matérielle ajoutée
 
@@ -51,5 +51,5 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   test explicitement confirmée sur P09 a été réalisée.
 - La suite centralisée `tools/hardware_validation.py` refuse une écriture sans
   `--confirm-write` et produit les rapports locaux ignorés par Git.
-- L’annulation d’un transfert ciblé et le test du coffre sur vrai gros volume
+- L’écriture matérielle EP‑133 et le test du coffre sur vrai gros volume
   restent dans la roadmap active.

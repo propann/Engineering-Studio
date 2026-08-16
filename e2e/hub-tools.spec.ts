@@ -326,13 +326,30 @@ test('l’éditeur d’images et les services OP-1 restent locaux', async ({ pag
 test('les outils EP-133 sons et documentation OP-1 s’ouvrent hors machine', async ({ page }) => {
   await createProfile(page);
 
+  let projectWriteCalls = 0;
+  await page.context().route('**/bridge/health', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ root: '/tmp/fake-ep133-bridge' }) }));
+  await page.context().route('**/bridge/projects/list', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ projects: Array.from({ length: 9 }, (_, index) => ({ slot: index + 1, present: index === 0, byteSize: 1024 })) }) }));
+  await page.context().route('**/bridge/projects/write', (route) => { projectWriteCalls += 1; return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'écriture interdite dans ce test' }) }); });
+
   const soundsPopupPromise = page.waitForEvent('popup');
   await page.locator('.tools-grid .tool-card').filter({ hasText: 'Sons & transferts EP‑133' }).getByRole('button').click();
   const soundsPopup = await soundsPopupPromise;
   await soundsPopup.waitForLoadState('domcontentloaded');
   await expect(soundsPopup.getByRole('heading', { name: 'SONS & TRANSFERT EP‑133' })).toBeVisible();
   await expect(soundsPopup.getByRole('button', { name: 'CONNECTER EP-133' })).toBeVisible();
+  await soundsPopup.locator('button[title*="transfert de projets"]').first().click();
+  const projectTransfer = soundsPopup.locator('.project-transfer');
+  await expect(projectTransfer.getByText('DEMO GROOVE', { exact: true })).toBeVisible();
+  await projectTransfer.getByText('DEMO GROOVE', { exact: true }).dragTo(projectTransfer.locator('.project-transfer-card.machine-side.present').first());
+  await expect(projectTransfer.getByText('TRANSFERTS EN ATTENTE · 1')).toBeVisible();
+  await projectTransfer.getByRole('button', { name: 'RETIRER' }).click();
+  await expect(projectTransfer.getByText('Rien en attente.')).toBeVisible();
+  await expect(projectTransfer.getByRole('button', { name: /CONFIRMER/ })).toBeDisabled();
+  expect(projectWriteCalls).toBe(0);
   await soundsPopup.close();
+  await page.context().unroute('**/bridge/health');
+  await page.context().unroute('**/bridge/projects/list');
+  await page.context().unroute('**/bridge/projects/write');
 
   const docsPopupPromise = page.waitForEvent('popup');
   await page.locator('.tools-grid .tool-card').filter({ hasText: 'OP‑1 Studio' }).getByRole('button').click();

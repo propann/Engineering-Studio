@@ -103,7 +103,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] **Éditeur de samples OP‑1** : test import → analyse → conversion AIFF → export local, sans écriture machine.
 - [x] **Services/patchs OP‑1** : préciser que le module prépare/analyse les patchs ; réserver l’édition avancée à un chantier identifié.
 - [x] **Éditeur d’images OP‑1** : test d’aperçu sûr et export SVG local ; le rejet SVG avancé reste à couvrir.
-- [x] **Sons & Transfert EP‑133** : ouverture hors machine et bouton de connexion vérifiés ; écriture ciblée et annulation restent à couvrir.
+- [x] **Sons & Transfert EP‑133** : ouverture hors machine, préparation ciblée, retrait avant confirmation et garde d’écriture vérifiés ; l’écriture matérielle reste à couvrir.
 - [x] **Pattern & Song EP‑133** : sauvegarde/rechargement de la bibliothèque locale et vue SONG validés hors machine.
 - [ ] **Pattern & Song EP‑133** : compléter la couverture MIDI, restauration après suppression et test avec un vrai projet machine.
 - [x] **Jeux & entraînement** : session locale jouable, frappe, score, journal daté et progression remontée au profil Hub validés hors machine.
