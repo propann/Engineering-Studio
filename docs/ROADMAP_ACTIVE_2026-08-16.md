@@ -44,7 +44,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée | Store partagé, stats bidirectionnelles et écriture ciblée après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
-| Qualité | Typecheck, build, lint propre et 6 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
+| Qualité | Typecheck, build, lint propre et 7 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -59,7 +59,7 @@ Objectif : ouvrir chaque outil depuis le Hub, conserver l’identité et revenir
 - [x] Écrire et exécuter le test navigateur du parcours landing → profil existant → Hub → sept cartes outils.
 - [x] Vérifier les ouvertures hors machine : sample OP‑1, image/SVG, services, sons EP‑133 et documentation OP‑1.
 - [x] Éviter la course d’hydratation lors d’un lancement direct Hub → OP‑1 Studio.
-- [ ] Vérifier la persistance après fermeture/réouverture du navigateur, sans nouvelle fiche.
+- [x] Vérifier la persistance après réouverture d’un contexte navigateur, sans nouvelle fiche.
 - [ ] Passer la PR d’intégration en revue puis la fusionner après ces contrôles.
 
 ### P1 — Coffre et sauvegardes crédibles
@@ -138,4 +138,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 6 scénarios et 7 ouvertures contrôlées, dont un cycle de coffre sélectif hors machine avec rapports JSON. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 7 scénarios et 7 ouvertures contrôlées, dont la persistance de fiche et un cycle de coffre sélectif hors machine avec rapports JSON. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.

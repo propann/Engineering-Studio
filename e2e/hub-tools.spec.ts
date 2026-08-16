@@ -127,6 +127,21 @@ test('la fiche persistante ouvre le Hub des sept outils', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /Bienvenue, Test Hub/i })).toBeVisible();
 });
 
+test('la fiche survit à une réouverture de contexte navigateur', async ({ page, browser }) => {
+  await createProfile(page);
+  const savedState = await page.context().storageState();
+  const reopenedContext = await browser.newContext({ storageState: savedState });
+  const reopenedPage = await reopenedContext.newPage();
+  try {
+    await reopenedPage.goto('/');
+    await expect(reopenedPage.getByRole('button', { name: /Ouvrir mes outils/i })).toBeVisible();
+    await reopenedPage.getByRole('button', { name: /Ouvrir mes outils/i }).click();
+    await expect(reopenedPage.getByRole('heading', { name: /Bienvenue, Test Hub/i })).toBeVisible();
+  } finally {
+    await reopenedContext.close();
+  }
+});
+
 test('les cartes spécialisées transmettent leur écran cible au bon studio', async ({ page }) => {
   await createProfile(page);
 
