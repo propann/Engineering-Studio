@@ -96,11 +96,20 @@ async function copyFile(source: FileSystemFileHandle, destinationRoot: Directory
   if (!name) throw new Error(`Chemin invalide : ${relativePath}`);
   const destinationDirectory = await childDirectory(destinationRoot, parts.join("/"), true);
   const buffer = await (await source.getFile()).arrayBuffer();
+  const expectedHash = await sha256(buffer);
   const destination = await destinationDirectory.getFileHandle(name, { create: true });
   const writable = await destination.createWritable();
   await writable.write(buffer);
   await writable.close();
-  return { size: buffer.byteLength, sha256: await sha256(buffer) };
+  // Re-read the destination instead of trusting `write()` alone. This catches
+  // partial/corrupt writes before a manifest or a restore report is declared
+  // valid, which matters for large local volumes and removable media.
+  const written = await (await destination.getFile()).arrayBuffer();
+  const actualHash = await sha256(written);
+  if (written.byteLength !== buffer.byteLength || actualHash !== expectedHash) {
+    throw new Error(`Vérification impossible après copie : ${relativePath}`);
+  }
+  return { size: written.byteLength, sha256: actualHash };
 }
 
 function formatBytes(bytes: number) {
