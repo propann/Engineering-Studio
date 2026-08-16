@@ -2,7 +2,7 @@
   "name": "op1-studio",
   "version": "0.1.0",
   "private": true,
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/propann/OP-1-Studio.git"

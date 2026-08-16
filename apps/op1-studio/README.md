@@ -212,15 +212,8 @@ bonne contribution doit laisser moins de surprises qu'elle n'en trouve.
 
 ## Licence
 
-> [!NOTE]
-> Incohérence connue, pas encore tranchée : le fichier
-> [`LICENSE`](LICENSE) du dépôt est **MIT**, mais ce fichier et
-> `package.json` affichent encore **AGPL‑3.0‑only** plus bas. Détail du
-> désaccord dans
-> [`docs/TOOLING_GAP_ANALYSIS.md`](docs/TOOLING_GAP_ANALYSIS.md) §3 — à
-> trancher avant toute communication publique sur une offre payante, pas
-> une correction de documentation à faire au fil de l'eau.
-
-Le code du dépôt est distribué sous **AGPL-3.0-only**. Les dépendances,
-firmwares et ressources externes conservent leurs licences respectives ;
-voir [NOTICE.md](NOTICE.md).
+Le code du dépôt est distribué sous **MIT**, conformément à
+[`LICENSE`](LICENSE). Les dépendances, firmwares et ressources externes
+conservent leurs licences respectives ; voir [NOTICE.md](NOTICE.md). Les
+projets AGPL étudiés restent des références externes et ne sont pas incorporés
+au code de cette application.

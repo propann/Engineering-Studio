@@ -111,7 +111,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] Supprimer les huit composants OP‑1 signalés comme non montés par le lint après vérification de leur destination.
 - [x] Remplacer les deux `<img>` signalés par un aperçu local sûr et supprimer le bloc legacy inatteignable.
 - [x] Corriger la commande de validation globale et retirer le workspace MIDI vide/non consommé.
-- [ ] Clarifier la licence héritée MIT/AGPL dans le README et le PR.
+- [x] Clarifier la licence héritée MIT/AGPL : OP‑1 Studio est aligné sur le fichier `LICENSE` MIT ; les références AGPL restent externes.
 - [ ] Ajouter un bandeau « document historique » aux anciennes roadmaps et renvoyer vers ce document.
 - [x] Générer la passe de nettoyage code mort ; aucun avertissement lint ne subsiste.
 
