@@ -98,11 +98,16 @@ l’absence de raccord navigateur sont donc historiques ; ils restent conservés
 comme constat de l’audit initial, mais ne constituent plus une action à
 réexécuter.
 
-### P1 — Sécurité des communications Hub / studios
+### P1 — Sécurité des communications Hub / studios — résolu sur la branche d’intégration
 
-Les hooks de démarrage OP-1 et EP-133 répondent encore avec `postMessage(..., '*')`. Le Hub possède déjà un routage plus précis, mais les studios doivent valider `event.origin`, `event.source` et le schéma du message.
+Les hooks de démarrage OP-1 et EP-133 valident désormais `event.origin`,
+`event.source` et le schéma de chaque message de transport, note et PANIC. Le
+Hub envoie ses messages avec l’origine de la fenêtre cible, et l’exemple de
+navigation EP-133 n’utilise plus `'*'`.
 
-Action : remplacer `'*'` par l’origine locale autorisée et ajouter un test de rejet d’une origine inconnue.
+Validation : le scénario E2E sans machine injecte des messages MIDI valides
+depuis `http://evil.invalid` dans les deux studios ; aucun événement note ou
+PANIC n’est relayé.
 
 ### P2 — Dette de structure
 

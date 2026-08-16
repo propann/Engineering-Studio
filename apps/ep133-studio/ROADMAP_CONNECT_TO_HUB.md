@@ -529,9 +529,10 @@ export function HubNavigation() {
   const { profile } = usePlayerProfileStore();
 
   function navigateToHub() {
+    const hubOrigin = new URL(new URLSearchParams(window.location.search).get('hubReturn') || window.location.origin).origin;
     // Method 1: If in iframe/window from Hub
     if (window.parent !== window) {
-      window.parent.postMessage({ action: 'go-to-hub' }, '*');
+      window.parent.postMessage({ action: 'go-to-hub' }, hubOrigin);
     }
     // Method 2: If standalone, just go to home
     else {
