@@ -1,5 +1,10 @@
 # OP-1 Studio - analyse globale
 
+> **Recalage produit :** pour l’état actuel du monorepo et les priorités
+> Hub → OP‑1/EP‑133, lire [`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md).
+> Ce document reste le journal détaillé de l’OP‑1 et conserve des points
+> historiques qui ne doivent pas remplacer la roadmap active.
+
 Etat verifie le 13 aout 2026.
 
 Point d'avancement apres integration du Display Editor : les outils locaux

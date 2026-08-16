@@ -2,8 +2,16 @@
 
 **For**: Development Team working on EP-133  
 **Purpose**: Guide how to connect EP-133 Studio to Studio Hub  
-**Date**: 15 August 2026  
-**Status**: Implementation Specification  
+**Date**: 16 August 2026  
+**Status**: Partiellement livré — voir la feuille de route active du monorepo  
+
+> Cette spécification décrit l’intention initiale. Le Hub lance maintenant
+> EP‑133, transmet le profil, le nom et la capacité de la machine, transmet le
+> workspace, propose le retour Hub et ouvre directement `game`, `sounds`,
+> `docs` et `machine-test`. Les stores de profil/workspace proposés ici et la
+> remontée complète des statistiques ne sont pas encore livrés.
+
+La source de décision actuelle est [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../docs/ROADMAP_ACTIVE_2026-08-16.md).
 
 ---
 
@@ -79,7 +87,7 @@ EP-133 (React)                 Hub (React)
 
 ---
 
-## 🛠️ IMPLEMENTATION STEPS
+## 🗃️ PLAN INITIAL HISTORIQUE — À RÉÉCRIRE
 
 ### STEP 1: Enhance Player Profile Store (WEEK 1)
 

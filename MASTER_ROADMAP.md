@@ -1,8 +1,12 @@
 # 🎯 Master Roadmap & Documentation Index
 
 **Consolidated view of all roadmaps, timelines, and project organization**  
-**Date**: 2026-08-15  
-**Status**: All phases documented, organized, and git-aligned
+**Date**: 2026-08-16  
+**Status**: Document historique — voir [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)
+
+> Ce document conserve l’historique des phases et de l’organisation initiale.
+> La branche d’intégration expose maintenant sept parcours outils et reste en
+> PR ouverte : ne pas utiliser ce fichier seul pour déduire l’état produit.
 
 ---
 
@@ -12,10 +16,10 @@
 COMPLETED (✅):
   Phase 1: Quick Wins Analysis              [2026-08-14] ✅
   Phase 2: Monorepo Setup                   [2026-08-14] ✅  
-  Phase 3: Git Consolidation & Docs         [2026-08-15] ✅
+  Phase 3: Git Consolidation & Docs         [2026-08-16] ✅ (PR ouverte)  
   
 IN PREPARATION (→):
-  Phase 4: Adaptive Studio Framework         [2026-08-22] →
+  Phase 4: Outils intégrés & validation      [2026-08-16] →
   
 FUTURE (🔮):
   Phase 5: Production Hardening
@@ -91,8 +95,8 @@ All stored in `/home/azoth/studio-hub/`:
 ## 🗺️ All Roadmaps Consolidated
 
 ### Roadmap 1: Studio Hub Current State (Phase 3)
-**Status**: ✅ COMPLETE  
-**Duration**: 2 days (2026-08-14 to 2026-08-15)  
+**Status**: ✅ CONSOLIDATED ON INTEGRATION BRANCH  
+**Duration**: 2 days (2026-08-14 to 2026-08-16)  
 **File**: STATUS.md, PHASE3_COMPLETION.md
 
 ```
@@ -106,14 +110,18 @@ All stored in `/home/azoth/studio-hub/`:
 - 85% size reduction (1.2GB → 180MB)
 - 10 documentation files created
 - Git aligned & clean
-- Production ready
+- Builds/tests validés ; revue, navigateur et matériel encore requis
 
 ---
 
-### Roadmap 2: Adaptive Studio Framework (Phase 4)
-**Status**: 📋 PLANNED  
-**Duration**: 8 weeks (2026-08-22 to 2026-10-17)  
-**File**: ADAPTIVE_STUDIO_VISION.md
+### Roadmap 2: Outils intégrés & validation (Phase 4)
+**Status**: 🔄 ACTIVE  
+**File**: [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)
+
+La priorité n’est plus une promesse abstraite de réduction de taille : elle est
+de valider les parcours Hub → OP‑1/EP‑133, le coffre local et les écritures
+matérielles contrôlées. L’architecture adaptative reste une piste technique,
+à reprendre après les portes P0/P1.
 
 ```
 Timeline:
@@ -329,7 +337,7 @@ Total: 60 minutes to become productive
 ## ✅ Checklist: Current State
 
 ### Documentation
-- [x] 11 comprehensive files (4,622 lines)
+- [x] Roadmap active créée et reliée aux documents historiques
 - [x] Navigation guide (INDEX.md)
 - [x] All phases documented
 - [x] Architecture clear
@@ -345,12 +353,10 @@ Total: 60 minutes to become productive
 - [x] History preserved
 
 ### Roadmaps
-- [x] Phase 3 complete (✅)
-- [x] Phase 4 planned (8 weeks)
-- [x] Process template defined (7 days/feature)
-- [x] Timelines clear
-- [x] Goals measurable
-- [x] Tracking possible
+- [x] Consolidation documentée sur la branche d’intégration
+- [x] Phase 4 recentrée sur outils intégrés et validation
+- [x] Priorités P0/P1/P2/P3 définies dans la roadmap active
+- [x] Critères de sortie mesurables
 
 ### Team Alignment
 - [x] All roles documented
@@ -371,39 +377,39 @@ Total: 60 minutes to become productive
 - [x] Align with git strategy
 
 ### Short Term (This Week)
-- [ ] Team reviews MASTER_ROADMAP.md
-- [ ] Confirm Adaptive Core timeline
-- [ ] Assign Phase 4 responsibilities
-- [ ] Schedule kickoff
+- [ ] Revue de la roadmap active
+- [ ] Test navigateur des sept cartes outils
+- [ ] Test du coffre sur un vrai dossier local
+- [ ] Préparer la revue de la PR
 
 ### Medium Term (This Month)
-- [ ] Execute Phase 4 Week 1-2 (Adaptive Core)
-- [ ] Monitor progress
-- [ ] Adjust timeline if needed
-- [ ] Document learnings
+- [ ] Valider les parcours Hub → OP‑1/EP‑133
+- [ ] Campagne matérielle lecture seule puis cible de test
+- [ ] Stabiliser le contrat de données Hub/studios
+- [ ] Nettoyer le code mort et les avertissements connus
 
 ### Long Term (2+ Months)
-- [ ] Complete Adaptive Framework
-- [ ] Measure size reduction (target: 92%)
-- [ ] Test multi-machine support
-- [ ] Plan Phase 5
+- [ ] Fusionner la branche après les portes de sortie
+- [ ] Reprendre l’architecture adaptative sur des besoins prouvés
+- [ ] Étendre les outils à d’autres machines seulement après validation
+- [ ] Planifier la phase de durcissement produit
 
 ---
 
 ## 📊 Success Metrics
 
-### Phase 3 (Complete ✅)
+### Phase 3 (Consolidée ✅, fusion à venir)
 - [x] 85% size reduction achieved
 - [x] 1 repository (unified)
 - [x] 11 documentation files
 - [x] 6 branches organized
-- [x] Production ready
+- [x] Validation locale passée
 
-### Phase 4 (In Planning)
-- [ ] 92% size reduction achieved
-- [ ] 4 core modules built
-- [ ] 10+ test configurations
-- [ ] Full documentation
+### Phase 4 (Active)
+- [ ] Parcours Hub → outils validés dans un navigateur
+- [ ] Coffre local validé sur un vrai dossier et gros volume
+- [ ] Validation matérielle OP‑1/EP‑133 contrôlée
+- [ ] Contrat Hub/studios et statistiques stabilisés
 - [ ] 8-week timeline met
 
 ### Overall Project
@@ -420,14 +426,13 @@ Total: 60 minutes to become productive
 **Documentation Hub**: [INDEX.md](./INDEX.md)  
 **Setup Instructions**: [STARTUP_GUIDE.md](./STARTUP_GUIDE.md)  
 **Git Workflow**: [BRANCHING_STRATEGY.md](./BRANCHING_STRATEGY.md)  
-**Current Status**: [STATUS.md](./STATUS.md)  
+**Current Status**: [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md)  
 **Future Vision**: [ADAPTIVE_STUDIO_VISION.md](./ADAPTIVE_STUDIO_VISION.md)  
 **This Roadmap**: [MASTER_ROADMAP.md](./MASTER_ROADMAP.md)  
 
 ---
 
 **Version**: 1.0  
-**Last Updated**: 2026-08-15  
-**Status**: All organized & aligned ✅  
-**Ready for**: Phase 4 kickoff
-
+**Last Updated**: 2026-08-16  
+**Status**: Outils regroupés, validation en cours 🔄  
+**Ready for**: tests de parcours et revue de la PR

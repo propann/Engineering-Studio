@@ -2,6 +2,9 @@
 
 Unified development environment for OP-1 Studio and EP-133 KO II Studio.
 
+> **État actuel :** consulter la [feuille de route active](docs/ROADMAP_ACTIVE_2026-08-16.md).
+> Elle remplace les anciennes projections de phases pour le suivi du produit.
+
 ## 📁 Structure
 
 ```
@@ -14,6 +17,7 @@ studio-hub/
 │   └── compression/      # Compression utilities
 │
 ├── apps/
+│   ├── studio-hub/        # Portail, fiche et coffre de l’atelier
 │   ├── op1-studio/       # OP-1 Studio (Next.js + Drizzle)
 │   └── ep133-studio/     # EP-133 Studio (Vite + Tone.js)
 │

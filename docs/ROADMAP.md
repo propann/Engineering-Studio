@@ -1,5 +1,10 @@
 # Feuille de route
 
+> **Document spécifique OP‑1.** La feuille de route produit commune et à jour
+> est [`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md). Les
+> jalons ci-dessous restent valables pour le détail OP‑1, mais leur état doit
+> être lu avec le recalage Hub/EP‑133.
+
 Le firmware est le premier écran et le premier sujet de confiance. Techniquement, une sauvegarde minimale et une identification sûre de la machine sont des prérequis du même jalon, pas des détours.
 
 **Référence consolidée (14 août 2026)** : [`OP1_FIRMWARE_BIBLE.md`](OP1_FIRMWARE_BIBLE.md) réunit tout ce qui est su sur le firmware et la machine (conteneur, base de données d'usine, format patch, boutons ↔ champs JSON, comportement Tape, graphismes, modes de connexion, catalogue de mods) avec, pour chaque fait, ce qui est déjà codé / codable maintenant / hors périmètre — un seul document à consulter avant de démarrer un chantier firmware/machine plutôt que de relire chaque étude séparément. [`OP1_IMAGE_BIBLE.md`](OP1_IMAGE_BIBLE.md) approfondit spécifiquement les 61 écrans SVG (inventaire complet par catégorie, palette exacte, patrons visuels d'éditeur de moteur, dictionnaire de codenames) pour servir directement l'éditeur d'images. [`FIRMWARE_PAGE_ROADMAP.md`](FIRMWARE_PAGE_ROADMAP.md) est une feuille de route dédiée à la seule page Firmware (UI, pas connaissance machine) — trop de chantiers en cours dessus pour rester dans les puces générales ci-dessous.
