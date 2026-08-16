@@ -216,6 +216,36 @@ test('le Hub reçoit aussi les statistiques OP-1', async ({ page }) => {
   await popup.close();
 });
 
+test('Rhythm Hero exécute une vraie séance locale et remonte la progression', async ({ page }) => {
+  await createProfile(page);
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'Jeux & entraînement' }).getByRole('button').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+
+  const playButton = popup.locator('button.start');
+  await expect(playButton).toBeVisible();
+  await playButton.click();
+  await expect(playButton).toHaveText('■ STOP', { timeout: 5_000 });
+  // Le compte à rebours doit réellement laisser place à la séance avant
+  // d'accepter une frappe utilisateur.
+  await expect(popup.locator('.countdown')).toHaveCount(0, { timeout: 5_000 });
+  await popup.locator('.pads .pad-cell button').first().click();
+  await expect.poll(async () => popup.locator('.performance-stat').evaluateAll((items) => items
+    .map((item) => Number(item.querySelector('b')?.textContent || 0))
+    .filter(Number.isFinite)
+    .reduce((sum, value) => sum + value, 0))).toBeGreaterThan(0);
+
+  await playButton.click();
+  await expect(playButton).toHaveText('▶ JOUER');
+  await expect.poll(async () => popup.evaluate(() => {
+    const entries = JSON.parse(localStorage.getItem('ep133-rhythm-hero:practice-log:v1') || '[]');
+    return Array.isArray(entries) ? entries.length : 0;
+  })).toBe(1);
+  await expect(page.locator('.studio-card.orange .card-stats')).toContainText('14% entraînement');
+  await popup.close();
+});
+
 test('le coffre local sauvegarde et restaure une sélection sans machine', async ({ page }) => {
   await page.addInitScript(installFakeFileSystem);
   await createProfile(page);

@@ -143,8 +143,9 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-Le test Hub couvre 10 scénarios et 10 ouvertures d’outils, dont la fiche
+Le test Hub couvre 11 scénarios et 11 ouvertures d’outils, dont la fiche
 persistante, le coffre sélectif hors machine, l’AIFF local, l’export SVG, les
-services OP‑1, les sons EP‑133 et la documentation OP‑1. Le lint ne contient
-pas d’erreur bloquante ; les limites matérielles et les gros volumes restent
-ouvertes dans la [roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md).
+services OP‑1, les sons EP‑133, la documentation OP‑1 et une séance Rhythm Hero
+locale avec score et progression. Le lint ne contient pas d’erreur bloquante ;
+les limites matérielles et les gros volumes restent ouvertes dans la
+[roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md).

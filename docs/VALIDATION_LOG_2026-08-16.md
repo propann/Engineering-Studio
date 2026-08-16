@@ -15,7 +15,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 | `npm run test:all` | ✅ Tous les tests des workspaces actifs passent ; le workspace MIDI vide/non consommé a été retiré |
 | `npm run build:all` | ✅ Hub, OP‑1 Studio et EP‑133 Studio passent |
 | `npm run lint:all` | ✅ Aucun avertissement lint OP‑1 |
-| `npm run test:e2e:hub` | ✅ 10 scénarios, 10 ouvertures d’outils |
+| `npm run test:e2e:hub` | ✅ 11 scénarios, 11 ouvertures d’outils |
 | `git diff --check` | ✅ Aucun espace ou conflit de patch détecté |
 | `npm run hardware:validate -- --python /tmp/ep133-scan-venv/bin/python --project 9` | ✅ Rapport centralisé lecture seule : P09, 532 sons, bridge local OK |
 
@@ -27,6 +27,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - réception par le Hub d’un événement EP‑133 versionné et filtré par origine/fenêtre, avec compteurs projets, samples et entraînement ;
 - réception par le Hub d’un événement OP‑1 versionné et filtré par origine/fenêtre, avec compteurs projets et samples ;
 - Pattern & Song EP‑133 : ouverture d’une démo, sauvegarde locale, passage en vue SONG et rechargement depuis la bibliothèque ;
+- Rhythm Hero EP‑133 : démarrage d’une vraie séance locale, compte à rebours, frappe sur pad, score, journal d’entraînement et progression remontée au Hub ;
 - coffre local : sauvegarde `tape` sélective, restauration, progression par fichiers/octets et téléchargement des rapports JSON ;
 - sample OP‑1 : import WAV, analyse puis préparation AIFF locale ;
 - image OP‑1 : export SVG local, et services firmware/patchs sans machine ;
@@ -50,5 +51,5 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   test explicitement confirmée sur P09 a été réalisée.
 - La suite centralisée `tools/hardware_validation.py` refuse une écriture sans
   `--confirm-write` et produit les rapports locaux ignorés par Git.
-- La remontée des compteurs du coffre, l’action de jeu réelle et l’annulation
-  d’un transfert ciblé restent dans la roadmap active.
+- La remontée des compteurs du coffre et l’annulation d’un transfert ciblé
+  restent dans la roadmap active.
