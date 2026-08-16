@@ -25,6 +25,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - fiche persistante → réouverture d’un nouveau contexte navigateur sans recréation ;
 - transport MIDI central → deux ports virtuels, Start, horloge 24 PPQN et Stop avec timestamps croissants ;
 - transport Hub → fenêtres OP‑1/EP‑133 ouvertes : événement versionné Start/Stop reçu dans les deux studios ;
+- mode **Tester sans machine** : transport logiciel reçu dans les deux fenêtres sans sortie MIDI ;
 - transmission des cibles OP‑1/EP‑133 (`hubTool`) ;
 - réception par le Hub d’un événement EP‑133 versionné et filtré par origine/fenêtre, avec compteurs projets, samples et entraînement ;
 - réception par le Hub d’un événement OP‑1 versionné et filtré par origine/fenêtre, avec compteurs projets et samples ;

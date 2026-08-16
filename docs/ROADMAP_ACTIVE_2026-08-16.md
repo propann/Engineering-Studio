@@ -119,6 +119,8 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
   EP‑133 et refuse de démarrer avec moins de deux sorties.
 - [x] Propager le même Start/Stop versionné aux fenêtres OP‑1 et EP‑133
   ouvertes depuis le Hub, avec filtrage d’origine et de fenêtre.
+- [x] Ajouter un mode de simulation locale qui teste ce transport sans sortie
+  MIDI ni machine connectée.
 - [x] Documenter le branchement, le rôle du Hub maître et le premier essai
   sans écriture machine.
 - [x] Tester avec deux ports MIDI virtuels et vérifier les timestamps reçus.

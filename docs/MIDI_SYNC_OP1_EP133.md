@@ -16,6 +16,10 @@ Dans le Hub :
 4. règle le BPM puis clique sur **Démarrer les deux** ;
 5. arrête avec **Arrêter** avant de débrancher.
 
+Pour travailler sans machine, ouvre simplement les deux studios depuis le Hub,
+puis clique sur **Tester sans machine**. Le Hub envoie alors uniquement le
+transport logiciel aux deux fenêtres ; aucune sortie Web MIDI n’est requise.
+
 Le Hub envoie uniquement les messages MIDI realtime `Start`, horloge à
 24 impulsions par noire (24 PPQN) et `Stop`. Il n’envoie aucun projet, sample,
 SysEx ou firmware.
@@ -40,6 +44,8 @@ Références constructeur : [tempo OP‑1](https://teenage.engineering/guides/op
 
 - Le navigateur doit autoriser Web MIDI ; Chrome/Chromium est le chemin
   prévu.
+- Le bouton **Tester sans machine** permet de valider le parcours logiciel et
+  les fenêtres ouvertes ; il ne produit aucun son matériel.
 - Le Hub synchronise le transport matériel. Il ne fusionne pas encore les
   notes internes des deux éditeurs et ne remplace pas un routage MIDI avancé.
 - Ne lance pas deux fenêtres Hub qui envoient l’horloge en même temps.

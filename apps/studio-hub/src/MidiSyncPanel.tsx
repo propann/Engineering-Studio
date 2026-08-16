@@ -21,6 +21,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const [running, setRunning] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
   const runningRef = useRef(false);
+  const hardwareRunningRef = useRef(false);
   const nextTickRef = useRef(0);
   const outputsRef = useRef<SyncOutput[]>([]);
 
@@ -29,15 +30,16 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     timerRef.current = undefined;
   }
 
-  function send(type: "start" | "stop") {
-    // Web MIDI cannot retract packets already scheduled. Put Stop after the
-    // current short clock window so no clock is delivered after transport stop.
-    const timestamp = type === "stop" ? Math.max(performance.now(), nextTickRef.current) : performance.now();
-    const packet = buildMidiRealtimePacket(type, timestamp);
-    outputsRef.current.forEach(({ output }) => output.send(packet.data, packet.timestamp));
+  function broadcast(type: "start" | "stop", timestamp: number) {
     const message = createHubTransportMessage(type, bpm, timestamp);
     getTransportTargets?.().forEach(({ target, origin }) => target.postMessage(message, origin));
-    return timestamp;
+  }
+
+  function sendHardware(type: "start" | "stop", timestamp: number) {
+    // Web MIDI cannot retract packets already scheduled. Put Stop after the
+    // current short clock window so no clock is delivered after transport stop.
+    const packet = buildMidiRealtimePacket(type, timestamp);
+    outputsRef.current.forEach(({ output }) => output.send(packet.data, packet.timestamp));
   }
 
   function scheduleClock() {
@@ -70,25 +72,30 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     }
   }
 
-  function start() {
-    if (outputsRef.current.length < 2 || runningRef.current) return;
+  function start(simulated = false) {
+    if ((!simulated && outputsRef.current.length < 2) || runningRef.current) return;
     runningRef.current = true;
+    hardwareRunningRef.current = !simulated;
     setRunning(true);
     const startAt = performance.now() + 50;
-    const packet = buildMidiRealtimePacket("start", startAt);
-    outputsRef.current.forEach(({ output }) => output.send(packet.data, packet.timestamp));
-    const message = createHubTransportMessage("start", bpm, startAt);
-    getTransportTargets?.().forEach(({ target, origin }) => target.postMessage(message, origin));
+    if (!simulated) sendHardware("start", startAt);
+    broadcast("start", startAt);
     nextTickRef.current = startAt + 60_000 / bpm / 24;
-    scheduleClock();
-    setStatus(`Synchronisation en cours à ${bpm} BPM.`);
+    if (!simulated) scheduleClock();
+    setStatus(simulated ? `Simulation en cours à ${bpm} BPM (sans machine).` : `Synchronisation en cours à ${bpm} BPM.`);
   }
 
   function stop() {
     if (!runningRef.current) return;
     runningRef.current = false;
     clearTimer();
-    send("stop");
+    const stopAt = Math.max(performance.now(), nextTickRef.current);
+    if (hardwareRunningRef.current) {
+      sendHardware("stop", stopAt);
+      clearTimer();
+    }
+    broadcast("stop", stopAt);
+    hardwareRunningRef.current = false;
     setRunning(false);
     setStatus("Synchronisation arrêtée.");
   }
@@ -96,7 +103,11 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   useEffect(() => () => {
     runningRef.current = false;
     clearTimer();
-    if (outputsRef.current.length) send("stop");
+    if (runningRef.current) {
+      const stopAt = Math.max(performance.now(), nextTickRef.current);
+      if (hardwareRunningRef.current) sendHardware("stop", stopAt);
+      broadcast("stop", stopAt);
+    }
   }, []);
 
   useEffect(() => {
@@ -126,7 +137,8 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             {outputs.length ? outputs.map((output) => <span key={output.id}>✓ {output.name}</span>) : <span>{status}</span>}
           </div>
           <div className="sync-actions">
-            <button className="primary-button" disabled={outputs.length < 2 || running} onClick={start}>Démarrer les deux</button>
+            <button className="primary-button" disabled={outputs.length < 2 || running} onClick={() => start()}>Démarrer les deux</button>
+            <button className="secondary-button" disabled={running} onClick={() => start(true)}>Tester sans machine</button>
             <button className="secondary-button" disabled={!running} onClick={stop}>Arrêter</button>
           </div>
           {outputs.length > 0 && <p className="sync-status-text">{status}</p>}

@@ -178,17 +178,7 @@ test('le transport MIDI central envoie Start, horloge et Stop aux deux sorties',
   }
 });
 
-test('le Hub propage le transport versionné aux deux studios ouverts', async ({ page }) => {
-  await page.addInitScript(() => {
-    if (location.port !== '5179') return;
-    class FakeOutput {
-      state = 'connected';
-      constructor(public id: string, public name: string) {}
-      send() {}
-    }
-    const outputs = [new FakeOutput('op1', 'OP-1 MIDI'), new FakeOutput('ep133', 'EP-133 MIDI')];
-    Object.defineProperty(navigator, 'requestMIDIAccess', { configurable: true, value: async () => ({ outputs: new Map(outputs.map((output) => [output.id, output])) }) });
-  });
+test('le Hub simule le transport sans machine vers les deux studios ouverts', async ({ page }) => {
   await createProfile(page);
   const opPopupPromise = page.waitForEvent('popup');
   await page.locator('.tools-grid .tool-card').filter({ hasText: 'OP‑1 Studio' }).getByRole('button').click();
@@ -206,8 +196,7 @@ test('le Hub propage le transport versionné aux deux studios ouverts', async ({
       });
     });
   }
-  await page.locator('.midi-sync-panel').getByRole('button', { name: /Connecter les machines/i }).click();
-  await page.locator('.midi-sync-panel').getByRole('button', { name: /Démarrer les deux/i }).click();
+  await page.locator('.midi-sync-panel').getByRole('button', { name: /Tester sans machine/i }).click();
   await expect.poll(() => opPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(1);
   await expect.poll(() => epPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(1);
   await page.locator('.midi-sync-panel').getByRole('button', { name: 'Arrêter' }).click();
