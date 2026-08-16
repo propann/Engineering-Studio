@@ -1,0 +1,191 @@
+/* Export Panel Styles */
+
+.export-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-color);
+}
+
+.export-title {
+  font-weight: 600;
+  font-size: var(--font-lg);
+  color: var(--accent-primary);
+  text-align: center;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.export-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.export-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+}
+
+.filename-input {
+  display: flex;
+  gap: var(--spacing-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+  transition: all var(--transition-base);
+}
+
+.filename-input:focus-within {
+  border-color: var(--accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.filename-input input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: var(--font-sm);
+  outline: none;
+}
+
+.filename-input input::placeholder {
+  color: var(--text-secondary);
+}
+
+.file-extension {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Format Buttons */
+.format-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
+.format-btn {
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: var(--font-sm);
+  transition: all var(--transition-base);
+}
+
+.format-btn:hover {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.format-btn.active {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Export Info */
+.export-info {
+  padding: var(--spacing-md);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  color: var(--text-secondary);
+}
+
+.info-item:not(:last-child) {
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.info-item strong {
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-size: var(--font-sm);
+  font-family: 'Monaco', monospace;
+}
+
+/* Export Button */
+.export-button {
+  padding: var(--spacing-lg);
+  background: linear-gradient(135deg, var(--success), #06b6d4);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-weight: 600;
+  font-size: var(--font-base);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.export-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.export-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.export-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Export Hint */
+.export-hint {
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .export-panel {
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .export-panel {
+    max-width: 100%;
+    border-top: 1px solid var(--border-color);
+    border-left: none;
+  }
+
+  .format-buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}

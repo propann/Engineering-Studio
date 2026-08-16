@@ -1,0 +1,21 @@
+{
+  "name": "@studio-hub/interface-adapters",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Adapters to rewire existing interfaces to new central systems",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@studio-hub/creation-center": "*",
+    "@studio-hub/save-manager": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

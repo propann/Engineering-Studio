@@ -1,0 +1,332 @@
+/* Global Animations & Transitions */
+
+/* Smooth transitions for interactive elements */
+button,
+input,
+select,
+textarea {
+  transition: all var(--transition-base);
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide In from Left */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide In from Right */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide In from Top */
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide In from Bottom */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale Pop */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Bounce */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Pulse */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Shake */
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Glow */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.6);
+  }
+}
+
+/* Rotate */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Color fade */
+@keyframes colorFade {
+  0% {
+    color: var(--text-secondary);
+  }
+  50% {
+    color: var(--accent-primary);
+  }
+  100% {
+    color: var(--text-secondary);
+  }
+}
+
+/* Apply animations to components */
+
+.app-header {
+  animation: slideInDown 0.4s ease-out;
+}
+
+.sidebar-left {
+  animation: slideInLeft 0.4s ease-out;
+}
+
+.sidebar-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+.app-footer {
+  animation: slideInUp 0.4s ease-out;
+}
+
+/* Panel animations */
+.properties-panel,
+.layers-panel,
+.history-panel,
+.shape-info-panel,
+.file-manager {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Button interactions */
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Input focus glow */
+input:focus,
+textarea:focus {
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Toolbar button active state */
+.toolbar-button.active {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Layer item on hover */
+.layer-item:hover {
+  animation: pulse 1.5s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+.layer-item:hover:hover {
+  animation-play-state: running;
+}
+
+/* Tool selection feedback */
+.toolbar-button,
+.tab-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.toolbar-button::before,
+.tab-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+  pointer-events: none;
+}
+
+.toolbar-button:active::before,
+.tab-button:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Shape info appearance */
+.info-item {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+.info-item:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.info-item:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+/* Save/Load animations */
+.save-item {
+  animation: slideInUp 0.3s ease-out;
+}
+
+/* Success feedback */
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.success-feedback {
+  animation: successPulse 0.6s ease-out;
+}
+
+/* Error shake */
+.error-input {
+  animation: shake 0.3s ease-in-out;
+  border-color: var(--error);
+}
+
+/* Loading spinner */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Smooth transitions for state changes */
+.canvas-wrapper {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.advanced-toolbar {
+  transition: all 0.3s ease;
+}
+
+/* Responsive animations */
+@media (max-width: 1024px) {
+  .sidebar-left {
+    animation: slideInDown 0.4s ease-out;
+  }
+
+  .sidebar-right {
+    animation: slideInDown 0.4s ease-out 0.1s both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Performance optimization: use GPU acceleration where possible */
+.tab-button,
+.toolbar-button,
+.layer-item,
+button {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Prevent animation jank on mobile */
+@media (max-width: 768px) {
+  @keyframes mobileSlideIn {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 10px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .app-header,
+  .app-footer {
+    animation: mobileSlideIn 0.3s ease-out;
+  }
+}

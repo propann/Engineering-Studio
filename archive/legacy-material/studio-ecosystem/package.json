@@ -1,0 +1,19 @@
+{
+  "name": "studio-ecosystem",
+  "version": "1.0.0",
+  "description": "Unified Studio Hub for TE Machines",
+  "private": true,
+  "workspaces": [
+    "packages/studio-hub",
+    "packages/shared-ui"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w studio-hub",
+    "build": "npm run build -w studio-hub",
+    "test": "npm run test -w studio-hub",
+    "preview": "npm run preview -w studio-hub"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

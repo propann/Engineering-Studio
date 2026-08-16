@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "local-op1-library",
+  "model": "op-1-original",
+  "generatedBy": "tools/content_catalog.py",
+  "policy": {
+    "unknownLicense": "quarantine",
+    "firmwareBinaries": "local-only",
+    "thirdPartyContent": "do-not-redistribute"
+  },
+  "assets": [
+    {
+      "id": "sha256:replace-after-scan",
+      "path": "patches/synth/example.aif",
+      "kind": "aiff-patch-or-sample",
+      "sha256": "replace-after-scan",
+      "size": 0,
+      "importStatus": "quarantine",
+      "licenseStatus": "unknown",
+      "source": {
+        "kind": "user-owned",
+        "url": null,
+        "author": null
+      },
+      "compatibility": {
+        "model": "op-1-original",
+        "firmware": "unknown"
+      },
+      "notes": "Compléter la provenance et la licence avant export ou partage."
+    }
+  ]
+}

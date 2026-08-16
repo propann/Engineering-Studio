@@ -1,0 +1,18 @@
+{
+  "pseudo": "azoth",
+  "avatarId": "kick",
+  "machines": [
+    {
+      "id": "02fbcb0f-7b4e-4e7c-9d59-93aeb332d876",
+      "name": "EP-133 K.O. II",
+      "memory": "64"
+    }
+  ],
+  "stats": {
+    "sessionsPlayed": 0,
+    "perfect": 0,
+    "good": 0,
+    "miss": 0,
+    "bestCombo": 0
+  }
+}

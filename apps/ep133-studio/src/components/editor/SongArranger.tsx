@@ -1,0 +1,135 @@
+import { Fragment } from 'react';
+import { EDITOR_GROUPS, type EditorGroup } from '../../core/project/exporters';
+import { usedBars } from '../../core/project/editor';
+import type { SequencerNote } from '../../core/project/model';
+import { patternNumbersForGroup, songPositionsForScene, type PatternBank, type SceneDefinition } from '../../core/project/song';
+import { horizontalWheelScroll } from './fastHorizontalWheel';
+
+interface SongArrangerProps {
+  scenes: SceneDefinition[];
+  song: number[];
+  patternBank: PatternBank;
+  onAssignCell: (sceneNumber: number, group: EditorGroup, patternNumber: number | null) => void;
+  onReorderSong: (fromIndex: number, toIndex: number) => void;
+  onDuplicateSongPosition: (index: number) => void;
+  onDeleteSongPosition: (index: number) => void;
+  onAuditionSongPosition: (index: number) => void;
+  onEditPattern: (sceneNumber: number, group: EditorGroup, patternNumber: number) => void;
+}
+
+const twoDigits = (value: number) => String(value).padStart(2, '0');
+const PATTERN_DRAG_TYPE = 'application/x-ep133-pattern';
+const SONG_POSITION_DRAG_TYPE = 'application/x-ep133-song-position';
+
+/**
+ * Aperçu schématique d'un pattern, dérivé des frappes existantes — PAS une
+ * forme d'onde audio, aucun moteur nécessaire. Mini-grille en damier (pas de
+ * 16e) pour un pattern déclencheur (pads ONE) ; barres de hauteur = vélocité
+ * pour un pattern mélodique (notes KEYS présentes).
+ */
+function PatternPreview({ notes }: { notes: SequencerNote[] }) {
+  if (!notes.length) return <div className="pattern-preview empty">VIDE</div>;
+  const bars = usedBars(notes);
+  const melodic = notes.some((note) => note.note !== undefined);
+  if (melodic) {
+    return <div className="pattern-preview melodic">
+      {notes.map((note) => <span key={note.id} style={{ left: `${Math.min(97, note.beat / (bars * 4) * 100)}%`, height: `${Math.max(15, Math.round(note.velocity / 127 * 100))}%` }} />)}
+    </div>;
+  }
+  const totalSteps = bars * 16;
+  const activeSteps = new Set(notes.map((note) => Math.round(note.beat * 4)));
+  return <div className="pattern-preview trigger" style={{ gridTemplateColumns: `repeat(${totalSteps}, 1fr)` }}>
+    {Array.from({ length: totalSteps }, (_, step) => <i key={step} className={activeSteps.has(step) ? 'on' : ''} />)}
+  </div>;
+}
+
+/**
+ * Vue « Song Arranger » : storyboard horizontal, une carte par Song Position
+ * dans l'ordre de `song`. Une Scène est une ressource partagée — si deux
+ * positions y réfèrent, les modifier depuis n'importe laquelle change les
+ * deux (fidèle au fonctionnement réel de la machine) ; `[DUP]` sert
+ * précisément à en sortir pour créer une variante indépendante.
+ */
+export function SongArranger({ scenes, song, patternBank, onAssignCell, onReorderSong, onDuplicateSongPosition, onDeleteSongPosition, onAuditionSongPosition, onEditPattern }: SongArrangerProps) {
+  const sceneByNumber = new Map(scenes.map((scene) => [scene.scene, scene]));
+
+  return <section className="song-arranger" aria-label="Structure du morceau — Song Arranger">
+    <div className="song-arranger-track" onWheel={horizontalWheelScroll}>
+      {song.map((sceneNumber, index) => {
+        const scene = sceneByNumber.get(sceneNumber);
+        const activeGroups = scene ? EDITOR_GROUPS.filter((group) => scene.groupPatterns[group] !== null) : [];
+        const bars = Math.max(1, ...activeGroups.map((group) => usedBars(patternBank[group][scene!.groupPatterns[group] as number] || [])));
+        const sharedWith = songPositionsForScene(song, sceneNumber).filter((position) => position !== index);
+        return <Fragment key={`${index}-${sceneNumber}`}>
+          <article
+            className="song-position-card"
+            style={{ width: `${Math.max(420, bars * 240)}px` }}
+            draggable
+            onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData(SONG_POSITION_DRAG_TYPE, String(index)); }}
+            onDragOver={(event) => { if (event.dataTransfer.types.includes(SONG_POSITION_DRAG_TYPE)) event.preventDefault(); }}
+            onDrop={(event) => {
+              const raw = event.dataTransfer.getData(SONG_POSITION_DRAG_TYPE);
+              if (!raw) return;
+              event.preventDefault();
+              onReorderSong(Number(raw), index);
+            }}
+          >
+            <header className="song-position-head"><b>SONG POS {index + 1}<small>(L.{twoDigits(index + 1)})</small></b><button className="song-position-audition" aria-label="Écouter cette Song Position" onClick={() => onAuditionSongPosition(index)}>▶ LECTURE</button><details className="song-position-menu"><summary aria-label="Actions de la Song Position">⋯</summary><div><button onClick={() => onDuplicateSongPosition(index)}>DUPLIQUER</button><button className="song-position-delete" onClick={() => onDeleteSongPosition(index)}>SUPPRIMER</button></div></details></header>
+            <div className="song-position-scene"><b>SCENE {sceneNumber}<small>(S.{twoDigits(sceneNumber)})</small></b><span>{bars} BAR{bars > 1 ? 'S' : ''}</span></div>
+            {sharedWith.length > 0 && <p className="song-position-shared">partagée avec L.{sharedWith.map((position) => twoDigits(position + 1)).join(', L.')}</p>}
+            <div className="song-position-groups">
+              {EDITOR_GROUPS.map((group) => {
+                const patternNumber = scene?.groupPatterns[group] ?? null;
+                const notes = patternNumber !== null ? patternBank[group][patternNumber] || [] : [];
+                return <div
+                  key={group}
+                  className={`pattern-block ${patternNumber === null ? 'muted' : ''}`}
+                  onDragOver={(event) => { if (event.dataTransfer.types.includes(PATTERN_DRAG_TYPE)) event.preventDefault(); }}
+                  onDrop={(event) => {
+                    const raw = event.dataTransfer.getData(PATTERN_DRAG_TYPE);
+                    if (!raw) return;
+                    event.preventDefault();
+                    const [draggedGroup, draggedNumber] = raw.split(':');
+                    if (draggedGroup !== group) return;
+                    onAssignCell(sceneNumber, group, Number(draggedNumber));
+                  }}
+                >
+                  <div className="pattern-block-head">
+                    <b className={`pattern-badge group-${group.toLowerCase()}`}>{group}</b>
+                    <div className="pattern-block-score"><small>{patternNumber === null ? `${group}-- · MUET` : `${group}${twoDigits(patternNumber)}`}</small><PatternPreview notes={notes} /></div>
+                    <details className="pattern-block-menu">
+                      <summary aria-label={`Actions du pattern ${group}`}>⋯</summary>
+                      <div>
+                        {patternNumber !== null && <button onClick={() => onEditPattern(sceneNumber, group, patternNumber)}>ÉDITER</button>}
+                        <button onClick={() => onAssignCell(sceneNumber, group, patternNumber === null ? (patternNumbersForGroup(patternBank, group)[0] ?? 1) : null)}>{patternNumber === null ? 'RÉACTIVER' : 'METTRE EN MUET'}</button>
+                      </div>
+                    </details>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </article>
+          {index < song.length - 1 && <span className="song-position-arrow" aria-hidden="true">→</span>}
+        </Fragment>;
+      })}
+    </div>
+
+    <div className="pattern-pool" aria-label="Bibliothèque de patterns à glisser">
+      <b>PATTERNS POOL</b>
+      {EDITOR_GROUPS.map((group) => {
+        const numbers = patternNumbersForGroup(patternBank, group);
+        if (!numbers.length) return null;
+        return <div className="pattern-pool-row" key={group}>
+          <b>[{group}]</b>
+          {numbers.map((number) => <span
+            key={number}
+            className={`pattern-pool-card group-${group.toLowerCase()}`}
+            draggable
+            onDragStart={(event) => { event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData(PATTERN_DRAG_TYPE, `${group}:${number}`); }}
+          >{group}{twoDigits(number)}</span>)}
+        </div>;
+      })}
+      {!EDITOR_GROUPS.some((group) => patternNumbersForGroup(patternBank, group).length) && <p>Aucun pattern créé — retour à PATTERNS pour en écrire un premier.</p>}
+    </div>
+  </section>;
+}

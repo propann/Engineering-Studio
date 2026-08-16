@@ -1,0 +1,17 @@
+{
+  "name": "@studio-hub/midi-analysis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MIDI analysis and verification utilities for studio-hub",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}
