@@ -191,14 +191,38 @@ test('le Hub simule le transport sans machine vers les deux studios ouverts', as
   for (const popup of [opPopup, epPopup]) {
     await popup.evaluate(() => {
       (window as Window & { __transportMessages?: unknown[] }).__transportMessages = [];
+      (window as Window & { __noteMessages?: unknown[] }).__noteMessages = [];
+      (window as Window & { __panicMessages?: unknown[] }).__panicMessages = [];
       window.addEventListener('hub:transport', (event) => {
         (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.push((event as CustomEvent).detail);
+      });
+      window.addEventListener('hub:midi-note', (event) => {
+        (window as Window & { __noteMessages?: unknown[] }).__noteMessages?.push((event as CustomEvent).detail);
+      });
+      window.addEventListener('hub:midi-panic', (event) => {
+        (window as Window & { __panicMessages?: unknown[] }).__panicMessages?.push((event as CustomEvent).detail);
       });
     });
   }
   await page.locator('.midi-sync-panel').getByRole('button', { name: /Tester sans machine/i }).click();
   await expect.poll(() => opPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(1);
   await expect.poll(() => epPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(1);
+  await page.locator('.midi-sync-panel').getByRole('button', { name: 'C2' }).click();
+  for (const popup of [opPopup, epPopup]) {
+    await expect.poll(() => popup.evaluate(() => (window as Window & { __noteMessages?: unknown[] }).__noteMessages?.length ?? 0)).toBeGreaterThan(0);
+    await expect.poll(() => popup.evaluate(() => {
+      const messages = (window as Window & { __noteMessages?: { schema?: string; action?: string; note?: number }[] }).__noteMessages ?? [];
+      return messages.some((message) => message.schema === 'studio-hub.note.v1' && message.action === 'note-on' && message.note === 36);
+    })).toBe(true);
+  }
+  await page.locator('.midi-sync-panel').getByRole('button', { name: 'PANIC' }).click();
+  for (const popup of [opPopup, epPopup]) {
+    await expect.poll(() => popup.evaluate(() => (window as Window & { __panicMessages?: unknown[] }).__panicMessages?.length ?? 0)).toBe(1);
+    await expect.poll(() => popup.evaluate(() => {
+      const messages = (window as Window & { __panicMessages?: { schema?: string }[] }).__panicMessages ?? [];
+      return messages.some((message) => message.schema === 'studio-hub.panic.v1');
+    })).toBe(true);
+  }
   await page.locator('.midi-sync-panel').getByRole('button', { name: 'Arrêter' }).click();
   await expect.poll(() => opPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(2);
   await expect.poll(() => epPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(2);

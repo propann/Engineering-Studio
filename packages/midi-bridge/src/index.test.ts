@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildMidiClockWindow, buildMidiRealtimePacket, createHubTransportMessage, createMidiBridge, isHubTransportMessage, MidiEvent, MIDI_REALTIME } from './index';
+import { buildMidiClockWindow, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME } from './index';
 import { createOP1Adapter } from '@studio-hub/instrument-op1';
 import { createEP133Adapter } from '@studio-hub/instrument-ep133';
 
@@ -24,6 +24,23 @@ describe('MIDI Bridge', () => {
     expect(isHubTransportMessage(message)).toBe(true);
     expect(isHubTransportMessage({ ...message, source: 'unknown' })).toBe(false);
     expect(isHubTransportMessage({ ...message, bpm: 0 })).toBe(false);
+  });
+
+  it('validates virtual note and panic message contracts', () => {
+    const note = createHubNoteMessage('note-on', 60, 100, 2, 42);
+    const panic = createHubPanicMessage(43);
+
+    expect(isHubNoteMessage(note)).toBe(true);
+    expect(isHubNoteMessage({ ...note, note: 128 })).toBe(false);
+    expect(isHubNoteMessage({ ...note, channel: 16 })).toBe(false);
+    expect(isHubPanicMessage(panic)).toBe(true);
+    expect(isHubPanicMessage({ ...panic, source: 'unknown' })).toBe(false);
+  });
+
+  it('rejects invalid virtual MIDI values', () => {
+    expect(() => createHubNoteMessage('note-on', -1, 100)).toThrow('note must be an integer');
+    expect(() => createHubNoteMessage('note-on', 60, 100, 16)).toThrow('channel must be an integer');
+    expect(() => createHubPanicMessage(Number.NaN)).toThrow('timestamp must be finite');
   });
 
   it('rejects invalid clock parameters', () => {

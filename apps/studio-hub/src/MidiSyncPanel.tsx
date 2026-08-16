@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { buildMidiClockWindow, buildMidiRealtimePacket, createHubTransportMessage } from "@studio-hub/midi-bridge";
+import { buildMidiClockWindow, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage } from "@studio-hub/midi-bridge";
 
 type SyncOutput = { id: string; name: string; output: MIDIOutput };
 type TransportTarget = { target: Window; origin: string };
@@ -24,6 +24,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const hardwareRunningRef = useRef(false);
   const nextTickRef = useRef(0);
   const outputsRef = useRef<SyncOutput[]>([]);
+  const noteTimersRef = useRef<number[]>([]);
 
   function clearTimer() {
     if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
@@ -33,6 +34,31 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   function broadcast(type: "start" | "stop", timestamp: number) {
     const message = createHubTransportMessage(type, bpm, timestamp);
     getTransportTargets?.().forEach(({ target, origin }) => target.postMessage(message, origin));
+  }
+
+  function broadcastNote(action: "note-on" | "note-off", note: number, velocity = 100) {
+    const message = createHubNoteMessage(action, note, velocity, 0, performance.now());
+    const targets = getTransportTargets?.() ?? [];
+    targets.forEach(({ target, origin }) => target.postMessage(message, origin));
+    if (action === "note-on") setStatus(targets.length ? `Note ${note} envoyée aux studios ouverts.` : "Ouvre les deux studios pour tester le routage.");
+  }
+
+  function testNote(note: number) {
+    broadcastNote("note-on", note);
+    const timer = window.setTimeout(() => {
+      broadcastNote("note-off", note, 0);
+      noteTimersRef.current = noteTimersRef.current.filter((value) => value !== timer);
+    }, 240);
+    noteTimersRef.current.push(timer);
+  }
+
+  function panic() {
+    noteTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    noteTimersRef.current = [];
+    const message = createHubPanicMessage(performance.now());
+    const targets = getTransportTargets?.() ?? [];
+    targets.forEach(({ target, origin }) => target.postMessage(message, origin));
+    setStatus(targets.length ? "PANIC logiciel envoyé aux studios ouverts." : "Aucun studio ouvert pour recevoir le PANIC.");
   }
 
   function sendHardware(type: "start" | "stop", timestamp: number) {
@@ -101,9 +127,12 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   }
 
   useEffect(() => () => {
+    const wasRunning = runningRef.current;
     runningRef.current = false;
     clearTimer();
-    if (runningRef.current) {
+    noteTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    noteTimersRef.current = [];
+    if (wasRunning) {
       const stopAt = Math.max(performance.now(), nextTickRef.current);
       if (hardwareRunningRef.current) sendHardware("stop", stopAt);
       broadcast("stop", stopAt);
@@ -152,6 +181,16 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             <li>Lance ici, puis joue les séquences sur chaque outil.</li>
           </ol>
           <p>Cette commande n’envoie ni sauvegarde, ni sample, ni firmware : uniquement Start, horloge MIDI 24 PPQN et Stop.</p>
+          <div className="midi-note-test">
+            <strong>Routage de test sans machine</strong>
+            <span>Joue une note courte dans les deux studios ouverts, puis utilise PANIC pour vider les notes bloquées.</span>
+            <div className="midi-note-actions">
+              <button className="midi-note-button" onClick={() => testNote(36)}>C2</button>
+              <button className="midi-note-button" onClick={() => testNote(38)}>D2</button>
+              <button className="midi-note-button" onClick={() => testNote(40)}>E2</button>
+              <button className="panic-button" onClick={panic}>PANIC</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -126,10 +126,12 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 - [x] Documenter le branchement, le rôle du Hub maître et le premier essai
   sans écriture machine.
 - [x] Tester avec deux ports MIDI virtuels et vérifier les timestamps reçus.
+- [x] Ajouter un routage virtuel de notes courtes et un PANIC logiciel entre
+  les fenêtres ouvertes, sans sortie MIDI.
 - [ ] Valider sur une paire OP‑1/EP‑133 réelle, d’abord tempo + Start/Stop,
   puis séquences ; ne pas confondre cette validation avec un transfert.
-- [ ] Ajouter le routage de notes seulement après validation de l’horloge et
-  du comportement PANIC/Stop.
+- [ ] Étendre le routage de notes aux séquences internes seulement après
+  validation réelle de l’horloge et du comportement PANIC/Stop.
 
 ### P3 — Dette, code mort et documentation
 

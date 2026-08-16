@@ -43,6 +43,65 @@ export function isHubTransportMessage(value: unknown): value is HubTransportMess
     && typeof message.timestamp === 'number' && Number.isFinite(message.timestamp);
 }
 
+export type HubNoteAction = 'note-on' | 'note-off';
+
+export interface HubNoteMessage {
+  type: 'hub:midi-note';
+  schema: 'studio-hub.note.v1';
+  source: 'studio-hub';
+  action: HubNoteAction;
+  note: number;
+  velocity: number;
+  channel: number;
+  timestamp: number;
+}
+
+export interface HubPanicMessage {
+  type: 'hub:midi-panic';
+  schema: 'studio-hub.panic.v1';
+  source: 'studio-hub';
+  timestamp: number;
+}
+
+function assertMidiValue(value: number, label: string): void {
+  if (!Number.isInteger(value) || value < 0 || value > 127) throw new Error(`${label} must be an integer between 0 and 127`);
+}
+
+export function createHubNoteMessage(action: HubNoteAction, note: number, velocity: number, channel = 0, timestamp = 0): HubNoteMessage {
+  assertMidiValue(note, 'note');
+  assertMidiValue(velocity, 'velocity');
+  if (!Number.isInteger(channel) || channel < 0 || channel > 15) throw new Error('channel must be an integer between 0 and 15');
+  if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');
+  return { type: 'hub:midi-note', schema: 'studio-hub.note.v1', source: 'studio-hub', action, note, velocity, channel, timestamp };
+}
+
+export function isHubNoteMessage(value: unknown): value is HubNoteMessage {
+  if (!value || typeof value !== 'object') return false;
+  const message = value as Partial<HubNoteMessage>;
+  return message.type === 'hub:midi-note'
+    && message.schema === 'studio-hub.note.v1'
+    && message.source === 'studio-hub'
+    && (message.action === 'note-on' || message.action === 'note-off')
+    && typeof message.note === 'number' && Number.isInteger(message.note) && message.note >= 0 && message.note <= 127
+    && typeof message.velocity === 'number' && Number.isInteger(message.velocity) && message.velocity >= 0 && message.velocity <= 127
+    && typeof message.channel === 'number' && Number.isInteger(message.channel) && message.channel >= 0 && message.channel <= 15
+    && typeof message.timestamp === 'number' && Number.isFinite(message.timestamp);
+}
+
+export function createHubPanicMessage(timestamp = 0): HubPanicMessage {
+  if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');
+  return { type: 'hub:midi-panic', schema: 'studio-hub.panic.v1', source: 'studio-hub', timestamp };
+}
+
+export function isHubPanicMessage(value: unknown): value is HubPanicMessage {
+  if (!value || typeof value !== 'object') return false;
+  const message = value as Partial<HubPanicMessage>;
+  return message.type === 'hub:midi-panic'
+    && message.schema === 'studio-hub.panic.v1'
+    && message.source === 'studio-hub'
+    && typeof message.timestamp === 'number' && Number.isFinite(message.timestamp);
+}
+
 export interface MidiRealtimePacket {
   type: MidiRealtimeType;
   data: number[];

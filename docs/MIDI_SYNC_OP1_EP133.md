@@ -30,6 +30,15 @@ permet de tester le démarrage/arrêt synchronisé sans aucune machine connecté
 Le BPM reçu est appliqué à la lecture de l’éditeur EP‑133 et au tempo affiché
 dans Tape OP‑1.
 
+## Routage de test sans machine
+
+Dans le bloc **Routage de test sans machine**, les boutons `C2`, `D2` et `E2`
+envoient une note virtuelle courte aux fenêtres OP‑1 et EP‑133 ouvertes depuis
+le Hub. Le bouton **PANIC** envoie un message d’arrêt logiciel commun pour
+vider les notes éventuellement restées actives. Ces messages sont versionnés,
+filtrés par origine et limités aux fenêtres des studios : ils ne sont pas
+envoyés aux ports Web MIDI et ne modifient aucune sauvegarde.
+
 ## Réglage des machines
 
 Une seule horloge doit être maître. Pour le premier essai, le Hub est le
@@ -48,8 +57,9 @@ Références constructeur : [tempo OP‑1](https://teenage.engineering/guides/op
   prévu.
 - Le bouton **Tester sans machine** permet de valider le parcours logiciel et
   les fenêtres ouvertes ; il ne produit aucun son matériel.
-- Le Hub synchronise le transport matériel. Il ne fusionne pas encore les
-  notes internes des deux éditeurs et ne remplace pas un routage MIDI avancé.
+- Le Hub synchronise le transport matériel et propose un routage de notes de
+  test logiciel. Il ne fusionne pas encore les notes internes des deux
+  éditeurs et ne remplace pas un routage MIDI avancé.
 - Ne lance pas deux fenêtres Hub qui envoient l’horloge en même temps.
 - Le premier test doit rester sans transfert de fichiers : vérifier tempo,
   démarrage et arrêt, puis seulement essayer le jeu réel.

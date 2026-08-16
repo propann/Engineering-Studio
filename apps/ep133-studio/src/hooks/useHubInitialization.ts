@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { isHubTransportMessage } from '@studio-hub/midi-bridge';
+import { isHubNoteMessage, isHubPanicMessage, isHubTransportMessage } from '@studio-hub/midi-bridge';
 
 const IMPORTED_PROFILE_KEY = 'studio-hub:imported-profile';
 const IMPORTED_MACHINE_KEY = 'studio-hub:imported-machine';
@@ -104,13 +104,21 @@ export function useHubInitialization() {
       if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource) || !isHubTransportMessage(event.data)) return;
       window.dispatchEvent(new CustomEvent('hub:transport', { detail: event.data }));
     };
+    const onMidiControl = (event: MessageEvent<unknown>) => {
+      const expectedSource = window.opener || (window.parent !== window ? window.parent : null);
+      if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource)) return;
+      if (isHubNoteMessage(event.data)) window.dispatchEvent(new CustomEvent('hub:midi-note', { detail: event.data }));
+      if (isHubPanicMessage(event.data)) window.dispatchEvent(new CustomEvent('hub:midi-panic', { detail: event.data }));
+    };
     window.addEventListener('message', onWorkspace);
     window.addEventListener('message', onTransport);
+    window.addEventListener('message', onMidiControl);
     const hubWindow = window.opener || (window.parent !== window ? window.parent : null);
     hubWindow?.postMessage({ type: 'studio:ready', studio: 'ep133' }, hubOrigin);
     return () => {
       window.removeEventListener('message', onWorkspace);
       window.removeEventListener('message', onTransport);
+      window.removeEventListener('message', onMidiControl);
     };
   }, []);
 }
