@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { buildMidiClockWindow, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage } from "@studio-hub/midi-bridge";
+import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage } from "@studio-hub/midi-bridge";
 
 type SyncOutput = { id: string; name: string; output: MIDIOutput };
 type TransportTarget = { target: Window; origin: string };
@@ -37,10 +37,15 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   }
 
   function broadcastNote(action: "note-on" | "note-off", note: number, velocity = 100) {
+    const timestamp = performance.now();
+    const hardwarePacket = buildMidiNotePacket(action, note, velocity, 0, timestamp);
+    outputsRef.current.forEach(({ output }) => {
+      try { output.send(hardwarePacket.data, hardwarePacket.timestamp); } catch { /* un branchement peut disparaître pendant le test */ }
+    });
     const message = createHubNoteMessage(action, note, velocity, 0, performance.now());
     const targets = getTransportTargets?.() ?? [];
     targets.forEach(({ target, origin }) => target.postMessage(message, origin));
-    if (action === "note-on") setStatus(targets.length ? `Note ${note} envoyée aux studios ouverts.` : "Ouvre les deux studios pour tester le routage.");
+    if (action === "note-on") setStatus(outputsRef.current.length || targets.length ? `Note ${note} envoyée aux machines et studios ouverts.` : "Connecte les machines ou ouvre les deux studios pour tester le routage.");
   }
 
   function testNote(note: number) {
@@ -55,10 +60,14 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   function panic() {
     noteTimersRef.current.forEach((timer) => window.clearTimeout(timer));
     noteTimersRef.current = [];
+    const hardwarePackets = buildMidiPanicPackets(performance.now());
+    outputsRef.current.forEach(({ output }) => hardwarePackets.forEach((packet) => {
+      try { output.send(packet.data, packet.timestamp); } catch { /* un branchement peut disparaître pendant le PANIC */ }
+    }));
     const message = createHubPanicMessage(performance.now());
     const targets = getTransportTargets?.() ?? [];
     targets.forEach(({ target, origin }) => target.postMessage(message, origin));
-    setStatus(targets.length ? "PANIC logiciel envoyé aux studios ouverts." : "Aucun studio ouvert pour recevoir le PANIC.");
+    setStatus(outputsRef.current.length || targets.length ? "PANIC envoyé aux machines et studios ouverts." : "Aucune machine ou fenêtre ouverte pour recevoir le PANIC.");
   }
 
   function sendHardware(type: "start" | "stop", timestamp: number) {
@@ -182,8 +191,8 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
           </ol>
           <p>Cette commande n’envoie ni sauvegarde, ni sample, ni firmware : uniquement Start, horloge MIDI 24 PPQN et Stop.</p>
           <div className="midi-note-test">
-            <strong>Routage de test sans machine</strong>
-            <span>Joue une note courte dans les deux studios ouverts, puis utilise PANIC pour vider les notes bloquées.</span>
+            <strong>Routage de notes</strong>
+            <span>Une note courte part vers les machines connectées et les studios ouverts. PANIC vide les notes bloquées.</span>
             <div className="midi-note-actions">
               <button className="midi-note-button" onClick={() => testNote(36)}>C2</button>
               <button className="midi-note-button" onClick={() => testNote(38)}>D2</button>

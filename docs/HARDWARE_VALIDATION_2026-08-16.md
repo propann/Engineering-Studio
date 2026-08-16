@@ -67,4 +67,6 @@ les 9 projets et relit P09 à 72 192 octets. Aucun endpoint POST n’a été app
   le Hub a ensuite été vérifié depuis Chromium avec les deux permissions Web
   MIDI. Le Hub a envoyé Start, 24 horloges MIDI et Stop aux deux sorties
   `EP-133 MIDI 1` et `OP-1 MIDI 1` ; aucun fichier, projet ou SysEx n’a été
-  écrit. Le routage de séquences musicales reste à valider séparément.
+  écrit. Une note C2 courte, son relâchement et un PANIC standard ont aussi
+  été envoyés aux deux sorties. Le routage de séquences musicales reste à
+  valider séparément.

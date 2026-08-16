@@ -77,8 +77,10 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   BPM, démarrage et arrêt. La commande n’écrit aucun fichier ni SysEx.
 - Validation réelle effectuée : Chromium a reconnu `EP-133 MIDI 1` et
   `OP-1 MIDI 1`, puis le Hub a envoyé Start, 24 horloges et Stop à chacune.
-- Le routage de séquences internes et les commandes musicales avancées restent
-  à faire après cette validation du transport de base.
+- Routage réel complémentaire effectué : C2, note-off et PANIC standard ont
+  été envoyés aux deux sorties ; aucune donnée de projet n’a été écrite.
+- Le raccord des séquences internes et les commandes musicales avancées restent
+  à faire après cette validation des messages courts.
 
 ## Audit doublons et optimisation
 

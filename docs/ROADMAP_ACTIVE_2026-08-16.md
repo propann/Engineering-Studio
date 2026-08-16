@@ -133,8 +133,11 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 - [x] Valider sur une paire OP‑1/EP‑133 réelle le tempo + Start/horloge/Stop ;
   le test Chromium a confirmé les deux sorties et 24 horloges par noire, sans
   écriture de projet. Les séquences restent séparées de cette validation.
-- [ ] Étendre le routage de notes aux séquences internes seulement après
-  validation réelle de l’horloge et du comportement PANIC/Stop.
+- [x] Étendre le routage matériel aux messages courts : C2, note-off et PANIC
+  standard ont été émis vers les deux sorties réelles après validation de
+  l’horloge et du comportement Stop.
+- [ ] Raccorder les séquences internes au routage matériel ; conserver un
+  checkpoint et un bouton d’arrêt avant toute séquence longue.
 
 ### P3 — Dette, code mort et documentation
 

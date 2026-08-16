@@ -185,6 +185,14 @@ test('le transport MIDI central envoie Start, horloge et Stop aux deux sorties',
     expect(sent.every((message) => typeof message.timestamp === 'number')).toBe(true);
     expect(sent.every((message, index) => index === 0 || message.timestamp! >= sent[index - 1].timestamp!)).toBe(true);
   }
+  await page.locator('.midi-sync-panel').getByRole('button', { name: 'C2' }).click();
+  const notePackets = await page.evaluate(() => (window as Window & { __midiOutputs?: { sent: { data: number[]; timestamp?: number }[] }[] }).__midiOutputs?.map((output) => output.sent.filter((message) => message.data[0] === 0x90 || message.data[0] === 0x80)) ?? []);
+  expect(notePackets).toHaveLength(2);
+  expect(notePackets.every((messages) => messages.some((message) => message.data[0] === 0x90 && message.data[1] === 36 && message.data[2] === 100))).toBe(true);
+  await page.locator('.midi-sync-panel').getByRole('button', { name: 'PANIC' }).click();
+  const panicPackets = await page.evaluate(() => (window as Window & { __midiOutputs?: { sent: { data: number[]; timestamp?: number }[] }[] }).__midiOutputs?.map((output) => output.sent.filter((message) => message.data[0] === 0xb0 && (message.data[1] === 123 || message.data[1] === 120))) ?? []);
+  expect(panicPackets).toHaveLength(2);
+  expect(panicPackets.every((messages) => messages.some((message) => message.data[1] === 123) && messages.some((message) => message.data[1] === 120))).toBe(true);
 });
 
 test('le Hub simule le transport sans machine vers les deux studios ouverts', async ({ page }) => {

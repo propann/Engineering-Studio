@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildMidiClockWindow, buildMidiRealtimePacket, createHubCacheEnvelope, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME, readHubCache } from './index';
+import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubCacheEnvelope, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME, readHubCache } from './index';
 import { createOP1Adapter } from '@studio-hub/instrument-op1';
 import { createEP133Adapter } from '@studio-hub/instrument-ep133';
 
@@ -17,6 +17,15 @@ describe('MIDI Bridge', () => {
   it('builds transport start and stop packets', () => {
     expect(buildMidiRealtimePacket('start', 12)).toEqual({ type: 'start', data: [0xfa], timestamp: 12 });
     expect(buildMidiRealtimePacket('stop', 34)).toEqual({ type: 'stop', data: [0xfc], timestamp: 34 });
+  });
+
+  it('builds channel note packets and a standard panic for hardware outputs', () => {
+    expect(buildMidiNotePacket('note-on', 60, 100, 2, 12)).toEqual({ type: 'note-on', data: [0x92, 60, 100], timestamp: 12 });
+    expect(buildMidiNotePacket('note-off', 60, 0, 2, 13)).toEqual({ type: 'note-off', data: [0x82, 60, 0], timestamp: 13 });
+    const panic = buildMidiPanicPackets(14);
+    expect(panic).toHaveLength(32);
+    expect(panic[0]).toEqual({ type: 'control-change', data: [0xb0, 123, 0], timestamp: 14 });
+    expect(panic.at(-1)).toEqual({ type: 'control-change', data: [0xbf, 120, 0], timestamp: 14 });
   });
 
   it('validates the Hub transport message contract', () => {

@@ -93,6 +93,25 @@ export function createHubPanicMessage(timestamp = 0): HubPanicMessage {
   return { type: 'hub:midi-panic', schema: 'studio-hub.panic.v1', source: 'studio-hub', timestamp };
 }
 
+/** Build a standard channel voice packet for a hardware MIDI output. */
+export function buildMidiNotePacket(action: HubNoteAction, note: number, velocity: number, channel = 0, timestamp = 0): { type: HubNoteAction; data: number[]; timestamp: number } {
+  assertMidiValue(note, 'note');
+  assertMidiValue(velocity, 'velocity');
+  if (!Number.isInteger(channel) || channel < 0 || channel > 15) throw new Error('channel must be an integer between 0 and 15');
+  if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');
+  const status = (action === 'note-on' ? 0x90 : 0x80) | channel;
+  return { type: action, data: [status, note, velocity], timestamp };
+}
+
+/** Standard all-sound-off/all-notes-off pair for every MIDI channel. */
+export function buildMidiPanicPackets(timestamp = 0): Array<{ type: 'control-change'; data: number[]; timestamp: number }> {
+  if (!Number.isFinite(timestamp)) throw new Error('timestamp must be finite');
+  return Array.from({ length: 16 }, (_, channel) => [
+    { type: 'control-change' as const, data: [0xb0 | channel, 123, 0], timestamp },
+    { type: 'control-change' as const, data: [0xb0 | channel, 120, 0], timestamp },
+  ]).flat();
+}
+
 export function isHubPanicMessage(value: unknown): value is HubPanicMessage {
   if (!value || typeof value !== 'object') return false;
   const message = value as Partial<HubPanicMessage>;

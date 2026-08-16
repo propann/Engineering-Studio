@@ -38,8 +38,9 @@ historiques.
   en lecture seule. La synchro Start/horloge/Stop reste à mesurer depuis le
   Hub.
 - Le transport réel de base OP‑1/EP‑133 est maintenant confirmé : Chromium a
-  envoyé Start, horloge 24 PPQN et Stop aux deux sorties. Restent à confirmer :
-  séquences musicales, gros volume de sauvegarde, permissions FSA,
+  envoyé Start, horloge 24 PPQN, Stop, une note C2, son relâchement et PANIC
+  aux deux sorties. Restent à confirmer : séquences musicales, gros volume de
+  sauvegarde, permissions FSA,
   débranchement/éjection et écriture complète contrôlée.
 
 ## Prochaines portes
