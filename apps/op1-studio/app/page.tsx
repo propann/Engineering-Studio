@@ -586,7 +586,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   useEffect(() => {
     const onHubTransport = (event: Event) => {
       const message = (event as CustomEvent<HubTransportMessage>).detail;
-      if (message.action === "start" && !transportPlaying) toggleGlobalPlayback();
+      if (message.action === "start" && !transportPlaying) {
+        setTempo(Math.max(30, Math.min(240, message.bpm)));
+        toggleGlobalPlayback();
+      }
       if (message.action === "stop" && transportPlaying) toggleGlobalPlayback();
     };
     window.addEventListener("hub:transport", onHubTransport);

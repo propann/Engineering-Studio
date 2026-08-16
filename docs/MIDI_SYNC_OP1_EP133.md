@@ -27,6 +27,8 @@ SysEx ou firmware.
 Quand les deux studios sont ouverts, le Hub diffuse également un événement
 `studio-hub.transport.v1` limité aux fenêtres et origines autorisées. Cela
 permet de tester le démarrage/arrêt synchronisé sans aucune machine connectée.
+Le BPM reçu est appliqué à la lecture de l’éditeur EP‑133 et au tempo affiché
+dans Tape OP‑1.
 
 ## Réglage des machines
 

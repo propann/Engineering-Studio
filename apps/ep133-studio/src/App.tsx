@@ -1165,15 +1165,16 @@ export default function App() {
     if (!exists) void previewEditorPad(editorGroup, pad);
   };
 
-  const editorExercise = (): Exercise => ({ id: 'editor-preview', title: editorName.trim() || 'MON GROOVE', description: 'Exercice utilisateur', bpm: tempo, bars: effectiveEditorBars, timeSignature: '4/4', countInBars: 0, backingTrack: null, grading: { perfectMs: 35, goodMs: 90 }, targets: notesToExerciseTargets(editorTargets) });
+  const editorExercise = (tempoOverride = tempo): Exercise => ({ id: 'editor-preview', title: editorName.trim() || 'MON GROOVE', description: 'Exercice utilisateur', bpm: tempoOverride, bars: effectiveEditorBars, timeSignature: '4/4', countInBars: 0, backingTrack: null, grading: { perfectMs: 35, goodMs: 90 }, targets: notesToExerciseTargets(editorTargets) });
 
   /** `sceneOverride` audite une scène précise (depuis l'Arrangeur) sans attendre le prochain rendu de `editorActiveScene`. */
-  const toggleEditorPlayback = async (sceneOverride?: number) => {
+  const toggleEditorPlayback = async (sceneOverride?: number, tempoOverride?: number) => {
     if (editorPlaying) {
       stopEditorTransport();
       return;
     }
     await audio.unlock();
+    const playbackTempo = Math.max(30, Math.min(240, tempoOverride ?? tempo));
     const activeScene = sceneOverride ?? editorActiveScene;
     if (sceneOverride !== undefined) setEditorActiveScene(sceneOverride);
     setEditorPlaying(true);
@@ -1214,7 +1215,7 @@ export default function App() {
     // une seule fois, pas à chaque rendu) — piège classique de fermeture périmée.
     let lastReportedScene = activeScene;
     const followPlayback = () => {
-      const rawBeat = Math.max(0, (performance.now() - playbackStart) / (60000 / tempo));
+      const rawBeat = Math.max(0, (performance.now() - playbackStart) / (60000 / playbackTempo));
       const beat = editorLoop ? rawBeat % (playbackBars * 4) : rawBeat;
       setEditorPlaybackBeat(Math.min(playbackBars * 4, beat));
       if (songSegments.length > 1) {
@@ -1234,7 +1235,7 @@ export default function App() {
     if (editorMode === 'complete') {
       if (!midi.outputConnected && !machineSampleCount) {
         const internalExercise: Exercise = {
-          ...editorExercise(),
+          ...editorExercise(playbackTempo),
           id: 'studio-internal-preview',
           bars: playbackBars,
           targets: notesToExerciseTargets(allTargets),
@@ -1243,12 +1244,12 @@ export default function App() {
         if (run !== editorRun.current) return;
       }
       const startAt = playbackStart;
-      const cycleMs = 60000 / tempo * playbackBars * 4;
+      const cycleMs = 60000 / playbackTempo * playbackBars * 4;
       const scheduleCycle = (cycleStart: number) => {
         scheduledTargets.forEach(({ group, target }) => {
           const groupIndex = EDITOR_GROUPS.indexOf(group);
-          const at = cycleStart + target.beat * 60000 / tempo;
-          const duration = target.duration * 60000 / tempo;
+          const at = cycleStart + target.beat * 60000 / playbackTempo;
+          const duration = target.duration * 60000 / playbackTempo;
           if (midi.outputConnected) {
             if (target.note !== undefined) midi.sendNote(target.note, target.velocity, at, duration);
             else midi.sendPad(target.pad, groupIndex, target.velocity, at, duration);
@@ -1266,13 +1267,13 @@ export default function App() {
       }
     } else {
       // Dans l'éditeur jeu, la lecture sert à écouter le groove sans clic métronomique.
-      await audio.start(editorExercise(), 0, false);
+      await audio.start(editorExercise(playbackTempo), 0, false);
       if (run !== editorRun.current) return;
     }
     if (!editorLoop) editorEndTimer.current = window.setTimeout(() => {
       stopEditorTransport(false);
       setEditorPlaybackBeat(playbackBars * 4);
-    }, 60000 / tempo * playbackBars * 4 + (editorMode === 'complete' ? 80 : 0));
+    }, 60000 / playbackTempo * playbackBars * 4 + (editorMode === 'complete' ? 80 : 0));
   };
 
   useEffect(() => {
@@ -1281,7 +1282,11 @@ export default function App() {
       // Le Hub pilote le Studio ouvert ; il ne force pas le mode jeu et ne
       // démarre donc pas une séance d’entraînement par surprise.
       if (!editorOpen) return;
-      if (message.action === 'start' && !editorPlaying) void toggleEditorPlayback();
+      if (message.action === 'start' && !editorPlaying) {
+        const syncedTempo = Math.max(30, Math.min(240, message.bpm));
+        setTempo(syncedTempo);
+        void toggleEditorPlayback(undefined, syncedTempo);
+      }
       if (message.action === 'stop' && editorPlaying) void toggleEditorPlayback();
     };
     window.addEventListener('hub:transport', onHubTransport);

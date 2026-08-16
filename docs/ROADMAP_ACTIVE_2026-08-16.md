@@ -121,6 +121,8 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
   ouvertes depuis le Hub, avec filtrage d’origine et de fenêtre.
 - [x] Ajouter un mode de simulation locale qui teste ce transport sans sortie
   MIDI ni machine connectée.
+- [x] Appliquer le BPM du message Hub à la lecture locale de l’éditeur EP‑133
+  et au tempo affiché dans Tape OP‑1.
 - [x] Documenter le branchement, le rôle du Hub maître et le premier essai
   sans écriture machine.
 - [x] Tester avec deux ports MIDI virtuels et vérifier les timestamps reçus.
