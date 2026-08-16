@@ -23,6 +23,7 @@ import { StudioTransportPanel } from "./components/StudioTransportPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
+import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY, OP1_SAMPLES_PREPARED_KEY } from "./lib/hubCommunication";
 
 type IconName =
   | "chip"
@@ -474,6 +475,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   function saveProject() {
     const blob = new Blob([JSON.stringify(projectData(), null, 2)], { type: "application/json" });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `${projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-") || "op1-project"}.op1studio.json`; link.click(); URL.revokeObjectURL(link.href);
+    hubCommunication.updateStats({ projectsSaved: incrementHubCounter(OP1_PROJECTS_SAVED_KEY) });
     onNotice("Projet Studio enregistré avec ses pistes et réglages.");
   }
 
@@ -1343,7 +1345,7 @@ export default function Home() {
             )}
             {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
 
-            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
+            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onSamplePrepared={() => hubCommunication.updateStats({ samplesPrepared: incrementHubCounter(OP1_SAMPLES_PREPARED_KEY) })} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
 
             {toolWindow === "tape" && <>
               <nav className="studio-main-tabs" aria-label="Section principale du Studio"><button type="button" className="is-active"><Icon name="tape" size={14} />Tape &amp; Album</button></nav>

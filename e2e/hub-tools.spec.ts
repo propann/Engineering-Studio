@@ -191,6 +191,31 @@ test('le Hub reçoit les statistiques EP-133 depuis une fenêtre autorisée', as
   await popup.close();
 });
 
+test('le Hub reçoit aussi les statistiques OP-1', async ({ page }) => {
+  await createProfile(page);
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'OP‑1 Studio' }).getByRole('button').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+  const hubOrigin = await page.evaluate(() => window.location.origin);
+  await popup.evaluate((origin) => {
+    window.opener?.postMessage({
+      source: 'op1-studio',
+      event: {
+        schema: 'studio-hub.event.v1',
+        type: 'session_update',
+        timestamp: new Date().toISOString(),
+        machine: 'op1',
+        data: { projectsSaved: 3, samplesPrepared: 6 },
+      },
+    }, origin);
+  }, hubOrigin);
+  const card = page.locator('.studio-card.blue');
+  await expect(card.locator('.card-stats')).toContainText('3 projets');
+  await expect(card.locator('.card-stats')).toContainText('6 sons');
+  await popup.close();
+});
+
 test('le coffre local sauvegarde et restaure une sélection sans machine', async ({ page }) => {
   await page.addInitScript(installFakeFileSystem);
   await createProfile(page);

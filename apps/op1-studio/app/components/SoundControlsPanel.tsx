@@ -23,7 +23,7 @@ type PreflightReport = {
   clippedSampleCount?: number;
 };
 
-export function SoundControlsPanel({ Icon }: { Icon: SoundIcon }) {
+export function SoundControlsPanel({ Icon, onPrepared }: { Icon: SoundIcon; onPrepared?: () => void }) {
   const [mode, setMode] = useState<"synth" | "drum">("synth");
   const [baseFreq, setBaseFreq] = useState(440);
   const [octave, setOctave] = useState(5);
@@ -108,6 +108,7 @@ export function SoundControlsPanel({ Icon }: { Icon: SoundIcon }) {
     if (!result) { setPrepared(null); setPreparedUrl(null); return; }
     setPrepared(result);
     setPreparedUrl(URL.createObjectURL(new Blob([result.bytes], { type: "audio/aiff" })));
+    onPrepared?.();
   }
 
   const preparedFileName = fileName ? `${fileName.replace(/\.[^.]+$/, "")}-op1.aif` : "op1-prepared.aif";

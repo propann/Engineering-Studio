@@ -40,11 +40,11 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Portail et profil local | Landing, profil persistant, inventaire nommé, capacité EP‑133 64/128, workspace IndexedDB | Migration de toutes les anciennes sauvegardes et test navigateur multi-session |
 | Catalogue d’outils | Sept cartes, catégories, liens directs et test navigateur des ouvertures | Les tests ne couvrent pas encore le coffre ouvert dans un vrai dossier |
 | Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression, test navigateur hors machine | Validation avec un vrai dossier et gros volume |
-| Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware | Écriture matériel, permissions FSA et remontée de statistiques |
+| Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware ; statistiques projets/samples → Hub | Écriture matériel et permissions FSA |
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée ; statistiques EP‑133 → Hub | Store partagé, statistiques Hub → EP‑133 et écriture ciblée après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
-| Qualité | Typecheck, build, lint propre et 8 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
+| Qualité | Typecheck, build, lint propre et 9 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -95,7 +95,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [ ] Remplacer les caches locaux dispersés par un contrat partagé versionné.
 - [x] Valider et filtrer les messages entrants par origine et source dans les deux studios.
 - [x] Formaliser l’enveloppe `studio-hub.event.v1` et vérifier la remontée EP‑133 → Hub par test navigateur.
-- [ ] Faire remonter au Hub les statistiques OP‑1 et les compteurs du coffre ; EP‑133 projets/samples/entraînement est couvert.
+- [ ] Faire remonter au Hub les compteurs du coffre ; les statistiques OP‑1 et EP‑133 projets/samples/entraînement sont couvertes.
 - [ ] Documenter les permissions et la reconnexion du `FileSystemDirectoryHandle`.
 
 ### P2 — Finir les outils nouvellement exposés
@@ -139,4 +139,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 8 scénarios et 8 ouvertures contrôlées, dont la persistance de fiche, un cycle de coffre sélectif hors machine avec rapports JSON et la réception sécurisée des statistiques EP‑133. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 9 scénarios et 9 ouvertures contrôlées, dont la persistance de fiche, un cycle de coffre sélectif hors machine avec rapports JSON et la réception sécurisée des statistiques OP‑1 et EP‑133. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.

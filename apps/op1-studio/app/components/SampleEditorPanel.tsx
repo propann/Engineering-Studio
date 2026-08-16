@@ -21,7 +21,7 @@ type SampleReport = {
   peaks: Float32Array;
 };
 
-export function SampleEditorPanel({ Icon }: { Icon: SampleIcon }) {
+export function SampleEditorPanel({ Icon, onPrepared }: { Icon: SampleIcon; onPrepared?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [bytes, setBytes] = useState<ArrayBuffer | null>(null);
   const [report, setReport] = useState<SampleReport | null>(null);
@@ -73,6 +73,7 @@ export function SampleEditorPanel({ Icon }: { Icon: SampleIcon }) {
     if (!result) { setError("La conversion locale a échoué."); return; }
     if (preparedUrl) URL.revokeObjectURL(preparedUrl);
     setPrepared(result); setPreparedUrl(URL.createObjectURL(new Blob([result.bytes], { type: "audio/aiff" })));
+    onPrepared?.();
   }
 
   return <section className="sample-editor-panel" aria-labelledby="sample-editor-title">
