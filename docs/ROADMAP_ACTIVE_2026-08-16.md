@@ -36,7 +36,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 |---|---|---|
 | Portail et profil local | Landing, profil persistant, inventaire nommé, capacité EP‑133 64/128, workspace IndexedDB | Migration de toutes les anciennes sauvegardes et test navigateur multi-session |
 | Catalogue d’outils | Sept cartes, catégories, liens directs et test navigateur des ouvertures | Les tests ne couvrent pas encore le coffre ouvert dans un vrai dossier |
-| Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression | Validation navigateur avec un vrai dossier et gros volume |
+| Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression, test navigateur hors machine | Validation avec un vrai dossier et gros volume |
 | Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware | Écriture matériel, permissions FSA et remontée de statistiques |
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test | Store partagé, stats bidirectionnelles et test complet Hub → modification → retour |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
@@ -63,6 +63,7 @@ Objectif : rendre le coffre exploitable avec un vrai dossier local, sans confusi
 
 - [x] Afficher les catégories sélectionnables et la barre de progression.
 - [x] Prévoir snapshots, restauration contrôlée et suivi par machine.
+- [x] Vérifier hors machine une sauvegarde sélective `tape` puis sa restauration avec empreinte SHA‑256.
 - [ ] Tester un cycle réel avec gros volume : sauvegarde complète, sauvegarde sélective samples/bandes, restauration et comparaison.
 - [ ] Afficher clairement source, destination, nombre de fichiers, taille et erreurs partielles.
 - [ ] Ajouter une reprise sûre après interruption et un rapport exportable du cycle.
