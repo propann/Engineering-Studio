@@ -37,9 +37,10 @@ historiques.
   et audio ; la lecture EP‑133 P09 et l’inventaire de 532 sons passent encore
   en lecture seule. La synchro Start/horloge/Stop reste à mesurer depuis le
   Hub.
-- Restent à confirmer sur machine : paire OP‑1/EP‑133 synchronisée, gros
-  volume de sauvegarde, permissions FSA, débranchement/éjection et écriture
-  complète contrôlée.
+- Le transport réel de base OP‑1/EP‑133 est maintenant confirmé : Chromium a
+  envoyé Start, horloge 24 PPQN et Stop aux deux sorties. Restent à confirmer :
+  séquences musicales, gros volume de sauvegarde, permissions FSA,
+  débranchement/éjection et écriture complète contrôlée.
 
 ## Prochaines portes
 

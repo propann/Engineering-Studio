@@ -64,5 +64,7 @@ les 9 projets et relit P09 à 72 192 octets. Aucun endpoint POST n’a été app
   une machine disparaît avant un scan, au lieu d’exposer un traceback Python
   trompeur.
 - Cette passe confirme les ports disponibles ; le démarrage/arrêt réel depuis
-  le Hub et la mesure d’horloge reçue par les deux machines restent la
-  prochaine étape, séparée de toute écriture de projet.
+  le Hub a ensuite été vérifié depuis Chromium avec les deux permissions Web
+  MIDI. Le Hub a envoyé Start, 24 horloges MIDI et Stop aux deux sorties
+  `EP-133 MIDI 1` et `OP-1 MIDI 1` ; aucun fichier, projet ou SysEx n’a été
+  écrit. Le routage de séquences musicales reste à valider séparément.

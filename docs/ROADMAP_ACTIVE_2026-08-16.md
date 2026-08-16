@@ -130,8 +130,9 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 - [x] Tester avec deux ports MIDI virtuels et vérifier les timestamps reçus.
 - [x] Ajouter un routage virtuel de notes courtes et un PANIC logiciel entre
   les fenêtres ouvertes, sans sortie MIDI.
-- [ ] Valider sur une paire OP‑1/EP‑133 réelle, d’abord tempo + Start/Stop,
-  puis séquences ; ne pas confondre cette validation avec un transfert.
+- [x] Valider sur une paire OP‑1/EP‑133 réelle le tempo + Start/horloge/Stop ;
+  le test Chromium a confirmé les deux sorties et 24 horloges par noire, sans
+  écriture de projet. Les séquences restent séparées de cette validation.
 - [ ] Étendre le routage de notes aux séquences internes seulement après
   validation réelle de l’horloge et du comportement PANIC/Stop.
 

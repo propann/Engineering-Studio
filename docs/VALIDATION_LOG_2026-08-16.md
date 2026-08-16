@@ -75,8 +75,10 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
   machine.
 - Le Hub expose **Synchronisation MIDI** : deux sorties nommées OP‑1/EP‑133,
   BPM, démarrage et arrêt. La commande n’écrit aucun fichier ni SysEx.
-- La validation sur ports virtuels et sur les deux machines réelles reste à
-  faire.
+- Validation réelle effectuée : Chromium a reconnu `EP-133 MIDI 1` et
+  `OP-1 MIDI 1`, puis le Hub a envoyé Start, 24 horloges et Stop à chacune.
+- Le routage de séquences internes et les commandes musicales avancées restent
+  à faire après cette validation du transport de base.
 
 ## Audit doublons et optimisation
 
