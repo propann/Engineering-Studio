@@ -43,9 +43,16 @@ npm run dev:op1
 # Run EP-133 dev server
 npm run dev:ep133
 
-# Run both simultaneously
+# Run the Hub and both studios on the ports expected by the Hub
+npm run dev:all
+
+# Legacy alias
 npm run dev:both
 ```
+
+The local entry points are `http://127.0.0.1:5179` (Hub),
+`http://127.0.0.1:5175` (OP‑1 Studio) and `http://127.0.0.1:5177`
+(EP‑133 Studio). Keep `dev:all` running while opening tools from the Hub.
 
 ### Build
 ```bash
