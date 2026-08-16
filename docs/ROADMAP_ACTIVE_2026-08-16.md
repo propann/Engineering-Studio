@@ -81,7 +81,7 @@ Objectif : séparer définitivement « plan préparé » et « écriture réussi
 - [ ] OP‑1 Disk : sauvegarde, hash, suppression/restauration d’un fichier de test, éjection et débranchement simulé.
 - [ ] OP‑1 MIDI/USB : rattacher les contrôles appris aux fonctions réelles du Studio.
 - [x] EP‑133 : campagne lecture seule sur projets P01–P09, pads, samples et groupes ; la capacité 64/128 Mo reste à confirmer séparément.
-- [ ] EP‑133 : valider une écriture ciblée avec checkpoint, relecture binaire et état de retour explicite.
+- [x] EP‑133 : valider une écriture ciblée sur P09 avec checkpoint, relecture binaire et état de retour explicite.
 - [ ] Documenter câble retiré, permission refusée, volume différent et fichier corrompu.
 
 ### P2 — Raccord de données Hub ↔ studios

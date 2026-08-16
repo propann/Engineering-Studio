@@ -33,13 +33,15 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - P01 lu en lecture seule : 32 pads et 32 sons.
 - Bibliothèque sonore inventoriée : 532 sons / 58,76 Mo.
 - P01 à P09 lus ; checkpoint P09 créé et hashé localement.
-- Aucune écriture ou suppression envoyée à la machine.
+- Une écriture de test ciblée a été effectuée sur P09 après confirmation,
+  avec checkpoint frais, relecture octet à octet et activation vérifiée.
 
 ## Limites assumées
 
 - Le coffre utilise une arborescence simulée dans le test navigateur ; le test
   sur vrai dossier et gros volume reste à faire.
 - Le bridge EP‑133 `127.0.0.1:8765` n’est pas démarré pendant cette validation ; les erreurs proxy attendues ne bloquent pas les écrans hors machine.
-- Aucune écriture, suppression ou restauration n’a été effectuée sur une machine.
-- Les validations matérielles, la remontée de statistiques et l’annulation
-  d’un transfert ciblé restent dans la roadmap active.
+- Aucune suppression ni restauration n’a été effectuée ; seule l’écriture de
+  test explicitement confirmée sur P09 a été réalisée.
+- La remontée de statistiques et l’annulation d’un transfert ciblé restent
+  dans la roadmap active.

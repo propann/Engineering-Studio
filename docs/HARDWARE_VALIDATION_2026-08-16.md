@@ -2,8 +2,8 @@
 
 ## Périmètre
 
-Validation lecture seule de l’EP‑133 connecté sur Linux. Aucun projet, son ou
-réglage n’a été écrit ou supprimé sur la machine.
+Validation de l’EP‑133 connecté sur Linux. Les lectures sont sans écriture ; un
+test d’écriture a ensuite été effectué uniquement sur P09 après confirmation.
 
 ## Détection
 
@@ -23,6 +23,16 @@ réglage n’a été écrit ou supprimé sur la machine.
   `5ccab4283ec73f10d7c539bf68b9be98a754b3bf5136517b3fe4b47291967781`.
 - Comparaison hors ligne : 66 membres avant/après, taille inchangée ; la
   modification `patterns/a01` n’a été faite que dans le buffer de test.
+- Écriture de test P09 : checkpoint frais, compilation, écriture, relecture
+  octet à octet et `reload_project` réussis.
+- Contrôle post-écriture : P09 relu à 72 192 octets, 32 pads, 32 sons, groupes
+  A/B/C/D ; aucun membre supplémentaire ou supprimé.
+- Checkpoint avant écriture :
+  `/tmp/ep133-hardware-checkpoint/checkpoints/P09-avant-20260816T073610Z.tar`
+  — SHA‑256 `5ccab4283ec73f10d7c539bf68b9be98a7547b3fe4b47291967781`.
+- Checkpoint post-écriture :
+  `/tmp/ep133-hardware-checkpoint-after-write/checkpoints/P09-avant-20260816T073631Z.tar`
+  — SHA‑256 `972bb0110df03f2726435674a5fadd97e150af79d73fb163f5b2436b712f1693`.
 
 ## État du clone local
 
@@ -31,9 +41,7 @@ complet a été interrompu volontairement après 61/532 sons car il était estim
 à environ 16 minutes supplémentaires ; le manifeste reste partiel et ne doit
 pas être présenté comme une sauvegarde complète.
 
-## Étape suivante sous contrôle
+## Règle pour la suite
 
-Une écriture de test sur P09 peut être préparée avec le checkpoint ci-dessus,
-mais elle reste désactivée tant que le slot et l’autorisation d’écriture ne
-sont pas confirmés explicitement. La commande prévue est documentée dans
-`apps/ep133-studio/tools/send_project_to_machine.py` et exige `--confirm`.
+Le test P09 est validé. Les autres slots et les sons restent inchangés ; toute
+nouvelle écriture exige son propre checkpoint et une confirmation explicite.
