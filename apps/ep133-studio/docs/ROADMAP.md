@@ -1,5 +1,11 @@
 # Feuille de route — EP-133 KO II Studio
 
+> **DOCUMENT HISTORIQUE — détail du studio EP‑133.** L’état produit global et
+> les priorités de l’intégration Hub sont dans
+> [`../../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../../docs/ROADMAP_ACTIVE_2026-08-16.md).
+> Les éléments ci-dessous restent utiles pour le détail technique, mais leurs
+> cases ne remplacent pas la validation active du monorepo.
+
 ## Vision
 
 Construire une suite locale en français autour du Teenage Engineering EP-133 :

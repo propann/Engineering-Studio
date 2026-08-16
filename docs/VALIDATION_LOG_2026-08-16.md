@@ -26,7 +26,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - transmission des cibles OP‑1/EP‑133 (`hubTool`) ;
 - réception par le Hub d’un événement EP‑133 versionné et filtré par origine/fenêtre, avec compteurs projets, samples et entraînement ;
 - réception par le Hub d’un événement OP‑1 versionné et filtré par origine/fenêtre, avec compteurs projets et samples ;
-- Pattern & Song EP‑133 : ouverture d’une démo, sauvegarde locale, archivage puis restauration réversible, passage en vue SONG et rechargement depuis la bibliothèque ;
+- Pattern & Song EP‑133 : ouverture d’une démo, export MIDI vérifié par en-tête `MThd`, sauvegarde locale, archivage puis restauration réversible, passage en vue SONG et rechargement depuis la bibliothèque ;
 - Rhythm Hero EP‑133 : démarrage d’une vraie séance locale, compte à rebours, frappe sur pad, score, journal d’entraînement et progression remontée au Hub ;
 - coffre local : sauvegarde `tape` sélective, compteur Hub, restauration, progression par fichiers/octets et téléchargement des rapports JSON ;
 - sample OP‑1 : import WAV, analyse puis préparation AIFF locale ;

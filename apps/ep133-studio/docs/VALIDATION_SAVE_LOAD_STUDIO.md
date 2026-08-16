@@ -13,7 +13,7 @@ l'éditeur. Cette action ne représentait donc pas un véritable projet Studio.
 - un second `SAVE` met à jour le projet ouvert au lieu de créer un doublon ;
 - le sélecteur et `OUVRIR` restaurent le projet choisi ;
 - le menu `FICHIER` rassemble Nouveau, Ouvrir, Enregistrer, Enregistrer sous,
-  Renommer, Dupliquer, Supprimer et Exporter ;
+  Renommer, Dupliquer, Archiver, Restaurer, Supprimer et Exporter ;
 - une confirmation protège le projet affiché avant `NOUVEAU` ou `OUVRIR` s'il
   contient des notes ;
 - la sauvegarde `USER` de l'éditeur pédagogique reste indépendante.
@@ -75,10 +75,12 @@ la régression est maintenant impossible à réintroduire silencieusement.
 
 ## Limites encore visibles
 
-- pas encore d'import de fichier `.pak/.ppak` depuis l'interface (JSON
-  `ep.project.v1` seulement) ;
-- une sauvegarde uniquement dans le navigateur (`localStorage`) doit encore
-  être complétée par un téléchargement de fichier et une autosauvegarde de
-  secours ;
-- pas encore d'historique Annuler/Rétablir pour les scènes/Song (existe déjà
-  pour l'édition d'un pattern, voir RAPPORT_SESSION_2026-08-11.md).
+- l’import JSON/MIDI/archive et l’export MIDI/JSON/PPak sont disponibles ;
+  l’export MIDI hors machine est vérifié par le navigateur, mais sa lecture
+  sur un vrai projet machine reste à faire ;
+- la bibliothèque est locale et son miroir workspace est best-effort : le test
+  sur un vrai dossier partagé et gros volume reste ouvert ;
+- l’archivage est réversible et couvert ; `Supprimer` reste une suppression
+  définitive volontairement protégée par confirmation ;
+- l’historique Annuler/Rétablir couvre désormais le pattern et la structure
+  Song ; le MIDI matériel dans les deux sens reste à valider.

@@ -1,4 +1,9 @@
-# LA ROADMAP DE L'ENFER — OP-1 Studio
+# LA ROADMAP DE L’ENFER — OP-1 Studio
+
+> **DOCUMENT HISTORIQUE — 12 août 2026.** La source de vérité actuelle est
+> [`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md). Ce document
+> conserve l’analyse exhaustive et les pistes non reprises ; ses cases et ses
+> chiffres ne doivent pas être utilisés seuls pour évaluer l’état du produit.
 
 Un seul document, tout dedans. Compilé le 12 août 2026 à partir de la
 totalité des fichiers `docs/`, du code réel (`app/page.tsx`,
@@ -7,10 +12,8 @@ analyses faites dans cette conversation (recherche mods/outils,
 concurrents, dépendances manquantes). Rien n'a été résumé au point de
 perdre l'information — c'est fait exprès, c'est la version « enfer ».
 
-Les autres documents (`ROADMAP.md`, `FEUILLE_DE_ROUTE_SIMPLE.md`,
-`ANALYSE_CONCURRENTS.md`, `PROJECT_STATUS.md`) restent les versions de
-référence à jour au fil de l'eau. Celui-ci est l'instantané complet, pour
-ne jamais perdre un fil.
+Les autres documents restent des références de détail ou des archives. Pour
+les priorités et l’état global, seule la roadmap active du monorepo fait foi.
 
 ---
 

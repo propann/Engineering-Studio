@@ -1,5 +1,10 @@
 # Feuille de route simple — OP-1 Studio
 
+> **DOCUMENT HISTORIQUE — détail OP‑1.** Pour l’état actuel du Hub, de l’OP‑1
+> et de l’EP‑133, consulter [`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md).
+> Cette feuille reste utile comme parcours pédagogique et ne remplace pas la
+> roadmap active.
+
 Écrite pour qu'on puisse la suivre sans être développeur. Chaque ligne est une
 case à cocher. On ne saute pas une phase pour aller à la suivante : l'ordre
 existe pour une raison (surtout la Phase 1, qui protège la machine).

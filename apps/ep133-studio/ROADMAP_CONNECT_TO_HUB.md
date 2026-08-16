@@ -8,8 +8,9 @@
 > Cette spécification décrit l’intention initiale. Le Hub lance maintenant
 > EP‑133, transmet le profil, le nom et la capacité de la machine, transmet le
 > workspace, propose le retour Hub et ouvre directement `game`, `sounds`,
-> `docs` et `machine-test`. Les stores de profil/workspace proposés ici et la
-> remontée complète des statistiques ne sont pas encore livrés.
+> `docs` et `machine-test`. Les statistiques versionnées projets/samples/
+> entraînement et le compteur de snapshots sont maintenant livrés côté Hub ;
+> les stores partagés et les écritures matérielles restent ouverts.
 
 La source de décision actuelle est [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../docs/ROADMAP_ACTIVE_2026-08-16.md).
 
@@ -18,8 +19,9 @@ La source de décision actuelle est [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](
 - [x] Le Hub conserve la fiche et ouvre les 7 cartes d’outils dans un test navigateur.
 - [x] Le lancement EP‑133 transmet `hubProfile`, machine nommée, capacité et `hubTool`.
 - [x] L’écran **Sons & Transfert EP‑133** s’ouvre sans machine et affiche le bouton de connexion.
-- [ ] Tester un vrai dossier partagé, le retour Hub après modification et la remontée de statistiques.
-- [ ] Tester les écritures ciblées avec checkpoint, relecture et annulation.
+- [x] Les statistiques versionnées projets/samples/entraînement remontent vers le Hub ; le snapshot du coffre incrémente son compteur.
+- [x] Un transfert préparé peut être retiré avant confirmation sans appeler l’écriture machine.
+- [ ] Tester un vrai dossier partagé, le retour Hub après modification et les écritures ciblées avec checkpoint/relecture.
 
 ---
 

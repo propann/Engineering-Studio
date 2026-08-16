@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 function makePcmWav(durationSeconds = 0.1, sampleRate = 44_100) {
   const frames = Math.floor(durationSeconds * sampleRate);
@@ -377,6 +378,15 @@ test('Pattern & Song sauvegarde et recharge un projet local hors machine', async
   await expect(openDialog).toBeVisible();
   await openDialog.getByRole('button', { name: /DEMO GROOVE/ }).click();
   await expect(popup.locator('.song-arranger')).toBeVisible();
+
+  const midiDownloadPromise = popup.waitForEvent('download');
+  await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
+  await popup.getByRole('button', { name: 'Exporter en MIDI (.mid)', exact: true }).click();
+  const midiDownload = await midiDownloadPromise;
+  const midiPath = await midiDownload.path();
+  expect(midiDownload.suggestedFilename()).toMatch(/\.mid$/i);
+  expect(midiPath).toBeTruthy();
+  if (midiPath) expect(readFileSync(midiPath).subarray(0, 4).toString('ascii')).toBe('MThd');
 
   await popup.locator('summary').filter({ hasText: 'FICHIER' }).click();
   await popup.getByRole('button', { name: 'Enregistrer', exact: true }).click();

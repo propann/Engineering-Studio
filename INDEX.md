@@ -162,7 +162,7 @@
 - **Disk space**: ~800MB → ~150-180MB (**60-65% smaller**)
 
 ### Quality Metrics
-- **Tests**: ✅ 10/10 EP-133 tests + 6 Hub E2E scenarios passing
+- **Tests**: ✅ Workspaces passent + 11 scénarios E2E Hub passing
 - **Builds**: ✅ Both OP-1 and EP-133 successful
 - **Types**: ✅ TypeScript strict mode enabled
 - **Docs**: ✅ Current roadmap aligned; historical reports labelled
@@ -357,7 +357,7 @@ Read **[README.md](./README.md)** (complete overview with commands)
 
 - **Date**: 2026-08-16
 - **Phase**: 4 — intégration et validation active
-- **Status**: 6 scénarios E2E Hub passants ; matériel et gros volumes ouverts
+- **Status**: 11 scénarios E2E Hub passants ; MIDI matériel, écritures et gros volumes ouverts
 - **Source**: `docs/ROADMAP_ACTIVE_2026-08-16.md`
 
 ---
