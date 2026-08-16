@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { buildMidiClockWindow, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME } from './index';
+import { buildMidiClockWindow, buildMidiRealtimePacket, createHubCacheEnvelope, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME, readHubCache } from './index';
 import { createOP1Adapter } from '@studio-hub/instrument-op1';
 import { createEP133Adapter } from '@studio-hub/instrument-ep133';
 
@@ -41,6 +41,14 @@ describe('MIDI Bridge', () => {
     expect(() => createHubNoteMessage('note-on', -1, 100)).toThrow('note must be an integer');
     expect(() => createHubNoteMessage('note-on', 60, 100, 16)).toThrow('channel must be an integer');
     expect(() => createHubPanicMessage(Number.NaN)).toThrow('timestamp must be finite');
+  });
+
+  it('reads versioned Hub caches and migrates raw legacy JSON', () => {
+    const envelope = createHubCacheEnvelope({ name: 'Atelier' }, '2026-08-16T00:00:00.000Z');
+    expect(readHubCache<{ name: string }>(JSON.stringify(envelope))).toEqual({ name: 'Atelier' });
+    expect(readHubCache<{ name: string }>(JSON.stringify({ name: 'Ancien format' }))).toEqual({ name: 'Ancien format' });
+    expect(readHubCache(JSON.stringify({ ...envelope, source: 'unknown' }))).toBeNull();
+    expect(readHubCache(JSON.stringify({ ...envelope, savedAt: 'not-a-date' }))).toBeNull();
   });
 
   it('rejects invalid clock parameters', () => {

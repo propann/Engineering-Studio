@@ -13,6 +13,8 @@ historiques.
   Mo, workspace local et coffre sélectif.
 - Hub → OP‑1/EP‑133 : profil, workspace, transport Start/Stop/BPM et routage
   virtuel note/PANIC, avec filtrage origine, fenêtre source et schéma.
+- Cache partagé : enveloppe `studio-hub.cache.v1` commune pour profil et
+  machine, avec compatibilité de lecture de l’ancien format.
 - Outils : OP‑1 image, samples, services/patchs ; EP‑133 sons, Pattern/Song,
   documentation et entraînement.
 - Tests : 13 scénarios E2E Hub, 17 tests unitaires MIDI, typecheck global,

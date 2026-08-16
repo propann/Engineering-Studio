@@ -102,6 +102,40 @@ export function isHubPanicMessage(value: unknown): value is HubPanicMessage {
     && typeof message.timestamp === 'number' && Number.isFinite(message.timestamp);
 }
 
+/** Shared versioned cache envelope used by both studios for Hub imports. */
+export const HUB_CACHE_KEYS = {
+  profile: 'studio-hub:imported-profile',
+  machine: 'studio-hub:imported-machine',
+} as const;
+
+export interface HubCacheEnvelope<T> {
+  schema: 'studio-hub.cache.v1';
+  source: 'studio-hub';
+  version: 1;
+  savedAt: string;
+  value: T;
+}
+
+export function createHubCacheEnvelope<T>(value: T, savedAt = new Date().toISOString()): HubCacheEnvelope<T> {
+  if (Number.isNaN(Date.parse(savedAt))) throw new Error('savedAt must be an ISO date');
+  return { schema: 'studio-hub.cache.v1', source: 'studio-hub', version: 1, savedAt, value };
+}
+
+/** Read a versioned cache value while accepting the raw JSON used by older builds. */
+export function readHubCache<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<HubCacheEnvelope<T>> & { value?: T };
+    if (parsed.schema === 'studio-hub.cache.v1') {
+      if (parsed.source !== 'studio-hub' || parsed.version !== 1 || typeof parsed.savedAt !== 'string' || Number.isNaN(Date.parse(parsed.savedAt)) || !('value' in parsed)) return null;
+      return parsed.value ?? null;
+    }
+    return parsed as T;
+  } catch {
+    return null;
+  }
+}
+
 export interface MidiRealtimePacket {
   type: MidiRealtimeType;
   data: number[];

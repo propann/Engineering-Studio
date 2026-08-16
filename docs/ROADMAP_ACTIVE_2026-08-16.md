@@ -92,7 +92,8 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] Importer et mettre en cache le profil transmis par le Hub dans les studios.
 - [x] Importer la machine déclarée et son nom ; importer la capacité EP‑133.
 - [x] Établir le canal workspace et le retour vers le Hub.
-- [ ] Remplacer les caches locaux dispersés par un contrat partagé versionné.
+- [x] Remplacer les caches locaux dispersés par un contrat partagé versionné
+  (`studio-hub.cache.v1`), avec lecture compatible de l’ancien JSON brut.
 - [x] Valider et filtrer les messages entrants par origine et source dans les deux studios.
 - [x] Formaliser l’enveloppe `studio-hub.event.v1` et vérifier la remontée EP‑133 → Hub par test navigateur.
 - [x] Faire remonter au Hub les compteurs du coffre après finalisation d’un snapshot ; les statistiques OP‑1 et EP‑133 projets/samples/entraînement sont couvertes.

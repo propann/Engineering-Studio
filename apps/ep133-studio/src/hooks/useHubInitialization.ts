@@ -1,8 +1,5 @@
 import { useEffect } from 'react';
-import { isHubNoteMessage, isHubPanicMessage, isHubTransportMessage } from '@studio-hub/midi-bridge';
-
-const IMPORTED_PROFILE_KEY = 'studio-hub:imported-profile';
-const IMPORTED_MACHINE_KEY = 'studio-hub:imported-machine';
+import { createHubCacheEnvelope, HUB_CACHE_KEYS, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, readHubCache } from '@studio-hub/midi-bridge';
 
 function resolveHubOrigin() {
   const params = new URLSearchParams(window.location.search);
@@ -17,7 +14,8 @@ function resolveHubOrigin() {
 function readImportedProfile(queryProfile: string | null) {
   if (queryProfile) return queryProfile;
   try {
-    return sessionStorage.getItem('hub:playerProfile') || localStorage.getItem(IMPORTED_PROFILE_KEY);
+    const cached = readHubCache<unknown>(sessionStorage.getItem('hub:playerProfile')) ?? readHubCache<unknown>(localStorage.getItem(HUB_CACHE_KEYS.profile));
+    return cached === null ? null : JSON.stringify(cached);
   } catch {
     return null;
   }
@@ -25,9 +23,8 @@ function readImportedProfile(queryProfile: string | null) {
 
 function cacheImportedProfile(profile: unknown) {
   try {
-    const serialized = JSON.stringify(profile);
-    sessionStorage.setItem('hub:playerProfile', serialized);
-    localStorage.setItem(IMPORTED_PROFILE_KEY, serialized);
+    sessionStorage.setItem('hub:playerProfile', JSON.stringify(createHubCacheEnvelope(profile)));
+    localStorage.setItem(HUB_CACHE_KEYS.profile, JSON.stringify(createHubCacheEnvelope(profile)));
   } catch {
     // Le cache est un confort : la session continue avec le profil reçu.
   }
@@ -38,8 +35,8 @@ function readImportedMachine() {
   const capacity = params.get('hubMachineCapacityMb') === '128' ? 128 : 64;
   const name = params.get('hubMachineName');
   try {
-    const cached = localStorage.getItem(IMPORTED_MACHINE_KEY);
-    return name ? { name, capacityMb: capacity as 64 | 128 } : cached ? JSON.parse(cached) as { name?: string; capacityMb?: 64 | 128 } : { name: 'EP-133 K.O. II', capacityMb: 64 as const };
+    const cached = readHubCache<{ name?: string; capacityMb?: 64 | 128 }>(localStorage.getItem(HUB_CACHE_KEYS.machine));
+    return name ? { name, capacityMb: capacity as 64 | 128 } : cached ?? { name: 'EP-133 K.O. II', capacityMb: 64 as const };
   } catch {
     return { name: name || 'EP-133 K.O. II', capacityMb: capacity as 64 | 128 };
   }
@@ -47,7 +44,7 @@ function readImportedMachine() {
 
 function cacheImportedMachine(machine: { name?: string; capacityMb?: 64 | 128 }) {
   const normalized = { name: machine.name || 'EP-133 K.O. II', capacityMb: machine.capacityMb === 128 ? 128 : 64 } as const;
-  try { localStorage.setItem(IMPORTED_MACHINE_KEY, JSON.stringify(normalized)); } catch { /* cache de confort */ }
+  try { localStorage.setItem(HUB_CACHE_KEYS.machine, JSON.stringify(createHubCacheEnvelope(normalized))); } catch { /* cache de confort */ }
   window.dispatchEvent(new CustomEvent('hub:machineLoaded', { detail: normalized }));
 }
 
