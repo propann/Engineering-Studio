@@ -166,12 +166,18 @@ test('le coffre local sauvegarde et restaure une sélection sans machine', async
   await backupCategories.nth(3).uncheck();
   await backupCard.getByRole('button', { name: 'Sauvegarder la sélection' }).click();
   await expect(page.getByText(/Sauvegarde créée : 1 fichiers/)).toBeVisible({ timeout: 10_000 });
+  const backupReport = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Télécharger le rapport JSON' }).click();
+  expect((await backupReport).suggestedFilename()).toMatch(/^studio-hub-backup-op1-/);
 
   const restoreCard = page.locator('.vault-card').nth(1);
   await restoreCard.getByRole('button', { name: 'Choisir la cible' }).click();
   page.once('dialog', (dialog) => void dialog.accept());
   await restoreCard.getByRole('button', { name: 'Restaurer la sélection' }).click();
   await expect(page.getByText(/Restauration terminée : 1 fichiers/)).toBeVisible({ timeout: 10_000 });
+  const restoreReport = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Télécharger le rapport JSON' }).click();
+  expect((await restoreReport).suggestedFilename()).toMatch(/^studio-hub-restore-op1-/);
   await expect(page.locator('.vault-progress')).toHaveCount(0);
   expect(await page.evaluate(() => {
     const target = (window as Window & { __vaultE2E?: { target: { children: Map<string, unknown> } } }).__vaultE2E?.target;

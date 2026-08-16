@@ -11,7 +11,17 @@ interface HubEvent {
   data?: unknown;
 }
 
-const HUB_ORIGIN = import.meta.env.VITE_HUB_ORIGIN || window.location.origin;
+function resolveHubOrigin() {
+  const configured = import.meta.env.VITE_HUB_ORIGIN as string | undefined;
+  const fromLaunch = new URLSearchParams(window.location.search).get('hubReturn');
+  try {
+    return new URL(fromLaunch || configured || window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+}
+
+const HUB_ORIGIN = resolveHubOrigin();
 
 class Ep133HubCommunication {
   private isConnected: boolean = false;
@@ -31,7 +41,8 @@ class Ep133HubCommunication {
 
   sendEvent(event: HubEvent) {
     if (this.isConnected) {
-      window.parent.postMessage(
+      const target = window.opener || window.parent;
+      target.postMessage(
         { source: 'ep133-studio', event },
         HUB_ORIGIN
       );

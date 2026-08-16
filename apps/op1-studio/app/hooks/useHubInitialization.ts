@@ -61,7 +61,8 @@ export function useHubInitialization() {
 
     const onWorkspace = (event: MessageEvent<{ type?: string; workspaceHandle?: FileSystemDirectoryHandle | null; profile?: unknown }>) => {
       if (event.data?.type !== 'hub:workspace') return;
-      if (event.origin !== hubOrigin || (window.opener && event.source !== window.opener)) return;
+      const expectedSource = window.opener || (window.parent !== window ? window.parent : null);
+      if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource)) return;
       if (event.data.profile) {
         cacheImportedProfile(event.data.profile);
         window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: event.data.profile }));
@@ -69,7 +70,8 @@ export function useHubInitialization() {
       window.dispatchEvent(new CustomEvent('hub:workspaceLoaded', { detail: event.data.workspaceHandle ?? null }));
     };
     window.addEventListener('message', onWorkspace);
-    window.opener?.postMessage({ type: 'studio:ready', studio: 'op1' }, hubOrigin);
+    const hubWindow = window.opener || (window.parent !== window ? window.parent : null);
+    hubWindow?.postMessage({ type: 'studio:ready', studio: 'op1' }, hubOrigin);
     return () => window.removeEventListener('message', onWorkspace);
   }, []);
 }

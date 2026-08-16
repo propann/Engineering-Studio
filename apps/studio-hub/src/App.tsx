@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { VaultPanel, type MachineId } from "./VaultPanel";
 
 type MachineProfile = { enabled: boolean; backups: number; projects: number; samples: number };
@@ -247,12 +247,15 @@ function ProfileForm({ initial, onCancel, onComplete }: { initial: HubProfile | 
 
 function Dashboard({ profile, workspaceHandle, onProfile, onWorkspaceSelected, onBackupRecorded }: { profile: HubProfile; workspaceHandle: FileSystemDirectoryHandle | null; onProfile: () => void; onWorkspaceSelected: (handle: FileSystemDirectoryHandle, name: string) => void; onBackupRecorded: (machine: MachineId) => void }) {
   const totalBackups = useMemo(() => Object.values(profile.machines).reduce((total, machine) => total + machine.backups, 0), [profile]);
+  const studioWindows = useRef(new Set<Window>());
+  const studioOrigins = useMemo(() => new Set(Object.values(machineCopy).map((machine) => new URL(machine.url).origin)), []);
   function sendWorkspace(target: Window, origin: string) {
     target.postMessage({ type: "hub:workspace", profile, workspaceHandle }, origin);
   }
   useEffect(() => {
     const onStudioReady = (event: MessageEvent<{ type?: string }>) => {
       if (event.data?.type !== "studio:ready" || !event.source || !workspaceHandle) return;
+      if (!studioOrigins.has(event.origin) || !studioWindows.current.has(event.source as Window)) return;
       (event.source as Window).postMessage({ type: "hub:workspace", profile, workspaceHandle }, event.origin);
     };
     window.addEventListener("message", onStudioReady);
@@ -273,6 +276,7 @@ function Dashboard({ profile, workspaceHandle, onProfile, onWorkspaceSelected, o
       if (declaredMachine.capacityMb) launchUrl.searchParams.set("hubMachineCapacityMb", String(declaredMachine.capacityMb));
     }
     const child = window.open(launchUrl.toString(), "_blank");
+    if (child) studioWindows.current.add(child);
     if (child && workspaceHandle) {
       const origin = new URL(machineCopy[id].url).origin;
       window.setTimeout(() => sendWorkspace(child, origin), 400);

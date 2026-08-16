@@ -19,6 +19,17 @@ type BackupManifest = {
   projects?: { file: string; bytes: number; sha256?: string }[];
   sounds?: { file: string; bytes: number; sha256?: string }[];
 };
+type VaultReport = {
+  operation: "backup" | "restore";
+  machine: MachineId;
+  snapshotId?: string;
+  sourceOrTarget: string;
+  createdAt: string;
+  categories: BackupCategory[];
+  fileCount: number;
+  totalBytes: number;
+  files: BackupFile[];
+};
 type DirectoryPermission = { mode: "read" | "readwrite" };
 type Snapshot = {
   id: string;
@@ -97,6 +108,16 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
+function downloadReport(report: VaultReport) {
+  const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `studio-hub-${report.operation}-${report.machine}-${report.createdAt.replace(/[:.]/g, "-")}.json`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 function categoriesFromManifest(manifest: BackupManifest) {
   if (manifest.selectedCategories?.length) return manifest.selectedCategories;
   return [...new Set(manifestFiles(manifest).map((file) => file.path.split("/")[0] as BackupCategory))];
@@ -173,9 +194,10 @@ export function VaultPanel({
   const [restoreTarget, setRestoreTarget] = useState<DirectoryHandle | null>(null);
   const [restoreTargetName, setRestoreTargetName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState<{ current: number; total: number; label: string } | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number; bytes: number; totalBytes: number; label: string } | null>(null);
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
+  const [lastReport, setLastReport] = useState<VaultReport | null>(null);
 
   const selectedSnapshot = useMemo(() => snapshots.find((item) => item.id === selectedSnapshotId), [snapshots, selectedSnapshotId]);
   const availableCategories = categoriesForMachine[machine];
@@ -234,6 +256,8 @@ export function VaultPanel({
     if (!source) { setError(`Choisis le disque ou le dossier source de ${machine.toUpperCase()}.`); return; }
     if (!selectedCategories.length) { setError("Sélectionne au moins une catégorie à sauvegarder."); return; }
     setBusy(true);
+    let completed = 0;
+    let total = 0;
     try {
       const workspace = workspaceHandle as DirectoryHandle;
       await permission(workspace, "readwrite");
@@ -249,14 +273,20 @@ export function VaultPanel({
         filesToCopy.push(...files.map((file) => ({ category, handle: file.handle, path: `${category}/${file.path}` })));
       }
       if (!filesToCopy.length) throw new Error("Les catégories sélectionnées ne contiennent aucun fichier.");
+      total = filesToCopy.length;
+      let totalBytes = 0;
+      for (const file of filesToCopy) totalBytes += (await file.handle.getFile()).size;
       setStatus("Copie et vérification des fichiers sélectionnés…");
-      setProgress({ current: 0, total: filesToCopy.length, label: "Préparation de la sauvegarde" });
+      setProgress({ current: 0, total, bytes: 0, totalBytes, label: `Préparation : ${total} fichiers (${formatBytes(totalBytes)})` });
+      let copiedBytes = 0;
       for (let index = 0; index < filesToCopy.length; index += 1) {
         const file = filesToCopy[index];
-        setProgress({ current: index, total: filesToCopy.length, label: `Copie de ${file.path}` });
+        setProgress({ current: index, total, bytes: copiedBytes, totalBytes, label: `Copie de ${file.path}` });
         const copied = await copyFile(file.handle, filesRoot, file.path);
         manifestFiles.push({ path: file.path, category: file.category, ...copied });
-        setProgress({ current: index + 1, total: filesToCopy.length, label: `Vérifié : ${file.path}` });
+        completed = index + 1;
+        copiedBytes += copied.size;
+        setProgress({ current: completed, total, bytes: copiedBytes, totalBytes, label: `Vérifié : ${file.path}` });
       }
       const manifest: BackupManifest = {
         snapshotId,
@@ -275,8 +305,13 @@ export function VaultPanel({
       setSelectedSnapshotId(snapshotId);
       setRestoreCategories(selectedCategories);
       onBackupRecorded(machine);
+      const report: VaultReport = { operation: "backup", machine, snapshotId, sourceOrTarget: sourceName || machine, createdAt: manifest.createdAt ?? new Date().toISOString(), categories: selectedCategories, fileCount: manifestFiles.length, totalBytes: manifest.totalBytes ?? 0, files: manifestFiles };
+      setLastReport(report);
       setStatus(`Sauvegarde créée : ${manifestFiles.length} fichiers (${formatBytes(manifest.totalBytes ?? 0)}).`);
-    } catch (err) { setError(err instanceof Error ? err.message : "La sauvegarde a échoué."); }
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "La sauvegarde a échoué.";
+      setError(`${reason}${total ? ` (${completed}/${total} fichiers finalisés ; le snapshot incomplet reste masqué).` : ""}`);
+    }
     finally { setBusy(false); setProgress(null); }
   }
 
@@ -307,13 +342,18 @@ export function VaultPanel({
     if (!restoreCategories.length) { setError("Sélectionne au moins une catégorie à restaurer."); return; }
     if (!window.confirm(`Restaurer ${restoreCategories.map((item) => categoryInfo[item].label).join(", ")} vers ${restoreTargetName} ? Les fichiers portant le même nom seront remplacés.`)) return;
     setBusy(true);
+    let restored = 0;
+    let total = 0;
     try {
       const manifestFile = await selectedSnapshot.handle.getFileHandle("manifest.json");
       const manifest = JSON.parse(await (await manifestFile.getFile()).text()) as BackupManifest;
       const files = manifestFiles(manifest).filter((file) => restoreCategories.includes((file.category ?? file.path.split("/")[0]) as BackupCategory));
-      let restored = 0;
+      if (!files.length) throw new Error("La sauvegarde ne contient aucun fichier dans les catégories sélectionnées.");
+      total = files.length;
+      const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
       setStatus("Restauration des catégories sélectionnées…");
-      setProgress({ current: 0, total: files.length, label: "Préparation de la restauration" });
+      setProgress({ current: 0, total, bytes: 0, totalBytes, label: `Préparation : ${total} fichiers (${formatBytes(totalBytes)})` });
+      let restoredBytes = 0;
       for (const file of files) {
         const parts = file.path.split("/");
         const name = parts.pop();
@@ -323,10 +363,16 @@ export function VaultPanel({
         const copied = await copyFile(sourceFile, restoreTarget, file.path);
         if (file.sha256 && copied.sha256 !== file.sha256) throw new Error(`Intégrité invalide pour ${file.path}.`);
         restored += 1;
-        setProgress({ current: restored, total: files.length, label: `Restauré : ${file.path}` });
+        restoredBytes += copied.size;
+        setProgress({ current: restored, total, bytes: restoredBytes, totalBytes, label: `Restauré : ${file.path}` });
       }
+      const report: VaultReport = { operation: "restore", machine, snapshotId: selectedSnapshot.id, sourceOrTarget: restoreTargetName || machine, createdAt: new Date().toISOString(), categories: restoreCategories, fileCount: restored, totalBytes: restoredBytes, files };
+      setLastReport(report);
       setStatus(`Restauration terminée : ${restored} fichiers vers ${restoreTargetName}.`);
-    } catch (err) { setError(err instanceof Error ? err.message : "La restauration a échoué."); }
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : "La restauration a échoué.";
+      setError(`${reason}${total ? ` (${restored}/${total} fichiers restaurés).` : ""}`);
+    }
     finally { setBusy(false); setProgress(null); }
   }
 
@@ -337,12 +383,12 @@ export function VaultPanel({
 
   return <section className="vault-panel" id="atelier-vault">
     <div className="vault-header"><div><span className="section-kicker">COFFRE DE L’ATELIER</span><h2>Gérer les sauvegardes</h2><p className="muted">Sélectionne exactement ce que tu veux archiver ou restaurer. Les fichiers restent dans ton workspace local.</p></div><div className="vault-workspace"><span>ESPACE MAÎTRE</span><strong>{workspaceHandle ? workspaceHandle.name : "Non connecté"}</strong><button className="secondary-button" onClick={() => void chooseWorkspace()}>{workspaceHandle ? "Changer" : "Connecter"}</button></div></div>
-    <div className="vault-machine-tabs" role="tablist">{(["op1", "ep133"] as MachineId[]).map((id) => <button key={id} className={machine === id ? "active" : ""} onClick={() => setMachine(id)}>{id === "op1" ? "🎛️ OP‑1" : "🥁 EP‑133"}</button>)}</div>
+    <div className="vault-machine-tabs" role="tablist">{(["op1", "ep133"] as MachineId[]).map((id) => <button type="button" key={id} className={machine === id ? "active" : ""} onClick={() => setMachine(id)}>{id === "op1" ? "🎛️ OP‑1" : "🥁 EP‑133"}</button>)}</div>
     <div className="vault-grid">
-      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button className="secondary-button" onClick={() => void chooseSource()}>{source ? "Changer la source" : "Choisir la machine"}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Source connectée : ${sourceName}` : "Aucun disque ou dossier machine sélectionné"}</p><div className="category-list">{availableCategories.map((category) => <label className={`category-choice ${selectedCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} /><span><strong>{categoryInfo[category].label}</strong><small>{categoryInfo[category].description}</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button className="primary-button vault-action" disabled={busy || !workspaceHandle} onClick={() => void createBackup()}>{busy ? "Sauvegarde en cours…" : "Sauvegarder la sélection"}<span>↓</span></button></div>
-      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">2 · RESTAURER</span><h3>Réinjecter une sauvegarde</h3></div><button className="secondary-button" onClick={() => void chooseRestoreTarget()}>{restoreTarget ? "Changer la cible" : "Choisir la cible"}</button></div><p className="vault-path">{restoreTarget ? `Cible : ${restoreTargetName}` : "Choisis le disque machine à restaurer"}</p><label className="snapshot-select">Sauvegarde<select value={selectedSnapshotId} onChange={(event) => chooseSnapshot(event.target.value)} disabled={!snapshots.length}><option value="">Aucune sauvegarde</option>{snapshots.map((snapshot) => <option value={snapshot.id} key={snapshot.id}>{snapshot.id} · {snapshot.fileCount} fichiers · {formatBytes(snapshot.totalBytes)}</option>)}</select></label>{selectedSnapshot && <div className="snapshot-meta">{selectedSnapshot.categories.map((category) => <span key={category}>{categoryInfo[category].label}</span>)}</div>}<div className="category-list restore-list">{(selectedSnapshot?.categories ?? []).map((category) => <label className={`category-choice ${restoreCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={restoreCategories.includes(category)} onChange={() => toggleCategory(category, true)} /><span><strong>{categoryInfo[category].label}</strong><small>Restaurer cette catégorie</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar restore-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button className="primary-button vault-action restore" disabled={busy || !selectedSnapshot} onClick={() => void restoreBackup()}>{busy ? "Restauration en cours…" : "Restaurer la sélection"}<span>↑</span></button></div>
+      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button type="button" className="secondary-button" onClick={() => void chooseSource()}>{source ? "Changer la source" : "Choisir la machine"}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Source connectée : ${sourceName}` : "Aucun disque ou dossier machine sélectionné"}</p><div className="category-list">{availableCategories.map((category) => <label className={`category-choice ${selectedCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} /><span><strong>{categoryInfo[category].label}</strong><small>{categoryInfo[category].description}</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action" disabled={busy || !workspaceHandle} onClick={() => void createBackup()}>{busy ? "Sauvegarde en cours…" : "Sauvegarder la sélection"}<span>↓</span></button></div>
+      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">2 · RESTAURER</span><h3>Réinjecter une sauvegarde</h3></div><button type="button" className="secondary-button" onClick={() => void chooseRestoreTarget()}>{restoreTarget ? "Changer la cible" : "Choisir la cible"}</button></div><p className="vault-path">{restoreTarget ? `Cible : ${restoreTargetName}` : "Choisis le disque machine à restaurer"}</p><label className="snapshot-select">Sauvegarde<select value={selectedSnapshotId} onChange={(event) => chooseSnapshot(event.target.value)} disabled={!snapshots.length}><option value="">Aucune sauvegarde</option>{snapshots.map((snapshot) => <option value={snapshot.id} key={snapshot.id}>{snapshot.id} · {snapshot.fileCount} fichiers · {formatBytes(snapshot.totalBytes)}</option>)}</select></label>{selectedSnapshot && <div className="snapshot-meta">{selectedSnapshot.categories.map((category) => <span key={category}>{categoryInfo[category].label}</span>)}</div>}<div className="category-list restore-list">{(selectedSnapshot?.categories ?? []).map((category) => <label className={`category-choice ${restoreCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={restoreCategories.includes(category)} onChange={() => toggleCategory(category, true)} /><span><strong>{categoryInfo[category].label}</strong><small>Restaurer cette catégorie</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar restore-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action restore" disabled={busy || !selectedSnapshot} onClick={() => void restoreBackup()}>{busy ? "Restauration en cours…" : "Restaurer la sélection"}<span>↑</span></button></div>
     </div>
-    {status && <p className="vault-status success">{status}</p>}{error && <p className="vault-status error-message">{error}</p>}
+    {status && <p className="vault-status success">{status}</p>}{error && <p className="vault-status error-message">{error}</p>}{lastReport && <div className="vault-report"><span>Rapport local prêt : {lastReport.fileCount} fichiers · {formatBytes(lastReport.totalBytes)}</span><button type="button" className="secondary-button" onClick={() => downloadReport(lastReport)}>Télécharger le rapport JSON</button></div>}
     <p className="vault-note">Chaque snapshot contient un manifeste, le nombre de fichiers, leur taille et leur empreinte SHA‑256. Aucune restauration ne démarre sans choix explicite de la cible.</p>
   </section>;
 }

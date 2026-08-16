@@ -324,99 +324,7 @@ function DisplayEditor({ onNotice, root }: { onNotice: (message: string) => void
   );
 }
 
-function MachineControls({ onNotice }: { onNotice: (message: string) => void }) {
-  const [values, setValues] = useState([42, 58, 31, 67]);
-  const controls = [
-    { label: "BLEU", name: "Tempo", color: "blue" },
-    { label: "VERT", name: "Volume", color: "green" },
-    { label: "BLANC", name: "Pan", color: "white" },
-    { label: "ROUGE", name: "Effet", color: "red" },
-  ];
-
-  return (
-    <section className="machine-controls" aria-label="Commandes OP-1">
-      <div className="machine-controls-head"><span className="section-label">SURFACE OP-1</span><small>Commandes du clone et du MIDI</small></div>
-      <div className="machine-controls-grid">{controls.map((control, index) => <label className={`machine-knob machine-knob-${control.color}`} key={control.label}><span className="machine-knob-cap"><i style={{ transform: `rotate(${values[index] * 2.7 - 135}deg)` }} /></span><span className="machine-knob-label">{control.label}</span><strong>{control.name}</strong><input aria-label={control.name} type="range" min="0" max="100" value={values[index]} onChange={(event) => { const next = [...values]; next[index] = Number(event.target.value); setValues(next); }} onDoubleClick={() => onNotice(`${control.name} réinitialisé.`)} /><output>{values[index]}</output></label>)}</div>
-    </section>
-  );
-}
-
-function TapeMachine() {
-  const meters = ["Track 1", "Track 2", "Track 3", "Track 4"];
-  return (
-    <section className="tape-machine" aria-label="Machine Tape OP-1">
-      <div className="tape-machine-screen"><span>STUDIO TAPE</span><strong>00:00:00</strong><small>4 TRACK · 44.1 kHz · 16 bit</small></div>
-      <div className="tape-reels" aria-hidden="true"><i /><div className="tape-head-mark" /><i /></div>
-      <div className="tape-machine-meters">{meters.map((meter, index) => <div className="tape-meter" key={meter}><span>{meter}</span><div className="meter-scale"><i style={{ height: `${32 + index * 9}%` }} /></div><small>-{12 - index * 2} dB</small></div>)}</div>
-    </section>
-  );
-}
-
 type MidiEvent = { type: "note_on" | "note_off"; note: number; velocity: number; time: number };
-
-function MidiRoll({ events, onToggleNote }: { events: MidiEvent[]; onToggleNote: (note: number, time: number) => void }) {
-  const notes = [72, 71, 69, 67, 65, 64, 62, 60];
-  const cells = Array.from({ length: 16 }, (_, index) => index);
-  return (
-    <section className="midi-roll" aria-label="Piano roll MIDI">
-      <div className="midi-roll-head"><div><span className="section-label">ÉDITEUR MIDI</span><strong>Piano-roll Tape</strong></div><small>{events.length ? `${events.length} événements capturés` : "Aucune note capturée"}</small></div>
-      <div className="midi-roll-grid">{notes.map((note) => <div className="midi-roll-row" key={note}><span>{note === 60 ? "C4" : note}</span>{cells.map((cell) => { const time = cell * 0.5; const active = events.some((event) => event.type === "note_on" && event.note === note && Math.abs(event.time - time) < 0.05); return <button type="button" aria-label={`${active ? "Supprimer" : "Ajouter"} la note ${note} à ${time.toFixed(1)} seconde`} className={active ? "is-note" : ""} onClick={() => onToggleNote(note, time)} key={`${note}-${cell}`} />; })}</div>)}</div>
-      <div className="midi-roll-scale"><span>00:00</span><span>00:02</span><span>00:04</span><span>00:06</span></div>
-    </section>
-  );
-}
-
-function GlobalArrangement({ files, offsets, position, playing, onSeek, onMoveClip, onTogglePlay }: { files: Record<number, string>; offsets: Record<number, number>; position: number; playing: boolean; onSeek: (time: number) => void; onMoveClip: (index: number, time: number) => void; onTogglePlay: () => void }) {
-  const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
-  return (
-    <section className="global-arrangement" aria-label="Vue globale de la bande">
-      <div className="global-arrangement-head"><div><span className="section-label">VUE GLOBALE</span><strong>Partition Tape · 6 minutes</strong><small>Les quatre pistes restent alignées sur le même transport.</small></div><button className="primary-action" onClick={onTogglePlay}><Icon name={playing ? "check" : "wave"} size={15} />{playing ? "Arrêter" : "Lecture globale"}</button></div>
-      <div className="arrangement-ruler"><span>00:00</span><span>01:00</span><span>02:00</span><span>03:00</span><span>04:00</span><span>05:00</span><span>06:00</span></div>
-      <div className="arrangement-body" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); const index = Number(event.dataTransfer.getData("text/plain")); if (!Number.isInteger(index)) return; const rect = event.currentTarget.getBoundingClientRect(); onMoveClip(index, Math.max(0, Math.min(360, ((event.clientX - rect.left) / rect.width) * 360))); }} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); onSeek(Math.max(0, Math.min(360, ((event.clientX - rect.left) / rect.width) * 360))); }}>
-        <div className="arrangement-playhead" style={{ left: `${(position / 360) * 100}%` }} />
-        {tracks.map((track, index) => <div className="arrangement-row" key={track}><span>{track}</span><div className={`arrangement-clip ${files[index] ? "has-source" : ""}`} draggable={Boolean(files[index])} onDragStart={(event) => { event.dataTransfer.setData("text/plain", String(index)); event.dataTransfer.effectAllowed = "move"; }} style={{ transform: `translateX(${((offsets[index] ?? 0) / 360) * 100}%)` }}><i />{files[index] ?? "Piste vide"}</div></div>)}
-      </div>
-    </section>
-  );
-}
-
-function CloneSurface({ onSendMidi, onNotice }: { onSendMidi: (data: number[]) => void; onNotice: (message: string) => void }) {
-  const [pressed, setPressed] = useState<number[]>([]);
-  const audioContext = useRef<AudioContext | null>(null);
-  const oscillators = useRef<Record<number, OscillatorNode>>({});
-  const keys = [
-    { note: 60, label: "C4", key: "a", black: false }, { note: 61, label: "C#4", key: "w", black: true }, { note: 62, label: "D4", key: "s", black: false }, { note: 63, label: "D#4", key: "e", black: true }, { note: 64, label: "E4", key: "d", black: false }, { note: 65, label: "F4", key: "f", black: false }, { note: 66, label: "F#4", key: "t", black: true }, { note: 67, label: "G4", key: "g", black: false }, { note: 68, label: "G#4", key: "y", black: true }, { note: 69, label: "A4", key: "h", black: false }, { note: 70, label: "A#4", key: "u", black: true }, { note: 71, label: "B4", key: "j", black: false }, { note: 72, label: "C5", key: "k", black: false },
-  ];
-
-  function noteOn(note: number) {
-    if (pressed.includes(note)) return;
-    const context = audioContext.current ?? new AudioContext(); audioContext.current = context; void context.resume();
-    const oscillator = context.createOscillator(); const gain = context.createGain(); oscillator.frequency.value = 440 * Math.pow(2, (note - 69) / 12); gain.gain.setValueAtTime(0.0001, context.currentTime); gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.015); oscillator.connect(gain).connect(context.destination); oscillator.start(); oscillators.current[note] = oscillator; setPressed((current) => [...current, note]); onSendMidi([0x90, note, 100]);
-  }
-  function noteOff(note: number) {
-    const oscillator = oscillators.current[note]; if (oscillator && audioContext.current) { oscillator.stop(audioContext.current.currentTime + 0.04); delete oscillators.current[note]; } setPressed((current) => current.filter((item) => item !== note)); onSendMidi([0x80, note, 0]);
-  }
-  useEffect(() => { const down = (event: KeyboardEvent) => { const item = keys.find((key) => key.key === event.key.toLowerCase()); if (item) { event.preventDefault(); noteOn(item.note); } }; const up = (event: KeyboardEvent) => { const item = keys.find((key) => key.key === event.key.toLowerCase()); if (item) noteOff(item.note); }; window.addEventListener("keydown", down); window.addEventListener("keyup", up); return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); }; });
-  return <section className="clone-surface" aria-label="Clone OP-1 contrôlable"><div className="clone-surface-head"><div><span className="section-label">CLONE OP-1</span><strong>Surface jouable</strong><small>Clavier de l’ordinateur ou clavier MIDI connecté</small></div><button className="secondary-action" onClick={() => onNotice("Le clavier local joue une synthèse de contrôle. Le son OP-1 réel passe par la sortie audio USB.")}><Icon name="wave" size={14} />Source audio</button></div><div className="clone-keyboard">{keys.map((item) => <button type="button" className={`${item.black ? "clone-key black-key" : "clone-key"} ${pressed.includes(item.note) ? "is-pressed" : ""}`} key={item.note} onPointerDown={() => noteOn(item.note)} onPointerUp={() => noteOff(item.note)} onPointerLeave={() => { if (pressed.includes(item.note)) noteOff(item.note); }}><strong>{item.label}</strong><small>{item.key.toUpperCase()}</small></button>)}</div></section>;
-}
-
-function UsbAudioMonitor({ onNotice }: { onNotice: (message: string) => void }) {
-  const [active, setActive] = useState(false);
-  const [deviceLabel, setDeviceLabel] = useState("Interface audio du système");
-  const streamRef = useRef<MediaStream | null>(null);
-  const contextRef = useRef<AudioContext | null>(null);
-  async function toggle() {
-    if (active) { streamRef.current?.getTracks().forEach((track) => track.stop()); void contextRef.current?.close(); streamRef.current = null; contextRef.current = null; setActive(false); return; }
-    if (!navigator.mediaDevices?.getUserMedia) { onNotice("Cette fenêtre ne donne pas accès à l’audio USB. Utilisez Chrome ou Edge en local."); return; }
-    try { let stream = await navigator.mediaDevices.getUserMedia({ audio: true }); const devices = await navigator.mediaDevices.enumerateDevices(); const op1 = devices.find((device) => device.kind === "audioinput" && device.label.toUpperCase().includes("OP-1")); if (op1 && stream.getAudioTracks()[0].getSettings().deviceId !== op1.deviceId) { stream.getTracks().forEach((track) => track.stop()); stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: op1.deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); setDeviceLabel(op1.label); } else { setDeviceLabel(op1?.label ?? "Entrée audio sélectionnée"); } const context = new AudioContext(); const source = context.createMediaStreamSource(stream); source.connect(context.destination); streamRef.current = stream; contextRef.current = context; setActive(true); onNotice("Audio USB OP-1 routé vers la sortie du Studio."); } catch { onNotice("L’accès audio a été refusé ou aucune interface OP-1 n’est disponible."); }
-  }
-  return <section className="usb-audio-panel"><div><span className="section-label">AUDIO MACHINE</span><strong>{active ? "Son OP-1 actif" : "Son OP-1 disponible"}</strong><small>{deviceLabel} · casque recommandé pour éviter le Larsen</small></div><button className={active ? "primary-action is-active" : "secondary-action"} onClick={toggle}><Icon name="wave" size={14} />{active ? "Couper l’audio" : "Écouter l’OP-1"}</button></section>;
-}
-
-function TrackGainControls({ tracks, gains, onChange }: { tracks: string[]; gains: Record<number, number>; onChange: (index: number, value: number) => void }) {
-  return <section className="track-gain-panel" aria-label="Gain des pistes"><div className="mod-section-heading"><div><span className="section-label">MIXAGE LOCAL</span><strong>Gain des quatre pistes</strong></div><small>Persisté dans le projet</small></div><div className="track-gain-grid">{tracks.map((track, index) => <label key={track}><span>{track}</span><input type="range" min="0" max="1" step="0.01" value={gains[index] ?? 1} onChange={(event) => onChange(index, Number(event.target.value))} /><output>{Math.round((gains[index] ?? 1) * 100)}%</output></label>)}</div></section>;
-}
-
 function TrimEditor({ track, max, end, onChange, onClose }: { track: string; max: number; end: number; onChange: (value: number) => void; onClose: () => void }) {
   const [start, setStart] = useState(0);
   const safeEnd = Math.max(start + 0.1, Math.min(end, max));
@@ -458,10 +366,6 @@ function audioBufferToAiffMono(buffer: AudioBuffer): Blob {
     for (let frame = 0; frame < frames; frame += 1) mono[frame] += data[frame] / channels;
   }
   return new Blob([encodeAiffPcm16(mono, 1, buffer.sampleRate)], { type: "audio/aiff" });
-}
-
-function WaveformOverview({ tracks, peaks }: { tracks: string[]; peaks: Record<number, number[]> }) {
-  return <section className="waveform-overview" aria-label="Formes d&apos;onde audio calculees"><div className="mod-section-heading"><div><span className="section-label">ANALYSE AUDIO</span><strong>Formes d&apos;onde réelles</strong></div><small>24 points par piste</small></div><div className="waveform-overview-grid">{tracks.map((track, index) => <div className="waveform-overview-row" key={track}><span>{track}</span><div>{(peaks[index] ?? Array.from({ length: 24 }, () => 0)).map((peak, peakIndex) => <i key={`${index}-${peakIndex}`} style={{ height: `${Math.max(4, peak * 100)}%` }} />)}</div></div>)}</div></section>;
 }
 
 function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
@@ -1367,7 +1271,7 @@ export default function Home() {
             <button className="window-close mod-detail-close" aria-label="Fermer" onClick={() => setSelectedMod(null)}>×</button>
             {/* "Cadre de simulation" : l'écran SVG réel du mod, vu en direct
                 au-dessus de ses informations — pas une vignette décorative. */}
-            {selectedMod.preview ? <img className="mod-detail-image" src={selectedMod.preview} alt={`Aperçu agrandi ${selectedMod.title}`} /> : <div className="mod-detail-placeholder"><Icon name={selectedMod.id === "op1patch" ? "wave" : "archive"} size={34} /></div>}
+            {selectedMod.preview ? <div className="mod-detail-image" role="img" aria-label={`Aperçu agrandi ${selectedMod.title}`} style={{ backgroundImage: `url("${selectedMod.preview}")`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat" }} /> : <div className="mod-detail-placeholder"><Icon name={selectedMod.id === "op1patch" ? "wave" : "archive"} size={34} /></div>}
             <span className="section-label">{selectedMod.category} · SOURCE_MODIFIEE{selectedMod.risk !== "controlled" && <> · <em className={`mod-risk-badge is-${selectedMod.risk}`}>{FIRMWARE_RISK_LABEL[selectedMod.risk]}</em></>}</span>
             <h2 id="mod-detail-title">{selectedMod.title}</h2>
             <p>{selectedMod.detail}</p>
@@ -1437,35 +1341,6 @@ export default function Home() {
                 <div className="image-studio-note"><Icon name="shield" size={14} /><span>Les originaux restent conservés. Les dimensions et profils machine sont contrôlés avant tout export.</span></div>
               </div>
             )}
-            {false && (
-              <div className="tool-body">
-                <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a href={officialFirmwareUrl} target="_blank" rel="noreferrer">Télécharger depuis Teenage Engineering</a></div>
-                <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile?.name ?? "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${((firmwareFile?.size ?? 0) / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
-                <div className="mod-section">
-                  <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE</span><strong>Mods disponibles</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
-                  <div className="mod-grid">{firmwareMods.map((mod) => <label key={mod.id} className="mod-option"><input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} />{mod.preview ? <img src={mod.preview} alt={`Aperçu ${mod.title}`} /> : <span className="mod-placeholder"><Icon name={mod.id === "op1patch" ? "wave" : "archive"} size={17} /></span>}<span><strong>{mod.title} {mod.risk !== "controlled" && <em className={`mod-risk-badge is-${mod.risk}`}>{FIRMWARE_RISK_LABEL[mod.risk]}</em>}</strong><small>{mod.detail}</small><em>{mod.source}</em></span></label>)}</div>
-                </div>
-                <div className="editor-options">
-                  <label><input type="checkbox" checked={firmwareOptions.verify} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, verify: event.target.checked })} /><span><strong>Vérifier l’origine et le CRC</strong><small>Refuser un fichier incomplet ou non reconnu.</small></span></label>
-                  <label><input type="checkbox" checked={firmwareOptions.backup} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, backup: event.target.checked })} /><span><strong>Exiger une sauvegarde</strong><small>Créer un snapshot avant toute opération sensible.</small></span></label>
-                  <label><input type="checkbox" checked={firmwareOptions.teBoot} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, teBoot: event.target.checked })} /><span><strong>Préparer le mode TE-boot</strong><small>Afficher les étapes manuelles avant la mise à jour.</small></span></label>
-                </div>
-                <div className={`firmware-risk-gauge is-${firmwareRiskLevel}`} role="status">
-                  <div className="firmware-risk-gauge-head"><span>DANGER MODS</span><strong>{FIRMWARE_GAUGE_LABEL[firmwareRiskLevel]}</strong></div>
-                  <div className="firmware-risk-gauge-bar"><i style={{ width: `${Math.min(100, (firmwareRiskWeight / 12) * 100)}%` }} /></div>
-                  <small>{selectedFirmwareModList.length} mod{selectedFirmwareModList.length > 1 ? "s" : ""} sélectionné{selectedFirmwareModList.length > 1 ? "s" : ""}{selectedFirmwareModList.some((mod) => mod.risk === "unclassified") ? " · certains non classés" : ""}</small>
-                </div>
-                {firmwareRiskLevel === "eleve" && (
-                  <label className="firmware-risk-ack">
-                    <input type="checkbox" checked={firmwareRiskAck} onChange={(event) => setFirmwareRiskAck(event.target.checked)} />
-                    <span>Combinaison chargée ({selectedFirmwareModList.length} mods) — je confirme vouloir préparer ce plan.</span>
-                  </label>
-                )}
-                <div className="editor-footer"><span>{Object.values(firmwareOptions).filter(Boolean).length}/3 contrôles activés</span><button className="primary-action" disabled={!firmwareFile || firmwareRiskBlocked} onClick={() => setNotice(firmwareFile ? "Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype." : "Choisissez d’abord un fichier .op1 local.")}><Icon name="shield" />Préparer le plan</button></div>
-
-              </div>
-            )}
-
             {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
 
             {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}

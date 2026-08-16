@@ -3,6 +3,16 @@ import { useEffect } from 'react';
 const IMPORTED_PROFILE_KEY = 'studio-hub:imported-profile';
 const IMPORTED_MACHINE_KEY = 'studio-hub:imported-machine';
 
+function resolveHubOrigin() {
+  const params = new URLSearchParams(window.location.search);
+  const configured = import.meta.env.VITE_HUB_ORIGIN as string | undefined;
+  try {
+    return new URL(params.get('hubReturn') || configured || window.location.origin).origin;
+  } catch {
+    return window.location.origin;
+  }
+}
+
 function readImportedProfile(queryProfile: string | null) {
   if (queryProfile) return queryProfile;
   try {
@@ -46,6 +56,7 @@ export function useHubInitialization() {
     // Le profil est transmis par le Hub dans l'URL du lancement. Il est mis en
     // cache en lecture seule pour survivre à un rafraîchissement de l'outil.
     const params = new URLSearchParams(window.location.search);
+    const hubOrigin = resolveHubOrigin();
     const queryProfile = params.get('hubProfile');
     const hubProfileJson = readImportedProfile(queryProfile);
     cacheImportedMachine(readImportedMachine());
@@ -79,6 +90,8 @@ export function useHubInitialization() {
 
     const onWorkspace = (event: MessageEvent<{ type?: string; workspaceHandle?: FileSystemDirectoryHandle | null; profile?: unknown }>) => {
       if (event.data?.type !== 'hub:workspace') return;
+      const expectedSource = window.opener || (window.parent !== window ? window.parent : null);
+      if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource)) return;
       if (event.data.profile) {
         cacheImportedProfile(event.data.profile);
         window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: event.data.profile }));
@@ -86,7 +99,8 @@ export function useHubInitialization() {
       window.dispatchEvent(new CustomEvent('hub:workspaceLoaded', { detail: event.data.workspaceHandle ?? null }));
     };
     window.addEventListener('message', onWorkspace);
-    window.opener?.postMessage({ type: 'studio:ready', studio: 'ep133' }, '*');
+    const hubWindow = window.opener || (window.parent !== window ? window.parent : null);
+    hubWindow?.postMessage({ type: 'studio:ready', studio: 'ep133' }, hubOrigin);
     return () => window.removeEventListener('message', onWorkspace);
   }, []);
 }

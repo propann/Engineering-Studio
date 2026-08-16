@@ -43,8 +43,8 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware | Écriture matériel, permissions FSA et remontée de statistiques |
 | Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test | Store partagé, stats bidirectionnelles et test complet Hub → modification → retour |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
-| Sécurité | Sanitisation SVG, contrôle d’origine Hub côté OP‑1, confirmations locales | Revue complète des origines côté EP‑133 et route bibliothèque locale |
-| Qualité | Typecheck, build et 6 scénarios navigateur Hub passent sur la branche | 10 avertissements lint OP‑1, validation matérielle et gros volumes encore à faire |
+| Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
+| Qualité | Typecheck, build, lint propre et 6 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -70,8 +70,8 @@ Objectif : rendre le coffre exploitable avec un vrai dossier local, sans confusi
 - [x] Prévoir snapshots, restauration contrôlée et suivi par machine.
 - [x] Vérifier hors machine une sauvegarde sélective `tape` puis sa restauration avec empreinte SHA‑256.
 - [ ] Tester un cycle réel avec gros volume : sauvegarde complète, sauvegarde sélective samples/bandes, restauration et comparaison.
-- [ ] Afficher clairement source, destination, nombre de fichiers, taille et erreurs partielles.
-- [ ] Ajouter une reprise sûre après interruption et un rapport exportable du cycle.
+- [x] Afficher clairement source, destination, nombre de fichiers, taille et erreurs partielles.
+- [x] Ajouter un rapport JSON exportable du cycle ; la reprise après interruption reste à concevoir.
 - [ ] Relier les actions du coffre aux bridges machine uniquement après checkpoint, diff, relecture et confirmation.
 
 ### P1 — Validation matérielle OP‑1 et EP‑133
@@ -92,7 +92,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] Importer la machine déclarée et son nom ; importer la capacité EP‑133.
 - [x] Établir le canal workspace et le retour vers le Hub.
 - [ ] Remplacer les caches locaux dispersés par un contrat partagé versionné.
-- [ ] Valider et filtrer les messages entrants par origine, source et schéma dans les deux studios.
+- [x] Valider et filtrer les messages entrants par origine et source dans les deux studios ; le schéma versionné reste à formaliser.
 - [ ] Faire remonter au Hub les statistiques réellement produites : sauvegardes, projets, samples, entraînement.
 - [ ] Documenter les permissions et la reconnexion du `FileSystemDirectoryHandle`.
 
@@ -107,12 +107,12 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 
 ### P3 — Dette, code mort et documentation
 
-- [ ] Supprimer ou isoler les huit composants OP‑1 signalés comme non montés par le lint, après vérification de leur destination.
-- [ ] Remplacer les deux `<img>` signalés ou documenter leur exception.
-- [ ] Corriger la commande de validation globale pour annoncer exactement les workspaces testés.
+- [x] Supprimer les huit composants OP‑1 signalés comme non montés par le lint après vérification de leur destination.
+- [x] Remplacer les deux `<img>` signalés par un aperçu local sûr et supprimer le bloc legacy inatteignable.
+- [x] Corriger la commande de validation globale et retirer le workspace MIDI vide/non consommé.
 - [ ] Clarifier la licence héritée MIT/AGPL dans le README et le PR.
 - [ ] Ajouter un bandeau « document historique » aux anciennes roadmaps et renvoyer vers ce document.
-- [ ] Générer un nouvel audit de code mort après cette passe de nettoyage.
+- [x] Générer la passe de nettoyage code mort ; aucun avertissement lint ne subsiste.
 
 ## 4. Ordre d’exécution recommandé
 
@@ -137,4 +137,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent ; le lint termine avec 10 avertissements non bloquants déjà identifiés. Le test navigateur Hub passe avec 6 scénarios et 7 ouvertures contrôlées, dont un cycle de coffre sélectif hors machine. Les appels OP‑1 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 6 scénarios et 7 ouvertures contrôlées, dont un cycle de coffre sélectif hors machine avec rapports JSON. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
