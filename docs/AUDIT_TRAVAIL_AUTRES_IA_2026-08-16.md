@@ -106,8 +106,9 @@ Hub envoie ses messages avec l’origine de la fenêtre cible, et l’exemple de
 navigation EP-133 n’utilise plus `'*'`.
 
 Validation : le scénario E2E sans machine injecte des messages MIDI valides
-depuis `http://evil.invalid` dans les deux studios ; aucun événement note ou
-PANIC n’est relayé.
+depuis `http://evil.invalid`, avec une mauvaise fenêtre source et avec un
+schéma invalide, dans les deux studios ; aucun événement note ou PANIC n’est
+relayé.
 
 ### P2 — Dette de structure
 

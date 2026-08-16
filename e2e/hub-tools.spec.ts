@@ -229,6 +229,32 @@ test('le Hub simule le transport sans machine vers les deux studios ouverts', as
     await expect.poll(() => popup.evaluate(() => (window as Window & { __noteMessages?: unknown[] }).__noteMessages?.length ?? 0)).toBe(0);
     await expect.poll(() => popup.evaluate(() => (window as Window & { __panicMessages?: unknown[] }).__panicMessages?.length ?? 0)).toBe(0);
   }
+  const hubOrigin = await page.evaluate(() => window.location.origin);
+  for (const popup of [opPopup, epPopup]) {
+    await popup.evaluate((origin) => {
+      window.dispatchEvent(new MessageEvent('message', {
+        origin,
+        source: window,
+        data: {
+          type: 'hub:midi-note',
+          schema: 'studio-hub.note.v1',
+          source: 'studio-hub',
+          action: 'note-on',
+          note: 38,
+          velocity: 100,
+          channel: 0,
+          timestamp: performance.now(),
+        },
+      }));
+      window.dispatchEvent(new MessageEvent('message', {
+        origin,
+        source: window.opener,
+        data: { type: 'hub:midi-panic', schema: 'studio-hub.panic.invalid', source: 'studio-hub', timestamp: performance.now() },
+      }));
+    }, hubOrigin);
+    await expect.poll(() => popup.evaluate(() => (window as Window & { __noteMessages?: unknown[] }).__noteMessages?.length ?? 0)).toBe(0);
+    await expect.poll(() => popup.evaluate(() => (window as Window & { __panicMessages?: unknown[] }).__panicMessages?.length ?? 0)).toBe(0);
+  }
   await page.locator('.midi-sync-panel').getByRole('button', { name: /Tester sans machine/i }).click();
   await expect.poll(() => opPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(1);
   await expect.poll(() => epPopup.evaluate(() => (window as Window & { __transportMessages?: unknown[] }).__transportMessages?.length ?? 0)).toBe(1);
