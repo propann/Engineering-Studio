@@ -31,7 +31,7 @@ Les cartes suivantes sont présentes dans la page Outils :
 
 Le coffre de l’atelier reste accessible depuis la section Ressources partagées. Il centralise les snapshots, la sélection des catégories, la restauration et la progression, sans recréer une fiche machine.
 
-Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont transmis au lancement. Les studios savent ouvrir directement leurs écrans principaux ; toutes les statistiques d’usage ne remontent pas encore au Hub.
+Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont transmis au lancement. EP‑133 remonte désormais au Hub ses compteurs de projets, samples chargés et progression d’entraînement via un événement versionné ; OP‑1 et les compteurs de coffre restent à compléter.
 
 ## 2. Statut de référence
 
@@ -41,10 +41,10 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Catalogue d’outils | Sept cartes, catégories, liens directs et test navigateur des ouvertures | Les tests ne couvrent pas encore le coffre ouvert dans un vrai dossier |
 | Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression, test navigateur hors machine | Validation avec un vrai dossier et gros volume |
 | Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware | Écriture matériel, permissions FSA et remontée de statistiques |
-| Raccord EP‑133 | Profil, machine nommée/capacité, workspace, retour Hub, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée | Store partagé, stats bidirectionnelles et écriture ciblée après autorisation |
+| Raccord EP‑133 | Profil, machine nommée/capacité, workspace, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée ; statistiques EP‑133 → Hub | Store partagé, statistiques Hub → EP‑133 et écriture ciblée après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
-| Qualité | Typecheck, build, lint propre et 7 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
+| Qualité | Typecheck, build, lint propre et 8 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
 
 ## 3. Priorités actives
 
@@ -93,8 +93,9 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] Importer la machine déclarée et son nom ; importer la capacité EP‑133.
 - [x] Établir le canal workspace et le retour vers le Hub.
 - [ ] Remplacer les caches locaux dispersés par un contrat partagé versionné.
-- [x] Valider et filtrer les messages entrants par origine et source dans les deux studios ; le schéma versionné reste à formaliser.
-- [ ] Faire remonter au Hub les statistiques réellement produites : sauvegardes, projets, samples, entraînement.
+- [x] Valider et filtrer les messages entrants par origine et source dans les deux studios.
+- [x] Formaliser l’enveloppe `studio-hub.event.v1` et vérifier la remontée EP‑133 → Hub par test navigateur.
+- [ ] Faire remonter au Hub les statistiques OP‑1 et les compteurs du coffre ; EP‑133 projets/samples/entraînement est couvert.
 - [ ] Documenter les permissions et la reconnexion du `FileSystemDirectoryHandle`.
 
 ### P2 — Finir les outils nouvellement exposés
@@ -104,7 +105,7 @@ Objectif : éviter les doubles fiches et faire remonter les informations utiles 
 - [x] **Éditeur d’images OP‑1** : test d’aperçu sûr et export SVG local ; le rejet SVG avancé reste à couvrir.
 - [x] **Sons & Transfert EP‑133** : ouverture hors machine et bouton de connexion vérifiés ; écriture ciblée et annulation restent à couvrir.
 - [ ] **Pattern & Song EP‑133** : test de sauvegarde/rechargement, MIDI, arrangement et restauration d’un projet.
-- [ ] **Jeux & entraînement** : faire remonter la progression utile au profil Hub et couvrir le parcours hors machine.
+- [x] **Jeux & entraînement** : remonter la progression utile au profil Hub ; le test d’action de jeu réelle reste à ajouter.
 
 ### P3 — Dette, code mort et documentation
 
@@ -138,4 +139,4 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 7 scénarios et 7 ouvertures contrôlées, dont la persistance de fiche et un cycle de coffre sélectif hors machine avec rapports JSON. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.
+État au 16 août 2026 : les commandes de validation passent et `npm run lint:all` est propre. Le test navigateur Hub passe avec 8 scénarios et 8 ouvertures contrôlées, dont la persistance de fiche, un cycle de coffre sélectif hors machine avec rapports JSON et la réception sécurisée des statistiques EP‑133. Les appels EP‑133 vers le bridge local `127.0.0.1:8765` restent volontairement indisponibles pendant ce test de navigation.

@@ -62,6 +62,7 @@ import { LOCAL_LIBRARY_FOLDER_KEY, SAMPLE_FOLDER_KEY, hasStoredPermission, loadD
 import './style.css';
 import { useLanguageStore } from './core/store/languageStore';
 import { useHubInitialization } from './hooks/useHubInitialization';
+import { hubCommunication } from './core/hub/hubCommunication';
 
 const STUDIO_DEMOS = [
   { id: 'groove', title: 'DEMO GROOVE', file: 'demo-groove.json' },
@@ -402,16 +403,18 @@ export default function App() {
     // les exercices USER, qui ne font pas partie du parcours affiché.
     const finalScore = scoreRef.current;
     if (DEDICATED_STYLE_IDS.includes(styleId) && finalScore.perfect + finalScore.good + finalScore.miss > 0) {
-      setPracticeLog((log) => appendPracticeLogEntry(localStorage, log, {
+      const nextLog = appendPracticeLogEntry(localStorage, practiceLog, {
         date: new Date().toISOString().slice(0, 10),
         styleId,
         difficulty,
         perfect: finalScore.perfect,
         good: finalScore.good,
         miss: finalScore.miss,
-      }));
+      });
+      setPracticeLog(nextLog);
+      hubCommunication.updateStats({ trainingProgress: Math.min(100, Math.round((nextLog.length / 7) * 100)) });
     }
-  }, [clearGameTimers, styleId, difficulty]);
+  }, [clearGameTimers, styleId, difficulty, practiceLog]);
 
   const stopEditorTransport = useCallback((resetPlayhead = true) => {
     editorRun.current += 1;
@@ -438,7 +441,11 @@ export default function App() {
   const openStudioSampleFolder = async () => {
     const directory = sampleDirectoryHandleRef.current;
     if (!directory) { window.alert('Ouvre ce studio depuis le Studio Hub pour connecter son workspace.'); return; }
-    try { setMachineSampleCount(await machineSampleBank.load(await collectLocalFiles(directory))); }
+    try {
+      const count = await machineSampleBank.load(await collectLocalFiles(directory));
+      setMachineSampleCount(count);
+      hubCommunication.updateStats({ samplesPrepared: count });
+    }
     catch (error) { window.alert(error instanceof Error ? error.message : 'Impossible de relire le workspace Hub.'); }
   };
 
@@ -1348,6 +1355,7 @@ export default function App() {
     const document = currentStudioDocument();
     const stored = storeStudioProject(localStorage, studioLibrary, document, selectedStudioProject);
     updateStudioLibrary(stored.library);
+    hubCommunication.updateStats({ projectsSaved: stored.library.length });
     setSelectedStudioProject(stored.id);
     clearStudioAutosave(localStorage);
     setStudioAutosaveAt(null);
@@ -1362,6 +1370,7 @@ export default function App() {
     setEditorName(title.trim().toUpperCase());
     setEditorPatternBank(patternBank);
     updateStudioLibrary(stored.library);
+    hubCommunication.updateStats({ projectsSaved: stored.library.length });
     setSelectedStudioProject(stored.id);
     clearStudioAutosave(localStorage);
     setStudioAutosaveAt(null);

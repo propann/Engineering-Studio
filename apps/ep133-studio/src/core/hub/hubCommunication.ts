@@ -5,11 +5,18 @@
 type HubEventType = 'pattern_created' | 'training_progress' | 'session_update' | 'error';
 
 interface HubEvent {
+  schema: 'studio-hub.event.v1';
   type: HubEventType;
   timestamp: string;
   machine: 'ep133';
   data?: unknown;
 }
+
+export type HubStats = {
+  projectsSaved?: number;
+  samplesPrepared?: number;
+  trainingProgress?: number;
+};
 
 function resolveHubOrigin() {
   const configured = import.meta.env.VITE_HUB_ORIGIN as string | undefined;
@@ -52,6 +59,7 @@ class Ep133HubCommunication {
 
   notifyPatternCreated(count: number) {
     this.sendEvent({
+      schema: 'studio-hub.event.v1',
       type: 'pattern_created',
       timestamp: new Date().toISOString(),
       machine: 'ep133',
@@ -61,6 +69,7 @@ class Ep133HubCommunication {
 
   notifyTrainingProgress(progress: number) {
     this.sendEvent({
+      schema: 'studio-hub.event.v1',
       type: 'training_progress',
       timestamp: new Date().toISOString(),
       machine: 'ep133',
@@ -68,8 +77,9 @@ class Ep133HubCommunication {
     });
   }
 
-  updateStats(stats: { patternsEdited?: number; trainingProgress?: number }) {
+  updateStats(stats: HubStats) {
     this.sendEvent({
+      schema: 'studio-hub.event.v1',
       type: 'session_update',
       timestamp: new Date().toISOString(),
       machine: 'ep133',

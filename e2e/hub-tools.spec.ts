@@ -165,6 +165,32 @@ test('les cartes spécialisées transmettent leur écran cible au bon studio', a
   }
 });
 
+test('le Hub reçoit les statistiques EP-133 depuis une fenêtre autorisée', async ({ page }) => {
+  await createProfile(page);
+  const popupPromise = page.waitForEvent('popup');
+  await page.locator('.tools-grid .tool-card').filter({ hasText: 'EP‑133 Studio' }).getByRole('button').click();
+  const popup = await popupPromise;
+  await popup.waitForLoadState('domcontentloaded');
+  const hubOrigin = await page.evaluate(() => window.location.origin);
+  await popup.evaluate((origin) => {
+    window.opener?.postMessage({
+      source: 'ep133-studio',
+      event: {
+        schema: 'studio-hub.event.v1',
+        type: 'session_update',
+        timestamp: new Date().toISOString(),
+        machine: 'ep133',
+        data: { projectsSaved: 4, samplesPrepared: 12, trainingProgress: 71 },
+      },
+    }, origin);
+  }, hubOrigin);
+  const card = page.locator('.studio-card.orange');
+  await expect(card.locator('.card-stats')).toContainText('4 projets');
+  await expect(card.locator('.card-stats')).toContainText('12 sons');
+  await expect(card.locator('.card-stats')).toContainText('71% entraînement');
+  await popup.close();
+});
+
 test('le coffre local sauvegarde et restaure une sélection sans machine', async ({ page }) => {
   await page.addInitScript(installFakeFileSystem);
   await createProfile(page);

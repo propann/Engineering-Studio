@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { VaultPanel, type MachineId } from "./VaultPanel";
 
-type MachineProfile = { enabled: boolean; backups: number; projects: number; samples: number };
+type MachineProfile = { enabled: boolean; backups: number; projects: number; samples: number; trainingProgress: number };
+type StudioStats = { projects?: number; samples?: number; trainingProgress?: number };
 type MachineInstance = MachineProfile & { id: string; kind: MachineId; name: string; capacityMb?: 64 | 128 };
 type HubProfile = {
   version: 1;
@@ -21,13 +22,13 @@ const LEGACY_MIGRATION_KEY = "studio-hub-legacy-profile-v1";
 const WORKSPACE_DB = "studio-hub-workspace";
 const DEFAULT_PROFILE: HubProfile = {
   version: 1, name: "", avatar: "🎛️", bio: "", createdAt: "",
-  machines: { op1: { enabled: true, backups: 0, projects: 0, samples: 0 }, ep133: { enabled: true, backups: 0, projects: 0, samples: 0 } },
+  machines: { op1: { enabled: true, backups: 0, projects: 0, samples: 0, trainingProgress: 0 }, ep133: { enabled: true, backups: 0, projects: 0, samples: 0, trainingProgress: 0 } },
   machineInventory: [],
 };
 
 const defaultMachineInventory = (): MachineInstance[] => [
-  { id: "op1-1", kind: "op1", name: "Mon OP‑1", enabled: true, backups: 0, projects: 0, samples: 0 },
-  { id: "ep133-1", kind: "ep133", name: "Mon EP‑133", capacityMb: 64, enabled: true, backups: 0, projects: 0, samples: 0 },
+  { id: "op1-1", kind: "op1", name: "Mon OP‑1", enabled: true, backups: 0, projects: 0, samples: 0, trainingProgress: 0 },
+  { id: "ep133-1", kind: "ep133", name: "Mon EP‑133", capacityMb: 64, enabled: true, backups: 0, projects: 0, samples: 0, trainingProgress: 0 },
 ];
 
 const machineCopy: Record<MachineId, { title: string; description: string; color: string; url: string }> = {
@@ -82,6 +83,7 @@ function readProfile(): HubProfile | null {
         backups: Number(machine.backups) || 0,
         projects: Number(machine.projects) || 0,
         samples: Number(machine.samples) || 0,
+        trainingProgress: Number(machine.trainingProgress) || 0,
       };
     });
     return {
@@ -90,8 +92,8 @@ function readProfile(): HubProfile | null {
       name: String(legacyName).trim(),
       avatar: legacy.avatar ?? legacy.avatarEmoji ?? ({ kick: "🥁", drum: "🥁", synth: "🎛️" } as Record<string, string>)[legacy.avatarId] ?? DEFAULT_PROFILE.avatar,
       machines: {
-        op1: { ...DEFAULT_PROFILE.machines.op1, ...(legacy.machines?.op1 ?? {}), enabled: legacy.machines?.op1?.enabled ?? (Boolean(legacyMachines.op1?.enabled) || machineInventory.some((machine) => machine.kind === "op1" && machine.enabled)), backups: legacyStats.op1?.backupsCreated ?? legacy.machines?.op1?.backups ?? 0, projects: legacyStats.op1?.keyboardConfigs ?? legacy.machines?.op1?.projects ?? 0, samples: legacy.machines?.op1?.samples ?? 0 },
-        ep133: { ...DEFAULT_PROFILE.machines.ep133, ...(legacy.machines?.ep133 ?? {}), enabled: legacy.machines?.ep133?.enabled ?? (Boolean(legacyMachines.ep133?.enabled) || machineInventory.some((machine) => machine.kind === "ep133" && machine.enabled)), backups: legacyStats.ep133?.patternsEdited ?? legacy.machines?.ep133?.backups ?? 0, projects: legacy.machines?.ep133?.projects ?? 0, samples: legacyStats.ep133?.trainingProgress ?? legacy.machines?.ep133?.samples ?? 0 },
+        op1: { ...DEFAULT_PROFILE.machines.op1, ...(legacy.machines?.op1 ?? {}), enabled: legacy.machines?.op1?.enabled ?? (Boolean(legacyMachines.op1?.enabled) || machineInventory.some((machine) => machine.kind === "op1" && machine.enabled)), backups: legacyStats.op1?.backupsCreated ?? legacy.machines?.op1?.backups ?? 0, projects: legacyStats.op1?.keyboardConfigs ?? legacy.machines?.op1?.projects ?? 0, samples: legacy.machines?.op1?.samples ?? 0, trainingProgress: legacy.machines?.op1?.trainingProgress ?? 0 },
+        ep133: { ...DEFAULT_PROFILE.machines.ep133, ...(legacy.machines?.ep133 ?? {}), enabled: legacy.machines?.ep133?.enabled ?? (Boolean(legacyMachines.ep133?.enabled) || machineInventory.some((machine) => machine.kind === "ep133" && machine.enabled)), backups: legacyStats.ep133?.patternsEdited ?? legacy.machines?.ep133?.backups ?? 0, projects: legacy.machines?.ep133?.projects ?? 0, samples: legacy.machines?.ep133?.samples ?? 0, trainingProgress: legacyStats.ep133?.trainingProgress ?? legacy.machines?.ep133?.trainingProgress ?? 0 },
       },
       workspace: legacy.workspace
         ? { name: legacy.workspace.name ?? legacy.workspace.folderName ?? "Espace partagé", folders: legacy.workspace.folders ?? [] }
@@ -185,7 +187,16 @@ export function App() {
 
   if (screen === "landing") return <Landing profile={profile} onStart={() => setScreen(profile ? "dashboard" : "profile")} />;
   if (screen === "profile" || !profile) return <ProfileForm initial={profile} onCancel={profile ? () => setScreen("dashboard") : undefined} onComplete={(next, handle) => { persistProfile(next); clearProfileDraft(); setProfile(next); if (handle) { setWorkspaceHandle(handle); void saveWorkspaceHandle(handle); } setScreen("dashboard"); }} />;
-  return <Dashboard profile={profile} workspaceHandle={workspaceHandle} onProfile={() => setScreen("profile")} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setProfile({ ...profile, workspace: { name, folders: ["shared", "op1/backups", "op1/samples", "op1/firmware", "ep133/backups", "ep133/projects", "ep133/samples"] } }); void saveWorkspaceHandle(handle); }} onBackupRecorded={(machine) => setProfile({ ...profile, machines: { ...profile.machines, [machine]: { ...profile.machines[machine], backups: profile.machines[machine].backups + 1 } } })} />;
+  return <Dashboard profile={profile} workspaceHandle={workspaceHandle} onProfile={() => setScreen("profile")} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setProfile({ ...profile, workspace: { name, folders: ["shared", "op1/backups", "op1/samples", "op1/firmware", "ep133/backups", "ep133/projects", "ep133/samples"] } }); void saveWorkspaceHandle(handle); }} onBackupRecorded={(machine) => setProfile({ ...profile, machines: { ...profile.machines, [machine]: { ...profile.machines[machine], backups: profile.machines[machine].backups + 1 } } })} onStatsReceived={(stats) => setProfile((current) => {
+    if (!current) return current;
+    const machine = current.machines.ep133;
+    return { ...current, machines: { ...current.machines, ep133: {
+      ...machine,
+      ...(stats.projects === undefined ? {} : { projects: Math.max(machine.projects, stats.projects) }),
+      ...(stats.samples === undefined ? {} : { samples: Math.max(machine.samples, stats.samples) }),
+      ...(stats.trainingProgress === undefined ? {} : { trainingProgress: Math.max(machine.trainingProgress, stats.trainingProgress) }),
+    } } };
+  })} />;
 }
 
 function Landing({ profile, onStart }: { profile: HubProfile | null; onStart: () => void }) {
@@ -219,6 +230,7 @@ function ProfileForm({ initial, onCancel, onComplete }: { initial: HubProfile | 
         backups: declared.reduce((total, machine) => total + machine.backups, 0),
         projects: declared.reduce((total, machine) => total + machine.projects, 0),
         samples: declared.reduce((total, machine) => total + machine.samples, 0),
+        trainingProgress: initial?.machines[kind].trainingProgress ?? 0,
       };
       return result;
     }, {} as Record<MachineId, MachineProfile>);
@@ -231,7 +243,7 @@ function ProfileForm({ initial, onCancel, onComplete }: { initial: HubProfile | 
 
   function addMachine(kind: MachineId) {
     const count = machineInventory.filter((machine) => machine.kind === kind).length + 1;
-    setMachineInventory((current) => [...current, { id: `${kind}-${Date.now()}`, kind, name: `${kind === "op1" ? "OP‑1" : "EP‑133"} ${count}`, capacityMb: kind === "ep133" ? 64 : undefined, enabled: true, backups: 0, projects: 0, samples: 0 }]);
+    setMachineInventory((current) => [...current, { id: `${kind}-${Date.now()}`, kind, name: `${kind === "op1" ? "OP‑1" : "EP‑133"} ${count}`, capacityMb: kind === "ep133" ? 64 : undefined, enabled: true, backups: 0, projects: 0, samples: 0, trainingProgress: 0 }]);
   }
 
   function removeMachine(id: string) {
@@ -245,13 +257,33 @@ function ProfileForm({ initial, onCancel, onComplete }: { initial: HubProfile | 
   return <main className="profile-screen"><section className="profile-card-large"><div className="section-kicker">FICHE PERSONNAGE · STUDIO HUB</div><h1>Construis ton atelier.</h1><p className="muted">Cette fiche reste ton identité centrale. Les studios ne demandent aucune nouvelle saisie.</p><label>Nom d’affichage<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ton nom ou nom de scène" maxLength={40} /></label><label>Présentation<textarea value={bio} onChange={(event) => setBio(event.target.value)} placeholder="Quelques mots sur ton atelier" maxLength={160} /></label><div className="avatar-picker"><span>Avatar</span><div>{avatars.map((item) => <button type="button" className={avatar === item ? "avatar selected" : "avatar"} key={item} onClick={() => setAvatar(item)}>{item}</button>)}</div></div><div className="machine-selection"><div><span className="section-kicker">MACHINES DÉCLARÉES</span><h2>Nommer chaque machine</h2><p className="muted">Tu peux déclarer plusieurs OP‑1 et EP‑133. Le choix 64/128 Mo est transmis automatiquement au studio.</p></div><div className="machine-inventory">{machineInventory.map((machine) => <article className={`machine-inventory-item ${machine.enabled ? "selected" : ""}`} key={machine.id}><div className="machine-inventory-fields"><label>Nom<input value={machine.name} onChange={(event) => updateMachine(machine.id, { name: event.target.value })} maxLength={40} /></label><label>Modèle<select value={machine.kind} onChange={(event) => { const kind = event.target.value as MachineId; updateMachine(machine.id, { kind, name: kind === "ep133" ? "EP‑133" : "OP‑1", capacityMb: kind === "ep133" ? machine.capacityMb ?? 64 : undefined }); }}><option value="op1">OP‑1</option><option value="ep133">EP‑133 K.O. II</option></select></label>{machine.kind === "ep133" && <label>Mémoire<select value={machine.capacityMb ?? 64} onChange={(event) => updateMachine(machine.id, { capacityMb: Number(event.target.value) as 64 | 128 })}><option value={64}>64 Mo</option><option value={128}>128 Mo</option></select></label>}</div><div className="machine-inventory-actions"><label className="machine-enabled"><input type="checkbox" checked={machine.enabled} onChange={(event) => updateMachine(machine.id, { enabled: event.target.checked })} /> Active</label><button type="button" className="text-button" onClick={() => removeMachine(machine.id)}>Supprimer</button></div></article>)}</div><div className="machine-add-actions"><button type="button" className="secondary-button" onClick={() => addMachine("op1")}>+ Ajouter un OP‑1</button><button type="button" className="secondary-button" onClick={() => addMachine("ep133")}>+ Ajouter un EP‑133</button></div></div><div className="workspace-choice"><div><span className="section-kicker">ESPACE DE TRAVAIL PARTAGÉ</span><h2>{workspace ? workspace.name : "Aucun dossier choisi"}</h2><p className="muted">Le Hub crée les dossiers communs et les zones de sauvegarde sans envoyer de fichier sur internet.</p></div><button type="button" className="secondary-button" onClick={() => void selectFolder()}>Choisir un dossier</button></div>{workspace && <div className="folder-list">{workspace.folders.map((folder) => <code key={folder}>/{folder}/</code>)}</div>}{error && <p className="error-message">{error}</p>}<div className="form-actions">{onCancel && <button className="secondary-button" onClick={onCancel}>Annuler</button>}<button className="primary-button" onClick={save}>Enregistrer la fiche <span>→</span></button></div></section></main>;
 }
 
-function Dashboard({ profile, workspaceHandle, onProfile, onWorkspaceSelected, onBackupRecorded }: { profile: HubProfile; workspaceHandle: FileSystemDirectoryHandle | null; onProfile: () => void; onWorkspaceSelected: (handle: FileSystemDirectoryHandle, name: string) => void; onBackupRecorded: (machine: MachineId) => void }) {
+function Dashboard({ profile, workspaceHandle, onProfile, onWorkspaceSelected, onBackupRecorded, onStatsReceived }: { profile: HubProfile; workspaceHandle: FileSystemDirectoryHandle | null; onProfile: () => void; onWorkspaceSelected: (handle: FileSystemDirectoryHandle, name: string) => void; onBackupRecorded: (machine: MachineId) => void; onStatsReceived: (stats: StudioStats) => void }) {
   const totalBackups = useMemo(() => Object.values(profile.machines).reduce((total, machine) => total + machine.backups, 0), [profile]);
   const studioWindows = useRef(new Set<Window>());
   const studioOrigins = useMemo(() => new Set(Object.values(machineCopy).map((machine) => new URL(machine.url).origin)), []);
   function sendWorkspace(target: Window, origin: string) {
     target.postMessage({ type: "hub:workspace", profile, workspaceHandle }, origin);
   }
+
+  function parseStudioStatsMessage(value: unknown) {
+    if (!value || typeof value !== "object") return null;
+    const envelope = value as { source?: unknown; event?: unknown };
+    if (envelope.source !== "ep133-studio" || !envelope.event || typeof envelope.event !== "object") return null;
+    const event = envelope.event as { schema?: unknown; type?: unknown; machine?: unknown; data?: unknown };
+    if (event.schema !== "studio-hub.event.v1" || event.machine !== "ep133" || !event.data || typeof event.data !== "object") return null;
+    const data = event.data as Record<string, unknown>;
+    const numberOrUndefined = (key: string, maximum = Number.MAX_SAFE_INTEGER) => {
+      const value = data[key];
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return undefined;
+      return Math.min(maximum, Math.floor(value));
+    };
+    if (event.type === "session_update") {
+      return { projects: numberOrUndefined("projectsSaved"), samples: numberOrUndefined("samplesPrepared"), trainingProgress: numberOrUndefined("trainingProgress", 100) };
+    }
+    if (event.type === "training_progress") return { trainingProgress: numberOrUndefined("progress", 100) };
+    return null;
+  }
+
   useEffect(() => {
     const onStudioReady = (event: MessageEvent<{ type?: string }>) => {
       if (event.data?.type !== "studio:ready" || !event.source || !workspaceHandle) return;
@@ -261,6 +293,16 @@ function Dashboard({ profile, workspaceHandle, onProfile, onWorkspaceSelected, o
     window.addEventListener("message", onStudioReady);
     return () => window.removeEventListener("message", onStudioReady);
   }, [profile, workspaceHandle]);
+  useEffect(() => {
+    const onStudioStats = (event: MessageEvent<unknown>) => {
+      if (!event.source || !studioOrigins.has(event.origin) || !studioWindows.current.has(event.source as Window)) return;
+      const stats = parseStudioStatsMessage(event.data);
+      if (!stats) return;
+      onStatsReceived(stats);
+    };
+    window.addEventListener("message", onStudioStats);
+    return () => window.removeEventListener("message", onStudioStats);
+  }, [onStatsReceived, studioOrigins]);
   function openStudio(id: MachineId, tool?: ToolLaunch["tool"]) {
     persistProfile(profile);
     const launchUrl = new URL(machineCopy[id].url);
@@ -283,5 +325,5 @@ function Dashboard({ profile, workspaceHandle, onProfile, onWorkspaceSelected, o
       window.setTimeout(() => sendWorkspace(child, origin), 1200);
     }
   }
-  return <main className="dashboard-screen"><header className="dashboard-header"><div><span className="brand-mark">STUDIO HUB</span><h1>Bienvenue, {profile.name} {profile.avatar}</h1></div><button className="profile-pill" onClick={onProfile}>{profile.avatar} <span>Ma fiche</span></button></header><div className="dashboard-content"><section className="dashboard-hero"><div><span className="section-kicker">TON ATELIER LOCAL</span><h2>Tout est réuni au même endroit.</h2><p className="muted">Ouvre un studio, retrouve tes sauvegardes et garde la maîtrise de tes fichiers.</p></div><div className="quick-stats"><strong>{totalBackups}</strong><span>sauvegardes suivies</span><strong>{profile.workspace?.name ?? "—"}</strong><span>espace de travail</span></div></section><section className="tools-section"><div><span className="section-kicker">HUB DES OUTILS</span><h2>Choisir un atelier</h2><p className="muted">Tous les outils actifs sont regroupés ici. Ta fiche et ton espace partagé sont transmis automatiquement.</p></div><div className="tools-grid">{toolLaunches.map((tool) => <article className={`tool-card ${tool.color}`} key={tool.id}><span className="studio-icon">{tool.icon}</span><span className="section-kicker">{tool.category}</span><h3>{tool.title}</h3><p>{tool.description}</p><button className="studio-button" onClick={() => openStudio(tool.machine, tool.tool)}>{tool.action} <span>↗</span></button></article>)}</div></section><section className="machine-grid"><div className="tools-section-heading"><span className="section-kicker">MACHINES CONFIGURÉES</span><h2>Ton inventaire</h2></div>{(Object.keys(machineCopy) as MachineId[]).filter((id) => profile.machines[id].enabled).map((id) => { const declared = profile.machineInventory.filter((machine) => machine.kind === id && machine.enabled); return <article className={`studio-card ${machineCopy[id].color}`} key={id}><span className="studio-icon">{id === "op1" ? "🎛️" : "🥁"}</span><span className="section-kicker">STUDIO {id.toUpperCase()}</span><h2>{machineCopy[id].title}</h2><p>{machineCopy[id].description}</p><div className="declared-machines"><strong>{declared.length} machine{declared.length > 1 ? "s" : ""} déclarée{declared.length > 1 ? "s" : ""}</strong><span>{declared.map((machine) => `${machine.name}${machine.kind === "ep133" ? ` · ${machine.capacityMb ?? 64} Mo` : ""}`).join(" · ")}</span></div><div className="card-stats"><span><b>{profile.machines[id].backups}</b> sauvegardes</span><span><b>{profile.machines[id].projects}</b> projets</span><span><b>{profile.machines[id].samples}</b> sons</span></div><button className="studio-button" onClick={() => openStudio(id)}>Ouvrir le studio <span>↗</span></button></article>; })}</section><section className="shared-panel"><div><span className="section-kicker">RESSOURCES PARTAGÉES</span><h2>Le coffre de l’atelier</h2><p className="muted">{profile.workspace ? `Dossier actif : ${profile.workspace.name}` : "Connecte un dossier maître pour activer les sauvegardes unifiées."}</p></div><div className="shared-links"><span>📁 Snapshots OP‑1 / EP‑133</span><span>☑️ Sauvegarde sélective par catégorie</span><span>↕️ Restauration contrôlée vers une machine</span></div><button className="secondary-button" onClick={() => document.getElementById("atelier-vault")?.scrollIntoView({ behavior: "smooth" })}>Gérer l’espace</button></section><VaultPanel workspaceHandle={workspaceHandle} onWorkspaceSelected={onWorkspaceSelected} onBackupRecorded={onBackupRecorded} /><p className="dashboard-note">Les studios restent autonomes : le Hub transmet l’identité locale et ouvre les applications. Les opérations machine sensibles restent confirmées dans chaque studio.</p></div></main>;
+  return <main className="dashboard-screen"><header className="dashboard-header"><div><span className="brand-mark">STUDIO HUB</span><h1>Bienvenue, {profile.name} {profile.avatar}</h1></div><button className="profile-pill" onClick={onProfile}>{profile.avatar} <span>Ma fiche</span></button></header><div className="dashboard-content"><section className="dashboard-hero"><div><span className="section-kicker">TON ATELIER LOCAL</span><h2>Tout est réuni au même endroit.</h2><p className="muted">Ouvre un studio, retrouve tes sauvegardes et garde la maîtrise de tes fichiers.</p></div><div className="quick-stats"><strong>{totalBackups}</strong><span>sauvegardes suivies</span><strong>{profile.workspace?.name ?? "—"}</strong><span>espace de travail</span></div></section><section className="tools-section"><div><span className="section-kicker">HUB DES OUTILS</span><h2>Choisir un atelier</h2><p className="muted">Tous les outils actifs sont regroupés ici. Ta fiche et ton espace partagé sont transmis automatiquement.</p></div><div className="tools-grid">{toolLaunches.map((tool) => <article className={`tool-card ${tool.color}`} key={tool.id}><span className="studio-icon">{tool.icon}</span><span className="section-kicker">{tool.category}</span><h3>{tool.title}</h3><p>{tool.description}</p><button className="studio-button" onClick={() => openStudio(tool.machine, tool.tool)}>{tool.action} <span>↗</span></button></article>)}</div></section><section className="machine-grid"><div className="tools-section-heading"><span className="section-kicker">MACHINES CONFIGURÉES</span><h2>Ton inventaire</h2></div>{(Object.keys(machineCopy) as MachineId[]).filter((id) => profile.machines[id].enabled).map((id) => { const declared = profile.machineInventory.filter((machine) => machine.kind === id && machine.enabled); return <article className={`studio-card ${machineCopy[id].color}`} key={id}><span className="studio-icon">{id === "op1" ? "🎛️" : "🥁"}</span><span className="section-kicker">STUDIO {id.toUpperCase()}</span><h2>{machineCopy[id].title}</h2><p>{machineCopy[id].description}</p><div className="declared-machines"><strong>{declared.length} machine{declared.length > 1 ? "s" : ""} déclarée{declared.length > 1 ? "s" : ""}</strong><span>{declared.map((machine) => `${machine.name}${machine.kind === "ep133" ? ` · ${machine.capacityMb ?? 64} Mo` : ""}`).join(" · ")}</span></div><div className="card-stats"><span><b>{profile.machines[id].backups}</b> sauvegardes</span><span><b>{profile.machines[id].projects}</b> projets</span><span><b>{profile.machines[id].samples}</b> sons</span>{id === "ep133" && <span><b>{profile.machines[id].trainingProgress}%</b> entraînement</span>}</div><button className="studio-button" onClick={() => openStudio(id)}>Ouvrir le studio <span>↗</span></button></article>; })}</section><section className="shared-panel"><div><span className="section-kicker">RESSOURCES PARTAGÉES</span><h2>Le coffre de l’atelier</h2><p className="muted">{profile.workspace ? `Dossier actif : ${profile.workspace.name}` : "Connecte un dossier maître pour activer les sauvegardes unifiées."}</p></div><div className="shared-links"><span>📁 Snapshots OP‑1 / EP‑133</span><span>☑️ Sauvegarde sélective par catégorie</span><span>↕️ Restauration contrôlée vers une machine</span></div><button className="secondary-button" onClick={() => document.getElementById("atelier-vault")?.scrollIntoView({ behavior: "smooth" })}>Gérer l’espace</button></section><VaultPanel workspaceHandle={workspaceHandle} onWorkspaceSelected={onWorkspaceSelected} onBackupRecorded={onBackupRecorded} /><p className="dashboard-note">Les studios restent autonomes : le Hub transmet l’identité locale et ouvre les applications. Les opérations machine sensibles restent confirmées dans chaque studio.</p></div></main>;
 }
