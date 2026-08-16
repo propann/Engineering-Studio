@@ -1,5 +1,9 @@
 # EP-133 Studio: Hub Integration Roadmap
 
+> **DOCUMENT HISTORIQUE — spécification de raccord initiale.** La feuille de
+> route active du monorepo est
+> [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../docs/ROADMAP_ACTIVE_2026-08-16.md).
+
 **For**: Development Team working on EP-133  
 **Purpose**: Guide how to connect EP-133 Studio to Studio Hub  
 **Date**: 16 August 2026  

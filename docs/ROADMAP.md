@@ -1,6 +1,6 @@
 # Feuille de route
 
-> **Document spécifique OP‑1.** La feuille de route produit commune et à jour
+> **DOCUMENT HISTORIQUE — détail OP‑1.** La feuille de route produit commune et à jour
 > est [`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md). Les
 > jalons ci-dessous restent valables pour le détail OP‑1, mais leur état doit
 > être lu avec le recalage Hub/EP‑133.

@@ -139,7 +139,7 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 - [x] Remplacer les deux `<img>` signalés par un aperçu local sûr et supprimer le bloc legacy inatteignable.
 - [x] Corriger la commande de validation globale et retirer le workspace MIDI vide/non consommé.
 - [x] Clarifier la licence héritée MIT/AGPL : OP‑1 Studio est aligné sur le fichier `LICENSE` MIT ; les références AGPL restent externes.
-- [ ] Ajouter un bandeau « document historique » aux anciennes roadmaps et renvoyer vers ce document.
+- [x] Ajouter un bandeau « document historique » aux anciennes roadmaps et renvoyer vers ce document.
 - [x] Générer la passe de nettoyage code mort ; aucun avertissement lint ne subsiste.
 
 ## 4. Ordre d’exécution recommandé
