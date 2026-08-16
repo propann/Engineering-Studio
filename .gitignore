@@ -8,6 +8,7 @@ firmware-downloads/
 
 # User audio, device snapshots and generated exports
 backups/
+hardware-reports/
 exports/
 library/
 *.aif

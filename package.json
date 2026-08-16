@@ -23,6 +23,7 @@
     "dev:ep133": "npm run dev -w apps/ep133-studio",
     "dev:both": "npm run dev -ws",
     "test:e2e:hub": "playwright test -c playwright.config.ts",
+    "hardware:validate": "python3 tools/hardware_validation.py",
     "clean": "find . -name node_modules -type d -exec rm -rf {} + 2>/dev/null || true"
   },
   "dependencies": {

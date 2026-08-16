@@ -17,6 +17,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 | `npm run lint:all` | ✅ Aucun avertissement lint OP‑1 |
 | `npm run test:e2e:hub` | ✅ 6 scénarios, 7 ouvertures d’outils |
 | `git diff --check` | ✅ Aucun espace ou conflit de patch détecté |
+| `npm run hardware:validate -- --python /tmp/ep133-scan-venv/bin/python --project 9` | ✅ Rapport centralisé lecture seule : P09, 532 sons, bridge local OK |
 
 ## Parcours E2E couverts
 
@@ -43,5 +44,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - Le bridge EP‑133 `127.0.0.1:8765` n’est pas démarré pendant cette validation ; les erreurs proxy attendues ne bloquent pas les écrans hors machine.
 - Aucune suppression ni restauration n’a été effectuée ; seule l’écriture de
   test explicitement confirmée sur P09 a été réalisée.
+- La suite centralisée `tools/hardware_validation.py` refuse une écriture sans
+  `--confirm-write` et produit les rapports locaux ignorés par Git.
 - La remontée de statistiques et l’annulation d’un transfert ciblé restent
   dans la roadmap active.

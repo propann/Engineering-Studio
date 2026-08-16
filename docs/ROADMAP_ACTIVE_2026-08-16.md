@@ -82,6 +82,7 @@ Objectif : séparer définitivement « plan préparé » et « écriture réussi
 - [ ] OP‑1 MIDI/USB : rattacher les contrôles appris aux fonctions réelles du Studio.
 - [x] EP‑133 : campagne lecture seule sur projets P01–P09, pads, samples et groupes ; la capacité 64/128 Mo reste à confirmer séparément.
 - [x] EP‑133 : valider une écriture ciblée sur P09 avec checkpoint, relecture binaire et état de retour explicite.
+- [x] Centraliser les contrôles matériels dans `npm run hardware:validate`, lecture seule par défaut avec rapport local.
 - [ ] Documenter câble retiré, permission refusée, volume différent et fichier corrompu.
 
 ### P2 — Raccord de données Hub ↔ studios
