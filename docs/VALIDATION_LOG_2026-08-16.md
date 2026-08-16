@@ -37,6 +37,7 @@ Validation initiale : aucune machine OP‑1 ou EP‑133 connectée
 - Rhythm Hero EP‑133 : démarrage d’une vraie séance locale, compte à rebours, frappe sur pad, score, journal d’entraînement et progression remontée au Hub ;
 - coffre local : sauvegarde `tape` sélective, compteur Hub, restauration, progression par fichiers/octets et téléchargement des rapports JSON ;
 - coffre local : chaque copie est relue depuis la destination et comparée par taille/SHA‑256 avant validation ;
+- coffre local : une fixture d’écriture corrompue est refusée et son snapshot incomplet est supprimé avant la nouvelle tentative ;
 - sample OP‑1 : import WAV, analyse puis préparation AIFF locale ;
 - image OP‑1 : export SVG local, et services firmware/patchs sans machine ;
 - sons EP‑133 : transfert démo préparé puis retiré avant confirmation, avec zéro appel d’écriture au bridge ; documentation OP‑1 ouverte hors machine.

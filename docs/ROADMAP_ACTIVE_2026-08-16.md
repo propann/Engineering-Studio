@@ -70,7 +70,7 @@ Objectif : rendre le coffre exploitable avec un vrai dossier local, sans confusi
 - [x] Prévoir snapshots, restauration contrôlée et suivi par machine.
 - [x] Vérifier hors machine une sauvegarde sélective `tape` puis sa restauration avec empreinte SHA‑256.
 - [ ] Tester un cycle réel avec gros volume : sauvegarde complète, sauvegarde sélective samples/bandes, restauration et comparaison.
-- [x] Afficher clairement source, destination, nombre de fichiers, taille et erreurs partielles ; relire la destination et vérifier son SHA‑256 après chaque copie.
+- [x] Afficher clairement source, destination, nombre de fichiers, taille et erreurs partielles ; relire la destination et vérifier son SHA‑256 après chaque copie, avec nettoyage du snapshot incomplet.
 - [x] Ajouter un rapport JSON exportable du cycle ; la reprise après interruption reste à concevoir.
 - [ ] Relier les actions du coffre aux bridges machine uniquement après checkpoint, diff, relecture et confirmation.
 

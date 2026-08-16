@@ -4,6 +4,7 @@ export type MachineId = "op1" | "ep133";
 type BackupCategory = "tape" | "album" | "drum" | "synth" | "projects" | "samples";
 type DirectoryHandle = FileSystemDirectoryHandle & {
   entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+  removeEntry?: (name: string, options?: { recursive?: boolean }) => Promise<void>;
   queryPermission?: (descriptor?: DirectoryPermission) => Promise<PermissionState>;
   requestPermission?: (descriptor?: DirectoryPermission) => Promise<PermissionState>;
 };
@@ -259,7 +260,7 @@ export function VaultPanel({
     } catch (err) { if ((err as DOMException).name !== "AbortError") setError(`Dossier ${machine.toUpperCase()} invalide ou inaccessible.`); }
   }
 
-  async function createBackup() {
+async function createBackup() {
     clearMessage();
     if (!workspaceHandle) { setError("Connecte d’abord l’espace de travail maître."); return; }
     if (!source) { setError(`Choisis le disque ou le dossier source de ${machine.toUpperCase()}.`); return; }
@@ -267,11 +268,13 @@ export function VaultPanel({
     setBusy(true);
     let completed = 0;
     let total = 0;
+    let snapshotId = "";
+    let backups: DirectoryHandle | null = null;
     try {
       const workspace = workspaceHandle as DirectoryHandle;
       await permission(workspace, "readwrite");
-      const backups = await childDirectory(workspace, `${machine}/backups`, true);
-      const snapshotId = `${machine}_${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}_${Math.random().toString(16).slice(2, 8)}`;
+      backups = await childDirectory(workspace, `${machine}/backups`, true);
+      snapshotId = `${machine}_${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}_${Math.random().toString(16).slice(2, 8)}`;
       const snapshot = await backups.getDirectoryHandle(snapshotId, { create: true }) as DirectoryHandle;
       const filesRoot = await snapshot.getDirectoryHandle("files", { create: true }) as DirectoryHandle;
       const manifestFiles: BackupFile[] = [];
@@ -319,6 +322,9 @@ export function VaultPanel({
       setStatus(`Sauvegarde créée : ${manifestFiles.length} fichiers (${formatBytes(manifest.totalBytes ?? 0)}).`);
     } catch (err) {
       const reason = err instanceof Error ? err.message : "La sauvegarde a échoué.";
+      if (backups && snapshotId && backups.removeEntry) {
+        try { await backups.removeEntry(snapshotId, { recursive: true }); } catch { /* nettoyage best effort */ }
+      }
       setError(`${reason}${total ? ` (${completed}/${total} fichiers finalisés ; le snapshot incomplet reste masqué).` : ""}`);
     }
     finally { setBusy(false); setProgress(null); }

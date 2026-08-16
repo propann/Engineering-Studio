@@ -51,7 +51,13 @@ async function installFakeFileSystem() {
     async createWritable() {
       return {
         write: async (value: ArrayBuffer | string) => {
-          this.bytes = typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value);
+          const next = typeof value === 'string' ? new TextEncoder().encode(value) : new Uint8Array(value);
+          const state = (window as Window & { __vaultE2E?: { corruptNextWrite?: boolean } }).__vaultE2E;
+          if (state?.corruptNextWrite && next.length) {
+            next[0] ^= 0xff;
+            state.corruptNextWrite = false;
+          }
+          this.bytes = next;
         },
         close: async () => undefined,
       };
@@ -81,6 +87,9 @@ async function installFakeFileSystem() {
       this.children.set(name, file);
       return file;
     }
+    async removeEntry(name: string) {
+      this.children.delete(name);
+    }
     async queryPermission() { return 'granted'; }
     async requestPermission() { return 'granted'; }
   }
@@ -103,7 +112,7 @@ async function installFakeFileSystem() {
     if (!picked) throw new Error('No fake directory left');
     return picked;
   };
-  (window as Window & { __vaultE2E?: { target: FakeDirectoryHandle } }).__vaultE2E = { target };
+  (window as Window & { __vaultE2E?: { target: FakeDirectoryHandle; corruptNextWrite?: boolean } }).__vaultE2E = { target, corruptNextWrite: false };
 }
 
 test('la fiche persistante ouvre le Hub des outils et du transport MIDI', async ({ page }) => {
@@ -398,6 +407,9 @@ test('le coffre local sauvegarde et restaure une sélection sans machine', async
   await backupCategories.nth(1).uncheck();
   await backupCategories.nth(2).uncheck();
   await backupCategories.nth(3).uncheck();
+  await page.evaluate(() => { const state = (window as Window & { __vaultE2E?: { corruptNextWrite?: boolean } }).__vaultE2E; if (state) state.corruptNextWrite = true; });
+  await backupCard.getByRole('button', { name: 'Sauvegarder la sélection' }).click();
+  await expect(page.getByText(/Vérification impossible après copie/)).toBeVisible({ timeout: 10_000 });
   await backupCard.getByRole('button', { name: 'Sauvegarder la sélection' }).click();
   await expect(page.getByText(/Sauvegarde créée : 1 fichiers/)).toBeVisible({ timeout: 10_000 });
   await expect(page.locator('.studio-card.blue .card-stats')).toContainText('1 sauvegardes');
