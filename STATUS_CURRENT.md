@@ -43,8 +43,13 @@ historiques.
   PANIC aux deux sorties. Le relais contrôleur est couvert par E2E avec entrée
   simulée, mais l’OP‑1 était en mode classique pendant la passe matérielle.
   Restent à confirmer : test physique `COM → T2 / CTRL`, raccord des séquences internes,
-  gros volume de sauvegarde, permissions FSA,
+  sauvegarde sélective et restauration, permissions FSA,
   débranchement/éjection et écriture complète contrôlée.
+
+- Nouvelle passe matérielle du 17 août : l’EP‑133 a été lu en lecture seule
+  (projet 09 et 532 sons) et l’OP‑1 a été inventorié puis copié localement avec
+  66/66 empreintes SHA‑256 valides. Le détail est dans
+  `docs/HARDWARE_VALIDATION_2026-08-17.md`.
 
 ## Prochaines portes
 
