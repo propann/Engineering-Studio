@@ -9,9 +9,10 @@
 ### Current Product Source of Truth
 1. **[README.md](./README.md)** - présentation du produit, installation et commandes
 2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - parcours utilisateur et rôle de chaque atelier
-3. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
-4. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
-5. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
+3. **[ETUDES_INDEX.md](./docs/ETUDES_INDEX.md)** - catalogue central des études et rapports
+4. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
+5. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
+6. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
 
 > `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md` et `PHASE3_COMPLETION.md` sont
 > des rapports historiques de consolidation. Ils restent utiles pour le
@@ -20,8 +21,9 @@
 ### For First-Time Readers
 1. **[README.md](./README.md)** - vue d’ensemble et démarrage rapide
 2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - comprendre le produit en cinq minutes
-3. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit actuel
-4. **[STATUS.md](./STATUS.md)** - contexte historique d’architecture et de consolidation
+3. **[ETUDES_INDEX.md](./docs/ETUDES_INDEX.md)** - retrouver toute la matière produite
+4. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit actuel
+5. **[STATUS.md](./STATUS.md)** - contexte historique d’architecture et de consolidation
 
 ### For Project Status
 1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - active status and next gates
