@@ -36,6 +36,7 @@ test-results/
 Thumbs.db
 .idea/
 .vscode/
+.claude/
 *.swp
 
 # Local configuration and logs
@@ -45,5 +46,6 @@ Thumbs.db
 *.log
 __pycache__/
 *.py[cod]
+apps/*/package-lock.json
 tools/vendor/**/__pycache__/
 tools/runtime/

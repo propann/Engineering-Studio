@@ -4,8 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
-import { hasNativeStorage, initialiseNativeLibrary, prepareNativeLocalPlan, readDisplayLibrary, readNativeProfile, writeNativeProfile } from "./lib/nativeStorage";
-import { DEFAULT_PROFILE, parseProfile, serializeProfile, type LocalProfile } from "./lib/profile";
+import { prepareNativeLocalPlan, readDisplayLibrary } from "./lib/nativeStorage";
 import { encodeAiffPcm16 } from "./lib/audioConvert";
 import { HomeHub } from "./components/HomeHub";
 import { DocumentationPanel } from "./components/DocumentationPanel";
@@ -954,12 +953,7 @@ export default function Home() {
   // les catégories dépliées en même temps.
   const [openModCategory, setOpenModCategory] = useState<string | null>(null);
   const [soundPackReady, setSoundPackReady] = useState(false);
-  const [backupRoot, setBackupRoot] = useState("backups/");
-  const [profile, setProfile] = useState<LocalProfile>(() => {
-    if (typeof window === "undefined") return DEFAULT_PROFILE;
-    const stored = window.localStorage.getItem("op1-studio-profile");
-    return stored ? parseProfile(stored) : DEFAULT_PROFILE;
-  });
+  const [backupRoot] = useState("backups/");
   const folderInputRef = useRef<HTMLInputElement>(null);
   const midiOutputRef = useRef<MidiOutputLike | null>(null);
 
@@ -983,29 +977,6 @@ export default function Home() {
     const raf = requestAnimationFrame(() => setFirmwareRiskAck(false));
     return () => cancelAnimationFrame(raf);
   }, [selectedMods]);
-
-  function updateProfile(next: LocalProfile) {
-    setProfile(next);
-    const serialized = serializeProfile({ ...next, localSpace: { ...next.localSpace, root: backupRoot } });
-    window.localStorage.setItem("op1-studio-profile", serialized);
-    if (hasNativeStorage()) {
-      void writeNativeProfile(backupRoot, serialized)?.catch(() => {
-        setNotice("Profil local modifié dans l’interface, mais le coffre Tauri n’est pas accessible.");
-      });
-    }
-  }
-
-  useEffect(() => {
-    if (!hasNativeStorage()) return;
-    let active = true;
-    void Promise.resolve(initialiseNativeLibrary(backupRoot))
-      .then(() => readNativeProfile(backupRoot))
-      .then((serialized) => {
-        if (active && serialized) setProfile(parseProfile(serialized));
-      })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, [backupRoot]);
 
   useEffect(() => {
     if (!toolWindow && !selectedMod && !expertOpen) return;
@@ -1375,7 +1346,7 @@ export default function Home() {
                 <div className="image-studio-note"><Icon name="shield" size={14} /><span>Les originaux restent conservés. Les dimensions et profils machine sont contrôlés avant tout export.</span></div>
               </div>
             )}
-            {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} profile={profile} onBackupRootChange={setBackupRoot} onProfileChange={updateProfile} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
+            {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
 
             {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onSamplePrepared={() => hubCommunication.updateStats({ samplesPrepared: incrementHubCounter(OP1_SAMPLES_PREPARED_KEY) })} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
 
