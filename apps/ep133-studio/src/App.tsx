@@ -292,12 +292,15 @@ export default function App() {
         try {
           const directory = await root.getDirectoryHandle('ep133', { create: true });
           const samples = await directory.getDirectoryHandle('samples', { create: true });
+          const shared = await root.getDirectoryHandle('shared', { create: true });
+          const sounds = await shared.getDirectoryHandle('sounds', { create: true });
+          for (const folder of ['originals', 'prepared', 'packs', 'quarantine']) await sounds.getDirectoryHandle(folder, { create: true });
           sampleDirectoryHandleRef.current = directory;
-          setLocalLibraryHandle(samples);
-          setLocalLibraryFolderName(`${root.name}/ep133/samples`);
+          setLocalLibraryHandle(sounds);
+          setLocalLibraryFolderName(`${root.name}/shared/sounds`);
           setLocalLibraryNeedsReconnect(false);
           await saveDirectoryHandle(SAMPLE_FOLDER_KEY, directory);
-          await saveDirectoryHandle(LOCAL_LIBRARY_FOLDER_KEY, samples);
+          await saveDirectoryHandle(LOCAL_LIBRARY_FOLDER_KEY, sounds);
           if (await hasStoredPermission(directory, 'read')) {
             try { setMachineSampleCount(await machineSampleBank.load(await collectLocalFiles(directory))); } catch { /* permission à redemander depuis le Hub */ }
           }

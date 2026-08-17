@@ -238,7 +238,7 @@ export function VaultPanel({
     try {
       const handle = await picker();
       const root = handle as DirectoryHandle;
-      for (const path of ["shared", "op1/backups", "op1/samples", "op1/firmware", "ep133/backups", "ep133/projects", "ep133/samples"]) await childDirectory(root, path, true);
+      for (const path of ["shared", "shared/sounds", "shared/sounds/originals", "shared/sounds/prepared", "shared/sounds/packs", "shared/sounds/quarantine", "op1/backups", "op1/samples", "op1/firmware", "ep133/backups", "ep133/projects", "ep133/samples"]) await childDirectory(root, path, true);
       onWorkspaceSelected(handle, handle.name);
       setStatus(`Espace ${handle.name} connecté.`);
     } catch (err) { if ((err as DOMException).name !== "AbortError") setError(err instanceof Error ? err.message : "Impossible de connecter l’espace."); }

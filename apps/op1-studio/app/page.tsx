@@ -897,7 +897,7 @@ const firmwareMods: FirmwareMod[] = [
 ];
 
 type DirectoryPickerWindow = Window & {
-  showDirectoryPicker?: () => Promise<{ name: string }>;
+  showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
 };
 
 type MidiInputLike = { name: string | null; onmidimessage: MIDIInput["onmidimessage"] };
@@ -954,8 +954,30 @@ export default function Home() {
   const [openModCategory, setOpenModCategory] = useState<string | null>(null);
   const [soundPackReady, setSoundPackReady] = useState(false);
   const [backupRoot] = useState("backups/");
+  const [sharedSoundLibraryHandle, setSharedSoundLibraryHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const midiOutputRef = useRef<MidiOutputLike | null>(null);
+
+  useEffect(() => {
+    const onHubWorkspace = (event: Event) => {
+      const root = (event as CustomEvent<FileSystemDirectoryHandle | null>).detail;
+      if (!root) return;
+      void (async () => {
+        try {
+          const shared = await root.getDirectoryHandle("shared", { create: true });
+          const sounds = await shared.getDirectoryHandle("sounds", { create: true });
+          for (const folder of ["originals", "prepared", "packs", "quarantine"]) await sounds.getDirectoryHandle(folder, { create: true });
+          setSharedSoundLibraryHandle(sounds);
+          setLibraryFolder(`${root.name}/shared/sounds`);
+          setNotice("Bibliothèque centrale OP‑1 connectée au workspace Hub.");
+        } catch {
+          setNotice("Le workspace Hub est reçu, mais la bibliothèque de sons doit être reconnectée.");
+        }
+      })();
+    };
+    window.addEventListener("hub:workspaceLoaded", onHubWorkspace);
+    return () => window.removeEventListener("hub:workspaceLoaded", onHubWorkspace);
+  }, []);
 
   // Jauge de danger (feuille de route Firmware, 14 août 2026) : la somme du
   // poids de chaque mod sélectionné, pas seulement son nombre — un mod non
@@ -995,6 +1017,7 @@ export default function Home() {
     if (picker) {
       try {
         const folder = await picker();
+        setSharedSoundLibraryHandle(folder);
         setLibraryFolder(folder.name);
         setNotice(`Dossier local sélectionné : ${folder.name}. Les fichiers restent sur cet appareil.`);
       } catch {
@@ -1348,7 +1371,7 @@ export default function Home() {
             )}
             {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
 
-            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} onSamplePrepared={() => hubCommunication.updateStats({ samplesPrepared: incrementHubCounter(OP1_SAMPLES_PREPARED_KEY) })} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
+            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} libraryHandle={sharedSoundLibraryHandle} onSamplePrepared={() => hubCommunication.updateStats({ samplesPrepared: incrementHubCounter(OP1_SAMPLES_PREPARED_KEY) })} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
 
             {toolWindow === "tape" && <>
               <nav className="studio-main-tabs" aria-label="Section principale du Studio"><button type="button" className="is-active"><Icon name="tape" size={14} />Tape &amp; Album</button></nav>

@@ -13,7 +13,7 @@ export default defineConfig({
         // workaround scoped to the dev client; production builds are
         // unaffected and can remove it when Vite replaces the macro itself.
         if (id.includes("/vite/dist/client/client.mjs")) {
-          return code.replaceAll("__BUNDLED_DEV__", "false");
+          return code.replace(/__BUNDLED_DEV__/g, "false");
         }
         return undefined;
       },

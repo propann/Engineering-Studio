@@ -117,7 +117,7 @@ async function installFakeFileSystem() {
 
 test('la fiche persistante ouvre le Hub des outils et du transport MIDI', async ({ page }) => {
   await createProfile(page);
-  await expect(page.locator('.tools-grid .tool-card')).toHaveCount(8);
+  await expect(page.locator('.tools-grid .tool-card')).toHaveCount(9);
 
   for (const title of [
     'OP‑1 Studio',
@@ -128,6 +128,7 @@ test('la fiche persistante ouvre le Hub des outils et du transport MIDI', async 
     'Sons & transferts EP‑133',
     'Jeux & entraînement',
     'Synchronisation MIDI',
+    'Bibliothèque de sons',
   ]) {
     await expect(page.locator('.tools-grid .tool-card').filter({ hasText: title })).toBeVisible();
   }
@@ -497,6 +498,22 @@ test('le coffre local sauvegarde et restaure une sélection sans machine', async
     const target = (window as Window & { __vaultE2E?: { target: { children: Map<string, unknown> } } }).__vaultE2E?.target;
     return Boolean(target?.children.has('tape'));
   })).toBe(true);
+});
+
+test('la bibliothèque centrale importe, catalogue et déduplique un son', async ({ page }) => {
+  await page.addInitScript(installFakeFileSystem);
+  await createProfile(page);
+  await page.locator('.vault-workspace').getByRole('button', { name: 'Connecter' }).click();
+  await expect(page.getByText('Espace Atelier de test connecté.')).toBeVisible();
+  const library = page.locator('#sound-library');
+  await expect(library).toContainText('Stockage : shared/sounds/');
+  const audio = makePcmWav();
+  await library.locator('input[type="file"]').setInputFiles({ name: 'kick-central.wav', mimeType: 'audio/wav', buffer: audio });
+  await expect(library).toContainText('1 son importé');
+  await expect(library.locator('.sound-library-asset')).toHaveCount(1);
+  await library.locator('input[type="file"]').setInputFiles({ name: 'kick-central.wav', mimeType: 'audio/wav', buffer: audio });
+  await expect(library).toContainText(/1 doublon ignoré/);
+  await expect(library.locator('.sound-library-asset')).toHaveCount(1);
 });
 
 test('l’éditeur de samples OP-1 analyse et prépare un AIFF hors ligne', async ({ page }) => {

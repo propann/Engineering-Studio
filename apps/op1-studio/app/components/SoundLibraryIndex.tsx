@@ -22,6 +22,7 @@ type SoundAsset = {
   id: string; name: string; kind: SoundKind; origin: SoundOrigin; duration: number | null;
   trimStart?: number; trimEnd?: number; status: "OK" | "A VERIFIER" | "TROP LONG"; favorite: boolean;
   peaks?: number[]; url?: string;
+  shared?: boolean;
   /** Patch OP-1 lu depuis le chunk APPL/op-1 (AIFF seulement) — voir app/lib/aiffPatchOracle.ts. */
   patch?: Op1PatchData | null;
   markers?: DrumMarker[] | null;
@@ -100,7 +101,19 @@ type SortKey = "name" | "duration" | "status";
 const SORT_LABEL: Record<SortKey, string> = { name: "Nom", duration: "Durée", status: "Statut" };
 const STATUS_PRIORITY: Record<SoundAsset["status"], number> = { "TROP LONG": 0, "A VERIFIER": 1, OK: 2 };
 
-export function SoundLibraryIndex() {
+type LibraryDirectory = FileSystemDirectoryHandle & { entries(): AsyncIterableIterator<[string, FileSystemHandle]> };
+
+async function collectSharedAudio(directory: LibraryDirectory, prefix = ""): Promise<{ name: string; path: string; file: File }[]> {
+  const result: { name: string; path: string; file: File }[] = [];
+  for await (const [name, entry] of directory.entries()) {
+    const path = prefix ? `${prefix}/${name}` : name;
+    if (entry.kind === "file" && /\.(aif|aiff|wav|mp3|flac|ogg|m4a|aac|opus)$/i.test(name)) result.push({ name, path, file: await (entry as FileSystemFileHandle).getFile() });
+    if (entry.kind === "directory") result.push(...await collectSharedAudio(entry as LibraryDirectory, path));
+  }
+  return result;
+}
+
+export function SoundLibraryIndex({ libraryHandle }: { libraryHandle?: FileSystemDirectoryHandle | null }) {
   const [assets, setAssets] = useState(initialAssets);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | SoundKind>("all");
@@ -108,6 +121,32 @@ export function SoundLibraryIndex() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const objectUrlsRef = useRef<Set<string>>(new Set());
+  const [sharedStatus, setSharedStatus] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current.clear();
+    if (!libraryHandle) {
+      return () => { cancelled = true; };
+    }
+    void (async () => {
+      try {
+        const files = await collectSharedAudio(libraryHandle as LibraryDirectory);
+        const sharedAssets: SoundAsset[] = [];
+        for (const item of files) {
+          const url = URL.createObjectURL(item.file);
+          objectUrlsRef.current.add(url);
+          const inspected = await inspectFile(item.file).catch(() => ({ duration: 0, peaks: [], patch: null, markers: null }));
+          sharedAssets.push({ id: `hub-${item.path}`, name: item.name, kind: "synth", origin: "ORDINATEUR", duration: inspected.duration || null, status: statusFor("synth", inspected.duration || null), favorite: false, peaks: inspected.peaks, patch: inspected.patch, markers: inspected.markers, url, shared: true });
+        }
+        if (!cancelled) { setAssets([...sharedAssets, ...initialAssets]); setSharedStatus(`${sharedAssets.length} fichier${sharedAssets.length > 1 ? "s" : ""} du workspace Hub`); }
+      } catch {
+        if (!cancelled) { setAssets(initialAssets); setSharedStatus("Workspace Hub reçu, lecture à autoriser"); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [libraryHandle]);
 
   const visible = useMemo(() => {
     const filtered = assets.filter((asset) =>
@@ -201,7 +240,7 @@ export function SoundLibraryIndex() {
   }
 
   return <section className="sound-library-index" aria-labelledby="sound-library-index-title">
-    <div className="mod-section-heading"><div><span className="section-label">INDEX LOCAL</span><strong id="sound-library-index-title">Bibliothèque et préflight</strong></div><small>{machine.length + ordinateur.length}/{assets.length} fichiers</small></div>
+    <div className="mod-section-heading"><div><span className="section-label">INDEX LOCAL</span><strong id="sound-library-index-title">Bibliothèque et préflight</strong>{sharedStatus && <small className="hub-library-status"> · {sharedStatus}</small>}</div><small>{machine.length + ordinateur.length}/{assets.length} fichiers</small></div>
     <div className="sound-library-toolbar">
       <input aria-label="Rechercher un sample" placeholder="Rechercher un sample" value={query} onChange={(event) => setQuery(event.target.value)} />
       <label className="sound-style-select"><span className="visually-hidden">Filtrer par catégorie</span>

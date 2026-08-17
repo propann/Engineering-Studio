@@ -45,10 +45,16 @@ Les cartes actuellement prévues dans le code sont :
 | EP‑133 Studio | patterns, Song, sons, clone, MIDI | pads / boîte à rythmes | orange |
 | Éditeur d’image | création d’écrans OP‑1 | image / grille de pixels | violet |
 | Jeux & entraînement | Rhythm Hero et exercices EP‑133 | manette / cible rythmique | vert |
+| Bibliothèque de sons | catalogue commun OP‑1/EP‑133, tags, favoris et préécoute | onde / note musicale | turquoise |
 
 Ces cartes sont des portes d’accès, pas des boutons d’action technique. Elles
 doivent avoir une seule action claire : « Ouvrir OP‑1 », « Ouvrir EP‑133 »,
 « Ouvrir l’éditeur », « Ouvrir les jeux ».
+
+La carte **Bibliothèque de sons** fait exception : elle descend vers la
+ressource centrale du Hub. Son action principale est « Gérer les sons ». Elle
+doit rendre visibles l’espace `shared/sounds`, le nombre de sons catalogués,
+les filtres OP‑1/EP‑133 et les raccourcis vers les deux studios.
 
 ### Coffre de l’atelier
 

@@ -9,7 +9,7 @@ studios restent responsables de leurs fonctions propres.
 
 | Espace | Rôle |
 | --- | --- |
-| **Studio Hub** | Porte d’entrée, fiche persistante, inventaire des machines, espace partagé et coffre sélectif. |
+| **Studio Hub** | Porte d’entrée, fiche persistante, inventaire des machines, bibliothèque de sons centrale, espace partagé et coffre sélectif. |
 | **OP‑1 Studio** | Tape & Album, sons, samples, images, services, patchs, firmware et exercices. |
 | **EP‑133 Studio** | Sons, Pattern, Song, transferts, clone, documentation et entraînement Rhythm Hero. |
 | **Synchronisation** | Transport MIDI commun, notes virtuelles, PANIC et relais contrôleur OP‑1 explicite. |
@@ -18,6 +18,7 @@ Le parcours prévu est :
 
 ```text
 Landing → fiche Hub → page Outils → studio choisi → retour Hub
+                         ├── bibliothèque : importer / taguer / préécouter / préparer
                          ├── coffre : sauvegarder / restaurer / sélectionner
                          └── MIDI : jouer OP‑1 et EP‑133 ensemble
 ```

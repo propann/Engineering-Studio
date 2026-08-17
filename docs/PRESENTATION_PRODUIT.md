@@ -16,6 +16,8 @@ profil dans chaque application.
 - déclaration EP‑133 64 ou 128 Mo ;
 - sélection du dossier de travail ;
 - page Outils avec les cartes d’accès ;
+- bibliothèque centrale de sons dans `shared/sounds`, commune à l’OP‑1 et à
+  l’EP‑133, avec import, tags, favoris, préécoute et détection de doublons ;
 - coffre pour sauvegarder, restaurer et sélectionner bandes, sons, projets ou
   autres catégories ;
 - progression, source, destination et résultat visibles pendant les copies.
@@ -52,14 +54,18 @@ filtre l’origine, la fenêtre source et les sorties MIDI pour éviter les éch
 3. Déclarer un OP‑1 et un EP‑133, avec la capacité 64/128 Mo si nécessaire.
 4. Choisir un dossier de travail.
 5. Ouvrir l’éditeur d’image, l’éditeur de samples ou un studio.
-6. Revenir au Hub sans nouvelle fiche.
-7. Ouvrir le coffre et lancer une sauvegarde sélective avec progression.
-8. Ouvrir la synchronisation MIDI pour jouer les deux machines ensemble.
+6. Importer un WAV dans la bibliothèque centrale, lui attribuer ses cibles,
+   puis l’ouvrir dans OP‑1 Studio ou Sons EP‑133.
+7. Revenir au Hub sans nouvelle fiche.
+8. Ouvrir le coffre et lancer une sauvegarde sélective avec progression.
+9. Ouvrir la synchronisation MIDI pour jouer les deux machines ensemble.
 
 ## Ce qui rend le produit crédible
 
 - l’identité reste centralisée dans le Hub ;
 - les studios ne recréent pas de compte local ;
+- la bibliothèque de sons est une ressource unique, mais les studios gardent
+  leurs zones machine séparées (`ep133/samples`, `op1/...`) ;
 - les sauvegardes affichent le périmètre choisi et sont relues après copie ;
 - les écritures machine sont séparées des plans locaux et demandent un
   checkpoint ;

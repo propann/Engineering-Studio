@@ -12,7 +12,8 @@
 | Fiche personnage | Livrée dans le Hub | OP‑1 et EP‑133 ne sont plus les sources d’identité ; migration `legacy-profile.json` conservée |
 | Coffre local | Livré côté Hub | `apps/studio-hub/src/VaultPanel.tsx`, snapshots sélectifs, manifeste et SHA‑256 |
 | Raccord Hub → studios | Livré | `useHubInitialization`, transmission du profil et du workspace |
-| Raccord studios → Hub | Code livré, E2E ouvert | événements sécurisés `backup_created` / `session_update`, mais pas encore de test navigateur Hub complet |
+| Raccord studios → Hub | Livré et couvert | événements sécurisés `backup_created` / `session_update`, E2E Hub validé |
+| Bibliothèque de sons centrale | Livrée v1 | `SoundLibraryPanel`, manifeste `shared/sounds`, import/hash/doublons/tags/favoris, raccord OP‑1 + EP‑133 |
 | Sécurité postMessage | Livrée | origine exacte et fenêtre source vérifiées dans les trois applications |
 | Éditeur de samples OP‑1 | Livré localement | import WAV/AIFF, waveform, trim, fondus, export AIFF ; transfert machine à valider |
 | Éditeur d’images OP‑1 | Livré localement | `DisplayCreatorPanel`, `Op1PixelEditor`, sanitation SVG ; bridge matériel hors périmètre actuel |
@@ -23,7 +24,7 @@
 | PWA/offline | Build livré, validation ouverte | le build EP‑133 génère le service worker ; installation/offline navigateur non validés |
 | Packages adaptatifs | Livrés et testés isolément | adapters/games/packages passent leurs tests ; consommation directe par les apps encore limitée |
 | Qualité monorepo | Verte avec réserves | builds, typechecks, tests et lint passent ; warning bundle EP‑133 et absence de tests `midi-analysis` |
-| Dépôt Git unique | Non terminé | `apps/op1-studio` et `apps/ep133-studio` sont encore des gitlinks sans `.gitmodules` |
+| Dépôt Git unique | Livré dans ce checkout | `git ls-files -s` confirme des fichiers normaux `100644`, pas de gitlinks `160000` |
 
 ## Jalons actifs
 
@@ -42,7 +43,9 @@ Tester le parcours complet : Hub vierge, création/migration de fiche, deux mach
 dont un EP‑133 128 Mo, workspace, ouverture OP‑1/EP‑133, réception du profil et du
 workspace, événement studio → Hub, fermeture/réouverture et récupération de la fiche.
 
-**Acceptation :** test Playwright dédié Hub + studios, avec contrôle des origines et absence de double fiche locale.
+**Acceptation :** test Playwright dédié Hub + studios, avec contrôle des origines,
+absence de double fiche locale et import/déduplication de la bibliothèque ;
+16 scénarios passent au 17 août 2026.
 
 ### P0 — Validation machine contrôlée
 

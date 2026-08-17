@@ -293,6 +293,12 @@ durée/statut (un statut à corriger d'abord) et bouton « ★ Favoris » pour n
 garder que les favoris, appliqués aux deux colonnes. Seul le transfert
 machine reste à terminer (voir M5.3).
 
+**Raccord Hub livré (17 août 2026).** Le Hub possède désormais une
+bibliothèque persistante `shared/sounds` avec manifeste, empreinte SHA‑256,
+détection des doublons, tags, favoris, préécoute et cibles OP‑1/EP‑133. Les
+deux studios reçoivent cette zone via le workspace Hub ; leurs dossiers
+machine restent séparés. Voir [`SOUND_LIBRARY_ARCHITECTURE.md`](SOUND_LIBRARY_ARCHITECTURE.md).
+
 - index local et import WAV/AIFF/FLAC/MP3/M4A/AAC/OGG/Opus ;
 - **conversion automatique vers l'AIFF OP-1, avec contrôle durée, canaux,
   fréquence et profondeur : livrée côté conversion (M3.1 Phase B/C,
