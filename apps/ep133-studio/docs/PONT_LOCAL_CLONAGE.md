@@ -17,7 +17,8 @@ Il expose ces opérations :
   encodée en base64 — utilisée pour importer un projet machine dans la
   bibliothèque locale (`decodeEp133ProjectTar`/`ep133ArchiveProjectToDocument`,
   `importers.ts`, décodeur déjà existant, pas de nouveau parseur) ;
-- `POST /projects/write` (13 août) : corps `{slot, document}` — checkpoint
+- `POST /projects/write` (13 août) : corps `{confirm: true, slot, document}` —
+  confirmation explicite obligatoire côté bridge, puis checkpoint
   automatique du slot cible, `compile_project(document, base_archive=<lu en
   direct>)`, écriture, relecture octet à octet, activation. Même séquence
   que `tools/send_project_to_machine.py write`, réutilisée directement
@@ -25,7 +26,9 @@ Il expose ces opérations :
   — testée à la main avant d'être exposée en HTTP (copie P01→P09 confirmée
   par l'utilisateur sur la machine).
 - `POST /sounds/upload` (13 août, pour SYNCHRONISER — Sons & Transfert) :
-  corps `{slot?, wavBase64, name?}` — décode le WAV, l'écrit dans un
+  corps `{confirm: true, wavBase64, slot?, name?}` ; `confirm: true` est
+  obligatoire côté bridge avant toute écriture de son
+  — décode le WAV, l'écrit dans un
   fichier temporaire (`checkpoints/tmp-uploads/`, supprimé aussitôt —
   `wav_to_pcm16` d'`epsysex` attend un chemin, pas un buffer), slot libre
   auto-détecté si omis, upload PCM 46 875 Hz, relecture octet à octet

@@ -138,7 +138,7 @@ export function ProjectTransfer({ demoProjects, localProjects, onGetProjectDocum
         if (item.direction === 'to-machine') {
           const document = await onGetProjectDocument(item.origin as 'demo' | 'local', item.id);
           if (!document) throw new Error('Document introuvable.');
-          const response = await fetch('/bridge/projects/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: item.targetSlot, document }) });
+          const response = await fetch('/bridge/projects/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true, slot: item.targetSlot, document }) });
           const body = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(body.error || `Échec (${response.status}).`);
           setResults((current) => ({ ...current, [item.stageId]: { status: 'ok', message: `Écrit · checkpoint ${body.checkpoint}` } }));

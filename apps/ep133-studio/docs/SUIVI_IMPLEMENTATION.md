@@ -1720,8 +1720,9 @@ sur la machine (pas un slot de test) — l'utilisateur a confirmé que le
 projet actif était déjà P09 avant le premier essai.
 
 - [x] `tools/local_clone_bridge.py`, nouvelle route `POST /sounds/upload` :
-  `{slot?, wavBase64, name?}` — slot libre auto-détecté si omis (même
-  logique que `write-sound`), upload via un fichier temporaire (`wav_to_pcm16`
+  `{confirm: true, slot?, wavBase64, name?}` — confirmation explicite
+  obligatoire côté bridge ; slot libre auto-détecté si omis (même logique que
+  `write-sound`), upload via un fichier temporaire (`wav_to_pcm16`
   attend un chemin), relecture octet à octet avant de répondre. **Testée en
   réel** : slot 59 auto-détecté (58 déjà occupé), 529 sons confirmés en
   direct sur la machine après l'upload.

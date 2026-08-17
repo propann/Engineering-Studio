@@ -390,7 +390,7 @@ export function SoundsPage({ machineName, machineCapacityMb, inventory, soundInd
         const prepared = preparedAudio[file.fileName];
         const uploadFile = new File([prepared.bytes], `${file.fileName.replace(AUDIO_PATTERN, '')}-${prepared.target}.wav`, { type: 'audio/wav' });
         const wavBase64 = await fileToBase64(uploadFile);
-        const response = await fetch('/bridge/sounds/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ wavBase64, name: file.fileName.replace(AUDIO_PATTERN, '').slice(0, 20) }) });
+        const response = await fetch('/bridge/sounds/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true, wavBase64, name: file.fileName.replace(AUDIO_PATTERN, '').slice(0, 20) }) });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error || `Échec (${response.status}).`);
         pads.push({ group, pad: padNumber, slot: body.slot });
@@ -406,7 +406,7 @@ export function SoundsPage({ machineName, machineCapacityMb, inventory, soundInd
         const prepared = preparedAudio[file.fileName];
         const uploadFile = new File([prepared.bytes], `${file.fileName.replace(AUDIO_PATTERN, '')}-${prepared.target}.wav`, { type: 'audio/wav' });
         const wavBase64 = await fileToBase64(uploadFile);
-        const response = await fetch('/bridge/sounds/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot, wavBase64, name: file.fileName.replace(AUDIO_PATTERN, '').slice(0, 20) }) });
+        const response = await fetch('/bridge/sounds/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true, slot, wavBase64, name: file.fileName.replace(AUDIO_PATTERN, '').slice(0, 20) }) });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error || `Échec (${response.status}).`);
       } catch (error) {
@@ -426,7 +426,7 @@ export function SoundsPage({ machineName, machineCapacityMb, inventory, soundInd
     }
 
     try {
-      const response = await fetch('/bridge/projects/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slot: activeProject, document: { schema: 'ep.project.v1', product: 'ep133', pads } }) });
+      const response = await fetch('/bridge/projects/write', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true, slot: activeProject, document: { schema: 'ep.project.v1', product: 'ep133', pads } }) });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || `Échec (${response.status}).`);
       setImportFeedback({ status: errors.length ? 'error' : 'done', message: `${pads.length} PAD(S) ÉCRIT(S) SUR P${String(activeProject).padStart(2, '0')} · CHECKPOINT ${body.checkpoint}${errors.length ? ` · ÉCHECS : ${errors.join(' · ')}` : ''}` });

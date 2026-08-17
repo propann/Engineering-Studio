@@ -236,6 +236,8 @@ def handler_factory(state: CloneState):
                 try:
                     length = int(self.headers.get("Content-Length", "0"))
                     value = json.loads(self.rfile.read(length) or b"{}")
+                    if value.get("confirm") is not True:
+                        raise ValueError("confirmation explicite requise (confirm=true)")
                     wav_b64 = value.get("wavBase64")
                     if not wav_b64: raise ValueError("wavBase64 manquant")
                     wav_bytes = base64.b64decode(wav_b64, validate=True)
@@ -253,6 +255,8 @@ def handler_factory(state: CloneState):
                 try:
                     length = int(self.headers.get("Content-Length", "0"))
                     value = json.loads(self.rfile.read(length) or b"{}")
+                    if value.get("confirm") is not True:
+                        raise ValueError("confirmation explicite requise (confirm=true)")
                     slot = int(value.get("slot", 0))
                     if not (1 <= slot <= MAX_PROJECT_SLOT): raise ValueError("slot invalide")
                     document = value.get("document")
