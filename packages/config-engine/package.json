@@ -1,0 +1,20 @@
+{
+  "name": "@studio-hub/config-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configuration engine for adaptive application setup",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

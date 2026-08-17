@@ -1,0 +1,23 @@
+{
+  "name": "@studio-hub/game-integration",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cross-package integration tests for Studio Hub game framework",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@studio-hub/game-core": "*",
+    "@studio-hub/game-rhythm": "*",
+    "@studio-hub/game-platformer": "*",
+    "@studio-hub/resource-manager": "*",
+    "@studio-hub/machine-profiler": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

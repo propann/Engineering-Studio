@@ -1,0 +1,251 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubCacheEnvelope, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, createMidiBridge, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, MidiEvent, MIDI_REALTIME, parseMidiNotePacket, readHubCache } from './index';
+import { createOP1Adapter } from '@studio-hub/instrument-op1';
+import { createEP133Adapter } from '@studio-hub/instrument-ep133';
+
+describe('MIDI Bridge', () => {
+  it('builds a standard 24 PPQN clock window', () => {
+    const window = buildMidiClockWindow(120, 48, 1_000);
+
+    expect(window.ppqn).toBe(24);
+    expect(window.intervalMs).toBeCloseTo(20.8333, 3);
+    expect(window.packets).toHaveLength(48);
+    expect(window.packets[0]).toEqual({ type: 'clock', data: [MIDI_REALTIME.clock], timestamp: 1_000 });
+    expect(window.packets[24].timestamp - window.packets[0].timestamp).toBeCloseTo(500, 6);
+  });
+
+  it('builds transport start and stop packets', () => {
+    expect(buildMidiRealtimePacket('start', 12)).toEqual({ type: 'start', data: [0xfa], timestamp: 12 });
+    expect(buildMidiRealtimePacket('stop', 34)).toEqual({ type: 'stop', data: [0xfc], timestamp: 34 });
+  });
+
+  it('builds channel note packets and a standard panic for hardware outputs', () => {
+    expect(buildMidiNotePacket('note-on', 60, 100, 2, 12)).toEqual({ type: 'note-on', data: [0x92, 60, 100], timestamp: 12 });
+    expect(buildMidiNotePacket('note-off', 60, 0, 2, 13)).toEqual({ type: 'note-off', data: [0x82, 60, 0], timestamp: 13 });
+    const panic = buildMidiPanicPackets(14);
+    expect(panic).toHaveLength(32);
+    expect(panic[0]).toEqual({ type: 'control-change', data: [0xb0, 123, 0], timestamp: 14 });
+    expect(panic.at(-1)).toEqual({ type: 'control-change', data: [0xbf, 120, 0], timestamp: 14 });
+  });
+
+  it('decodes controller-mode note messages, including velocity-zero note-off', () => {
+    expect(parseMidiNotePacket([0x91, 62, 108])).toEqual({ action: 'note-on', note: 62, velocity: 108, channel: 1 });
+    expect(parseMidiNotePacket(new Uint8Array([0x81, 62, 40]))).toEqual({ action: 'note-off', note: 62, velocity: 0, channel: 1 });
+    expect(parseMidiNotePacket([0x91, 62, 0])).toEqual({ action: 'note-off', note: 62, velocity: 0, channel: 1 });
+    expect(parseMidiNotePacket([0xb0, 7, 100])).toBeNull();
+  });
+
+  it('validates the Hub transport message contract', () => {
+    const message = createHubTransportMessage('start', 96, 42);
+    expect(isHubTransportMessage(message)).toBe(true);
+    expect(isHubTransportMessage({ ...message, source: 'unknown' })).toBe(false);
+    expect(isHubTransportMessage({ ...message, bpm: 0 })).toBe(false);
+  });
+
+  it('validates virtual note and panic message contracts', () => {
+    const note = createHubNoteMessage('note-on', 60, 100, 2, 42);
+    const panic = createHubPanicMessage(43);
+
+    expect(isHubNoteMessage(note)).toBe(true);
+    expect(isHubNoteMessage({ ...note, note: 128 })).toBe(false);
+    expect(isHubNoteMessage({ ...note, channel: 16 })).toBe(false);
+    expect(isHubPanicMessage(panic)).toBe(true);
+    expect(isHubPanicMessage({ ...panic, source: 'unknown' })).toBe(false);
+  });
+
+  it('rejects invalid virtual MIDI values', () => {
+    expect(() => createHubNoteMessage('note-on', -1, 100)).toThrow('note must be an integer');
+    expect(() => createHubNoteMessage('note-on', 60, 100, 16)).toThrow('channel must be an integer');
+    expect(() => createHubPanicMessage(Number.NaN)).toThrow('timestamp must be finite');
+  });
+
+  it('reads versioned Hub caches and migrates raw legacy JSON', () => {
+    const envelope = createHubCacheEnvelope({ name: 'Atelier' }, '2026-08-16T00:00:00.000Z');
+    expect(readHubCache<{ name: string }>(JSON.stringify(envelope))).toEqual({ name: 'Atelier' });
+    expect(readHubCache<{ name: string }>(JSON.stringify({ name: 'Ancien format' }))).toEqual({ name: 'Ancien format' });
+    expect(readHubCache(JSON.stringify({ ...envelope, source: 'unknown' }))).toBeNull();
+    expect(readHubCache(JSON.stringify({ ...envelope, savedAt: 'not-a-date' }))).toBeNull();
+  });
+
+  it('rejects invalid clock parameters', () => {
+    expect(() => buildMidiClockWindow(0)).toThrow('BPM must be a positive number');
+    expect(() => buildMidiClockWindow(120, 0)).toThrow('ticks must be a positive integer');
+    expect(() => buildMidiClockWindow(120, 1, Number.NaN)).toThrow('startAt must be a finite timestamp');
+  });
+
+  it('should create bridge instance', () => {
+    const bridge = createMidiBridge();
+    expect(bridge).toBeDefined();
+  });
+
+  it('should initialize with default config', () => {
+    const bridge = createMidiBridge();
+    const status = bridge.getStatus();
+
+    expect(status.isRunning).toBe(false);
+    expect(status.clockRate).toBe(120);
+    expect(status.queueSize).toBe(0);
+  });
+
+  it('should connect instruments', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+
+    const status = bridge.getStatus();
+    expect(status.op1Connected).toBe(true);
+    expect(status.ep133Connected).toBe(true);
+  });
+
+  it('should start and stop synchronization', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+
+    bridge.start();
+    expect(bridge.getStatus().isRunning).toBe(true);
+
+    bridge.stop();
+    expect(bridge.getStatus().isRunning).toBe(false);
+  });
+
+  it('should require both instruments for start', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+
+    bridge.connectOP1(op1);
+
+    expect(() => bridge.start()).toThrow('Both instruments must be connected');
+  });
+
+  it('should queue MIDI events', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+    bridge.start();
+
+    const event: MidiEvent = {
+      type: 'note-on',
+      channel: 0,
+      note: 60,
+      velocity: 100,
+      timestamp: Date.now(),
+    };
+
+    bridge.routeEvent(event);
+
+    expect(bridge.getQueueSize()).toBe(1);
+  });
+
+  it('should not queue events when stopped', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+
+    const event: MidiEvent = {
+      type: 'note-on',
+      channel: 0,
+      note: 60,
+      velocity: 100,
+      timestamp: Date.now(),
+    };
+
+    bridge.routeEvent(event);
+
+    expect(bridge.getQueueSize()).toBe(0);
+  });
+
+  it('should handle multiple event types', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+    bridge.start();
+
+    const events: MidiEvent[] = [
+      { type: 'note-on', channel: 0, note: 60, velocity: 100, timestamp: Date.now() },
+      { type: 'control-change', channel: 0, controller: 7, value: 100, timestamp: Date.now() },
+      { type: 'note-off', channel: 0, note: 60, velocity: 0, timestamp: Date.now() },
+    ];
+
+    events.forEach(e => bridge.routeEvent(e));
+
+    expect(bridge.getQueueSize()).toBe(3);
+  });
+
+  it('should send MIDI clock', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+    bridge.start();
+
+    bridge.sendClock(140);
+
+    expect(bridge.getClockRate()).toBe(140);
+    expect(bridge.getQueueSize()).toBe(1);
+  });
+
+  it('should respect latency configuration', () => {
+    const bridge = createMidiBridge({ latencyMs: 50 });
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+    bridge.start();
+
+    const originalTime = Date.now();
+    const event: MidiEvent = {
+      type: 'note-on',
+      channel: 0,
+      note: 60,
+      velocity: 100,
+      timestamp: originalTime,
+    };
+
+    bridge.routeEvent(event);
+
+    expect(bridge.getQueueSize()).toBe(1);
+  });
+
+  it('should clear event queue', () => {
+    const bridge = createMidiBridge();
+    const op1 = createOP1Adapter();
+    const ep133 = createEP133Adapter();
+
+    bridge.connectOP1(op1);
+    bridge.connectEP133(ep133);
+    bridge.start();
+
+    const event: MidiEvent = {
+      type: 'note-on',
+      channel: 0,
+      note: 60,
+      velocity: 100,
+      timestamp: Date.now(),
+    };
+
+    bridge.routeEvent(event);
+    expect(bridge.getQueueSize()).toBe(1);
+
+    bridge.clearQueue();
+    expect(bridge.getQueueSize()).toBe(0);
+  });
+});

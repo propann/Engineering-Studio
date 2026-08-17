@@ -1,0 +1,6 @@
+# Markdown commonly uses two trailing spaces for an intentional line break.
+*.md -whitespace
+
+# The archive is a historical reference snapshot; preserve its original
+# formatting instead of applying active-source whitespace rules to it.
+archive/** -whitespace

@@ -85,9 +85,16 @@ casse silencieusement le jour où quelqu'un branche l'UI dessus sans faire
 attention. Les deux bases doivent rester séparées dans l'implémentation,
 pas juste dans la doc.
 
-### Conflit de licence à trancher avant d'aller plus loin
+### Conflit de licence — résolu dans la branche d’intégration
 
-En vérifiant ce chantier, un vrai désaccord dans le dépôt : le fichier
+Mise à jour du 16 août 2026 : le fichier `LICENSE` et `NOTICE.md` font foi et
+le manifeste `apps/op1-studio/package.json` ainsi que son README sont désormais
+alignés sur **MIT**. Les références AGPL citées dans ce document restent des
+projets externes étudiés ; aucun code AGPL n’est incorporé à OP‑1 Studio.
+
+La note historique ci-dessous explique le problème qui a motivé la correction.
+
+**Constat historique avant la correction :** en vérifiant ce chantier, un vrai désaccord dans le dépôt : le fichier
 `LICENSE` réel est **MIT**, et `NOTICE.md`/`BUSINESS_MODEL.md` le citent
 correctement ("licence MIT" explicite dans les deux). Mais `README.md`
 ("Le code du depot est distribue sous **AGPL-3.0-only**") et
@@ -98,9 +105,8 @@ imposerait de republier le code modifié du service à tout utilisateur réseau
 `LICENSE`), aucune obligation de ce type. Tant que `README.md` et
 `package.json` ne sont pas alignés sur le `LICENSE` réel, n'importe qui lisant
 le dépôt (contributeur, investisseur, partenaire d'hébergement) reçoit un
-signal contradictoire sur ce qu'il a le droit de faire. À corriger avant
-toute communication publique sur l'offre payante — je ne l'ai pas changé
-moi-même, c'est une décision légale, pas une correction de doc silencieuse.
+signal contradictoire sur ce qu'il a le droit de faire. Ce constat est conservé
+pour la traçabilité ; il est résolu dans la branche d’intégration.
 
 ## 4. Le vrai trou : le cœur Rust décrit dans l'architecture n'existe pas
 

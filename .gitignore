@@ -8,6 +8,7 @@ firmware-downloads/
 
 # User audio, device snapshots and generated exports
 backups/
+hardware-reports/
 exports/
 library/
 *.aif
@@ -22,6 +23,8 @@ dist/
 target/
 src-tauri/target/
 coverage/
+playwright-report/
+test-results/
 .next/
 .vinext/
 .wrangler/
@@ -33,6 +36,7 @@ coverage/
 Thumbs.db
 .idea/
 .vscode/
+.claude/
 *.swp
 
 # Local configuration and logs
@@ -42,5 +46,6 @@ Thumbs.db
 *.log
 __pycache__/
 *.py[cod]
+apps/*/package-lock.json
 tools/vendor/**/__pycache__/
 tools/runtime/

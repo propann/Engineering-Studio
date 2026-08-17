@@ -1,0 +1,21 @@
+{
+  "name": "@studio-hub/creation-center",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Centralized creation system for all studio entities",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@studio-hub/config-engine": "*",
+    "@studio-hub/resource-manager": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

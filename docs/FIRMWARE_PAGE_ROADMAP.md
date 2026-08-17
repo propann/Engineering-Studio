@@ -1,5 +1,9 @@
 # Feuille de route — page Firmware seule
 
+> **DOCUMENT HISTORIQUE — détail de la page Firmware.** L’état produit global
+> et les priorités actuelles sont dans
+> [`ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP_ACTIVE_2026-08-16.md).
+
 Feuille de route dédiée à la page Firmware, séparée de
 [`ROADMAP.md`](ROADMAP.md) parce que ce chantier a pris assez d'ampleur pour
 mériter la sienne. Rassemble les idées données le 14 août 2026 (en vrac,

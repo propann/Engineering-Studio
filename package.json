@@ -1,49 +1,37 @@
 {
-  "name": "op1-studio",
-  "version": "0.1.0",
+  "name": "studio-hub",
+  "version": "1.0.0",
+  "description": "Studio Hub - Monorepo for OP-1 Studio + EP-133 Studio",
   "private": true,
-  "license": "AGPL-3.0-only",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/propann/OP-1-Studio.git"
-  },
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22",
+    "npm": ">=10"
   },
   "scripts": {
-    "install:ci": "bash scripts/install-ci.sh",
-    "dev": "vite",
-    "build": "vinext build",
-    "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs",
-    "validate:artifact": "bash scripts/validate-artifact.sh",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate"
+    "install:all": "npm ci",
+    "build:all": "npm run build -w apps/studio-hub && npm run build -w apps/op1-studio && npm run build -w apps/ep133-studio",
+    "test:all": "npm run test -ws --if-present -- --run",
+    "lint:all": "npm run lint -w apps/op1-studio",
+    "typecheck:all": "npm run typecheck -ws --if-present",
+    "dev:hub": "npm run dev -w apps/studio-hub",
+    "dev:op1": "npm run dev -w apps/op1-studio",
+    "dev:ep133": "npm run dev -w apps/ep133-studio",
+    "dev:all": "node tools/start-local-studios.mjs",
+    "dev:both": "npm run dev:all",
+    "test:e2e:hub": "playwright test -c playwright.config.ts",
+    "hardware:validate": "python3 tools/hardware_validation.py",
+    "clean": "find . -name node_modules -type d -exec rm -rf {} + 2>/dev/null || true"
   },
   "dependencies": {
-    "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zustand": "5.0.15",
+    "typescript": "5.9.3"
   },
-  "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
-    "@tailwindcss/postcss": "4.2.1",
-    "@types/node": "22.19.19",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
-    "drizzle-kit": "0.31.10",
-    "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
-    "tailwindcss": "4.2.1",
-    "typescript": "5.9.3",
-    "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
-  },
-  "type": "module",
-  "displayName": "OP-1 Studio"
+  "devDependencies": {}
 }

@@ -28,6 +28,14 @@ l'appareil en stockage. Le mode TE-boot est encore différent : le guide
 constructeur le décrit comme le bootloader utilisé pour les mises à jour, les
 tests et la réinitialisation.
 
+Dans le Hub, la présence d’un port `OP-1 MIDI` ne suffit pas à distinguer le
+mode normal de `CTRL`. Le mode classique laisse le relais contrôleur désactivé.
+Pour piloter l’atelier depuis l’OP-1, l’utilisateur choisit `COM → T2 / CTRL`,
+actualise les ports, puis active explicitement l’entrée contrôleur. Les notes
+entrantes sont alors relayées vers l’EP-133 et les studios ouverts, jamais vers
+la sortie OP-1 source, afin d’éviter une boucle MIDI. Ce relais ne donne aucun
+accès aux fichiers et ne déclenche aucune écriture matériel.
+
 ## Cycle sûr
 
 ```text

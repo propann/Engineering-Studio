@@ -1,0 +1,21 @@
+{
+  "name": "@studio-hub/testing-utils",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test utilities and fixtures for Studio Hub",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@studio-hub/machine-profiler": "*",
+    "@studio-hub/config-engine": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  }
+}

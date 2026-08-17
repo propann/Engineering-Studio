@@ -1,0 +1,129 @@
+/* Advanced Toolbar Styles */
+
+.advanced-toolbar {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: var(--font-sm);
+}
+
+.toolbar-section {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+.toolbar-label {
+  font-weight: 600;
+  color: var(--accent-primary);
+  white-space: nowrap;
+  margin-right: var(--spacing-sm);
+  font-size: var(--font-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toolbar-icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.toolbar-icon-btn:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.toolbar-icon-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.toolbar-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: var(--text-secondary);
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 var(--spacing-xs);
+}
+
+.toolbar-status {
+  margin-left: auto;
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+  padding: 0 var(--spacing-md);
+  white-space: nowrap;
+}
+
+.toolbar-status span {
+  background: rgba(99, 102, 241, 0.1);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  display: inline-block;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .advanced-toolbar {
+    padding: var(--spacing-sm);
+    gap: var(--spacing-xs);
+  }
+
+  .toolbar-section {
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .toolbar-label {
+    display: none;
+  }
+
+  .toolbar-icon-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+
+  .toolbar-status {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .advanced-toolbar {
+    order: 2;
+    width: 100%;
+    padding: var(--spacing-sm);
+    max-height: 100px;
+    overflow-y: auto;
+  }
+
+  .toolbar-divider {
+    height: 16px;
+  }
+}
