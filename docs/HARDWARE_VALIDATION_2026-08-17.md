@@ -12,6 +12,8 @@ sur les machines.
 | EP‑133 | Inventaire de la bibliothèque | 532 sons, 58 758 778 octets utilisés | Non |
 | EP‑133 | Capacité déclarée | 64 Mo, selon le propriétaire de la machine | Non |
 | EP‑133 | Vérification locale de la jauge 64 Mo | Cibles et calcul de capacité validés | Non |
+| EP‑133 | Test d’écriture P09 → P09 via MIDI/SysEx | 72 192 octets, checkpoint, relecture identique et activation OK | Oui, contenu inchangé |
+| EP‑133 | Lecture indépendante après écriture | 32 pads, 32 sons | Non |
 | OP‑1 | Inventaire du volume disque | 66 fichiers, 282 644 880 octets | Non |
 | OP‑1 | Copie locale complète et manifeste | 66/66 fichiers vérifiés par SHA‑256 | Non |
 | OP‑1 | Sauvegarde sélective `tape` + `synth/user` | 45 fichiers, 139 248 144 octets vérifiés | Non |
@@ -52,6 +54,11 @@ pour éviter de versionner les données personnelles des machines.
 5. EP‑133 : conserver cette machine à 64 Mo ; ne jamais la traiter comme un
    modèle 128 Mo sans nouvelle déclaration explicite.
 6. Toute autre écriture machine ciblée, uniquement après checkpoint explicite.
+
+Le test P09 → P09 ne changeait volontairement pas le contenu : il a exercé la
+chaîne réelle d’écriture, de relecture et d’activation sans injecter de nouveau
+projet. Le checkpoint est conservé localement dans
+`/tmp/ep133-write-test-20260817/checkpoints/`.
 
 ## Commandes utilisées
 

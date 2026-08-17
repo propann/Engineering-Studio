@@ -55,6 +55,11 @@ historiques.
   plan matériel a proposé zéro copie et l’éjection du volume a réussi. Le détail est dans
   `docs/HARDWARE_VALIDATION_2026-08-17.md`.
 
+- Le chemin d’écriture EP‑133 a ensuite été exercé en MIDI/SysEx sur P09 → P09 :
+  checkpoint de 72 192 octets, relecture identique, activation réussie, puis
+  lecture indépendante confirmant 32 pads et 32 sons. Le contenu utilisateur
+  n’a volontairement pas été modifié.
+
 ## Prochaines portes
 
 1. Tester le coffre sur un vrai dossier et un volume important.
