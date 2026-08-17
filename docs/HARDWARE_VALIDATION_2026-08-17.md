@@ -14,6 +14,7 @@ sur les machines.
 | EP‑133 | Vérification locale de la jauge 64 Mo | Cibles et calcul de capacité validés | Non |
 | EP‑133 | Test d’écriture P09 → P09 via MIDI/SysEx | 72 192 octets, checkpoint, relecture identique et activation OK | Oui, contenu inchangé |
 | EP‑133 | Lecture indépendante après écriture | 32 pads, 32 sons | Non |
+| EP‑133 | Restauration du checkpoint P09 via MIDI/SysEx | 72 192 octets, relecture identique et activation OK | Oui, contenu inchangé |
 | OP‑1 | Inventaire du volume disque | 66 fichiers, 282 644 880 octets | Non |
 | OP‑1 | Copie locale complète et manifeste | 66/66 fichiers vérifiés par SHA‑256 | Non |
 | OP‑1 | Sauvegarde sélective `tape` + `synth/user` | 45 fichiers, 139 248 144 octets vérifiés | Non |
@@ -59,6 +60,10 @@ Le test P09 → P09 ne changeait volontairement pas le contenu : il a exercé la
 chaîne réelle d’écriture, de relecture et d’activation sans injecter de nouveau
 projet. Le checkpoint est conservé localement dans
 `/tmp/ep133-write-test-20260817/checkpoints/`.
+
+Le chemin de restauration a ensuite été exercé depuis
+`/tmp/ep133-restore-test-20260817/checkpoints/P09-avant-20260817T065652Z.tar`.
+La lecture indépendante finale a confirmé 32 pads et 32 sons.
 
 ## Commandes utilisées
 

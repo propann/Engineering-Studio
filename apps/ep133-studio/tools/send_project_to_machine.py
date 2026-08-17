@@ -27,7 +27,7 @@ Usage :
     python3 tools/send_project_to_machine.py checkpoint --slot 9
     python3 tools/send_project_to_machine.py write --slot 9 --confirm
     python3 tools/send_project_to_machine.py write-sound --slot 9 --confirm
-    python3 tools/send_project_to_machine.py restore --slot 9 --from <chemin.tar>
+    python3 tools/send_project_to_machine.py restore --slot 9 --from <chemin.tar> --confirm
 """
 from __future__ import annotations
 
@@ -214,7 +214,7 @@ def cmd_write_sound(args: argparse.Namespace) -> None:
     if written_bytes != compiled:
         print(
             "   -> ÉCHEC : relecture du projet différente de ce qui a été écrit.\n"
-            f"   Restaure avec : python3 tools/send_project_to_machine.py restore --slot {args.slot} --from {checkpoint_path}",
+            f"   Restaure avec : python3 tools/send_project_to_machine.py restore --slot {args.slot} --from {checkpoint_path} --confirm",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -257,7 +257,7 @@ def cmd_copy_project(args: argparse.Namespace) -> None:
     except RuntimeError as error:
         print(
             f"   -> ÉCHEC : {error}\n"
-            f"   Restaure avec : python3 tools/send_project_to_machine.py restore --slot {args.to_slot} --from {checkpoint_path}",
+            f"   Restaure avec : python3 tools/send_project_to_machine.py restore --slot {args.to_slot} --from {checkpoint_path} --confirm",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -339,7 +339,7 @@ def cmd_write(args: argparse.Namespace) -> None:
         print(
             f"   -> ÉCHEC : {error}\n"
             f"   Restaure immédiatement avec :\n"
-            f"   python3 tools/send_project_to_machine.py restore --slot {args.slot} --from {checkpoint_path}",
+            f"   python3 tools/send_project_to_machine.py restore --slot {args.slot} --from {checkpoint_path} --confirm",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -353,6 +353,10 @@ def cmd_write(args: argparse.Namespace) -> None:
 
 
 def cmd_restore(args: argparse.Namespace) -> None:
+    if not args.confirm:
+        print("Refus : ajoute --confirm pour écrire réellement sur la machine.", file=sys.stderr)
+        sys.exit(1)
+
     checkpoint_path = Path(args.checkpoint)
     if not checkpoint_path.is_file():
         print(f"Checkpoint introuvable : {checkpoint_path}", file=sys.stderr)
@@ -402,6 +406,7 @@ def main() -> None:
     restore = sub.add_parser("restore", help="Restaure un checkpoint précédemment écrit")
     restore.add_argument("--slot", type=int, required=True)
     restore.add_argument("--from", dest="checkpoint", required=True, help="Chemin du fichier .tar de checkpoint")
+    restore.add_argument("--confirm", action="store_true", help="Confirme explicitement l'écriture réelle")
     restore.set_defaults(func=cmd_restore)
 
     args = parser.parse_args()

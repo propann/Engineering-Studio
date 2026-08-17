@@ -48,6 +48,15 @@ Le runner délègue alors à `send_project_to_machine.py` via MIDI/SysEx. L’ou
 prend le checkpoint, compile, écrit, relit octet par octet et active le slot.
 Sans `--confirm-write`, la commande refuse de démarrer.
 
+Une restauration de checkpoint est elle aussi une écriture et exige
+`--confirm` :
+
+```bash
+/tmp/ep133-scan-venv/bin/python apps/ep133-studio/tools/send_project_to_machine.py \
+  --root /tmp/ep133-restore-test restore --slot 9 \
+  --from /tmp/ep133-restore-test/checkpoints/P09-avant.tar --confirm
+```
+
 ## Ordre recommandé
 
 1. lancer le contrôle lecture seule ;
