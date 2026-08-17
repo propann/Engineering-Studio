@@ -10,6 +10,8 @@ sur les machines.
 |---|---|---|---|
 | EP‑133 | Scan du projet 09 | 32 pads, 32 sons | Non |
 | EP‑133 | Inventaire de la bibliothèque | 532 sons, 58 758 778 octets utilisés | Non |
+| EP‑133 | Capacité déclarée | 64 Mo, selon le propriétaire de la machine | Non |
+| EP‑133 | Vérification locale de la jauge 64 Mo | Cibles et calcul de capacité validés | Non |
 | OP‑1 | Inventaire du volume disque | 66 fichiers, 282 644 880 octets | Non |
 | OP‑1 | Copie locale complète et manifeste | 66/66 fichiers vérifiés par SHA‑256 | Non |
 | OP‑1 | Sauvegarde sélective `tape` + `synth/user` | 45 fichiers, 139 248 144 octets vérifiés | Non |
@@ -47,7 +49,8 @@ pour éviter de versionner les données personnelles des machines.
 2. Restauration contrôlée vers la machine après checkpoint explicite.
 3. Cycle interrompu et reprise contrôlée.
 4. Débranchement physique après éjection.
-5. EP‑133 : confirmation séparée de la capacité 64/128 Mo.
+5. EP‑133 : conserver cette machine à 64 Mo ; ne jamais la traiter comme un
+   modèle 128 Mo sans nouvelle déclaration explicite.
 6. Toute autre écriture machine ciblée, uniquement après checkpoint explicite.
 
 ## Commandes utilisées
@@ -60,3 +63,7 @@ python3 apps/op1-studio/tools/backup_manifest.py verify ...
 ```
 
 Le volume OP‑1 était monté en lecture seule pendant l’inventaire et la copie.
+Le clone EP‑133 est également lecture seule ; l’inventaire des 532 sons est
+déjà validé par le scanner central. Une copie complète de chaque son n’est pas
+nécessaire pour valider la capacité déclarée et n’a pas été poursuivie afin de
+ne pas prolonger inutilement la session matérielle.

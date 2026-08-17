@@ -84,7 +84,7 @@ Objectif : séparer définitivement « plan préparé » et « écriture réussi
 - [x] Hub : ajouter une activation explicite du relais contrôleur OP‑1, avec
   routage des notes vers EP‑133 sans écho vers la sortie source ; le cas réel
   OP‑1 placé en `COM → T2 / CTRL` reste à jouer.
-- [x] EP‑133 : campagne lecture seule sur projets P01–P09, pads, samples et groupes ; la capacité 64/128 Mo reste à confirmer séparément.
+- [x] EP‑133 : campagne lecture seule sur projets P01–P09, pads, samples et groupes ; la machine de test est déclarée 64 Mo et la jauge 64 Mo passe ses contrôles. Ne pas la traiter comme une 128 Mo sans nouvelle déclaration.
 - [x] EP‑133 : valider une écriture ciblée sur P09 avec checkpoint, relecture binaire et état de retour explicite.
 - [x] Centraliser les contrôles matériels dans `npm run hardware:validate`, lecture seule par défaut avec rapport local.
 - [ ] Documenter câble retiré, permission refusée, volume différent et fichier corrompu.

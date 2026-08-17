@@ -47,7 +47,9 @@ historiques.
   débranchement/éjection et écriture complète contrôlée.
 
 - Nouvelle passe matérielle du 17 août : l’EP‑133 a été lu en lecture seule
-  (projet 09 et 532 sons) et l’OP‑1 a été inventorié puis copié localement avec
+  (projet 09 et 532 sons). Cette machine est déclarée **64 Mo** ; la jauge
+  locale 64 Mo passe ses contrôles, et aucune opération 128 Mo ne doit lui être
+  appliquée. L’OP‑1 a été inventorié puis copié localement avec
   66/66 empreintes SHA‑256 valides. Une sélection `tape` + `synth/user` a aussi
   été sauvegardée puis restaurée localement avec 45/45 empreintes valides ; le
   plan matériel a proposé zéro copie et l’éjection du volume a réussi. Le détail est dans
