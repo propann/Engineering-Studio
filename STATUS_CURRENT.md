@@ -59,6 +59,10 @@ historiques.
   checkpoint de 72 192 octets, relecture identique, activation réussie, puis
   lecture indépendante confirmant 32 pads et 32 sons. Le contenu utilisateur
   n’a volontairement pas été modifié.
+- Le pont applicatif EP‑133 a ensuite été contrôlé en lecture seule sur
+  `127.0.0.1:8765` : santé OK, 9/9 projets listés et P09 lu à 72 192 octets,
+  sans appel d’écriture. Le détail est dans
+  `docs/HARDWARE_VALIDATION_2026-08-17.md`.
 
 ## Prochaines portes
 

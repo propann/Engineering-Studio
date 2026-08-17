@@ -15,6 +15,7 @@ sur les machines.
 | EP‑133 | Test d’écriture P09 → P09 via MIDI/SysEx | 72 192 octets, checkpoint, relecture identique et activation OK | Oui, contenu inchangé |
 | EP‑133 | Lecture indépendante après écriture | 32 pads, 32 sons | Non |
 | EP‑133 | Restauration du checkpoint P09 via MIDI/SysEx | 72 192 octets, relecture identique et activation OK | Oui, contenu inchangé |
+| EP‑133 | Pont local `127.0.0.1:8765` — santé, liste et lecture P09 | 9/9 projets visibles ; P09 lu à 72 192 octets ; archive décodée sans écriture | Non |
 | OP‑1 | Inventaire du volume disque | 66 fichiers, 282 644 880 octets | Non |
 | OP‑1 | Copie locale complète et manifeste | 66/66 fichiers vérifiés par SHA‑256 | Non |
 | OP‑1 | Sauvegarde sélective `tape` + `synth/user` | 45 fichiers, 139 248 144 octets vérifiés | Non |
@@ -56,6 +57,12 @@ pour éviter de versionner les données personnelles des machines.
    modèle 128 Mo sans nouvelle déclaration explicite.
 6. Toute autre écriture machine ciblée, uniquement après checkpoint explicite.
 
+Le pont applicatif a ensuite été vérifié séparément en lecture seule avec une
+racine temporaire : `/health` répond, `/projects/list` voit les neuf projets,
+et `/projects/read?slot=9` retourne le même P09 de 72 192 octets. L’archive
+retournée contient 66 membres structurés (48 entrées `pads`, plus patterns,
+scènes et réglages). Aucun endpoint POST n’a été appelé pendant cette passe.
+
 Le test P09 → P09 ne changeait volontairement pas le contenu : il a exercé la
 chaîne réelle d’écriture, de relecture et d’activation sans injecter de nouveau
 projet. Le checkpoint est conservé localement dans
@@ -82,5 +89,6 @@ ne pas prolonger inutilement la session matérielle.
 
 La notice ne décrit pas de mode disque EP‑133 : les transferts de samples
 passent par EP Sample Tool et les projets du Studio passent par le bridge
-MIDI/SysEx. Le volume `OP-1 Disk` observé pendant la session appartenait à
-l’OP‑1, pas à l’EP‑133.
+MIDI/SysEx. Voir la [notice officielle EP‑133](https://teenage.engineering/guides/ep-133/functions).
+Le volume `OP-1 Disk` observé pendant la session appartenait à l’OP‑1, pas à
+l’EP‑133.

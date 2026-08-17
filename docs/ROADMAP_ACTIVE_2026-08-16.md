@@ -42,7 +42,7 @@ Les paramètres `hubProfile`, `hubMachine*`, `hubReturn` et `hubTool` sont trans
 | Catalogue d’outils | Sept cartes, catégories, liens directs et test navigateur des ouvertures | Les tests ne couvrent pas encore le coffre ouvert dans un vrai dossier |
 | Coffre Hub | Sélection par catégories, snapshots locaux, restauration contrôlée, suivi de progression, test navigateur hors machine | Validation avec un vrai dossier et gros volume |
 | Raccord OP‑1 | Profil, workspace, retour Hub, routes éditeur/samples/services/firmware ; statistiques projets/samples → Hub | Écriture matériel et permissions FSA |
-| Raccord EP‑133 | Profil, machine nommée/capacité, workspace, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée ; statistiques EP‑133 → Hub | Store partagé, statistiques Hub → EP‑133 et écriture ciblée après autorisation |
+| Raccord EP‑133 | Profil, machine nommée/capacité, workspace, routes game/sounds/docs/test ; lecture matérielle P01–P09 validée ; écriture/restauration CLI de P09 contrôlée ; bridge local santé/liste/lecture validé | Store partagé, statistiques Hub → EP‑133 et écriture ciblée déclenchée depuis l’interface après autorisation |
 | Éditeurs | Image OP‑1, samples OP‑1, Pattern/Song EP‑133, Sons & Transfert EP‑133 | Éditeur avancé de paramètres de patch OP‑1 à distinguer de la préparation de patch |
 | Sécurité | Sanitisation SVG, contrôle d’origine/source Hub dans les deux studios, confirmations locales | Revue complète du schéma des messages et route bibliothèque locale |
 | Qualité | Typecheck, build, lint propre et 15 scénarios navigateur Hub passent sur la branche | Validation matérielle et gros volumes encore à faire |
@@ -62,6 +62,7 @@ Objectif : ouvrir chaque outil depuis le Hub, conserver l’identité et revenir
 - [x] Éviter la course d’hydratation lors d’un lancement direct Hub → OP‑1 Studio.
 - [x] Vérifier la persistance après réouverture d’un contexte navigateur, sans nouvelle fiche.
 - [x] Revoir et fusionner la consolidation dans `main`.
+- [x] Vérifier le pont local EP‑133 en lecture seule : santé, liste des 9 projets et lecture P09 ; aucun POST machine pendant cette passe.
 
 ### P1 — Coffre et sauvegardes crédibles
 
