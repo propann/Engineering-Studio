@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@studio-hub/midi-bridge": "*",
+    "@studio-hub/shared-stores": "*",
+    "@studio-hub/types": "*",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zustand": "5.0.15"

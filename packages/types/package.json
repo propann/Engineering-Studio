@@ -5,6 +5,10 @@
   "main": "src/index.ts",
   "type": "module",
   "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test src/contracts.test.ts"
+  },
   "exports": {
     ".": "./src/index.ts"
   },

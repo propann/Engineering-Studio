@@ -69,3 +69,26 @@ export interface AsyncOperation<T> {
   error?: string;
   data?: T;
 }
+
+export {
+  MACHINE_KINDS,
+  STUDIO_IDS,
+  isMachineKind,
+  isStudioId,
+  isStudioProject,
+  isStudioWorkspace,
+} from './contracts.ts';
+
+export type {
+  EntityId,
+  IsoDateString,
+  MachineCapabilities,
+  MachineConnectionState,
+  MachineKind,
+  StudioId,
+  StudioMachine,
+  StudioProfile,
+  StudioProject,
+  StudioProjectKind,
+  StudioWorkspace,
+} from './contracts.ts';

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { hydrateStudioStore, normalizeHubProfile, useStudioStore } from "@studio-hub/shared-stores";
 import { VaultPanel, type MachineId } from "./VaultPanel";
 import { MidiSyncPanel } from "./MidiSyncPanel";
 import { SoundLibraryPanel } from "./SoundLibraryPanel";
@@ -110,6 +111,11 @@ function readProfile(): HubProfile | null {
 
 function persistProfile(profile: HubProfile) { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
 
+function syncCanonicalStudioState(profile: HubProfile) {
+  const snapshot = normalizeHubProfile(profile);
+  if (snapshot) hydrateStudioStore(snapshot);
+}
+
 function readProfileDraft(): Partial<HubProfile> | null {
   try {
     const raw = localStorage.getItem(PROFILE_DRAFT_KEY);
@@ -175,6 +181,10 @@ export function App() {
   const [screen, setScreen] = useState<"landing" | "profile" | "dashboard">("landing");
 
   useEffect(() => { if (profile) { persistProfile(profile); clearProfileDraft(); } }, [profile]);
+  useEffect(() => {
+    if (profile) syncCanonicalStudioState(profile);
+    else useStudioStore.getState().clearStudio();
+  }, [profile]);
   useEffect(() => {
     if (profile) return;
     let cancelled = false;

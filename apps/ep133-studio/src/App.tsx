@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useStudioStore } from '@studio-hub/shared-stores';
 import {
   useWebMidi,
   type MidiHit,
@@ -138,11 +139,19 @@ export default function App() {
   useHubInitialization();
   const language = useLanguageStore((state) => state.language);
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
+  const hubMachineId = useMemo(() => new URLSearchParams(window.location.search).get('hubMachineId'), []);
   const [workspaceView, setWorkspaceView] = useState<'home' | 'game' | 'sounds' | 'docs' | 'machine-test'>(() => {
     const requested = new URLSearchParams(window.location.search).get('hubTool');
     return requested === 'game' || requested === 'sounds' || requested === 'docs' || requested === 'machine-test' ? requested : 'home';
   });
-  const [hubMachine, setHubMachine] = useState(loadHubMachine);
+  const [hubMachine] = useState(loadHubMachine);
+  const canonicalMachine = useStudioStore((state) => {
+    if (hubMachineId) return state.machines[hubMachineId] ?? null;
+    return Object.values(state.machines).find((machine) => machine.kind === 'ep133' && machine.enabled) ?? null;
+  });
+  const activeHubMachine = canonicalMachine
+    ? { name: canonicalMachine.name, capacityMb: canonicalMachine.capacityMb ?? 64 as const }
+    : hubMachine;
   const [practiceLog, setPracticeLog] = useState<PracticeLogEntry[]>(() => loadPracticeLog(localStorage));
   const [styleId, setStyleId] = useState('boom');
   const [difficulty, setDifficulty] = useState(1);
@@ -169,14 +178,6 @@ export default function App() {
   const [flashedPad, setFlashedPad] = useState<{ pad: number; grade: Grade } | null>(null);
   const [soundPad, setSoundPad] = useState<number | null>(null);
   const [soundSettings, setSoundSettings] = useState<PadSoundSettings[]>(() => Array.from({ length: 12 }, () => ({ modelVolume: 65, playerVolume: 100, tune: 0 })));
-  useEffect(() => {
-    const onHubMachine = (event: Event) => {
-      const detail = (event as CustomEvent<{ name?: string; capacityMb?: 64 | 128 }>).detail;
-      setHubMachine({ name: detail?.name || 'EP-133 K.O. II', capacityMb: detail?.capacityMb === 128 ? 128 : 64 });
-    };
-    window.addEventListener('hub:machineLoaded', onHubMachine);
-    return () => window.removeEventListener('hub:machineLoaded', onHubMachine);
-  }, []);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorName, setEditorName] = useState('MON GROOVE');
   const [editorBars, setEditorBars] = useState(1);
@@ -1814,7 +1815,7 @@ export default function App() {
 
   if (workspaceView === 'machine-test') return <MachineTestPage connected={midiReady} sysexEnabled={midi.sysexEnabled} inputNames={midi.inputNames} observations={midiObservations} machineGroup={machineGroup} onBack={goHome} onConnect={() => void midi.connectMonitor()} onSendLearned={midi.sendLearnedMessage} onSelectMachineGroup={async (groupIndex) => { const fid = await midi.selectMachineGroup(groupIndex); setMachineGroup(EDITOR_GROUPS[groupIndex]); return fid; }} />;
 
-  if (workspaceView === 'sounds') return <SoundsPage machineName={hubMachine.name} machineCapacityMb={hubMachine.capacityMb} inventory={deviceInventory} soundIndex={deviceSoundIndex} midiConnected={midiReady} machineGroup={machineGroup} onMachineGroupChange={(group) => void selectMachineGroupFromComputer(group)} liveMidi={lastMidi?.note !== undefined && lastMidi.velocity !== undefined ? { note: lastMidi.note, velocity: lastMidi.velocity, timestamp: lastMidi.timestamp } : null} padModes={editorPadModes} onBack={goHome} onConnectMidi={() => void connectMidi()} onPadModeChange={(group, pad, mode) => setEditorPadModes((current) => ({ ...current, [`${group}:${pad}`]: mode }))} onPadPreview={(group, pad, stagedSlot) => void previewSoundPagePad(group, pad, stagedSlot)} onPreviewSound={(slot) => previewBankSound(slot)} localLibraryHandle={localLibraryHandle} localLibraryFolderName={localLibraryFolderName} localLibraryNeedsReconnect={localLibraryNeedsReconnect} onReconnectLocalLibrary={() => void reconnectLocalLibraryFolder()} demoProjects={STUDIO_DEMOS} localProjects={studioLibrary.map(summarizeStudioProject)} onGetProjectDocument={getProjectDocument} onImportMachineProject={importMachineProjectToLibrary} />;
+  if (workspaceView === 'sounds') return <SoundsPage machineName={activeHubMachine.name} machineCapacityMb={activeHubMachine.capacityMb} inventory={deviceInventory} soundIndex={deviceSoundIndex} midiConnected={midiReady} machineGroup={machineGroup} onMachineGroupChange={(group) => void selectMachineGroupFromComputer(group)} liveMidi={lastMidi?.note !== undefined && lastMidi.velocity !== undefined ? { note: lastMidi.note, velocity: lastMidi.velocity, timestamp: lastMidi.timestamp } : null} padModes={editorPadModes} onBack={goHome} onConnectMidi={() => void connectMidi()} onPadModeChange={(group, pad, mode) => setEditorPadModes((current) => ({ ...current, [`${group}:${pad}`]: mode }))} onPadPreview={(group, pad, stagedSlot) => void previewSoundPagePad(group, pad, stagedSlot)} onPreviewSound={(slot) => previewBankSound(slot)} localLibraryHandle={localLibraryHandle} localLibraryFolderName={localLibraryFolderName} localLibraryNeedsReconnect={localLibraryNeedsReconnect} onReconnectLocalLibrary={() => void reconnectLocalLibraryFolder()} demoProjects={STUDIO_DEMOS} localProjects={studioLibrary.map(summarizeStudioProject)} onGetProjectDocument={getProjectDocument} onImportMachineProject={importMachineProjectToLibrary} />;
 
   if (workspaceView === 'docs') return <DocumentationPage onBack={goHome} />;
 

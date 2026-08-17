@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { hydrateStudioStore, normalizeHubProfile } from '@studio-hub/shared-stores';
 import { createHubCacheEnvelope, HUB_CACHE_KEYS, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, readHubCache } from '@studio-hub/midi-bridge';
 
 function resolveHubOrigin() {
@@ -45,7 +46,11 @@ function readImportedMachine() {
 function cacheImportedMachine(machine: { name?: string; capacityMb?: 64 | 128 }) {
   const normalized = { name: machine.name || 'EP-133 K.O. II', capacityMb: machine.capacityMb === 128 ? 128 : 64 } as const;
   try { localStorage.setItem(HUB_CACHE_KEYS.machine, JSON.stringify(createHubCacheEnvelope(normalized))); } catch { /* cache de confort */ }
-  window.dispatchEvent(new CustomEvent('hub:machineLoaded', { detail: normalized }));
+}
+
+function hydrateCanonicalProfile(profile: unknown, machine: { name?: string; capacityMb?: 64 | 128 }) {
+  const snapshot = normalizeHubProfile(profile, { kind: 'ep133', ...machine });
+  if (snapshot) hydrateStudioStore(snapshot);
 }
 
 export function useHubInitialization() {
@@ -57,12 +62,14 @@ export function useHubInitialization() {
     const hubOrigin = resolveHubOrigin();
     const queryProfile = params.get('hubProfile');
     const hubProfileJson = readImportedProfile(queryProfile);
-    cacheImportedMachine(readImportedMachine());
+    const importedMachine = readImportedMachine();
+    cacheImportedMachine(importedMachine);
 
     if (hubProfileJson) {
       try {
         const hubProfile = JSON.parse(hubProfileJson);
         cacheImportedProfile(hubProfile);
+        hydrateCanonicalProfile(hubProfile, importedMachine);
         console.log('✅ EP-133: Received profile from Hub:', hubProfile.name);
 
         if (queryProfile) {
@@ -75,9 +82,6 @@ export function useHubInitialization() {
         if (hubProfile.settings?.preferredLanguage) {
           localStorage.setItem('app_language', hubProfile.settings.preferredLanguage);
         }
-
-        // Dispatch initialization events
-        window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: hubProfile }));
 
       } catch (error) {
         console.error('❌ EP-133: Failed to parse Hub profile:', error);
@@ -92,7 +96,7 @@ export function useHubInitialization() {
       if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource)) return;
       if (event.data.profile) {
         cacheImportedProfile(event.data.profile);
-        window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: event.data.profile }));
+        hydrateCanonicalProfile(event.data.profile, importedMachine);
       }
       window.dispatchEvent(new CustomEvent('hub:workspaceLoaded', { detail: event.data.workspaceHandle ?? null }));
     };

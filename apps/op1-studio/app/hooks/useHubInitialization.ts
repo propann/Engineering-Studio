@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { hydrateStudioStore, normalizeHubProfile } from '@studio-hub/shared-stores';
 import { createHubCacheEnvelope, HUB_CACHE_KEYS, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, readHubCache } from '@studio-hub/midi-bridge';
 
 function readImportedProfile(queryProfile: string | null) {
@@ -18,6 +19,11 @@ function cacheImportedProfile(profile: unknown) {
   } catch {
     // Le cache est un confort : la session continue avec le profil reçu.
   }
+}
+
+function hydrateCanonicalProfile(profile: unknown) {
+  const snapshot = normalizeHubProfile(profile);
+  if (snapshot) hydrateStudioStore(snapshot);
 }
 
 export function useHubInitialization() {
@@ -40,6 +46,7 @@ export function useHubInitialization() {
       try {
         const hubProfile = JSON.parse(hubProfileJson);
         cacheImportedProfile(hubProfile);
+        hydrateCanonicalProfile(hubProfile);
         console.log('✅ OP-1: Received profile from Hub:', hubProfile.name);
 
         if (queryProfile) {
@@ -47,9 +54,6 @@ export function useHubInitialization() {
           const cleanQuery = params.toString();
           window.history.replaceState({}, '', `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}${window.location.hash}`);
         }
-
-        // Dispatch initialization events
-        window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: hubProfile }));
 
       } catch (error) {
         console.error('❌ OP-1: Failed to parse Hub profile:', error);
@@ -64,7 +68,7 @@ export function useHubInitialization() {
       if (event.origin !== hubOrigin || (expectedSource && event.source !== expectedSource)) return;
       if (event.data.profile) {
         cacheImportedProfile(event.data.profile);
-        window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: event.data.profile }));
+        hydrateCanonicalProfile(event.data.profile);
       }
       window.dispatchEvent(new CustomEvent('hub:workspaceLoaded', { detail: event.data.workspaceHandle ?? null }));
     };

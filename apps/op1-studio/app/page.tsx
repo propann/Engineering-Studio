@@ -20,6 +20,7 @@ import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
 import { StudioTransportPanel } from "./components/StudioTransportPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
+import { useStudioStore } from "@studio-hub/shared-stores";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
 import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY, OP1_SAMPLES_PREPARED_KEY } from "./lib/hubCommunication";
@@ -914,6 +915,7 @@ type MidiNavigator = Navigator & {
 
 export default function Home() {
   useHubInitialization();
+  const declaredMachine = useStudioStore((state) => Object.values(state.machines).find((machine) => machine.kind === "op1" && machine.enabled) ?? null);
   const [stage, setStage] = useState(0);
   const [expertOpen, setExpertOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -1191,7 +1193,7 @@ export default function Home() {
                 <div className="device-icon"><Icon name="chip" size={28} /></div>
                 <div>
                   <span className="section-label">MACHINE DÉTECTÉE</span>
-                  <h2 id="machine-title">{stage >= 2 ? "OP‑1 original" : "En attente d’une machine"}</h2>
+                  <h2 id="machine-title">{stage >= 2 ? "OP‑1 original" : declaredMachine ? `${declaredMachine.name} · prête à connecter` : "En attente d’une machine"}</h2>
                   <p>{deviceName ? "USB 2367:0004 · MIDI détecté" : "Connectez l’OP-1 en USB puis lancez la détection MIDI."}</p>
                   <button className="backup-button" onClick={testBackupPlan}><Icon name="archive" size={14} />{backupTested ? "Plan vérifié" : "Tester la sauvegarde"}</button>
                 </div>

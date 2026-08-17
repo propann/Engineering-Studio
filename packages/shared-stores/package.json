@@ -8,7 +8,12 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test src/studioStore.test.ts src/studioBridge.test.ts"
+  },
   "dependencies": {
+    "@studio-hub/types": "*",
     "zustand": "5.0.15"
   },
   "devDependencies": {}
