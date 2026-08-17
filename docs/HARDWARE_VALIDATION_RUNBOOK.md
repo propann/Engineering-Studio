@@ -4,6 +4,11 @@ La commande racine regroupe les contrôles EP‑133 existants dans un rapport
 JSON local. Elle est en lecture seule par défaut et range les sorties dans
 `hardware-reports/`, ignoré par Git.
 
+Contrairement à l’OP‑1, l’EP‑133 n’expose pas de volume « Disk mode ». Son
+USB‑C sert au MIDI/SysEx, au firmware et au transfert via EP Sample Tool. Les
+projets sont donc lus ou écrits par le bridge `epsysex`, jamais par un chemin de
+volume inventé.
+
 ## Lecture seule complète
 
 Depuis la racine du dépôt :
@@ -28,21 +33,20 @@ réalisée », pas une écriture effectuée ni une corruption du projet.
 
 ## Écriture contrôlée
 
-Une écriture doit toujours être demandée séparément et fournir à la fois le
-slot et la racine locale explicite :
+Une écriture doit toujours être demandée séparément et fournir le slot ainsi
+qu’une confirmation explicite :
 
 ```bash
 npm run hardware:validate -- \
   --python /tmp/ep133-scan-venv/bin/python \
   --project 9 \
   --write-slot 9 \
-  --confirm-write \
-  --device-root /home/azoth/Musique/OP-133
+  --confirm-write
 ```
 
-Le runner délègue alors à `send_project_to_machine.py`, qui prend le checkpoint,
-compile, écrit, relit octet par octet et active le slot. Sans `--confirm-write`,
-la commande refuse de démarrer.
+Le runner délègue alors à `send_project_to_machine.py` via MIDI/SysEx. L’outil
+prend le checkpoint, compile, écrit, relit octet par octet et active le slot.
+Sans `--confirm-write`, la commande refuse de démarrer.
 
 ## Ordre recommandé
 

@@ -3,7 +3,8 @@
 
 Le mode par défaut est strictement lecture seule : détection Linux, scan d'un
 projet EP-133, inventaire des sons et vérification facultative du bridge. Les
-écritures ne sont possibles qu'avec ``--write-slot`` et ``--confirm-write``.
+écritures EP-133 passent par MIDI/SysEx et ne sont possibles qu'avec
+``--write-slot`` et ``--confirm-write``.
 Les rapports et les scans générés sont destinés à rester locaux.
 """
 from __future__ import annotations
@@ -111,13 +112,10 @@ def main() -> int:
     parser.add_argument("--skip-bridge", action="store_true", help="ne pas appeler le bridge local")
     parser.add_argument("--write-slot", type=int, choices=range(1, 10), help="slot à écrire ; désactivé par défaut")
     parser.add_argument("--confirm-write", action="store_true", help="autorisation explicite requise avec --write-slot")
-    parser.add_argument("--device-root", type=Path, help="racine locale du clone, obligatoire pour une écriture")
     args = parser.parse_args()
 
     if args.write_slot is not None and not args.confirm_write:
         parser.error("--write-slot exige --confirm-write")
-    if args.write_slot is not None and args.device_root is None:
-        parser.error("--write-slot exige --device-root explicite")
     if not args.scanner_python.is_file():
         parser.error(f"Python scanner introuvable : {args.scanner_python}")
 
@@ -179,11 +177,11 @@ def main() -> int:
     if args.write_slot is not None:
         write_check = run_command(
             "project-write-confirmed",
-            [str(args.scanner_python), str(EP_TOOLS / "send_project_to_machine.py"), "--root", str(args.device_root.expanduser().resolve()), "write", "--slot", str(args.write_slot), "--confirm"],
+            [str(args.scanner_python), str(EP_TOOLS / "send_project_to_machine.py"), "write", "--slot", str(args.write_slot), "--confirm"],
             180,
         )
         report["checks"].append(write_check)
-        report["write"] = {"slot": args.write_slot, "deviceRoot": str(args.device_root.expanduser().resolve()), "explicitConfirmation": True}
+        report["write"] = {"slot": args.write_slot, "transport": "midi-sysex", "explicitConfirmation": True}
 
     report["finishedAt"] = datetime.now(timezone.utc).isoformat()
     report["ok"] = device_present and all(

@@ -67,3 +67,8 @@ Le clone EP‑133 est également lecture seule ; l’inventaire des 532 sons est
 déjà validé par le scanner central. Une copie complète de chaque son n’est pas
 nécessaire pour valider la capacité déclarée et n’a pas été poursuivie afin de
 ne pas prolonger inutilement la session matérielle.
+
+La notice ne décrit pas de mode disque EP‑133 : les transferts de samples
+passent par EP Sample Tool et les projets du Studio passent par le bridge
+MIDI/SysEx. Le volume `OP-1 Disk` observé pendant la session appartenait à
+l’OP‑1, pas à l’EP‑133.
