@@ -10,10 +10,11 @@ la vue de travail commune.
 Pour comprendre le produit actuel, lire dans cet ordre :
 
 1. [Présentation produit](PRESENTATION_PRODUIT.md)
-2. [Roadmap active](ROADMAP_ACTIVE_2026-08-16.md)
-3. [État courant](../STATUS_CURRENT.md)
-4. [Alignement roadmap/code](../ROADMAP_CODE_ALIGNMENT_2026-08-17.md)
-5. La famille d'études correspondant au sujet travaillé
+2. [Synthèse des décisions et travaux](SYNTHESE_DECISIONS_ET_TRAVAUX.md)
+3. [Roadmap active](ROADMAP_ACTIVE_2026-08-16.md)
+4. [État courant](../STATUS_CURRENT.md)
+5. [Alignement roadmap/code](../ROADMAP_CODE_ALIGNMENT_2026-08-17.md)
+6. La famille d'études correspondant au sujet travaillé
 
 Les documents marqués **actuel** décrivent la direction à suivre. Les
 documents **référence** donnent le matériau technique. Les documents

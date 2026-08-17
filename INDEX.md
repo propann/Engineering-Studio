@@ -10,9 +10,10 @@
 1. **[README.md](./README.md)** - présentation du produit, installation et commandes
 2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - parcours utilisateur et rôle de chaque atelier
 3. **[ETUDES_INDEX.md](./docs/ETUDES_INDEX.md)** - catalogue central des études et rapports
-4. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
-5. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
-6. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
+4. **[SYNTHESE_DECISIONS_ET_TRAVAUX.md](./docs/SYNTHESE_DECISIONS_ET_TRAVAUX.md)** - décisions et prochaines portes
+5. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
+6. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
+7. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
 
 > `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md` et `PHASE3_COMPLETION.md` sont
 > des rapports historiques de consolidation. Ils restent utiles pour le
