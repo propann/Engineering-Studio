@@ -12,6 +12,10 @@ sur les machines.
 | EP‑133 | Inventaire de la bibliothèque | 532 sons, 58 758 778 octets utilisés | Non |
 | OP‑1 | Inventaire du volume disque | 66 fichiers, 282 644 880 octets | Non |
 | OP‑1 | Copie locale complète et manifeste | 66/66 fichiers vérifiés par SHA‑256 | Non |
+| OP‑1 | Sauvegarde sélective `tape` + `synth/user` | 45 fichiers, 139 248 144 octets vérifiés | Non |
+| OP‑1 | Restauration vers un dossier local vide | 45/45 fichiers vérifiés par SHA‑256 | Non |
+| OP‑1 | Plan de transfert contre la machine | 45 fichiers déjà identiques, 0 copie proposée | Non |
+| OP‑1 | Démontage propre du volume | Réussi | Non |
 
 ## Inventaire OP‑1
 
@@ -39,12 +43,12 @@ pour éviter de versionner les données personnelles des machines.
 
 ## Ce qui reste à valider
 
-1. Sauvegarde OP‑1 sélective `tape`, `album`, `synth` et `drum`.
-2. Restauration vers une destination vide puis comparaison complète.
+1. Sauvegarde sélective incluant aussi `album` et `drum` dans le parcours Hub.
+2. Restauration contrôlée vers la machine après checkpoint explicite.
 3. Cycle interrompu et reprise contrôlée.
-4. Éjection propre et débranchement simulé.
+4. Débranchement physique après éjection.
 5. EP‑133 : confirmation séparée de la capacité 64/128 Mo.
-6. Toute écriture machine ciblée, uniquement après checkpoint explicite.
+6. Toute autre écriture machine ciblée, uniquement après checkpoint explicite.
 
 ## Commandes utilisées
 
