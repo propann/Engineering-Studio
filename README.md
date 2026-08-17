@@ -1,154 +1,50 @@
-# 🎵 Studio Hub - Monorepo
+# Studio Hub
 
-Unified development environment for OP-1 Studio and EP-133 KO II Studio.
+Studio Hub est l’atelier local qui réunit les outils OP‑1 et EP‑133 dans un
+seul espace de travail. Le Hub conserve l’identité de l’utilisateur, les
+machines déclarées, le dossier de travail et le coffre de sauvegardes ; les
+studios restent responsables de leurs fonctions propres.
 
-> **État actuel :** consulter la [feuille de route active](docs/ROADMAP_ACTIVE_2026-08-16.md).
-> Le [statut courant](STATUS_CURRENT.md) sépare les validations logicielles
-> reproductibles des essais matériels.
-> Elle remplace les anciennes projections de phases pour le suivi du produit.
-> Les commandes et résultats de la dernière passe sont dans le [journal de validation](docs/VALIDATION_LOG_2026-08-16.md).
-> La suite matérielle centralisée est décrite dans le [runbook de validation](docs/HARDWARE_VALIDATION_RUNBOOK.md) ; elle reste en lecture seule par défaut.
+## Le produit en un regard
 
-## 📁 Structure
+| Espace | Rôle |
+| --- | --- |
+| **Studio Hub** | Porte d’entrée, fiche persistante, inventaire des machines, espace partagé et coffre sélectif. |
+| **OP‑1 Studio** | Tape & Album, sons, samples, images, services, patchs, firmware et exercices. |
+| **EP‑133 Studio** | Sons, Pattern, Song, transferts, clone, documentation et entraînement Rhythm Hero. |
+| **Synchronisation** | Transport MIDI commun, notes virtuelles, PANIC et relais contrôleur OP‑1 explicite. |
 
-```
-studio-hub/
-├── packages/              # Shared code
-│   ├── types/            # Shared type definitions
-│   ├── shared-stores/    # Zustand stores (player, device, workspace)
-│   ├── shared-ui/        # Shared React components
-│   ├── audio-bridge/     # Audio utilities
-│   └── compression/      # Compression utilities
-│
-├── apps/
-│   ├── studio-hub/        # Portail, fiche et coffre de l’atelier
-│   ├── op1-studio/       # OP-1 Studio (Next.js + Drizzle)
-│   └── ep133-studio/     # EP-133 Studio (Vite + Tone.js)
-│
-└── package.json          # Monorepo config (npm workspaces)
+Le parcours prévu est :
+
+```text
+Landing → fiche Hub → page Outils → studio choisi → retour Hub
+                         ├── coffre : sauvegarder / restaurer / sélectionner
+                         └── MIDI : jouer OP‑1 et EP‑133 ensemble
 ```
 
-## 🚀 Quick Start
+La présentation fonctionnelle complète est dans
+[docs/PRESENTATION_PRODUIT.md](docs/PRESENTATION_PRODUIT.md), et le dossier
+destiné au design est dans [docs/dessin/00_INDEX.md](docs/dessin/00_INDEX.md).
 
-### Install all dependencies
+## Démarrer localement
+
+Pré-requis : Node.js 22+ et npm 10+.
+
 ```bash
-npm install
-```
-
-### Development
-```bash
-# Run OP-1 dev server
-npm run dev:op1
-
-# Run EP-133 dev server
-npm run dev:ep133
-
-# Run the Hub and both studios on the ports expected by the Hub
+npm ci
 npm run dev:all
-
-# Legacy alias
-npm run dev:both
 ```
 
-The local entry points are `http://127.0.0.1:5179` (Hub),
-`http://127.0.0.1:5175` (OP‑1 Studio) and `http://127.0.0.1:5177`
-(EP‑133 Studio). Keep `dev:all` running while opening tools from the Hub.
+Points d’entrée locaux :
 
-### Build
-```bash
-# Build all workspaces
-npm run build:all
+- Hub : <http://127.0.0.1:5179>
+- OP‑1 Studio : <http://127.0.0.1:5175>
+- EP‑133 Studio : <http://127.0.0.1:5177>
 
-# Build specific workspace
-npm run build -w apps/op1-studio
-npm run build -w apps/ep133-studio
-```
+Le Hub est le point d’entrée recommandé : il ouvre les studios avec le profil,
+la machine et l’espace de travail déclarés.
 
-### Testing
-```bash
-npm run test:all
-npm run lint:all
-```
-
-## 📦 Packages
-
-### @studio-hub/types
-Shared type definitions for both studios:
-- PlayerProfile
-- DeviceInfo
-- MidiMessage
-- StudioConfig
-
-### @studio-hub/shared-stores
-Zustand stores for centralized state:
-- usePlayerProfileStore
-- useDeviceStore
-- useWorkspaceStore
-
-### @studio-hub/shared-ui
-Shared React components (to be populated):
-- Common UI elements used by both studios
-
-### @studio-hub/audio-bridge
-Utilities audio réellement partagées entre les studios :
-- analyse WAV déterministe (PCM entier/float)
-- crêtes de forme d'onde, trim de silence et suggestion de normalisation
-- parseur et lecture d'échantillons réutilisables par les convertisseurs locaux
-
-Les convertisseurs AIFF/EP‑133 restent dans leurs applications car leurs
-formats cibles et leurs contraintes ne sont pas identiques.
-
-### @studio-hub/compression
-Compression and archive utilities:
-- ZIP/GZIP handling
-
-## 🔄 Workspace Dependencies
-
-- Les contrats effectivement partagés par les applications sont importés via
-  les paquets concernés, notamment `@studio-hub/midi-bridge` et
-  `@studio-hub/audio-bridge`.
-- `@studio-hub/types` et `@studio-hub/shared-stores` restent des fondations
-  disponibles ; leur raccord complet aux écrans studios est encore planifié.
-- Le code partagé dans `packages/` utilise le protocole workspace.
-
-## 📊 Benefits
-
-- ✅ 60-65% reduction in total size
-- ✅ 90-95% faster npm install
-- ✅ 70-80% faster dev start
-- ✅ Single source of truth for shared code
-- ✅ Unified patterns across studios
-
-## 🛠️ Each Studio
-
-### OP-1 Studio (`apps/op1-studio/`)
-- Framework: Next.js 16
-- Database: Drizzle ORM
-- State: Zustand
-- Native: Tauri
-- Deploy: Cloudflare Wrangler
-
-### EP-133 Studio (`apps/ep133-studio/`)
-- Framework: Vite
-- Audio: Tone.js + WaveSurfer
-- State: Zustand
-- Testing: Vitest + Playwright
-- PWA: Enabled
-
----
-
-**Version**: 1.0.0  
-**Updated**: 2026-08-16  
-**Status**: Branche `integration/studio-hub` — parcours Hub hors machine validés, PR ouverte
-
-## État vérifié
-
-La branche d’intégration est construite depuis le `main` récent de `OP-1-Studio`.
-L’OP‑1 distant reste la base de référence ; le Hub, l’EP‑133, les packages
-partagés, l’éditeur de samples et le portail Services sont ajoutés autour de
-cette base sans remplacer ses fonctionnalités récentes.
-
-Commandes validées dans la branche :
+## Vérifier le dépôt
 
 ```bash
 npm run typecheck:all
@@ -158,9 +54,48 @@ npm run lint:all
 npm run test:e2e:hub
 ```
 
-Le test Hub couvre 13 scénarios et 8 cartes d’outils, dont la fiche
-persistante, le coffre sélectif hors machine avec compteur, l’AIFF local, l’export SVG, les
-services OP‑1, les sons EP‑133, la documentation OP‑1, le transport MIDI virtuel
-et une séance Rhythm Hero locale avec score et progression. Le lint ne contient pas d’erreur bloquante ;
-les limites matérielles et les gros volumes restent ouvertes dans la
-[roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md).
+La validation matérielle reste séparée et prudente :
+
+```bash
+npm run hardware:validate
+```
+
+Les tests navigateur ne déclenchent pas d’écriture machine, de firmware, de
+SysEx ou de transfert sans checkpoint et confirmation explicite.
+
+## Organisation du dépôt
+
+```text
+apps/
+  studio-hub/       portail, fiche, coffre et synchronisation
+  op1-studio/       outils OP‑1
+  ep133-studio/     outils EP‑133
+packages/           contrats, audio, MIDI et utilitaires partagés
+docs/               état courant, roadmaps, audits et dossier de design
+archive/            matériel historique et prototypes conservés
+e2e/ tools/         validations navigateur et matériel
+```
+
+Les packages expérimentaux sont conservés pour référence et évolution, mais
+ne sont pas présentés comme des parcours produit validés tant qu’ils ne sont
+pas raccordés à un écran et à un test utilisateur.
+
+## État Git
+
+`main` est la branche canonique du dépôt et contient la consolidation Hub,
+OP‑1, EP‑133 et documentation. Les branches historiques restantes servent de
+référence ; les nouvelles corrections doivent partir de `main`.
+
+Pour comprendre les décisions et les prochaines portes :
+
+- [État courant](STATUS_CURRENT.md)
+- [Roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md)
+- [Index documentaire](INDEX.md)
+- [Alignement roadmap/code](ROADMAP_CODE_ALIGNMENT_2026-08-17.md)
+- [Audit du code mort](AUDIT_CODE_MORT_2026-08-16.md)
+
+## Licence et prudence
+
+Consulter les fichiers `LICENSE` des applications et les notes de licence
+associées avant toute redistribution. Les fonctionnalités de firmware,
+transfert et écriture machine restent soumises à validation du matériel réel.

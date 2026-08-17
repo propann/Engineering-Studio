@@ -1,7 +1,7 @@
 # Feuille de route active — Studio Hub, OP‑1 et EP‑133
 
 **Date de recalage :** 16 août 2026  
-**Statut :** branche `integration/studio-hub`, PR ouverte, non fusionnée  
+**Statut :** branche canonique `main`, consolidation fusionnée  
 **Source de vérité :** ce document pour les priorités produit. Les roadmaps historiques restent utiles pour le contexte, mais ne décrivent plus seules l’état actuel.
 
 Les résultats reproductibles de la dernière passe sont consignés dans le
@@ -61,7 +61,7 @@ Objectif : ouvrir chaque outil depuis le Hub, conserver l’identité et revenir
 - [x] Vérifier les ouvertures hors machine : sample OP‑1, image/SVG, services, sons EP‑133 et documentation OP‑1.
 - [x] Éviter la course d’hydratation lors d’un lancement direct Hub → OP‑1 Studio.
 - [x] Vérifier la persistance après réouverture d’un contexte navigateur, sans nouvelle fiche.
-- [ ] Passer la PR d’intégration en revue puis la fusionner après ces contrôles.
+- [x] Revoir et fusionner la consolidation dans `main`.
 
 ### P1 — Coffre et sauvegardes crédibles
 
@@ -174,7 +174,7 @@ transport communs, sans mélanger cette fonction avec les sauvegardes.
 3. Validation matérielle OP‑1/EP‑133 en lecture seule puis sur une cible de test.
 4. Stabilisation du contrat Hub, des permissions et des statistiques.
 5. Nettoyage du code mort et mise à jour des roadmaps historiques.
-6. Revue et fusion de la PR d’intégration.
+6. Continuer les validations matérielles et publier les résultats dans `main`.
 
 ## 5. Hors périmètre immédiat
 

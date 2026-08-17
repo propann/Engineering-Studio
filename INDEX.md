@@ -7,19 +7,21 @@
 ## 🎯 Start Here
 
 ### Current Product Source of Truth
-1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
-2. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
-3. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
-4. **[README.md](./README.md)** - installation et commandes vérifiées
+1. **[README.md](./README.md)** - présentation du produit, installation et commandes
+2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - parcours utilisateur et rôle de chaque atelier
+3. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
+4. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
+5. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
 
 > `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md` et `PHASE3_COMPLETION.md` sont
 > des rapports historiques de consolidation. Ils restent utiles pour le
 > contexte, mais ne remplacent pas la roadmap active.
 
 ### For First-Time Readers
-1. **[README.md](./README.md)** - Monorepo overview and quick start
-2. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - current product status
-3. **[STATUS.md](./STATUS.md)** - historical architecture and consolidation context
+1. **[README.md](./README.md)** - vue d’ensemble et démarrage rapide
+2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - comprendre le produit en cinq minutes
+3. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit actuel
+4. **[STATUS.md](./STATUS.md)** - contexte historique d’architecture et de consolidation
 
 ### For Project Status
 1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - active status and next gates
@@ -44,7 +46,7 @@
   - ✅ Phase 1: Quick Wins (Foundation)
   - ✅ Phase 2: Monorepo Setup
   - ✅ Phase 3: EP-133 Integration
-  - 🔄 Phase 4: Outils intégrés et validation (active)
+  - 🧭 Phase 4: historique de consolidation ; suivre la roadmap active pour les prochaines portes
 
 ### Consolidation Strategy
 - **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - Audit et alignement des roadmaps
@@ -135,8 +137,8 @@
 3. Deep dive: **[STATUS.md](./STATUS.md)** (technical details)
 4. History: **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)**
 
-### "I need to work on the next phase (Phase 4)"
-→ See **[PROGRESS.md](./PROGRESS.md#-next-phase-phase-4---optimization)** for priorities
+### "I need to work on the next product gate"
+→ See **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** for priorities
 → Reference **[STATUS.md](./STATUS.md#-optimization-opportunities-next-phase)** for specific items
 
 ### "I need to understand OP-1 Studio"
@@ -149,24 +151,15 @@
 
 ---
 
-## 📊 Key Metrics at a Glance
+## 📊 Project Gates
 
-### Size Reduction
-- **Before**: ~787 packages (~800MB)
-- **After**: ~150-180 packages (~150-180MB)
-- **Improvement**: **60-65% reduction** ✅
-
-### Performance Improvements
-- **npm install**: 5-7 min → 30-45 sec (**90% faster**)
-- **Dev startup**: 90s → 25s (**70% faster**)
-- **Build time**: ~200ms → ~150ms (**25% faster**)
-- **Disk space**: ~800MB → ~150-180MB (**60-65% smaller**)
-
-### Quality Metrics
-- **Tests**: ✅ Workspaces passent + 13 scénarios E2E Hub passing
-- **Builds**: ✅ Both OP-1 and EP-133 successful
-- **Types**: ✅ TypeScript strict mode enabled
-- **Docs**: ✅ Current roadmap aligned; historical reports labelled
+- **Git**: `main` is the canonical branch; the consolidation PR is merged.
+- **Applications**: Hub, OP-1 Studio and EP-133 Studio are present in the
+  monorepo and documented.
+- **Quality**: use `npm run typecheck:all`, `npm run build:all`,
+  `npm run test:all` and `npm run lint:all` before a product change.
+- **Hardware**: record machine results separately from local software checks;
+  see [STATUS_CURRENT.md](./STATUS_CURRENT.md).
 
 ---
 
@@ -192,8 +185,11 @@ studio-hub/
 │   ├── audio-bridge/
 │   └── compression/
 ├── apps/
+│   ├── studio-hub/             Vite hub / entry point
 │   ├── op1-studio/             Next.js app
 │   └── ep133-studio/           Vite app
+├── docs/dessin/                Product and screen briefs
+├── archive/                    Experimental and historical material
 ├── .git/                       Repository
 └── package.json                npm workspaces root
 ```
@@ -226,7 +222,8 @@ archive/legacy-material/EP-133-KO-II-Studio/OP-1-Studio/
 - [Architecture Details](./STATUS.md#-monorepo-structure)
 
 ### Next Steps
-- [Phase 4 Plan](./PROGRESS.md#-next-phase-phase-4---optimization)
+- [Active roadmap](./docs/ROADMAP_ACTIVE_2026-08-16.md)
+- [Code alignment](./ROADMAP_CODE_ALIGNMENT_2026-08-17.md)
 - [Known Issues](./STATUS.md#%EF%B8%8F-known-issues--notes)
 - [Optimization Opportunities](./STATUS.md#-optimization-opportunities-next-phase)
 
@@ -237,9 +234,9 @@ archive/legacy-material/EP-133-KO-II-Studio/OP-1-Studio/
 ### For Different Roles
 
 #### Project Manager
-1. **[PROGRESS.md](./PROGRESS.md)** - Project status overview
-2. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - Phase completion report
-3. **[STATUS.md](./STATUS.md#-consolidation-metrics)** - Metrics section
+1. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - product overview
+2. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - current gates
+3. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - verified current state
 
 #### Developer
 1. **[README.md](./README.md)** - Quick start
@@ -248,9 +245,9 @@ archive/legacy-material/EP-133-KO-II-Studio/OP-1-Studio/
 4. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - Decision rationale
 
 #### DevOps / CI-CD
-1. **[STATUS.md](./STATUS.md#-build-results)** - Build info
-2. **[PROGRESS.md](./PROGRESS.md#-next-phase-phase-4---optimization)** - Next phase
-3. **[README.md](./README.md)** - Commands reference
+1. **[README.md](./README.md)** - Commands reference
+2. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - current quality gates
+3. **[BRANCHING_STRATEGY.md](./BRANCHING_STRATEGY.md)** - Git workflow
 
 #### New Team Member
 1. **[README.md](./README.md)** - Start here
@@ -315,7 +312,7 @@ To Be Added (Phase 4):
 ```bash
 cd /home/azoth/studio-hub
 npm install           # Install all dependencies
-npm run dev:both     # Start both dev servers
+npm run dev:all       # Start Hub, OP-1 Studio and EP-133 Studio
 ```
 
 ### 5-Minute Overview
@@ -348,7 +345,7 @@ Read **[README.md](./README.md)** (complete overview with commands)
 4. Mark with ⚠️ if blocking
 
 ### Requesting Features
-1. Check Phase 4 plan
+1. Check the active roadmap
 2. File in optimization section
 3. Link to related documentation
 

@@ -1,6 +1,6 @@
 # État courant — Studio Hub
 
-**Recalage :** 16 août 2026 · **Branche :** `integration/studio-hub`
+**Recalage :** 17 août 2026 · **Branche canonique :** `main`
 
 Ce fichier sépare l’état logiciel reproductible des validations matérielles.
 La [roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md) reste la source de
@@ -53,7 +53,7 @@ historiques.
    fichier corrompu.
 3. Raccorder les séquences internes des studios au transport déjà validé,
    avec arrêt d’urgence et checkpoint avant toute séquence longue.
-4. Revoir puis fusionner la PR d’intégration après ces contrôles.
+4. Continuer les contrôles matériels et documenter les résultats dans `main`.
 
 ## Règle de sécurité
 
