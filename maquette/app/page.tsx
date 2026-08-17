@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import StudioHeader from "./StudioHeader";
 
 const tools = [
   { id:"op1", index:"01", title:"OP-1 Studio", label:"Synthèse & création", description:"Samples, Tape, firmware, images et sauvegardes dans un atelier dédié.", accent:"blue", icon:"keys", meta:"8 modules" },
@@ -24,11 +25,7 @@ function ToolVisual({icon}:{icon:string}) {
 export default function Home(){
  const [selected,setSelected]=useState<(typeof tools)[number]|null>(null);
  return <main>
-  <header className="topbar">
-   <a className="brand" href="#top"><span className="brand-symbol"><i/><i/><i/><i/></span><span><strong>Engineering</strong><b>Studio</b></span></a>
-   <nav><a href="#atelier">Atelier</a><a href="#outils">Outils</a><a href="#systeme">Système</a></nav>
-   <Link className="profile-link" href="/fiche-personnage"><span className="profile-orb">AZ</span><span><small>IDENTITÉ LOCALE</small><strong>Ma fiche</strong></span><b>↗</b></Link>
-  </header>
+  <StudioHeader/>
   <section className="hero" id="top"><div className="hero-grid"/><div className="hero-copy">
    <p className="eyebrow"><span/> ATELIER MUSICAL MODULAIRE · LOCAL</p><h1>Construis.<br/>Connecte.<br/><em>Crée.</em></h1>
    <p className="hero-intro">Un seul espace pour piloter tes machines, façonner tes sons et transformer les idées en instruments.</p>

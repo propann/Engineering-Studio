@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import "./outils.css";
+import StudioHeader from "../StudioHeader";
 
 type Tool={id:string;code:string;category:string;title:string;text:string;accent:string;visual:string;status:string};
 const tools:Tool[]=[
@@ -23,8 +24,7 @@ const tools:Tool[]=[
 export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
  return <main className="hub-page">
-  <header className="hub-header"><Link href="/" className="hub-brand"><i/><span><small>ENGINEERING</small><b>STUDIO HUB</b></span></Link><nav><a href="#studios">STUDIOS</a></nav><Link href="/fiche-personnage" className="hub-player"><img src="/media/avatars/pixel-avatar-engineer.webp" alt="Avatar du joueur"/><span><small>PLAYER 01</small><b>AZOTH</b></span><strong>LV.01</strong></Link></header>
-  <section className="hub-welcome"><div><p><i/> WORKSPACE LOCAL · CONNECTÉ</p><h1>Bienvenue dans<br/><em>ton atelier.</em></h1><span>Deux machines, seize espaces utiles et aucune fausse fonction cloud.</span></div><div className="hub-status-board"><div><small>MACHINES</small><b>02</b><span>OP-1 · EP-133</span></div><div><small>ESPACES ACTIFS</small><b>16</b><span>CODE PRÉSENT</span></div><div><small>COFFRE</small><b>00</b><span>SNAPSHOT</span></div><div className="workspace-readout"><small>ESPACE MAÎTRE</small><strong>/ENGINEERING_STUDIO</strong><i>ONLINE</i></div></div></section>
+  <StudioHeader/>
   <section className="machine-studios" id="studios"><div className="machine-studio-grid">
    <button className="machine-card op1-card" onClick={()=>setSelected(machineTool("op1"))}><div className="machine-card-image"><img src="/media/teenage-engineering-op-1-pixel-art-music-workstation.jpeg" alt="Teenage Engineering OP-1 complet en pixel art"/><div className="machine-online"><i/> LOCAL MODE</div></div><div className="machine-card-copy"><span>SYNTHÈSE · TAPE · FIRMWARE</span><h3>OP-1 Studio</h3><p>Firmware, sauvegardes, sons, Tape, images, services, exercices et documentation.</p><div className="module-pills"><b>8 MODULES</b><b>MIDI</b><b>LOCAL</b></div></div></button>
    <button className="machine-card ko-card" onClick={()=>setSelected(machineTool("ep133"))}><div className="machine-card-image"><img src="/media/teenage-engineering-ep-133-ko-ii-pixel-art-sampler.jpeg" alt="Teenage Engineering EP-133 K.O. II complet en pixel art"/><div className="machine-online"><i/> 64 MO · PRÊT</div></div><div className="machine-card-copy"><span>BEATS · SONG · PERFORMANCE</span><h3>EP-133 Studio</h3><p>Pattern & Song, sons, test machine, Rhythm Hero et documentation.</p><div className="module-pills"><b>5 MODULES</b><b>SYSEX</b><b>PADS</b></div></div></button>
@@ -33,7 +33,7 @@ export default function ToolsHub(){
 
   <section className="utility-cards" aria-label="Accès rapides"><div className="utility-grid">
    <button className="utility-card purple" onClick={()=>setSelected(tools.find(t=>t.id==="op1-docs")!)}><span>DOC-01</span><ToolGraphic type="pixels"/><small>RÉFÉRENCES VÉRIFIÉES</small><h3>Documentation</h3><p>Guides OP-1 et EP-133, formats, MIDI et procédures.</p></button>
-   <button className="utility-card orange" onClick={()=>setSelected(tools.find(t=>t.id==="image")!)}><span>PX-320</span><ToolGraphic type="pixels"/><small>CRÉATION VISUELLE</small><h3>Éditeur d’image</h3><p>Écrans, thèmes et visuels au format exact des machines.</p></button>
+   <Link className="utility-card orange" href="/outils/editeur-image"><span>PX-320</span><ToolGraphic type="pixels"/><small>CRÉATION VISUELLE</small><h3>Éditeur d’image</h3><p>Écrans, thèmes et visuels au format exact des machines.</p></Link>
    <button className="utility-card yellow" onClick={()=>setSelected(hubTool("vault"))}><span>VAULT-01</span><ToolGraphic type="chip"/><small>COFFRE LOCAL</small><h3>Sauvegarde</h3><p>Snapshots OP-1 et EP-133 avec contrôle d’intégrité.</p></button>
   </div></section>
 

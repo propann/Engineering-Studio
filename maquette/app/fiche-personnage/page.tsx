@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import StudioHeader from "../StudioHeader";
 
 type Machine={id:number;kind:"op1"|"ep133";name:string;memory?:64|128;active:boolean};
 const avatarNames=["teacher","carpenter","artist","barista","support","architect","activist","mail-carrier","builder","scientist","student","librarian","trainer","office-worker","influencer","chef","courier","grandma","musician","paramedic","knight","rogue","smith","archer","scholar","warrior","goblin","cyborg","cat-adventurer","pirate","sorceress","viking","engineer","necromancer","ranger","royal-guard","fighter","samurai","cultist","explorer"] as const;
@@ -17,7 +18,7 @@ export default function CharacterPage(){
  function update(id:number,patch:Partial<Machine>){setMachines(list=>list.map(m=>m.id===id?{...m,...patch}:m))}
  function add(kind:Machine["kind"]){setMachines(list=>[...list,{id:Date.now(),kind,name:kind==="op1"?`OP-1 ${list.filter(m=>m.kind===kind).length+1}`:`EP-133 ${list.filter(m=>m.kind===kind).length+1}`,memory:kind==="ep133"?64:undefined,active:true}])}
  return <main className="creator-page">
-  <header className="creator-header"><Link href="/" className="pixel-back">← QUITTER</Link><div className="creator-title"><span>ENGINEERING STUDIO</span><strong>CRÉATION DU PERSONNAGE</strong></div><div className="save-state"><i/> SAUVEGARDE LOCALE</div></header>
+  <StudioHeader/>
   <div className="creator-progress"><span style={{width:`${progress}%`}}/><b>{progress}% · ATELIER CONFIGURÉ</b></div>
 
   <section className="creator-layout">
