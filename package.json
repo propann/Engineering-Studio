@@ -9,14 +9,14 @@
     "apps/*"
   ],
   "engines": {
-    "node": ">=22",
+    "node": ">=22 <23",
     "npm": ">=10"
   },
   "scripts": {
     "install:all": "npm ci",
     "build:all": "npm run build -w apps/studio-hub && npm run build -w apps/op1-studio && npm run build -w apps/ep133-studio",
     "build:production": "node tools/build-production-studios.mjs",
-    "test:all": "npm run test -ws --if-present -- --run",
+    "test:all": "npm run test -ws --if-present",
     "lint:all": "npm run lint -w apps/op1-studio",
     "typecheck:all": "npm run typecheck -ws --if-present",
     "dev:hub": "npm run dev -w apps/studio-hub",
