@@ -1,0 +1,7 @@
+<svg width="320" height="280" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="280" fill="#ebece6"/>
+    <rect x="40" y="40" width="240" height="200" fill="#d9ff43" opacity="0.3" stroke="#111" stroke-width="3"/>
+    <circle cx="160" cy="100" r="25" fill="#d9ff43" stroke="#111" stroke-width="2"/>
+    <rect x="130" y="140" width="60" height="80" fill="#d9ff43" stroke="#111" stroke-width="2"/>
+    <text x="160" y="250" font-family="monospace" font-size="14" font-weight="bold" text-anchor="middle" fill="#111">BUILDER</text>
+  </svg>
