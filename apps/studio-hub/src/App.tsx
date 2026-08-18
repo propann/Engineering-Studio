@@ -7,9 +7,8 @@ import Exercises from "./pages/Exercises";
 import DocOP1 from "./pages/DocOP1";
 import DocEP133 from "./pages/DocEP133";
 import RhythmHero from "./pages/RhythmHero";
-import ExercisesOP1 from "./pages/ExercisesOP1";
 
-type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133" | "rhythm-hero" | "exercises-op1";
+type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133" | "rhythm-hero";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -32,8 +31,6 @@ export function App() {
       return <DocEP133 />;
     case "rhythm-hero":
       return <RhythmHero />;
-    case "exercises-op1":
-      return <ExercisesOP1 />;
     case "landing":
     default:
       return <Landing />;
