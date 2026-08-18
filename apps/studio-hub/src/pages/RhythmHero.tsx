@@ -20,8 +20,8 @@ export default function RhythmHero() {
             style={{
               marginTop: "15px",
               padding: "10px 20px",
-              background: "#ebece6",
-              border: "2px solid #111",
+              background: "#dfd9ff",
+              border: "2px solid #383572",
               cursor: "pointer",
               fontWeight: "bold"
             }}
@@ -31,7 +31,7 @@ export default function RhythmHero() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "30px" }}>
-          <div style={{ padding: "20px", background: "#fff", border: "3px solid #111" }}>
+          <div style={{ padding: "20px", background: "#fff", border: "3px solid #383572" }}>
             <h2>📚 À propos</h2>
             <p style={{ lineHeight: "1.8", marginBottom: "15px" }}>
               Rhythm Hero est un jeu d'entraînement interactif conçu pour vous aider à maîtriser les patterns et la synchronisation sur l'EP-133.
@@ -41,7 +41,7 @@ export default function RhythmHero() {
             </p>
           </div>
 
-          <div style={{ padding: "20px", background: "#fff", border: "3px solid #111" }}>
+          <div style={{ padding: "20px", background: "#fff", border: "3px solid #383572" }}>
             <h2>⚡ Capacités requises</h2>
             <ul style={{ lineHeight: "1.8", marginLeft: "20px" }}>
               <li>✅ EP-133 connecté en USB</li>
@@ -52,7 +52,7 @@ export default function RhythmHero() {
           </div>
         </div>
 
-        <div style={{ padding: "20px", background: "#f0f0f0", border: "3px solid #111", marginBottom: "30px" }}>
+        <div style={{ padding: "20px", background: "#dfd9ff", border: "3px solid #383572", marginBottom: "30px" }}>
           <h2>🎯 Comment jouer</h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "15px" }}>
             <div>
@@ -74,19 +74,19 @@ export default function RhythmHero() {
           </div>
         </div>
 
-        <div style={{ padding: "20px", background: "#fff", border: "3px solid #111", marginBottom: "30px" }}>
+        <div style={{ padding: "20px", background: "#fff", border: "3px solid #383572", marginBottom: "30px" }}>
           <h2>📊 Niveaux de difficulté</h2>
           <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "15px" }}>
             <tbody>
-              <tr style={{ borderBottom: "2px solid #111" }}>
+              <tr style={{ borderBottom: "2px solid #383572" }}>
                 <td style={{ padding: "10px", fontWeight: "bold" }}>🟢 Débutant</td>
                 <td style={{ padding: "10px" }}>Patterns simples, rythme lent, parfait pour apprendre</td>
               </tr>
-              <tr style={{ borderBottom: "2px solid #111" }}>
+              <tr style={{ borderBottom: "2px solid #383572" }}>
                 <td style={{ padding: "10px", fontWeight: "bold" }}>🟡 Intermédiaire</td>
                 <td style={{ padding: "10px" }}>Patterns mixtes, rythme moyen, bonne progression</td>
               </tr>
-              <tr style={{ borderBottom: "2px solid #111" }}>
+              <tr style={{ borderBottom: "2px solid #383572" }}>
                 <td style={{ padding: "10px", fontWeight: "bold" }}>🔴 Expert</td>
                 <td style={{ padding: "10px" }}>Patterns complexes, rythme rapide, vrai défi</td>
               </tr>
@@ -98,7 +98,7 @@ export default function RhythmHero() {
           </table>
         </div>
 
-        <div style={{ textAlign: "center", padding: "20px", background: "#d9ff43", border: "3px solid #111" }}>
+        <div style={{ textAlign: "center", padding: "20px", background: "#00ed95", border: "3px solid #383572" }}>
           <h3>🚀 Prêt à jouer ?</h3>
           <p style={{ marginBottom: "15px", fontSize: "16px" }}>
             Ouvre l'EP-133 Studio pour lancer Rhythm Hero et commence ton entraînement !
@@ -107,9 +107,9 @@ export default function RhythmHero() {
             onClick={() => window.location.href = "http://127.0.0.1:5177/?hubTool=game"}
             style={{
               padding: "12px 30px",
-              background: "#ff5a1f",
+              background: "#00ed95",
               color: "#fff",
-              border: "2px solid #111",
+              border: "2px solid #383572",
               cursor: "pointer",
               fontWeight: "bold",
               fontSize: "16px"

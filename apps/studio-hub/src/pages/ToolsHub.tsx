@@ -20,7 +20,7 @@ const tools:Tool[]=[
  {id:"op1-backup",code:"BKP-OP1",category:"SAUVEGARDE",title:"Sauvegarde OP-1",text:"Tape, Album, Drum et Synth avec manifeste et contrôle d’intégrité.",accent:"blue",visual:"chip",status:"OP-1 REQUIS",section:"op1",target:"op1"},
  {id:"sample",code:"WAV-AIFF",category:"SON",title:"Éditeur de samples",text:"Waveform, trim, fondus et préparation des packs OP-1.",accent:"cyan",visual:"wave",status:"LOCAL",section:"op1",target:"op1"},
  {id:"tape",code:"TAPE-04",category:"STUDIO",title:"Tape & Album Studio",text:"Quatre pistes, transport, mixage, stems et Album en mode local.",accent:"blue",visual:"wave",status:"MIDI",section:"op1",target:"op1"},
- {id:"image",code:"PX-320",category:"CRÉATION",title:"Éditeur d’image",text:"Écrans et thèmes OP-1 au format exact 320 × 160.",accent:"purple",visual:"pixels",status:"SANS MACHINE",section:"op1",target:"op1"},
+ {id:"image",code:"PX-320",category:"CRÉATION",title:"Éditeur d’image",text:"Écrans et thèmes OP-1 au format exact 320 × 160.",accent:"purple",visual:"pixels",status:"SANS MACHINE",section:"hub",target:"hub"},
  {id:"services",code:"OP1-LAB",category:"OP-1",title:"Services OP-1",text:"Patchs son, ressources référencées et outils de préparation.",accent:"yellow",visual:"chip",status:"LOCAL",section:"op1",target:"op1"},
  {id:"op1-exercise",code:"KEY-01",category:"TRAINING LAB",title:"Exercices OP-1",text:"Suites d’accords, clavier et retour MIDI pour progresser.",accent:"green",visual:"game",status:"OP-1 REQUIS",section:"hub",target:"op1"},
  {id:"op1-docs",code:"DOC-OP1",category:"DOCUMENTATION",title:"Documentation OP-1",text:"Procédures, formats, connexions et limites vérifiées.",accent:"purple",visual:"pixels",status:"LECTURE",section:"hub",target:"hub",anchor:"documentation"},
@@ -68,6 +68,7 @@ export default function ToolsHub(){
   if(tool.target==="hub"){
     if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
     if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
+    if(tool.id==="image"){(window as any).navigateMaquette("image-editor-op1");return}
     if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
     // Autres docs - montrer le modal
     if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}

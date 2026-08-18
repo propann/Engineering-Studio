@@ -7,8 +7,11 @@ import Exercises from "./pages/Exercises";
 import DocOP1 from "./pages/DocOP1";
 import DocEP133 from "./pages/DocEP133";
 import RhythmHero from "./pages/RhythmHero";
+import ImageEditorOP1 from "./pages/ImageEditorOP1";
+import FirmwareGallery from "./pages/FirmwareGallery";
+import ThemeEditor from "./pages/ThemeEditor";
 
-type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133" | "rhythm-hero";
+type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133" | "rhythm-hero" | "image-editor-op1" | "firmware-gallery" | "theme-editor";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -31,6 +34,12 @@ export function App() {
       return <DocEP133 />;
     case "rhythm-hero":
       return <RhythmHero />;
+    case "image-editor-op1":
+      return <ImageEditorOP1 />;
+    case "firmware-gallery":
+      return <FirmwareGallery />;
+    case "theme-editor":
+      return <ThemeEditor />;
     case "landing":
     default:
       return <Landing />;

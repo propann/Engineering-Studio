@@ -1,0 +1,109 @@
+/* OP-1 Official Color Palette
+ * Source: op1-glitter THEME_CREATION.md (verified on real machine)
+ * Date: 2026-08-18
+ */
+
+:root {
+  /* Encoders (color-coded) */
+  --op1-encoder-green: #00ed95;   /* Encodeur 1 */
+  --op1-encoder-red: #ff3a5d;     /* Encodeur 4 */
+  --op1-encoder-blue: #698eff;    /* Encodeur 2 */
+  --op1-encoder-white: #dfd9ff;   /* Encodeur 3 + dynamic elements */
+
+  /* Neutrals */
+  --op1-white: #ffffff;           /* Light backgrounds */
+  --op1-text: #aeb1dc;            /* Interface text */
+  --op1-background: #9256d7;      /* Screen background */
+  --op1-blue-alt: #4d9eff;        /* Alternative blue */
+  --op1-dark: #383572;            /* Dark violet */
+
+  /* Derived tokens for UI */
+  --op1-primary: var(--op1-encoder-green);      /* Main actions */
+  --op1-secondary: var(--op1-encoder-blue);     /* Secondary actions */
+  --op1-accent: var(--op1-encoder-white);       /* Highlights */
+  --op1-danger: var(--op1-encoder-red);         /* Delete/warning */
+  --op1-text-primary: var(--op1-dark);          /* Main text */
+  --op1-text-secondary: var(--op1-text);        /* Muted text */
+  --op1-bg-light: var(--op1-encoder-white);     /* Light backgrounds */
+  --op1-bg-dark: var(--op1-dark);               /* Dark backgrounds */
+  --op1-border: var(--op1-dark);                /* Borders */
+}
+
+/* Component Color Mappings */
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--op1-primary);
+  color: var(--op1-dark);
+  border-color: var(--op1-dark);
+}
+
+.btn-secondary {
+  background-color: var(--op1-secondary);
+  color: white;
+  border-color: var(--op1-dark);
+}
+
+.btn-danger {
+  background-color: var(--op1-danger);
+  color: white;
+  border-color: var(--op1-dark);
+}
+
+.btn-ghost {
+  background-color: var(--op1-bg-light);
+  color: var(--op1-text-primary);
+  border-color: var(--op1-dark);
+}
+
+/* Text */
+.text-primary {
+  color: var(--op1-text-primary);
+}
+
+.text-secondary {
+  color: var(--op1-text-secondary);
+}
+
+.text-muted {
+  color: var(--op1-background);
+}
+
+/* Backgrounds */
+.bg-light {
+  background-color: var(--op1-bg-light);
+}
+
+.bg-dark {
+  background-color: var(--op1-bg-dark);
+}
+
+.bg-alt {
+  background-color: var(--op1-background);
+}
+
+/* Borders */
+.border-default {
+  border-color: var(--op1-border);
+}
+
+/* Status Colors */
+.status-success {
+  color: var(--op1-encoder-green);
+}
+
+.status-warning {
+  color: var(--op1-encoder-red);
+}
+
+.status-info {
+  color: var(--op1-encoder-blue);
+}
+
+.status-active {
+  color: var(--op1-encoder-green);
+}
+
+.status-inactive {
+  color: var(--op1-background);
+}

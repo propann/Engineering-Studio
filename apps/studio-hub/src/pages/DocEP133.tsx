@@ -21,8 +21,8 @@ export default function DocEP133() {
             style={{
               marginTop: "15px",
               padding: "10px 20px",
-              background: "#ebece6",
-              border: "2px solid #111",
+              background: "#dfd9ff",
+              border: "2px solid #383572",
               cursor: "pointer",
               fontWeight: "bold"
             }}
@@ -31,13 +31,13 @@ export default function DocEP133() {
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "2px solid #111" }}>
+        <div style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "2px solid #383572" }}>
           <button
             onClick={() => setActiveTab("overview")}
             style={{
               padding: "10px 20px",
-              background: activeTab === "overview" ? "#ff5a1f" : "#ebece6",
-              color: activeTab === "overview" ? "#fff" : "#111",
+              background: activeTab === "overview" ? "#00ed95" : "#dfd9ff",
+              color: activeTab === "overview" ? "#fff" : "#383572",
               border: "none",
               cursor: "pointer",
               fontWeight: "bold"
@@ -49,8 +49,8 @@ export default function DocEP133() {
             onClick={() => setActiveTab("patterns")}
             style={{
               padding: "10px 20px",
-              background: activeTab === "patterns" ? "#ff5a1f" : "#ebece6",
-              color: activeTab === "patterns" ? "#fff" : "#111",
+              background: activeTab === "patterns" ? "#00ed95" : "#dfd9ff",
+              color: activeTab === "patterns" ? "#fff" : "#383572",
               border: "none",
               cursor: "pointer",
               fontWeight: "bold"
@@ -62,8 +62,8 @@ export default function DocEP133() {
             onClick={() => setActiveTab("sounds")}
             style={{
               padding: "10px 20px",
-              background: activeTab === "sounds" ? "#ff5a1f" : "#ebece6",
-              color: activeTab === "sounds" ? "#fff" : "#111",
+              background: activeTab === "sounds" ? "#00ed95" : "#dfd9ff",
+              color: activeTab === "sounds" ? "#fff" : "#383572",
               border: "none",
               cursor: "pointer",
               fontWeight: "bold"
@@ -75,8 +75,8 @@ export default function DocEP133() {
             onClick={() => setActiveTab("procedures")}
             style={{
               padding: "10px 20px",
-              background: activeTab === "procedures" ? "#ff5a1f" : "#ebece6",
-              color: activeTab === "procedures" ? "#fff" : "#111",
+              background: activeTab === "procedures" ? "#00ed95" : "#dfd9ff",
+              color: activeTab === "procedures" ? "#fff" : "#383572",
               border: "none",
               cursor: "pointer",
               fontWeight: "bold"
@@ -87,10 +87,10 @@ export default function DocEP133() {
         </div>
 
         {activeTab === "overview" && (
-          <div style={{ padding: "20px", background: "#f9f9f9", borderRadius: "4px" }}>
+          <div style={{ padding: "20px", background: "#dfd9ff", borderRadius: "4px" }}>
             <h2>Vue d'ensemble EP-133</h2>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572" }}>
                 <h3>🎛️ Caractéristiques principales</h3>
                 <ul style={{ lineHeight: "1.8" }}>
                   <li><strong>Pattern Studio</strong> : Édition complète des patterns</li>
@@ -100,7 +100,7 @@ export default function DocEP133() {
                   <li><strong>Mémoire</strong> : 64 Mo ou 128 Mo</li>
                 </ul>
               </div>
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572" }}>
                 <h3>⚡ Avant de commencer</h3>
                 <ul style={{ lineHeight: "1.8" }}>
                   <li>✅ Connecter l'EP-133 en USB</li>
@@ -115,10 +115,10 @@ export default function DocEP133() {
         )}
 
         {activeTab === "patterns" && (
-          <div style={{ padding: "20px", background: "#f9f9f9", borderRadius: "4px" }}>
+          <div style={{ padding: "20px", background: "#dfd9ff", borderRadius: "4px" }}>
             <h2>🎼 Patterns & Song Studio</h2>
             <div style={{ marginTop: "20px" }}>
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111", marginBottom: "15px" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572", marginBottom: "15px" }}>
                 <h3>Pattern Mode</h3>
                 <ol style={{ lineHeight: "1.8", marginLeft: "20px" }}>
                   <li>Sélectionner un groupe (A, B, C ou D)</li>
@@ -129,7 +129,7 @@ export default function DocEP133() {
                 </ol>
               </div>
 
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111", marginBottom: "15px" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572", marginBottom: "15px" }}>
                 <h3>Song Mode</h3>
                 <ol style={{ lineHeight: "1.8", marginLeft: "20px" }}>
                   <li>Arranger les patterns dans l'ordre</li>
@@ -140,7 +140,7 @@ export default function DocEP133() {
                 </ol>
               </div>
 
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572" }}>
                 <h3>💡 Conseils</h3>
                 <ul style={{ lineHeight: "1.8" }}>
                   <li>Nommer vos patterns de manière logique</li>
@@ -154,10 +154,10 @@ export default function DocEP133() {
         )}
 
         {activeTab === "sounds" && (
-          <div style={{ padding: "20px", background: "#f9f9f9", borderRadius: "4px" }}>
+          <div style={{ padding: "20px", background: "#dfd9ff", borderRadius: "4px" }}>
             <h2>🎧 Sons & Transferts</h2>
             <div style={{ marginTop: "20px" }}>
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111", marginBottom: "15px" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572", marginBottom: "15px" }}>
                 <h3>Banques de Sons</h3>
                 <p style={{ lineHeight: "1.8" }}>
                   L'EP-133 contient 128 emplacements de sons programmables. Vous pouvez :
@@ -170,7 +170,7 @@ export default function DocEP133() {
                 </ul>
               </div>
 
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111", marginBottom: "15px" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572", marginBottom: "15px" }}>
                 <h3>Transfert de Projets</h3>
                 <ol style={{ lineHeight: "1.8", marginLeft: "20px" }}>
                   <li>Sélectionner le projet à transférer</li>
@@ -181,7 +181,7 @@ export default function DocEP133() {
                 </ol>
               </div>
 
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572" }}>
                 <h3>⚠️ Capacités Mémoire</h3>
                 <p><strong>64 Mo :</strong> Environ 40-50 projets simples</p>
                 <p style={{ marginTop: "10px" }}><strong>128 Mo :</strong> Environ 80-100 projets ou plus complexes</p>
@@ -194,10 +194,10 @@ export default function DocEP133() {
         )}
 
         {activeTab === "procedures" && (
-          <div style={{ padding: "20px", background: "#f9f9f9", borderRadius: "4px" }}>
+          <div style={{ padding: "20px", background: "#dfd9ff", borderRadius: "4px" }}>
             <h2>📖 Procédures courantes</h2>
             <div style={{ marginTop: "20px" }}>
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111", marginBottom: "15px" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572", marginBottom: "15px" }}>
                 <h3>Cloner un Projet</h3>
                 <ol style={{ lineHeight: "1.8", marginLeft: "20px" }}>
                   <li>Ouvrir "Sons & transferts EP-133" au Hub</li>
@@ -208,7 +208,7 @@ export default function DocEP133() {
                 </ol>
               </div>
 
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111", marginBottom: "15px" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572", marginBottom: "15px" }}>
                 <h3>Sauvegarder un Projet</h3>
                 <ol style={{ lineHeight: "1.8", marginLeft: "20px" }}>
                   <li>Utiliser le coffre au Hub</li>
@@ -218,7 +218,7 @@ export default function DocEP133() {
                 </ol>
               </div>
 
-              <div style={{ padding: "15px", background: "#fff", border: "3px solid #111" }}>
+              <div style={{ padding: "15px", background: "#fff", border: "3px solid #383572" }}>
                 <h3>Test Machine</h3>
                 <ol style={{ lineHeight: "1.8", marginLeft: "20px" }}>
                   <li>Brancher l'EP-133 en USB</li>

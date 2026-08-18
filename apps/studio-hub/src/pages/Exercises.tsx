@@ -36,14 +36,14 @@ export default function Exercises() {
           Entraînement progressif sur OP-1 et EP-133. Commencez par les accords, puis progressez vers les mélodies.
         </p>
 
-        <div style={{ display: "flex", gap: "10px", marginBottom: "30px", borderBottom: "2px solid #111" }}>
+        <div style={{ display: "flex", gap: "10px", marginBottom: "30px", borderBottom: "2px solid #383572" }}>
           <button
             onClick={() => setActiveMode("accord")}
             style={{
               padding: "10px 20px",
-              background: activeMode === "accord" ? "#d9ff43" : "#ebece6",
-              color: "#111",
-              border: "2px solid #111",
+              background: activeMode === "accord" ? "#00ed95" : "#dfd9ff",
+              color: "#383572",
+              border: "2px solid #383572",
               cursor: "pointer",
               fontWeight: "bold",
               fontSize: "14px"
@@ -55,9 +55,9 @@ export default function Exercises() {
             onClick={() => setActiveMode("melodie")}
             style={{
               padding: "10px 20px",
-              background: activeMode === "melodie" ? "#d9ff43" : "#ebece6",
-              color: "#111",
-              border: "2px solid #111",
+              background: activeMode === "melodie" ? "#00ed95" : "#dfd9ff",
+              color: "#383572",
+              border: "2px solid #383572",
               cursor: "pointer",
               fontWeight: "bold",
               fontSize: "14px"
@@ -69,9 +69,9 @@ export default function Exercises() {
             onClick={() => setActiveMode("drumkit")}
             style={{
               padding: "10px 20px",
-              background: activeMode === "drumkit" ? "#d9ff43" : "#ebece6",
-              color: "#111",
-              border: "2px solid #111",
+              background: activeMode === "drumkit" ? "#00ed95" : "#dfd9ff",
+              color: "#383572",
+              border: "2px solid #383572",
               cursor: "pointer",
               fontWeight: "bold",
               fontSize: "14px"
@@ -83,16 +83,16 @@ export default function Exercises() {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
           {activeMode === "accord" && exercises.accord.map((ex, i) => (
-            <div key={i} style={{ padding: "20px", background: "#fff", border: "3px solid #111" }}>
+            <div key={i} style={{ padding: "20px", background: "#fff", border: "3px solid #383572" }}>
               <h3 style={{ marginBottom: "10px" }}>{ex.name}</h3>
-              <code style={{ display: "block", background: "#f0f0f0", padding: "10px", marginBottom: "15px", fontSize: "12px" }}>
+              <code style={{ display: "block", background: "#dfd9ff", padding: "10px", marginBottom: "15px", fontSize: "12px" }}>
                 {ex.chords}
               </code>
               <button style={{
                 padding: "10px 15px",
-                background: "#ff5a1f",
+                background: "#00ed95",
                 color: "#fff",
-                border: "2px solid #111",
+                border: "2px solid #383572",
                 cursor: "pointer",
                 fontWeight: "bold",
                 width: "100%"
@@ -103,16 +103,16 @@ export default function Exercises() {
           ))}
 
           {activeMode === "melodie" && exercises.melodie.map((ex, i) => (
-            <div key={i} style={{ padding: "20px", background: "#fff", border: "3px solid #111" }}>
+            <div key={i} style={{ padding: "20px", background: "#fff", border: "3px solid #383572" }}>
               <h3 style={{ marginBottom: "10px" }}>{ex.name}</h3>
-              <code style={{ display: "block", background: "#f0f0f0", padding: "10px", marginBottom: "15px", fontSize: "12px" }}>
+              <code style={{ display: "block", background: "#dfd9ff", padding: "10px", marginBottom: "15px", fontSize: "12px" }}>
                 {ex.notes}
               </code>
               <button style={{
                 padding: "10px 15px",
-                background: "#ff5a1f",
+                background: "#00ed95",
                 color: "#fff",
-                border: "2px solid #111",
+                border: "2px solid #383572",
                 cursor: "pointer",
                 fontWeight: "bold",
                 width: "100%"
@@ -123,16 +123,16 @@ export default function Exercises() {
           ))}
 
           {activeMode === "drumkit" && exercises.drumkit.map((ex, i) => (
-            <div key={i} style={{ padding: "20px", background: "#fff", border: "3px solid #111" }}>
+            <div key={i} style={{ padding: "20px", background: "#fff", border: "3px solid #383572" }}>
               <h3 style={{ marginBottom: "10px" }}>{ex.name}</h3>
-              <code style={{ display: "block", background: "#f0f0f0", padding: "10px", marginBottom: "15px", fontSize: "12px" }}>
+              <code style={{ display: "block", background: "#dfd9ff", padding: "10px", marginBottom: "15px", fontSize: "12px" }}>
                 {ex.pattern}
               </code>
               <button style={{
                 padding: "10px 15px",
-                background: "#ff5a1f",
+                background: "#00ed95",
                 color: "#fff",
-                border: "2px solid #111",
+                border: "2px solid #383572",
                 cursor: "pointer",
                 fontWeight: "bold",
                 width: "100%"
@@ -143,7 +143,7 @@ export default function Exercises() {
           ))}
         </div>
 
-        <section style={{ marginTop: "40px", padding: "20px", background: "#f0f0f0", border: "3px solid #111" }}>
+        <section style={{ marginTop: "40px", padding: "20px", background: "#dfd9ff", border: "3px solid #383572" }}>
           <h2>🚀 Comment pratiquer ?</h2>
           <ol style={{ lineHeight: "1.8", fontSize: "16px" }}>
             <li><strong>Ouvrir OP-1 Studio</strong> depuis le Hub</li>

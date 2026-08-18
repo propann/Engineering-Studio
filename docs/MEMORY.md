@@ -1,0 +1,3 @@
+- [Image Editor Roadmap](IMAGE_EDITOR_ROADMAP.md) — 6-phase plan for standalone firmware theme editor with embedded images
+- [Image Editor Study](IMAGE_EDITOR_STUDY.md) — Research on SVG rasterization, community tools (op1-glitter), candidates analysis
+- [Pixel Editor Architecture](PIXEL_EDITOR_ARCHITECTURE.md) — Original architecture doc for pixel-perfect OP-1 editor
