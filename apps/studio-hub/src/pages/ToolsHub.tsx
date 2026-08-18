@@ -68,7 +68,7 @@ export default function ToolsHub(){
   if(tool.anchor) url.hash=tool.anchor;
   url.searchParams.set("from","engineering-studio-maquette");
   try{const profile=localStorage.getItem("studio-hub-profile");if(profile&&tool.target!=="hub")url.searchParams.set("hubProfile",profile)}catch{/* profil local indisponible */}
-  window.open(url.toString(),"_blank","noopener,noreferrer");
+  window.location.href=url.toString();
  }
  // Filtre les outils mais enlève les outils en cadres spéciaux
  const filteredTools = (activeSection === "all" ? tools : tools.filter(t => t.section && t.section === activeSection))
@@ -102,7 +102,7 @@ export default function ToolsHub(){
       url.searchParams.set("from","engineering-studio-maquette");
       url.searchParams.set("hubReturn",window.location.origin);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"OP-1-Studio","width=1280,height=800,noopener=false");
+      window.location.href=url.toString();
      }}
      title="Ouvrir OP-1 Studio"
     >
@@ -120,7 +120,7 @@ export default function ToolsHub(){
       url.searchParams.set("from","engineering-studio-maquette");
       url.searchParams.set("hubReturn",window.location.origin);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"EP133-Studio","width=1280,height=800,noopener=false");
+      window.location.href=url.toString();
      }}
      title="Ouvrir EP-133 Studio"
     >
@@ -138,7 +138,7 @@ export default function ToolsHub(){
       url.hash="atelier-vault";
       url.searchParams.set("from","engineering-studio-maquette");
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"_blank","noopener,noreferrer");
+      window.location.href=url.toString();
      }}
      title="Ouvrir Sauvegarde unifiée"
     >
