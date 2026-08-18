@@ -90,7 +90,7 @@ export default function ToolsHub(){
   if(tool.id==="rhythm") url.searchParams.set("hubTool","game");
   if(tool.anchor) url.hash=tool.anchor;
   url.searchParams.set("from","engineering-studio-maquette");
-  try{const profile=localStorage.getItem("studio-hub-profile");if(profile&&tool.target!=="hub")url.searchParams.set("hubProfile",profile)}catch{/* profil local indisponible */}
+  try{const profile=localStorage.getItem("studio-hub-profile");if(profile&&(tool.target as string)!=="hub")url.searchParams.set("hubProfile",profile)}catch{/* profil local indisponible */}
   window.location.href=url.toString();
  }
  // Filtre les outils mais enlève les outils en cadres spéciaux

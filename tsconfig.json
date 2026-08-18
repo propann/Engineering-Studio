@@ -1,29 +1,26 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./",
-    "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "types": ["node"],
-    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
     "paths": {
-      "@studio-hub/*": ["./packages/*/src"]
+      "@studio-hub/midi-bridge": ["./packages/midi-bridge/index.ts"],
+      "@studio-hub/audio-bridge": ["./packages/audio-bridge/index.ts"]
     }
   },
-  "include": ["packages", "apps"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["apps/studio-hub/src/**/*", "packages/**/*"],
+  "exclude": ["archive", "**/archive/**", "node_modules", "dist"]
 }

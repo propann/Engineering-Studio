@@ -89,6 +89,10 @@ référence ; les nouvelles corrections doivent partir de `main`.
 
 Pour comprendre les décisions et les prochaines portes :
 
+- [Plan Master de Transformation](PLAN_DE_TRANSFORMATION_MASTER.md)
+- [Dossier d'Architecture du Rack Central](DOSSIER_ARCHITECTURE_RACK_CENTRAL.md)
+- [Manuel de Recâblage des Modules](GUIDE_RECABLAGE_RACK_CENTRAL.md)
+- [Spécification du Module OP-1 Studio pour Codex](DOC_MODULE_OP1_STUDIO_SPECIFICATION.md)
 - [État courant](STATUS_CURRENT.md)
 - [Roadmap active](docs/ROADMAP_ACTIVE_2026-08-16.md)
 - [Index documentaire](INDEX.md)

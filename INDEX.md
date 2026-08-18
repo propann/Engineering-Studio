@@ -7,7 +7,11 @@
 ## 🎯 Start Here
 
 ### Current Product Source of Truth
-1. **[README.md](./README.md)** - présentation du produit, installation et commandes
+1. **[PLAN_DE_TRANSFORMATION_MASTER.md](./PLAN_DE_TRANSFORMATION_MASTER.md)** - plan master de transformation, blueprint d'architecture et guide de développement
+2. **[DOSSIER_ARCHITECTURE_RACK_CENTRAL.md](./DOSSIER_ARCHITECTURE_RACK_CENTRAL.md)** - dossier d'architecture globale du Rack Central
+3. **[GUIDE_RECABLAGE_RACK_CENTRAL.md](./GUIDE_RECABLAGE_RACK_CENTRAL.md)** - manuel de recâblage et d'intégration des modules OP-1 / EP-133
+4. **[DOC_MODULE_OP1_STUDIO_SPECIFICATION.md](./DOC_MODULE_OP1_STUDIO_SPECIFICATION.md)** - dossier de spécification technique du module OP-1 Studio pour Codex
+5. **[README.md](./README.md)** - présentation du produit, installation et commandes
 2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - parcours utilisateur et rôle de chaque atelier
 3. **[ETUDES_INDEX.md](./docs/ETUDES_INDEX.md)** - catalogue central des études et rapports
 4. **[SYNTHESE_DECISIONS_ET_TRAVAUX.md](./docs/SYNTHESE_DECISIONS_ET_TRAVAUX.md)** - décisions et prochaines portes

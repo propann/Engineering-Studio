@@ -1,8 +1,0 @@
-.git
-.github
-node_modules
-dist
-tmp
-__pycache__
-*.tsbuildinfo
-docs/ep133-pad-player.html

@@ -1,7 +1,0 @@
-import type { ReactNode, RefObject } from "react";
-
-type ProjectIcon = (props: { name: "archive" | "book" | "download"; size?: number }) => ReactNode;
-
-export function StudioProjectToolbar({ Icon, projectName, inputRef, onProjectNameChange, onNew, onOpen, onSave, onLoad, onImport }: { Icon: ProjectIcon; projectName: string; inputRef: RefObject<HTMLInputElement | null>; onProjectNameChange: (name: string) => void; onNew: () => void; onOpen: () => void; onSave: () => void; onLoad: (file: File) => void; onImport: () => void }) {
-  return <div className="tape-toolbar"><div className="project-actions"><button className="secondary-action" onClick={onNew}><Icon name="archive" />Nouveau projet</button><button className="secondary-action" onClick={onOpen}><Icon name="book" />Ouvrir</button><button className="secondary-action" onClick={onSave}><Icon name="download" />Enregistrer</button><input ref={inputRef} className="visually-hidden" type="file" accept=".json,.op1studio.json,application/json" onChange={(event) => { const file = event.target.files?.[0]; if (file) onLoad(file); event.currentTarget.value = ""; }} /></div><label className="project-name"><span>Projet</span><input value={projectName} onChange={(event) => onProjectNameChange(event.target.value)} /></label><span className="tape-timecode">00:00:00 / 06:00:00</span><button className="primary-action" onClick={onImport}><Icon name="download" />Préparer l’import</button></div>;
-}

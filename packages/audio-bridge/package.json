@@ -1,11 +1,11 @@
 {
   "name": "@studio-hub/audio-bridge",
   "version": "1.0.0",
-  "description": "Shared audio utilities for Studio Hub ecosystem",
-  "main": "src/index.ts",
+  "private": true,
   "type": "module",
-  "files": ["src"],
-  "exports": { ".": "./src/index.ts" },
-  "dependencies": {},
-  "devDependencies": {}
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  }
 }

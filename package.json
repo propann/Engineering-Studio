@@ -1,37 +1,26 @@
 {
-  "name": "studio-hub",
+  "name": "studio-hub-suite",
   "version": "1.0.0",
-  "description": "Studio Hub - Monorepo for OP-1 Studio + EP-133 Studio",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "engines": {
-    "node": ">=22",
-    "npm": ">=10"
-  },
   "scripts": {
-    "install:all": "npm ci",
-    "build:all": "npm run build -w apps/studio-hub && npm run build -w apps/op1-studio && npm run build -w apps/ep133-studio",
-    "test:all": "npm run test -ws --if-present -- --run",
-    "lint:all": "npm run lint -w apps/op1-studio",
-    "typecheck:all": "npm run typecheck -ws --if-present",
-    "dev:hub": "npm run dev -w apps/studio-hub",
-    "dev:op1": "npm run dev -w apps/op1-studio",
-    "dev:ep133": "npm run dev -w apps/ep133-studio",
-    "dev:all": "node tools/start-local-studios.mjs",
-    "dev:both": "npm run dev:all",
-    "test:e2e:hub": "playwright test -c playwright.config.ts",
-    "hardware:validate": "python3 tools/hardware_validation.py",
-    "clean": "find . -name node_modules -type d -exec rm -rf {} + 2>/dev/null || true"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "tsc --noEmit",
+    "preview": "vite preview --port 3000 --host 0.0.0.0",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "zustand": "5.0.15",
-    "typescript": "5.9.3"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
 }

@@ -47,7 +47,7 @@ export default function FirmwareCompiler() {
     try {
       const saved = sessionStorage.getItem("op1-modified-images");
       if (saved) {
-        const map = new Map(JSON.parse(saved));
+        const map = new Map<string, ModifiedImage>(JSON.parse(saved));
         setModifiedImages(map);
       }
     } catch (e) {

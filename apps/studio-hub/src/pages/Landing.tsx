@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { TopBar } from "../components/TopBar";
 
-const Link = ({href, className, ...props}) => {
+const Link = ({href, className = "", ...props}: any) => {
   const handleClick = (e: any) => {
     e.preventDefault();
     if (href === "/outils") (window as any).navigateMaquette("outils");

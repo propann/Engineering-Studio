@@ -280,7 +280,7 @@ async function createBackup() {
       const manifestFiles: BackupFile[] = [];
       const filesToCopy: { category: BackupCategory; handle: FileSystemFileHandle; path: string }[] = [];
       for (const category of selectedCategories) {
-        const categorySource = await source.getDirectoryHandle(category);
+        const categorySource = await source.getDirectoryHandle(category) as DirectoryHandle;
         const files = await collectFiles(categorySource);
         filesToCopy.push(...files.map((file) => ({ category, handle: file.handle, path: `${category}/${file.path}` })));
       }

@@ -1,0 +1,8 @@
+{
+  "name": "Studio Hub - Suite EP-133 & OP-1",
+  "description": "Suite logicielle unifiée pour Teenage Engineering EP-133 KO II et OP-1 original",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
