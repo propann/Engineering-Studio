@@ -1330,7 +1330,7 @@ export default function Home() {
             <div className="tool-window-header">
               <div>
                 <span className="section-label">OP-1 STUDIO / OUTIL</span>
-                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "docs" ? "Documentation rapide" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
+                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
               </div>
               <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
             </div>
