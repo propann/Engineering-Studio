@@ -131,15 +131,21 @@ export default function ToolsHub(){
     </button>
     <button
      className="utility-card save-card"
-     onClick={()=>setShowSave(true)}
-     title="Cliquez pour accéder aux sauvegardes"
+     onClick={()=>{
+      const url=new URL(STUDIO_URLS.hub);
+      url.hash="atelier-vault";
+      url.searchParams.set("from","engineering-studio-maquette");
+      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
+      window.open(url.toString(),"_blank","noopener,noreferrer");
+     }}
+     title="Ouvrir Sauvegarde unifiée"
     >
      <span>SAVE-ALL</span>
      <ToolGraphic type="chip"/>
      <small>COFFRE</small>
      <h3>💾 Sauvegarde</h3>
      <p>Snapshots OP-1 et EP-133, vérification SHA-256 et restauration contrôlée.</p>
-     <div className="tool-status">{saveTools.length} OPTIONS</div>
+     <div className="tool-status">OUVRIR →</div>
     </button>
 
     {/* === CENTRE === */}
