@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { TopBar } from "../components/TopBar";
+import SoundEditorHub from "./SoundEditorHub";
 import "./outils.css";
 
 const Link = ({href, className, ...props}) => {
@@ -50,6 +51,7 @@ export default function ToolsHub(){
  const [showTraining,setShowTraining]=useState(false);
  const [showSettings,setShowSettings]=useState(false);
  const [showSound,setShowSound]=useState(false);
+ const [showSoundEditor,setShowSoundEditor]=useState(false);
  const [showOP1Studio,setShowOP1Studio]=useState(false);
  const [showEP133Studio,setShowEP133Studio]=useState(false);
  const [profileName,setProfileName]=useState("AZOTH");
@@ -174,7 +176,7 @@ export default function ToolsHub(){
     {/* === CENTRE === */}
     <button
      className="utility-card sound-card"
-     onClick={()=>setShowSound(true)}
+     onClick={()=>setShowSoundEditor(true)}
      title="Cliquez pour accéder aux outils audio"
     >
      <span>SOUND</span>
@@ -239,6 +241,7 @@ export default function ToolsHub(){
    </div>
   </section>
 
+  {showSoundEditor&&<SoundEditorHub profileName={profileName} onClose={()=>setShowSoundEditor(false)}/>}
   {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
   {showDocs&&<DocsModal docs={docTools} onClose={()=>setShowDocs(false)} onSelectTool={(tool)=>{openTool(tool);setShowDocs(false);}}/>}
   {showSave&&<SaveModal saves={saveTools} onClose={()=>setShowSave(false)} onSelectTool={(tool)=>{openTool(tool);setShowSave(false);}}/>}

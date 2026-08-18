@@ -1,0 +1,253 @@
+.sound-editor-hub {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  color: #fff;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+.sound-editor-back {
+  position: fixed;
+  top: 70px;
+  left: 20px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  z-index: 10000;
+}
+
+.sound-editor-back:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.sound-editor-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.sound-editor-header {
+  text-align: center;
+  margin-bottom: 60px;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+.sound-editor-header h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin: 0 0 10px;
+  background: linear-gradient(90deg, #00d9ff, #ff006e, #ffd60a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.sound-editor-header p {
+  font-size: 1.2rem;
+  color: #888;
+  margin: 0;
+}
+
+.machine-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-bottom: 60px;
+}
+
+.machine-button {
+  padding: 30px;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.machine-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.machine-button:hover::before {
+  left: 100%;
+}
+
+.machine-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-5px);
+}
+
+.machine-button.machine-pink {
+  border-color: #ff006e;
+  box-shadow: 0 0 20px rgba(255, 0, 110, 0.3);
+}
+
+.machine-button.machine-pink:hover {
+  box-shadow: 0 0 40px rgba(255, 0, 110, 0.6);
+  background: rgba(255, 0, 110, 0.1);
+}
+
+.machine-button.machine-yellow {
+  border-color: #ffd60a;
+  box-shadow: 0 0 20px rgba(255, 214, 10, 0.3);
+}
+
+.machine-button.machine-yellow:hover {
+  box-shadow: 0 0 40px rgba(255, 214, 10, 0.6);
+  background: rgba(255, 214, 10, 0.1);
+}
+
+.machine-button.active {
+  transform: scale(1.05);
+}
+
+.machine-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.machine-icon {
+  font-size: 3rem;
+}
+
+.machine-name {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.machine-description {
+  font-size: 0.9rem;
+  color: #aaa;
+  line-height: 1.5;
+}
+
+.machine-loading {
+  font-size: 0.8rem;
+  color: #00d9ff;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.sound-editor-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.info-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 25px;
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 0.6s ease-out;
+  animation-delay: 0.2s;
+  animation-fill-mode: both;
+}
+
+.info-card h3 {
+  margin: 0 0 15px;
+  font-size: 1.3rem;
+  color: #00d9ff;
+}
+
+.info-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-card li {
+  padding: 8px 0;
+  color: #ccc;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-card li:before {
+  content: '✓ ';
+  color: #00d9ff;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.info-card li:last-child {
+  border-bottom: none;
+}
+
+.sound-editor-footer {
+  text-align: center;
+  color: #666;
+  font-size: 0.9rem;
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sound-editor-header h1 {
+    font-size: 2rem;
+  }
+
+  .machine-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .sound-editor-info {
+    grid-template-columns: 1fr;
+  }
+}
