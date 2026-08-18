@@ -34,6 +34,12 @@ export default function ImageEditorOP1() {
   const [animationOpen, setAnimationOpen] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
 
+  // Animation frames management
+  const [frames, setFrames] = useState<{ id: string; data: ImageData }[]>([]);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [animationFPS, setAnimationFPS] = useState(10);
+
   // Initialize canvas
   useEffect(() => {
     const canvas = mainCanvasRef.current;
@@ -43,6 +49,29 @@ export default function ImageEditorOP1() {
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, OP1_WIDTH, OP1_HEIGHT);
   }, []);
+
+  // Animation playback loop
+  useEffect(() => {
+    if (!isPlaying || frames.length === 0) return;
+
+    let frameIndex = 0;
+    let lastFrameTime = Date.now();
+    const frameInterval = 1000 / animationFPS; // milliseconds per frame
+    let animationId: ReturnType<typeof requestAnimationFrame>;
+
+    const animate = () => {
+      const now = Date.now();
+      if (now - lastFrameTime >= frameInterval) {
+        selectFrame(frameIndex);
+        frameIndex = (frameIndex + 1) % frames.length;
+        lastFrameTime = now;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isPlaying, frames, animationFPS]);
 
   // Draw grid
   useEffect(() => {
@@ -136,6 +165,36 @@ export default function ImageEditorOP1() {
     }, "image/png");
   }
 
+  // Animation frame management functions
+  function addFrame() {
+    const canvas = mainCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return;
+    const frameData = ctx.getImageData(0, 0, OP1_WIDTH, OP1_HEIGHT);
+    const newFrame = { id: Date.now().toString(), data: frameData };
+    setFrames(f => [...f, newFrame]);
+    setCurrentFrameIndex(frames.length);
+  }
+
+  function deleteFrame(index: number) {
+    if (frames.length <= 1) return; // Keep at least one frame
+    setFrames(f => f.filter((_, i) => i !== index));
+    if (currentFrameIndex >= frames.length - 1) {
+      setCurrentFrameIndex(Math.max(0, frames.length - 2));
+    }
+  }
+
+  function selectFrame(index: number) {
+    if (index < 0 || index >= frames.length) return;
+    const canvas = mainCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.putImageData(frames[index].data, 0, 0);
+    setCurrentFrameIndex(index);
+  }
+
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
     const point = pointFromEvent(e);
     if (!point) return;
@@ -210,11 +269,53 @@ export default function ImageEditorOP1() {
       >
         {/* Animation Panel Left */}
         {animationOpen && (
-          <div style={{ background: "#fff", border: `3px solid ${OP1_COLORS.dark}`, borderLeft: "none", padding: "12px", overflow: "auto" }}>
-            <div style={{ fontWeight: "bold", marginBottom: "12px" }}>🎬 Animation</div>
-            <button style={{ width: "100%", padding: "8px", background: OP1_COLORS.green, border: `2px solid ${OP1_COLORS.dark}`, cursor: "pointer", fontWeight: "bold" }}>
-              ▶ Play
+          <div style={{ background: "#fff", border: `3px solid ${OP1_COLORS.dark}`, borderLeft: "none", padding: "12px", overflow: "auto", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ fontWeight: "bold", marginBottom: "4px" }}>🎬 Frames ({frames.length})</div>
+
+            {/* Frame List */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "200px", overflow: "auto", border: `2px solid ${OP1_COLORS.dark}`, padding: "6px" }}>
+              {frames.length === 0 ? (
+                <div style={{ color: "#999", fontSize: "12px", padding: "6px" }}>No frames yet</div>
+              ) : (
+                frames.map((frame, index) => (
+                  <button
+                    key={frame.id}
+                    onClick={() => selectFrame(index)}
+                    style={{
+                      padding: "6px",
+                      background: currentFrameIndex === index ? OP1_COLORS.green : "#f0f0f0",
+                      border: `2px solid ${OP1_COLORS.dark}`,
+                      cursor: "pointer",
+                      fontWeight: currentFrameIndex === index ? "bold" : "normal",
+                      fontSize: "12px",
+                      textAlign: "left"
+                    }}
+                  >
+                    Frame {index + 1}
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Controls */}
+            <button onClick={addFrame} style={{ width: "100%", padding: "8px", background: OP1_COLORS.green, border: `2px solid ${OP1_COLORS.dark}`, cursor: "pointer", fontWeight: "bold", fontSize: "12px" }}>
+              ➕ New Frame
             </button>
+
+            {frames.length > 1 && (
+              <button onClick={() => deleteFrame(currentFrameIndex)} style={{ width: "100%", padding: "8px", background: OP1_COLORS.red, border: `2px solid ${OP1_COLORS.dark}`, cursor: "pointer", fontWeight: "bold", fontSize: "12px", color: "#fff" }}>
+                ❌ Delete
+              </button>
+            )}
+
+            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: "100%", padding: "8px", background: isPlaying ? OP1_COLORS.blue : OP1_COLORS.green, border: `2px solid ${OP1_COLORS.dark}`, cursor: "pointer", fontWeight: "bold", fontSize: "12px", color: "#fff" }}>
+              {isPlaying ? "⏸ Stop" : "▶ Play"}
+            </button>
+
+            <div style={{ fontSize: "12px", display: "flex", gap: "6px", alignItems: "center" }}>
+              <label>FPS:</label>
+              <input type="number" min="1" max="30" value={animationFPS} onChange={e => setAnimationFPS(Number(e.target.value))} style={{ width: "40px", padding: "4px", border: `1px solid ${OP1_COLORS.dark}` }} />
+            </div>
           </div>
         )}
 
