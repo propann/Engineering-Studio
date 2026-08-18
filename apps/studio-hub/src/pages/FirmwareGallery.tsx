@@ -38,6 +38,7 @@ export default function FirmwareGallery() {
   const [selectedImage, setSelectedImage] = useState<FirmwareImage | null>(null);
   const [animationFrames, setAnimationFrames] = useState<AnimationFrame[]>([]);
   const [currentFrameIdx, setCurrentFrameIdx] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const zipRef = useRef<Map<string, string>>(new Map());
 
   // Extract SVG groups
@@ -69,6 +70,29 @@ export default function FirmwareGallery() {
 
     loadFirmware();
   }, []);
+
+  // Animation playback loop
+  useEffect(() => {
+    if (!isPlaying || animationFrames.length === 0) return;
+
+    let frameIndex = 0;
+    let lastFrameTime = Date.now();
+    const frameInterval = animationFrames[0]?.duration || 200; // milliseconds per frame
+    let animationId: ReturnType<typeof requestAnimationFrame>;
+
+    const animate = () => {
+      const now = Date.now();
+      if (now - lastFrameTime >= frameInterval) {
+        setCurrentFrameIdx(frameIndex);
+        frameIndex = (frameIndex + 1) % animationFrames.length;
+        lastFrameTime = now;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isPlaying, animationFrames]);
 
   // Load SVG when image is selected
   async function loadSVG(image: FirmwareImage) {
@@ -292,7 +316,24 @@ export default function FirmwareGallery() {
                 {/* Animation Groups Editor */}
                 {selectedImage?.groups && selectedImage.groups.length > 0 && (
                   <div style={{ marginTop: "12px", padding: "12px", background: "#dfd9ff", border: "2px solid #383572" }}>
-                    <strong style={{ display: "block", marginBottom: "8px" }}>🎬 Groupes Animables ({selectedImage.groups.length})</strong>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                      <strong>🎬 Groupes Animables ({selectedImage.groups.length})</strong>
+                      <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        style={{
+                          padding: "6px 12px",
+                          background: isPlaying ? "#698eff" : "#00ed95",
+                          color: "#fff",
+                          border: "2px solid #383572",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          fontSize: "12px",
+                          borderRadius: "4px"
+                        }}
+                      >
+                        {isPlaying ? "⏸ Stop" : "▶ Play"}
+                      </button>
+                    </div>
 
                     {/* Frames */}
                     <div style={{ marginBottom: "12px" }}>
