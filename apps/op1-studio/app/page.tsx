@@ -1146,7 +1146,7 @@ export default function Home() {
                 <Icon name="archive" size={16} /><span>Hub outils</span>
               </button>
               {currentDestination !== "Exercices MIDI" && (
-                <button className="nav-strip-item" onClick={() => { setHomeOpen(false); setToolWindow("exercise"); }}>
+                <button className="nav-strip-item" onClick={returnToHub} title="Ouvre les exercices au Hub">
                   <Icon name="wave" size={16} /><span>Exercices MIDI</span>
                 </button>
               )}
