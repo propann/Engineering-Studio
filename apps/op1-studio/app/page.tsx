@@ -10,6 +10,7 @@ import { HomeHub } from "./components/HomeHub";
 // import { DocumentationPanel } from "./components/DocumentationPanel"; // Moved to Hub
 import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
 import { Op1PixelEditor } from "./components/Op1PixelEditor";
+import { ExercisePanel } from "./components/ExercisePanel";
 import { BackupPanel } from "./components/BackupPanel";
 import { SoundsPanel } from "./components/SoundsPanel";
 import { ServiceHub } from "./components/ServiceHub";
@@ -39,7 +40,7 @@ type IconName =
   | "book"
   | "image";
 
-type ToolWindow = "editor" | "backups" | "sounds" | "services" | "tape" | null;
+type ToolWindow = "exercise" | "editor" | "backups" | "sounds" | "services" | "tape" | null;
 
 function hubReturnUrl() {
   return new URLSearchParams(window.location.search).get("hubReturn") || "http://127.0.0.1:5179/";
@@ -49,7 +50,7 @@ function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
   if (typeof window === "undefined") return { tool: null, homeOpen: true };
   const requested = new URLSearchParams(window.location.search).get("hubTool");
   if (requested === "firmware") return { tool: null, homeOpen: false };
-  const tools: ToolWindow[] = ["editor", "backups", "sounds", "services", "tape"];
+  const tools: ToolWindow[] = ["exercise", "editor", "backups", "sounds", "services", "tape"];
   return tools.includes(requested as ToolWindow)
     ? { tool: requested as ToolWindow, homeOpen: false }
     : { tool: null, homeOpen: true };
@@ -935,6 +936,8 @@ export default function Home() {
     setHomeOpen(initial.homeOpen);
     setIsHydrated(true);
   }, []);
+  const [exerciseRunning, setExerciseRunning] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
   const [firmwareOptions, setFirmwareOptions] = useState({
     verify: true,
     backup: true,
@@ -1321,12 +1324,13 @@ export default function Home() {
             <div className="tool-window-header">
               <div>
                 <span className="section-label">OP-1 STUDIO / OUTIL</span>
-                <h2 id="tool-window-title">{toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
+                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
               </div>
               <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
             </div>
 
             <ToolWindowTabs tabs={[
+                ["exercise", "Exercices", "settings"],
                 ["editor", "Images", "image"],
                 ["backups", "Sauvegardes", "archive"],
                 ["sounds", "Sons", "wave"],
@@ -1338,6 +1342,8 @@ export default function Home() {
                 dans TapeEditor, un composant frère, pas dans ce scope. À faire
                 remonter d'un niveau si on veut que les touches jouées en vrai
                 s'allument ici aussi ; la cible qui tombe fonctionne déjà sans. */}
+
+            {toolWindow === "exercise" && <ExercisePanel Icon={Icon} selectedExercise={selectedExercise} running={exerciseRunning} onExerciseChange={setSelectedExercise} onToggle={() => setExerciseRunning((running) => !running)} />}
 
             {toolWindow === "services" && <ServiceHub Icon={Icon} onOpenLocal={(tool) => { if (tool === "firmware") setToolWindow(null); else setToolWindow(tool); }} />}
 
