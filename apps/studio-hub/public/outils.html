@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Les Outils · Engineering Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ink: #111311;
+      --paper: #ebece6;
+      --muted: #747970;
+      --orange: #ff5a1f;
+      --acid: #d9ff43;
+      --blue: #4aa7ff;
+    }
+    body {
+      font-family: "Courier New", monospace;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    
+    header {
+      height: 82px;
+      padding: 0 4vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--ink);
+      background: #ebece6f2;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .brand-symbol {
+      width: 40px;
+      height: 40px;
+      background: #171917;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 7px;
+    }
+    .brand-symbol i { background: var(--acid); display: block; }
+    .brand-symbol i:nth-child(2) { background: var(--blue); }
+    .brand-symbol i:nth-child(3) { background: #ff693b; }
+    .brand-symbol i:nth-child(4) { background: #f2ca45; }
+    .brand span { display: flex; flex-direction: column; line-height: 0.85; font-size: 18px; }
+    .brand strong { font-weight: 900; }
+    
+    .tools-nav {
+      display: flex;
+      gap: 8px;
+      padding: 0 4vw;
+      height: 56px;
+      align-items: center;
+      border-bottom: 2px solid #ddd;
+      background: #fafaf8;
+      overflow-x: auto;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .nav-link {
+      white-space: nowrap;
+      padding: 6px 12px;
+      text-decoration: none;
+      color: var(--ink);
+      border: 2px solid transparent;
+      transition: 0.2s;
+    }
+    .nav-link:hover { border-bottom: 2px solid var(--orange); }
+    .nav-link.active { background: var(--orange); color: white; }
+    
+    .page-head {
+      padding: 60px 5vw 40px;
+      background: #dfe1da;
+    }
+    .page-head h1 {
+      font-size: clamp(42px, 5vw, 68px);
+      letter-spacing: -0.055em;
+      margin: 10px 0 12px;
+    }
+    .page-head p {
+      font-size: 14px;
+      color: #555b53;
+      max-width: 600px;
+    }
+    
+    .tools-grid {
+      padding: 50px 5vw;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+    
+    .tool-card {
+      background: white;
+      border: 3px solid var(--ink);
+      padding: 20px;
+      transition: 0.2s;
+      cursor: pointer;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .tool-card:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 6px 6px 0 var(--ink);
+    }
+    
+    .tool-num {
+      font: 900 9px monospace;
+      color: var(--orange);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    
+    .tool-icon {
+      width: 48px;
+      height: 48px;
+      background: #f0f0ee;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+      border: 2px solid #ddd;
+    }
+    
+    .tool-card h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    
+    .tool-desc {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #555b53;
+      margin-bottom: 16px;
+    }
+    
+    .tool-tag {
+      display: inline-block;
+      background: #f5f5f3;
+      padding: 6px 10px;
+      font-size: 9px;
+      margin-top: 8px;
+      border: 1px solid #ddd;
+    }
+    
+    footer {
+      min-height: 100px;
+      padding: 0 5vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111;
+      color: #fff;
+      border-top: 3px solid var(--orange);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="landing.html">
+      <span class="brand-symbol"><i></i><i></i><i></i><i></i></span>
+      <span><strong>Engineering</strong><b>Studio</b></span>
+    </a>
+    <div style="flex:1"></div>
+    <a class="btn primary" href="profil-complete.html" style="padding: 12px 16px; border: 3px solid var(--ink); background: var(--ink); color: white; text-decoration: none; font-weight: bold; font-size: 10px; letter-spacing: 0.1em;">
+      MA FICHE ↗
+    </a>
+  </header>
+
+  <nav class="tools-nav">
+    <a class="nav-link active" href="#synthèse">SYNTHÈSE</a>
+    <a class="nav-link" href="#sampling">SAMPLING</a>
+    <a class="nav-link" href="#édition">ÉDITION IMAGE</a>
+    <a class="nav-link" href="#bibliothèque">BIBLIOTHÈQUE</a>
+    <a class="nav-link" href="#docs">DOCS</a>
+  </nav>
+
+  <div class="page-head">
+    <h1>Tableau des outils</h1>
+    <p>16 modules pour explorer, créer et transformer. Chaque outil a sa page dédiée.</p>
+  </div>
+
+  <section class="tools-grid">
+    <!-- SYNTHÈSE (4 outils) -->
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">01 · SYNTHÈSE</div>
+      <div class="tool-icon">🎹</div>
+      <div>
+        <h3>Synth FM</h3>
+        <p class="tool-desc">Synthèse par modulation de fréquence pour créer des sons complexes et métalliques.</p>
+        <span class="tool-tag">OP-1</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">02 · SYNTHÈSE</div>
+      <div class="tool-icon">〰️</div>
+      <div>
+        <h3>Synth Wavetable</h3>
+        <p class="tool-desc">Sculpture en temps réel de formes d'ondes pour l'exploration sonore.</p>
+        <span class="tool-tag">OP-1</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">03 · SYNTHÈSE</div>
+      <div class="tool-icon">📍</div>
+      <div>
+        <h3>Synth Pluck</h3>
+        <p class="tool-desc">Cordes pincées virtuelles avec résonance organelle.</p>
+        <span class="tool-tag">OP-1</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">04 · SYNTHÈSE</div>
+      <div class="tool-icon">⚡</div>
+      <div>
+        <h3>Synth 808</h3>
+        <p class="tool-desc">Émulation numérique du TR-808 : kicks, hi-hats et claps.</p>
+        <span class="tool-tag">OP-1</span>
+      </div>
+    </div>
+
+    <!-- SAMPLING (4 outils) -->
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">05 · SAMPLING</div>
+      <div class="tool-icon">🎤</div>
+      <div>
+        <h3>Sampler Live</h3>
+        <p class="tool-desc">Capture et lire des échantillons en temps réel avec édition basique.</p>
+        <span class="tool-tag">EP-133</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">06 · SAMPLING</div>
+      <div class="tool-icon">🔄</div>
+      <div>
+        <h3>Pitch Shifter</h3>
+        <p class="tool-desc">Modulation de hauteur pour transposer ou créer des harmonies.</p>
+        <span class="tool-tag">EP-133</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">07 · SAMPLING</div>
+      <div class="tool-icon">✂️</div>
+      <div>
+        <h3>Slice & Loop</h3>
+        <p class="tool-desc">Découpe d'échantillons et création de boucles à tempo fixe.</p>
+        <span class="tool-tag">EP-133</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">08 · SAMPLING</div>
+      <div class="tool-icon">🎵</div>
+      <div>
+        <h3>Granular</h3>
+        <p class="tool-desc">Synthèse granulaire pour découper et recombiner des sons.</p>
+        <span class="tool-tag">EP-133</span>
+      </div>
+    </div>
+
+    <!-- ÉDITION IMAGE (4 outils) -->
+    <div class="tool-card" onclick="location.href='editeur-image.html'">
+      <div class="tool-num">09 · ÉDITION</div>
+      <div class="tool-icon">🖼️</div>
+      <div>
+        <h3>Éditeur Image</h3>
+        <p class="tool-desc">Édition d'images pixel art avec palette de couleurs et outils de dessin.</p>
+        <span class="tool-tag">CANVAS</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">10 · ÉDITION</div>
+      <div class="tool-icon">🎨</div>
+      <div>
+        <h3>Palette Generator</h3>
+        <p class="tool-desc">Génération de palettes de couleurs harmoniques.</p>
+        <span class="tool-tag">GÉNÉRATEUR</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">11 · ÉDITION</div>
+      <div class="tool-icon">🔍</div>
+      <div>
+        <h3>Pixeliser</h3>
+        <p class="tool-desc">Conversion d'images en pixel art automatisée.</p>
+        <span class="tool-tag">FILTRE</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">12 · ÉDITION</div>
+      <div class="tool-icon">📐</div>
+      <div>
+        <h3>Sprite Pack</h3>
+        <p class="tool-desc">Organisation et export de feuilles de sprites.</p>
+        <span class="tool-tag">EXPORT</span>
+      </div>
+    </div>
+
+    <!-- BIBLIOTHÈQUE (4 outils) -->
+    <div class="tool-card" onclick="location.href='bibliotheque-sonore.html'">
+      <div class="tool-num">13 · BIBLIOTHÈQUE</div>
+      <div class="tool-icon">🎧</div>
+      <div>
+        <h3>Bibliothèque Sonore</h3>
+        <p class="tool-desc">Organisation de sons, boucles et samples avec métadonnées.</p>
+        <span class="tool-tag">AUDIO</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">14 · BIBLIOTHÈQUE</div>
+      <div class="tool-icon">📊</div>
+      <div>
+        <h3>Analyseur Spectral</h3>
+        <p class="tool-desc">Analyse fréquentielle en temps réel des sons.</p>
+        <span class="tool-tag">ANALYSE</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='documentation.html'">
+      <div class="tool-num">15 · BIBLIOTHÈQUE</div>
+      <div class="tool-icon">📖</div>
+      <div>
+        <h3>Documentation</h3>
+        <p class="tool-desc">Guide complet des machines et des workflows.</p>
+        <span class="tool-tag">DOCS</span>
+      </div>
+    </div>
+
+    <div class="tool-card" onclick="location.href='#'">
+      <div class="tool-num">16 · BIBLIOTHÈQUE</div>
+      <div class="tool-icon">⚙️</div>
+      <div>
+        <h3>Présets Manager</h3>
+        <p class="tool-desc">Import, export et gestion de configurations prédéfinies.</p>
+        <span class="tool-tag">CONFIGURATION</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>ENGINEERING STUDIO</span>
+    <p>Tous les outils accessibles localement, sans restrictions.</p>
+    <b>16 MODULES · 2026</b>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation · Engineering Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ink: #111311;
+      --paper: #ebece6;
+      --orange: #ff5a1f;
+      --acid: #d9ff43;
+      --blue: #4aa7ff;
+    }
+    body {
+      font-family: "Courier New", monospace;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    
+    header {
+      height: 82px;
+      padding: 0 4vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--ink);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .brand-symbol {
+      width: 40px;
+      height: 40px;
+      background: #171917;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 7px;
+    }
+    .brand-symbol i { background: var(--acid); display: block; }
+    .brand-symbol i:nth-child(2) { background: var(--blue); }
+    .brand-symbol i:nth-child(3) { background: #ff693b; }
+    .brand-symbol i:nth-child(4) { background: #f2ca45; }
+    .brand span { display: flex; flex-direction: column; line-height: 0.85; font-size: 18px; }
+    .brand strong { font-weight: 900; }
+    
+    .docs-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 50px 5vw;
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      gap: 30px;
+    }
+    
+    .docs-sidebar {
+      background: white;
+      border: 3px solid var(--ink);
+      padding: 16px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+    
+    .docs-sidebar h3 {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      color: var(--orange);
+    }
+    
+    .docs-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .docs-nav a {
+      padding: 8px;
+      text-decoration: none;
+      color: var(--ink);
+      border-left: 3px solid transparent;
+      font-size: 11px;
+      transition: 0.2s;
+    }
+    
+    .docs-nav a:hover {
+      border-left-color: var(--orange);
+      background: #f5f5f3;
+    }
+    
+    .docs-content article {
+      background: white;
+      border: 3px solid var(--ink);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    
+    .docs-content h2 {
+      font-size: 22px;
+      margin-bottom: 12px;
+      letter-spacing: -0.05em;
+    }
+    
+    .docs-content p {
+      font-size: 12px;
+      line-height: 1.6;
+      color: #555b53;
+      margin-bottom: 12px;
+    }
+    
+    .docs-content ul {
+      margin-left: 20px;
+      font-size: 12px;
+      color: #555b53;
+      margin-bottom: 12px;
+    }
+    
+    .docs-content li {
+      margin-bottom: 6px;
+    }
+    
+    .code-block {
+      background: #f5f5f3;
+      border: 2px solid #ddd;
+      padding: 12px;
+      margin: 12px 0;
+      overflow-x: auto;
+      font-size: 11px;
+    }
+    
+    .machine-section {
+      background: #fafaf8;
+      padding: 16px;
+      border-left: 4px solid var(--orange);
+      margin: 12px 0;
+    }
+    
+    .machine-section strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    
+    .specs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 11px;
+    }
+    
+    .specs-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    
+    .specs-table td:first-child {
+      font-weight: 700;
+      background: #f5f5f3;
+    }
+    
+    .warning {
+      background: #fff3e0;
+      border-left: 4px solid var(--orange);
+      padding: 12px;
+      margin: 12px 0;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="landing.html">
+      <span class="brand-symbol"><i></i><i></i><i></i><i></i></span>
+      <span><strong>Engineering</strong><b>Studio</b></span>
+    </a>
+    <a href="outils.html" style="border: 3px solid var(--ink); padding: 8px 12px; text-decoration: none; font-size: 9px; font-weight: bold; text-transform: uppercase;">← Retour</a>
+  </header>
+
+  <div class="docs-container">
+    <aside class="docs-sidebar">
+      <h3>📖 Guide</h3>
+      <nav class="docs-nav">
+        <a href="#intro">Présentation</a>
+        <a href="#op1">OP-1</a>
+        <a href="#ep133">EP-133</a>
+        <a href="#workflow">Workflows</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <article id="intro">
+        <h2>📚 Engineering Studio</h2>
+        <p>Bienvenue dans la documentation complète d'Engineering Studio, l'atelier de création musicale local-first.</p>
+        
+        <h3 style="font-size: 16px; margin-top: 16px; margin-bottom: 8px;">Qu'est-ce qu'Engineering Studio ?</h3>
+        <p>Engineering Studio est une plateforme intégrée pour :</p>
+        <ul>
+          <li><strong>Contrôler</strong> des machines musicales (OP-1, EP-133)</li>
+          <li><strong>Créer</strong> des sons avec 16 outils spécialisés</li>
+          <li><strong>Organiser</strong> tes projets et bibliothèques localement</li>
+          <li><strong>Partager</strong> tes créations sans dépendre du cloud</li>
+        </ul>
+
+        <div class="warning">
+          ⚠️ Aucune donnée n'est envoyée à des serveurs externes. Tout est sauvegardé localement sur ton ordinateur.
+        </div>
+      </article>
+
+      <article id="op1">
+        <h2>🎹 OP-1 · Synthesizer Studio</h2>
+        <p>La Teenage Engineering OP-1 est un synthétiseur portable avec écran OLED et 4 encodeurs tactiles.</p>
+        
+        <div class="machine-section">
+          <strong>SPÉCIFICATIONS</strong>
+          <table class="specs-table">
+            <tr><td>Fabricant</td><td>Teenage Engineering</td></tr>
+            <tr><td>Type</td><td>Synthesizer Mobile</td></tr>
+            <tr><td>Écran</td><td>OLED 128x64</td></tr>
+            <tr><td>Clavier</td><td>25 touches (2 octaves)</td></tr>
+            <tr><td>Polyphonie</td><td>12 voix</td></tr>
+            <tr><td>Mémoire</td><td>32 MB (~ 8h audio)</td></tr>
+            <tr><td>Batterie</td><td>LiPo 35h d'autonomie</td></tr>
+          </table>
+        </div>
+
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Les 4 moteurs de synth</h3>
+        <ul>
+          <li><strong>FM</strong> : Modulation de fréquence pour des timbres complexes</li>
+          <li><strong>Wavetable</strong> : Sculpture en temps réel d'ondes</li>
+          <li><strong>Pluck</strong> : Synthèse par cordes pincées</li>
+          <li><strong>808</strong> : Émulation du TR-808</li>
+        </ul>
+
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Workflows OP-1</h3>
+        <div class="code-block">
+SETUP → SYNTH SELECT → ENCODERS PLAY → RECORD → TRANSFER VIA USB
+        </div>
+      </article>
+
+      <article id="ep133">
+        <h2>🎤 EP-133 · Sampler Lab</h2>
+        <p>La Teenage Engineering EP-133 K.O. II est un sampler compact avec mode « Operation Krush ».</p>
+        
+        <div class="machine-section">
+          <strong>SPÉCIFICATIONS</strong>
+          <table class="specs-table">
+            <tr><td>Fabricant</td><td>Teenage Engineering</td></tr>
+            <tr><td>Type</td><td>Sampler Mobile</td></tr>
+            <tr><td>Écran</td><td>LCD 240x120</td></tr>
+            <tr><td>Clavier</td><td>16 pads</td></tr>
+            <tr><td>Mémoire</td><td>64 Mo ou 128 Mo (option)</td></tr>
+            <tr><td>Micro</td><td>Enregistrement live intégré</td></tr>
+            <tr><td>Batterie</td><td>AA × 4 (~ 18h)</td></tr>
+          </table>
+        </div>
+
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Mode Krush (Distortion Sampling)</h3>
+        <p>Le mode K.O. II offre une compression et une distorsion numériques pour des sons « cassés » and lo-fi.</p>
+
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Workflows EP-133</h3>
+        <div class="code-block">
+SAMPLE IN → SLICE PADS → PITCH/EFFECTS → ARRANGE → EXPORT
+        </div>
+      </article>
+
+      <article id="workflow">
+        <h2>🔄 Workflows Recommandés</h2>
+        
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Workflow 1 : Création Hybride</h3>
+        <p>Combine synthèse OP-1 + sampling EP-133</p>
+        <div class="code-block">
+1. Crée une base synth avec OP-1 (FM ou Wavetable)
+2. Enregistre sur EP-133 via ligne audio
+3. Slice et réarrange dans EP-133
+4. Exporte dans ta bibliothèque sonore
+5. Utilise comme samples pour prochaine session
+        </div>
+
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Workflow 2 : Performative</h3>
+        <p>Utilise les deux machines en live</p>
+        <div class="code-block">
+1. OP-1 en synthèse temps réel (FM/808)
+2. EP-133 sur 16 pads avec samples + granular
+3. Mixe avec l'audio interface
+4. Enregistre directement en stéréo
+        </div>
+
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Workflow 3 : Archivage Structuré</h3>
+        <p>Organise tout localement</p>
+        <div class="code-block">
+WORKSPACE/
+├── op1-projects/
+│   ├── 2026-01-sketches/
+│   └── 2026-02-finished/
+├── ep133-samples/
+│   ├── drums/
+│   ├── textures/
+│   └── instruments/
+└── sound-library/
+    ├── synth-presets/
+    └── sample-packs/
+        </div>
+      </article>
+
+      <article id="faq">
+        <h2>❓ FAQ</h2>
+        
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Q: Où mes données sont sauvegardées ?</h3>
+        <p>A: Entièrement sur ton ordinateur. Dossier de travail que tu définis dans ta fiche de profil.</p>
+        
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Q: Puis-je exporter les sons ?</h3>
+        <p>A: Oui, en WAV ou MP3. Utilise la Bibliothèque Sonore ou les outils d'export.</p>
+        
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Q: Qu'en est-il du MIDI ?</h3>
+        <p>A: Engineering Studio peut contrôler tes machines via MIDI USB ou sortie audio stéréo classique.</p>
+        
+        <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">Q: Support offert ?</h3>
+        <p>A: Oui, via la documentation complète et la communauté. Pas de support commercial tiers.</p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>

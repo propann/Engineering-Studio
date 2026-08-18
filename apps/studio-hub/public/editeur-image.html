@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Éditeur d'Image · Engineering Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ink: #111311;
+      --paper: #ebece6;
+      --orange: #ff5a1f;
+      --acid: #d9ff43;
+      --blue: #4aa7ff;
+    }
+    body {
+      font-family: "Courier New", monospace;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    
+    header {
+      height: 82px;
+      padding: 0 4vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--ink);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .brand-symbol {
+      width: 40px;
+      height: 40px;
+      background: #171917;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 7px;
+    }
+    .brand-symbol i { background: var(--acid); display: block; }
+    .brand-symbol i:nth-child(2) { background: var(--blue); }
+    .brand-symbol i:nth-child(3) { background: #ff693b; }
+    .brand-symbol i:nth-child(4) { background: #f2ca45; }
+    .brand span { flex-direction: column; line-height: 0.85; font-size: 18px; display: flex; }
+    .brand strong { font-weight: 900; }
+    
+    .editor-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 20px;
+    }
+    
+    .canvas-section {
+      background: white;
+      border: 3px solid var(--ink);
+      padding: 20px;
+    }
+    
+    .canvas-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #ddd;
+    }
+    
+    .canvas-header h2 {
+      font-size: 18px;
+    }
+    
+    canvas {
+      border: 2px solid var(--ink);
+      background: white;
+      display: block;
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      image-rendering: pixelated;
+    }
+    
+    .tools-panel {
+      background: white;
+      border: 3px solid var(--ink);
+      padding: 16px;
+      height: fit-content;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .tool-section h3 {
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--orange);
+      margin-bottom: 8px;
+    }
+    
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    
+    .color-btn {
+      aspect-ratio: 1;
+      border: 2px solid var(--ink);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    
+    .color-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    .color-btn.active {
+      box-shadow: inset 0 0 0 2px var(--orange);
+    }
+    
+    .tool-btn {
+      padding: 8px;
+      border: 2px solid var(--ink);
+      background: white;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: 0.2s;
+    }
+    
+    .tool-btn:hover {
+      background: #f5f5f3;
+    }
+    
+    .tool-btn.active {
+      background: var(--orange);
+      color: white;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #ddd;
+      margin: 12px 0;
+    }
+    
+    @media(max-width: 768px) {
+      .editor-container { grid-template-columns: 1fr; }
+      .tools-panel { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="landing.html">
+      <span class="brand-symbol"><i></i><i></i><i></i><i></i></span>
+      <span><strong>Engineering</strong><b>Studio</b></span>
+    </a>
+    <a href="outils.html" style="border: 3px solid var(--ink); padding: 8px 12px; text-decoration: none; font-size: 9px; font-weight: bold; text-transform: uppercase;">← Retour</a>
+  </header>
+
+  <div class="editor-container">
+    <section class="canvas-section">
+      <div class="canvas-header">
+        <h2>Éditeur d'Image Pixel</h2>
+        <div style="display: flex; gap: 8px;">
+          <button onclick="clearCanvas()" style="padding: 6px 10px; border: 2px solid var(--ink); background: white; cursor: pointer; font-size: 9px; font-weight: bold;">EFFACER</button>
+          <button onclick="downloadImage()" style="padding: 6px 10px; border: 2px solid var(--orange); background: var(--orange); color: white; cursor: pointer; font-size: 9px; font-weight: bold;">TÉLÉCHARGER</button>
+        </div>
+      </div>
+      <canvas id="canvas" width="480" height="480"></canvas>
+    </section>
+
+    <aside class="tools-panel">
+      <div class="tool-section">
+        <h3>🎨 Couleurs</h3>
+        <div class="color-grid" id="colorGrid"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="tool-section">
+        <h3>✏️ Outils</h3>
+        <button class="tool-btn active" onclick="selectTool('pencil')">CRAYON</button>
+        <button class="tool-btn" onclick="selectTool('eraser')">GOMME</button>
+        <button class="tool-btn" onclick="selectTool('fill')">REMPLIR</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="tool-section">
+        <h3>📐 Taille</h3>
+        <input type="range" id="sizeSlider" min="1" max="20" value="5" style="width: 100%;">
+        <span id="sizeValue" style="display: block; text-align: center; font-size: 9px;">5px</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="tool-section">
+        <h3>📊 Infos</h3>
+        <p style="font-size: 9px; line-height: 1.4; color: #666;">
+          ✓ Cliquez pour dessiner<br/>
+          ✓ Couleurs libres<br/>
+          ✓ Export PNG
+        </p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const colors = ['#ff5a1f', '#4aa7ff', '#d9ff43', '#47c777', '#f2ca45', '#ff693b', '#111311', '#ebece6', '#ff00ff'];
+    let currentColor = colors[0];
+    let currentTool = 'pencil';
+    let isDrawing = false;
+    
+    // Remplir la grille de couleurs
+    const colorGrid = document.getElementById('colorGrid');
+    colors.forEach((color, idx) => {
+      const btn = document.createElement('button');
+      btn.className = `color-btn ${idx === 0 ? 'active' : ''}`;
+      btn.style.background = color;
+      btn.onclick = () => selectColor(color, btn);
+      colorGrid.appendChild(btn);
+    });
+    
+    function selectColor(color, btn) {
+      currentColor = color;
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    
+    function selectTool(tool) {
+      currentTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+    }
+    
+    document.getElementById('sizeSlider').addEventListener('input', (e) => {
+      document.getElementById('sizeValue').textContent = e.target.value + 'px';
+    });
+    
+    canvas.addEventListener('mousedown', () => { isDrawing = true; });
+    canvas.addEventListener('mouseup', () => { isDrawing = false; });
+    canvas.addEventListener('mousemove', draw);
+    
+    function draw(e) {
+      if (!isDrawing) return;
+      
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * canvas.width / rect.width;
+      const y = (e.clientY - rect.top) * canvas.height / rect.height;
+      const size = document.getElementById('sizeSlider').value;
+      
+      ctx.fillStyle = currentColor;
+      ctx.fillRect(x - size/2, y - size/2, size, size);
+    }
+    
+    function clearCanvas() {
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    function downloadImage() {
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = 'image.png';
+      link.click();
+    }
+    
+    // Initialize canvas
+    clearCanvas();
+  </script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engineering Studio</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --ink: #111311;
+      --paper: #ebece6;
+      --muted: #747970;
+      --orange: #ff5a1f;
+      --acid: #d9ff43;
+      --blue: #4aa7ff;
+    }
+    body {
+      font-family: "Courier New", monospace;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    
+    header {
+      height: 82px;
+      padding: 0 4vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--ink);
+      background: #ebece6f2;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
+    .brand-symbol {
+      width: 40px;
+      height: 40px;
+      background: #171917;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 7px;
+    }
+    .brand-symbol i { background: var(--acid); display: block; }
+    .brand-symbol i:nth-child(2) { background: var(--blue); }
+    .brand-symbol i:nth-child(3) { background: #ff693b; }
+    .brand-symbol i:nth-child(4) { background: #f2ca45; }
+    .brand span { display: flex; flex-direction: column; line-height: 0.85; font-size: 18px; }
+    .brand strong { font-weight: 900; }
+    
+    .hero {
+      min-height: 690px;
+      padding: 78px 7vw 70px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5vw;
+      align-items: center;
+      background: #dfe1da;
+      background-image: linear-gradient(#1111110d 2px, transparent 2px), linear-gradient(90deg, #1111110d 2px, transparent 2px);
+      background-size: 32px 32px;
+    }
+    
+    .eyebrow {
+      font: 800 10px monospace;
+      letter-spacing: 0.16em;
+      color: #555b53;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+    .eyebrow span { width: 8px; height: 8px; background: var(--orange); display: block; }
+    
+    h1 {
+      font-size: clamp(58px, 7.2vw, 108px);
+      line-height: 0.79;
+      letter-spacing: -0.075em;
+      text-transform: uppercase;
+      margin: 20px 0 24px;
+    }
+    h1 em { font-style: normal; color: var(--orange); }
+    
+    .hero-intro {
+      max-width: 540px;
+      font-size: 18px;
+      line-height: 1.55;
+      color: #555a53;
+      margin-bottom: 32px;
+    }
+    
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+    
+    button, .btn {
+      padding: 16px 20px;
+      border: 3px solid var(--ink);
+      border-radius: 0;
+      text-transform: uppercase;
+      font: 800 11px monospace;
+      letter-spacing: 0.08em;
+      display: flex;
+      gap: 38px;
+      justify-content: space-between;
+      align-items: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    
+    .primary {
+      background: var(--ink);
+      color: #fff;
+    }
+    .primary:hover {
+      background: var(--orange);
+      border-color: var(--orange);
+      transform: translate(-3px, -3px);
+      box-shadow: 9px 9px 0 #111;
+    }
+    
+    .secondary {
+      background: transparent;
+      color: var(--ink);
+    }
+    .secondary:hover {
+      background: #fff;
+      transform: translate(-3px, -3px);
+      box-shadow: 9px 9px 0 #111;
+    }
+    
+    .local-note {
+      font: 600 10px monospace;
+      color: #656961;
+      display: flex;
+      gap: 9px;
+      align-items: center;
+    }
+    .local-note i { width: 7px; height: 7px; background: #47c777; display: block; }
+    
+    .pixel-window {
+      background: #c8cbd4;
+      border: 4px solid #0d1017;
+      padding: 8px;
+      box-shadow: 12px 12px 0 #0d1017;
+      image-rendering: pixelated;
+    }
+    .pixel-window img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 3px solid #0d1017;
+      image-rendering: pixelated;
+    }
+    .pixel-window-bar {
+      height: 27px;
+      background: #0d1017;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      margin-bottom: 7px;
+      font: 900 10px monospace;
+    }
+    .pixel-window-bar b { background: var(--orange); color: #111; padding: 3px 6px; }
+    
+    .machine-tag {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: #eef0ea;
+      padding: 8px 9px;
+      font: 900 9px monospace;
+    }
+    .machine-tag i { width: 8px; height: 8px; background: #29c76f; }
+    
+    .tools-section {
+      padding: 90px 5vw 110px;
+      background: #171917;
+      color: #f3f4ee;
+    }
+    .section-head { max-width: 1420px; margin: 0 auto 42px; }
+    .section-head h2 {
+      font-size: clamp(38px, 5vw, 72px);
+      letter-spacing: -0.055em;
+      margin: 8px 0;
+    }
+    .section-head p { font: 500 12px monospace; color: #92978e; }
+    
+    footer {
+      min-height: 120px;
+      padding: 0 5vw;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111;
+      color: #fff;
+    }
+    footer p { color: #92978e; font-size: 13px; }
+    footer b { font: 700 9px monospace; color: var(--acid); }
+    
+    @media(max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      .pixel-window { margin: 20px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="#top">
+      <span class="brand-symbol"><i></i><i></i><i></i><i></i></span>
+      <span><strong>Engineering</strong><b>Studio</b></span>
+    </a>
+    <nav></nav>
+    <button class="btn primary" onclick="location.href='profil-complete.html'">
+      <span>Ma fiche</span><span>↗</span>
+    </button>
+  </header>
+
+  <section class="hero" id="top">
+    <div>
+      <p class="eyebrow"><span></span> ATELIER MUSICAL MODULAIRE · LOCAL</p>
+      <h1>Construis.<br/>Connecte.<br/><em>Crée.</em></h1>
+      <p class="hero-intro">Un seul espace pour piloter tes machines, façonner tes sons et transformer les idées en instruments.</p>
+      <div class="hero-actions">
+        <button class="primary" onclick="location.href='outils.html'">Ouvrir les outils <span>→</span></button>
+        <button class="secondary" onclick="location.href='profil-complete.html'">Créer ma fiche <span>→</span></button>
+      </div>
+      <div class="local-note"><i></i> Aucun compte. Aucun cloud imposé. Tes fichiers restent chez toi.</div>
+    </div>
+    
+    <div>
+      <div class="pixel-window">
+        <div class="pixel-window-bar"><span>EP133.EXE</span><b>01</b></div>
+        <img src="/media/ep133.jpeg" alt="EP-133" style="max-height: 200px; object-fit: cover;">
+        <div class="machine-tag"><i></i> EP-133 K.O. II · SAMPLER LAB</div>
+      </div>
+      <div class="pixel-window" style="margin-top: 20px;">
+        <div class="pixel-window-bar"><span>OP1.EXE</span><b>02</b></div>
+        <img src="/media/op1.jpeg" alt="OP-1" style="max-height: 200px; object-fit: cover;">
+        <div class="machine-tag"><i></i> OP-1 · SYNTH STUDIO</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tools-section">
+    <div class="section-head">
+      <p class="eyebrow"><span></span> CHOISIS TON MODULE</p>
+      <h2>Tableau des outils</h2>
+      <p>Une page dédiée par outil. Une navigation commune pour ne jamais se perdre.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>ENGINEERING STUDIO</span>
+    <p>Un atelier pour inventer les machines de demain.</p>
+    <b>LOCAL FIRST · 2026</b>
+  </footer>
+</body>
+</html>
