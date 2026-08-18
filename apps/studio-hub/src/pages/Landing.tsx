@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { TopBar } from "../components/TopBar";
+
 const Link = ({href, className, ...props}) => {
   const handleClick = (e: any) => {
     e.preventDefault();
@@ -36,11 +38,7 @@ export default function Home(){
  // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{try{const raw=localStorage.getItem("studio-hub-profile");if(raw){const profile=JSON.parse(raw) as {name?:string};if(profile.name?.trim())setProfileName(profile.name.trim())}}catch{/* profil local absent */}},[]);
  return <main>
-  <header className="topbar">
-   <a className="brand" href="#top"><span className="brand-symbol"><i/><i/><i/><i/></span><span><strong>Engineering</strong><b>Studio</b></span></a>
-   <nav><a href="#atelier">Atelier</a><a href="#outils">Outils</a><a href="#systeme">Système</a></nav>
-   <Link className="profile-link" href="/fiche-personnage"><span className="profile-orb">{profileName.slice(0,2).toUpperCase()}</span><span><small>IDENTITÉ LOCALE</small><strong>{profileName}</strong></span><b>↗</b></Link>
-  </header>
+  <TopBar profileName={profileName}/>
   <section className="hero" id="top"><div className="hero-grid"/><div className="hero-copy">
    <p className="eyebrow"><span/> ATELIER MUSICAL MODULAIRE · LOCAL</p><h1>Construis.<br/>Connecte.<br/><em>Crée.</em></h1>
    <p className="hero-intro">Un seul espace pour piloter tes machines, façonner tes sons et transformer les idées en instruments.</p>

@@ -1,4 +1,7 @@
 "use client";
+import { useEffect, useMemo, useState } from "react";
+import { TopBar } from "../components/TopBar";
+
 const Link = ({href, className, ...props}) => {
   const handleClick = (e: any) => {
     e.preventDefault();
@@ -7,7 +10,6 @@ const Link = ({href, className, ...props}) => {
   };
   return <a href={"#" + href} onClick={handleClick} className={className} {...props}/>;
 };
-import { useEffect, useMemo, useState } from "react";
 
 type Machine={id:number;kind:"op1"|"ep133";name:string;memory?:64|128;active:boolean};
 const avatarNames=["teacher","carpenter","artist","barista","support","architect","activist","mail-carrier","builder","scientist","student","librarian","trainer","office-worker","influencer","chef","courier","grandma","musician","paramedic","knight","rogue","smith","archer","scholar","warrior","goblin","cyborg","cat-adventurer","pirate","sorceress","viking","engineer","necromancer","ranger","royal-guard","fighter","samurai","cultist","explorer"] as const;
@@ -38,7 +40,7 @@ export default function CharacterPage(){
  function add(kind:Machine["kind"]){setMachines(list=>[...list,{id:Date.now(),kind,name:kind==="op1"?`OP-1 ${list.filter(m=>m.kind===kind).length+1}`:`EP-133 ${list.filter(m=>m.kind===kind).length+1}`,memory:kind==="ep133"?64:undefined,active:true}])}
  function saveProfile(){const active=machines.filter(machine=>machine.active);const summary={op1:{enabled:active.some(machine=>machine.kind==="op1"),backups:0,projects:0,samples:0,trainingProgress:0},ep133:{enabled:active.some(machine=>machine.kind==="ep133"),backups:0,projects:0,samples:0,trainingProgress:0}};localStorage.setItem("studio-hub-profile",JSON.stringify({version:1,name:name.trim(),avatar,bio:bio.trim(),machines:summary,machineInventory:machines.map(machine=>({id:String(machine.id),kind:machine.kind,name:machine.name,capacityMb:machine.memory,enabled:machine.active,backups:0,projects:0,samples:0,trainingProgress:0})),workspace:workspace?{name:workspace,folders:[]}:undefined,createdAt:new Date().toISOString()}));localStorage.removeItem("studio-hub-profile-draft")}
  return <main className="creator-page">
-  <header className="creator-header"><Link href="/" className="pixel-back">← QUITTER</Link><div className="creator-title"><span>ENGINEERING STUDIO</span><strong>CRÉATION DU PERSONNAGE</strong></div><div className="save-state"><i/> SAUVEGARDE LOCALE</div></header>
+  <TopBar profileName={name}/>
   <div className="creator-progress"><span style={{width:`${progress}%`}}/><b>{progress}% · ATELIER CONFIGURÉ</b></div>
 
   <section className="creator-layout">
