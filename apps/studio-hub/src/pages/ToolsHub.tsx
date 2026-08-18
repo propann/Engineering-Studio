@@ -64,12 +64,10 @@ export default function ToolsHub(){
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(!tool.target){setSelected(tool);return}
-  // Pages internes du Hub (documentation, exercises)
-  if(tool.target==="hub"&&tool.anchor){
-    if(tool.anchor==="documentation")(window as any).navigateMaquette("documentation");
-    else if(tool.anchor==="exercises")(window as any).navigateMaquette("exercises");
-    return;
-  }
+  // Documentation tools - show DocsModal
+  if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}
+  // Pages internes du Hub (exercises)
+  if(tool.target==="hub"&&tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
   // Navigation vers les studios externes
   const url=new URL(STUDIO_URLS[tool.target]);
   if(tool.anchor) url.hash=tool.anchor;
