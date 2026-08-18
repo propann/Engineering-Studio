@@ -50,6 +50,29 @@ export default function ImageEditorOP1() {
     ctx.fillRect(0, 0, OP1_WIDTH, OP1_HEIGHT);
   }, []);
 
+  // Animation playback loop
+  useEffect(() => {
+    if (!isPlaying || frames.length === 0) return;
+
+    let frameIndex = 0;
+    let lastFrameTime = Date.now();
+    const frameInterval = 1000 / animationFPS; // milliseconds per frame
+    let animationId: ReturnType<typeof requestAnimationFrame>;
+
+    const animate = () => {
+      const now = Date.now();
+      if (now - lastFrameTime >= frameInterval) {
+        selectFrame(frameIndex);
+        frameIndex = (frameIndex + 1) % frames.length;
+        lastFrameTime = now;
+      }
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationId);
+  }, [isPlaying, frames, animationFPS]);
+
   // Draw grid
   useEffect(() => {
     const canvas = gridCanvasRef.current;
