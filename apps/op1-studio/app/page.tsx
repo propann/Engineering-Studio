@@ -7,7 +7,7 @@ import { decodeMidiNote } from "./lib/midi";
 import { prepareNativeLocalPlan, readDisplayLibrary } from "./lib/nativeStorage";
 import { encodeAiffPcm16 } from "./lib/audioConvert";
 import { HomeHub } from "./components/HomeHub";
-import { DocumentationPanel } from "./components/DocumentationPanel";
+// import { DocumentationPanel } from "./components/DocumentationPanel"; // Moved to Hub
 import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
 import { Op1PixelEditor } from "./components/Op1PixelEditor";
 import { ExercisePanel } from "./components/ExercisePanel";
@@ -1357,7 +1357,13 @@ export default function Home() {
                 s'allument ici aussi ; la cible qui tombe fonctionne déjà sans. */}
             {toolWindow === "exercise" && <ExercisePanel Icon={Icon} selectedExercise={selectedExercise} running={exerciseRunning} onExerciseChange={setSelectedExercise} onToggle={() => setExerciseRunning((running) => !running)} />}
 
-            {toolWindow === "docs" && <DocumentationPanel />}
+            {toolWindow === "docs" && <div style={{padding: "40px", textAlign: "center", background: "#f9f9f9", borderRadius: "4px"}}>
+              <h2>📚 Documentation OP-1</h2>
+              <p style={{margin: "15px 0", fontSize: "16px"}}>La documentation a été déplacée au Hub Central pour un meilleur accès.</p>
+              <button onClick={() => window.location.href = (new URLSearchParams(window.location.search).get('hubReturn') || 'http://127.0.0.1:5179/') + '?page=doc-op1'} style={{padding: "10px 20px", background: "#ff5a1f", color: "#fff", border: "2px solid #111", cursor: "pointer", fontWeight: "bold", borderRadius: "4px"}}>
+                📖 Ouvrir la documentation au Hub →
+              </button>
+            </div>}
 
             {toolWindow === "services" && <ServiceHub Icon={Icon} onOpenLocal={(tool) => { if (tool === "firmware") setToolWindow(null); else setToolWindow(tool); }} />}
 
