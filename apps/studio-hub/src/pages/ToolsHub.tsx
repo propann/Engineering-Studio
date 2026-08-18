@@ -22,7 +22,7 @@ const tools:Tool[]=[
  {id:"tape",code:"TAPE-04",category:"STUDIO",title:"Tape & Album Studio",text:"Quatre pistes, transport, mixage, stems et Album en mode local.",accent:"blue",visual:"wave",status:"MIDI",section:"op1",target:"op1"},
  {id:"image",code:"PX-320",category:"CRÉATION",title:"Éditeur d’image",text:"Écrans et thèmes OP-1 au format exact 320 × 160.",accent:"purple",visual:"pixels",status:"SANS MACHINE",section:"op1",target:"op1"},
  {id:"services",code:"OP1-LAB",category:"OP-1",title:"Services OP-1",text:"Patchs son, ressources référencées et outils de préparation.",accent:"yellow",visual:"chip",status:"LOCAL",section:"op1",target:"op1"},
- {id:"op1-exercise",code:"KEY-01",category:"TRAINING LAB",title:"Exercices OP-1",text:"Suites d’accords, clavier et retour MIDI pour progresser.",accent:"green",visual:"game",status:"OP-1 REQUIS",section:"op1",target:"op1"},
+ {id:"op1-exercise",code:"KEY-01",category:"TRAINING LAB",title:"Exercices OP-1",text:"Suites d’accords, clavier et retour MIDI pour progresser.",accent:"green",visual:"game",status:"OP-1 REQUIS",section:"hub",target:"op1"},
  {id:"op1-docs",code:"DOC-OP1",category:"DOCUMENTATION",title:"Documentation OP-1",text:"Procédures, formats, connexions et limites vérifiées.",accent:"purple",visual:"pixels",status:"LECTURE",section:"hub",target:"hub",anchor:"documentation"},
  {id:"pattern",code:"PAT-SONG",category:"STUDIO",title:"Pattern & Song Studio",text:"Groupes A/B/C/D, patterns, scènes et positions Song EP-133.",accent:"orange",visual:"pads",status:"ÉDITEUR COMPLET",section:"ep133",target:"ep133"},
  {id:"sounds",code:"PAD-64",category:"SON",title:"Sons & transferts EP-133",text:"Banques, réglages de pads, clone et transferts préparés.",accent:"pink",visual:"pads",status:"64 / 128 MO",section:"ep133",target:"ep133"},
@@ -64,11 +64,31 @@ export default function ToolsHub(){
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(!tool.target){setSelected(tool);return}
+  // Pages spéciales du Hub
+  if(tool.target==="hub"){
+    if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
+    if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
+    if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
+    // Autres docs - montrer le modal
+    if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}
+    return;
+  }
+  // Exercices OP-1 ouvre direct le jeu
+  if(tool.id==="op1-exercise"){
+    const url=new URL(STUDIO_URLS["op1"]);
+    url.searchParams.set("hubTool","exercise");
+    url.searchParams.set("from","engineering-studio-maquette");
+    try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
+    window.location.href=url.toString();
+    return;
+  }
+  // Navigation vers les studios externes
   const url=new URL(STUDIO_URLS[tool.target]);
+  if(tool.id==="rhythm") url.searchParams.set("hubTool","game");
   if(tool.anchor) url.hash=tool.anchor;
   url.searchParams.set("from","engineering-studio-maquette");
   try{const profile=localStorage.getItem("studio-hub-profile");if(profile&&tool.target!=="hub")url.searchParams.set("hubProfile",profile)}catch{/* profil local indisponible */}
-  window.open(url.toString(),"_blank","noopener,noreferrer");
+  window.location.href=url.toString();
  }
  // Filtre les outils mais enlève les outils en cadres spéciaux
  const filteredTools = (activeSection === "all" ? tools : tools.filter(t => t.section && t.section === activeSection))
@@ -100,9 +120,9 @@ export default function ToolsHub(){
      onClick={()=>{
       const url=new URL(STUDIO_URLS.op1);
       url.searchParams.set("from","engineering-studio-maquette");
-      url.searchParams.set("hubReturn",window.location.origin);
+      url.searchParams.set("hubReturn",STUDIO_URLS.hub);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"OP-1-Studio","width=1280,height=800,noopener=false");
+      window.location.href=url.toString();
      }}
      title="Ouvrir OP-1 Studio"
     >
@@ -118,9 +138,9 @@ export default function ToolsHub(){
      onClick={()=>{
       const url=new URL(STUDIO_URLS.ep133);
       url.searchParams.set("from","engineering-studio-maquette");
-      url.searchParams.set("hubReturn",window.location.origin);
+      url.searchParams.set("hubReturn",STUDIO_URLS.hub);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"EP133-Studio","width=1280,height=800,noopener=false");
+      window.location.href=url.toString();
      }}
      title="Ouvrir EP-133 Studio"
     >
@@ -138,7 +158,7 @@ export default function ToolsHub(){
       url.hash="atelier-vault";
       url.searchParams.set("from","engineering-studio-maquette");
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"_blank","noopener,noreferrer");
+      window.location.href=url.toString();
      }}
      title="Ouvrir Sauvegarde unifiée"
     >

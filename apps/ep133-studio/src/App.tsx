@@ -44,7 +44,7 @@ import { archiveStudioProject, deleteStudioProject, duplicateStudioProject, load
 import { clearStudioAutosave, loadStudioAutosave, saveStudioAutosave } from './core/project/studioAutosave';
 import { HomePage } from './pages/HomePage';
 import { SoundsPage } from './pages/SoundsPage';
-import { DocumentationPage } from './pages/DocumentationPage';
+// import { DocumentationPage } from './pages/DocumentationPage'; // Moved to Hub
 import { MachineTestPage } from './pages/MachineTestPage';
 import { groupForMappedObservation, loadControlAssignments } from './core/midi/controlMapping';
 import { ScoreView } from './components/game/ScoreView';
@@ -138,7 +138,7 @@ export default function App() {
   useHubInitialization();
   const language = useLanguageStore((state) => state.language);
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
-  const [workspaceView, setWorkspaceView] = useState<'home' | 'game' | 'sounds' | 'docs' | 'machine-test'>(() => {
+  const [workspaceView, setWorkspaceView] = useState<'home' | 'sounds' | 'machine-test' | 'game'>(() => {
     const requested = new URLSearchParams(window.location.search).get('hubTool');
     return requested === 'game' || requested === 'sounds' || requested === 'docs' || requested === 'machine-test' ? requested : 'home';
   });
@@ -1810,13 +1810,12 @@ export default function App() {
     editorScrollToEnd.current = false;
   }, [editorGroup, editorOpen, editorPatternNumbers, studioView]);
 
-  if (workspaceView === 'home') return <HomePage connected={midiReady} project={deviceInventory?.project} scannedSoundCount={deviceInventory ? Object.keys(deviceInventory.sounds).length : 0} language={language} onLanguageChange={changeLanguage} onOpenGame={() => setWorkspaceView('game')} onOpenStudio={openCompleteEditor} onOpenSounds={() => setWorkspaceView('sounds')} onOpenDocumentation={() => setWorkspaceView('docs')} onOpenMachineTest={() => setWorkspaceView('machine-test')} onOpenHub={returnToHub} />;
+  if (workspaceView === 'home') return <HomePage connected={midiReady} project={deviceInventory?.project} scannedSoundCount={deviceInventory ? Object.keys(deviceInventory.sounds).length : 0} language={language} onLanguageChange={changeLanguage} onOpenStudio={openCompleteEditor} onOpenSounds={() => setWorkspaceView('sounds')} onOpenMachineTest={() => setWorkspaceView('machine-test')} onOpenHub={returnToHub} />;
 
   if (workspaceView === 'machine-test') return <MachineTestPage connected={midiReady} sysexEnabled={midi.sysexEnabled} inputNames={midi.inputNames} observations={midiObservations} machineGroup={machineGroup} onBack={goHome} onConnect={() => void midi.connectMonitor()} onSendLearned={midi.sendLearnedMessage} onSelectMachineGroup={async (groupIndex) => { const fid = await midi.selectMachineGroup(groupIndex); setMachineGroup(EDITOR_GROUPS[groupIndex]); return fid; }} />;
 
   if (workspaceView === 'sounds') return <SoundsPage machineName={hubMachine.name} machineCapacityMb={hubMachine.capacityMb} inventory={deviceInventory} soundIndex={deviceSoundIndex} midiConnected={midiReady} machineGroup={machineGroup} onMachineGroupChange={(group) => void selectMachineGroupFromComputer(group)} liveMidi={lastMidi?.note !== undefined && lastMidi.velocity !== undefined ? { note: lastMidi.note, velocity: lastMidi.velocity, timestamp: lastMidi.timestamp } : null} padModes={editorPadModes} onBack={goHome} onConnectMidi={() => void connectMidi()} onPadModeChange={(group, pad, mode) => setEditorPadModes((current) => ({ ...current, [`${group}:${pad}`]: mode }))} onPadPreview={(group, pad, stagedSlot) => void previewSoundPagePad(group, pad, stagedSlot)} onPreviewSound={(slot) => previewBankSound(slot)} localLibraryHandle={localLibraryHandle} localLibraryFolderName={localLibraryFolderName} localLibraryNeedsReconnect={localLibraryNeedsReconnect} onReconnectLocalLibrary={() => void reconnectLocalLibraryFolder()} demoProjects={STUDIO_DEMOS} localProjects={studioLibrary.map(summarizeStudioProject)} onGetProjectDocument={getProjectDocument} onImportMachineProject={importMachineProjectToLibrary} />;
 
-  if (workspaceView === 'docs') return <DocumentationPage onBack={goHome} />;
 
   return <main className={last ? `impact impact-${last.grade.toLowerCase()}` : ''}>
     <GameToolbar difficulty={difficulty} tempo={tempo} activeBpm={activeExercise.bpm} styleId={styleId} styles={STYLES} userExercises={userExercises} phase={phase} sessionActive={sessionActive} midiConnected={midiReady} onDifficultyChange={setDifficulty} onTempoChange={setTempo} onStyleChange={changeStyle} onDuplicateOfficial={duplicateOfficialExercise} onHome={goHome} onOpenHub={returnToHub} onOpenEditor={openEditor} onConnectMidi={() => void connectMidi()} onPreview={() => void togglePreview()} onPlay={() => void toggle()} />

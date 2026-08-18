@@ -2,8 +2,13 @@ import { useState } from "react";
 import Landing from "./pages/Landing";
 import ToolsHub from "./pages/ToolsHub";
 import ProfileCreator from "./pages/ProfileCreator";
+import Documentation from "./pages/Documentation";
+import Exercises from "./pages/Exercises";
+import DocOP1 from "./pages/DocOP1";
+import DocEP133 from "./pages/DocEP133";
+import RhythmHero from "./pages/RhythmHero";
 
-type Page = "landing" | "outils" | "profil";
+type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133" | "rhythm-hero";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -16,6 +21,16 @@ export function App() {
       return <ToolsHub />;
     case "profil":
       return <ProfileCreator />;
+    case "documentation":
+      return <Documentation />;
+    case "exercises":
+      return <Exercises />;
+    case "doc-op1":
+      return <DocOP1 />;
+    case "doc-ep133":
+      return <DocEP133 />;
+    case "rhythm-hero":
+      return <RhythmHero />;
     case "landing":
     default:
       return <Landing />;
