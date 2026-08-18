@@ -140,6 +140,7 @@ export default function App() {
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
   const [workspaceView, setWorkspaceView] = useState<'home' | 'sounds' | 'machine-test' | 'game'>(() => {
     const requested = new URLSearchParams(window.location.search).get('hubTool');
+    console.log('🔍 EP-133 Init - hubTool parameter:', requested, 'Full URL:', window.location.href);
     return requested === 'game' || requested === 'sounds' || requested === 'docs' || requested === 'machine-test' ? requested : 'home';
   });
   const [hubMachine, setHubMachine] = useState(loadHubMachine);
