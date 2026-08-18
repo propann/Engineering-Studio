@@ -138,7 +138,7 @@ export default function App() {
   useHubInitialization();
   const language = useLanguageStore((state) => state.language);
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
-  const [workspaceView, setWorkspaceView] = useState<'home' | 'game' | 'sounds' | 'machine-test'>(() => {
+  const [workspaceView, setWorkspaceView] = useState<'home' | 'sounds' | 'machine-test' | 'game'>(() => {
     const requested = new URLSearchParams(window.location.search).get('hubTool');
     return requested === 'game' || requested === 'sounds' || requested === 'docs' || requested === 'machine-test' ? requested : 'home';
   });
@@ -1810,7 +1810,7 @@ export default function App() {
     editorScrollToEnd.current = false;
   }, [editorGroup, editorOpen, editorPatternNumbers, studioView]);
 
-  if (workspaceView === 'home') return <HomePage connected={midiReady} project={deviceInventory?.project} scannedSoundCount={deviceInventory ? Object.keys(deviceInventory.sounds).length : 0} language={language} onLanguageChange={changeLanguage} onOpenGame={() => setWorkspaceView('game')} onOpenStudio={openCompleteEditor} onOpenSounds={() => setWorkspaceView('sounds')} onOpenMachineTest={() => setWorkspaceView('machine-test')} onOpenHub={returnToHub} />;
+  if (workspaceView === 'home') return <HomePage connected={midiReady} project={deviceInventory?.project} scannedSoundCount={deviceInventory ? Object.keys(deviceInventory.sounds).length : 0} language={language} onLanguageChange={changeLanguage} onOpenStudio={openCompleteEditor} onOpenSounds={() => setWorkspaceView('sounds')} onOpenMachineTest={() => setWorkspaceView('machine-test')} onOpenHub={returnToHub} />;
 
   if (workspaceView === 'machine-test') return <MachineTestPage connected={midiReady} sysexEnabled={midi.sysexEnabled} inputNames={midi.inputNames} observations={midiObservations} machineGroup={machineGroup} onBack={goHome} onConnect={() => void midi.connectMonitor()} onSendLearned={midi.sendLearnedMessage} onSelectMachineGroup={async (groupIndex) => { const fid = await midi.selectMachineGroup(groupIndex); setMachineGroup(EDITOR_GROUPS[groupIndex]); return fid; }} />;
 

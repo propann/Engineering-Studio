@@ -7,7 +7,6 @@ interface HomePageProps {
   scannedSoundCount: number;
   language: AppLanguage;
   onLanguageChange: (language: AppLanguage) => void;
-  onOpenGame: () => void;
   onOpenStudio: () => void;
   onOpenSounds: () => void;
   onOpenMachineTest: () => void;
@@ -35,11 +34,11 @@ function activateWithKeyboard(event: KeyboardEvent<HTMLElement>, action: () => v
   action();
 }
 
-export function HomePage({ connected, project, scannedSoundCount, language, onLanguageChange, onOpenGame, onOpenStudio, onOpenSounds, onOpenMachineTest, onOpenHub }: HomePageProps) {
+export function HomePage({ connected, project, scannedSoundCount, language, onLanguageChange, onOpenStudio, onOpenSounds, onOpenMachineTest, onOpenHub }: HomePageProps) {
   const t = copy[language];
-  const actions = [onOpenStudio, onOpenSounds, onOpenMachineTest, onOpenGame];
-  const classes = ['studio-card', 'sounds-card', 'machine-test-card', 'game-card'];
-  const cards = t.cards.slice(0, 4); // Remove documentation card
+  const actions = [onOpenStudio, onOpenSounds, onOpenMachineTest];
+  const classes = ['studio-card', 'sounds-card', 'machine-test-card'];
+  const cards = t.cards.slice(0, 3); // Remove Rhythm Hero (moved to Hub) and documentation card
   return <main className="home-screen">
     <header className="home-brand"><span>EP‑133</span><b>KO II STUDIO</b><button className="hub-return-button" onClick={onOpenHub}>← HUB OUTILS</button><div className="language-switch" aria-label={t.language}>{(['fr','en','es'] as AppLanguage[]).map((item) => <button className={language === item ? 'active' : ''} onClick={() => onLanguageChange(item)} aria-pressed={language === item} key={item}>{item.toUpperCase()}</button>)}</div><small>{t.tagline}</small></header>
     <section className="home-intro"><p>{t.intro}</p><div className={`home-machine-status ${connected ? 'online' : ''}`}><i className={connected ? 'online' : ''} /><span>{connected ? t.connected : t.ready}</span>{project !== undefined && <small>{t.project} {project} · {scannedSoundCount} {t.sounds}</small>}</div></section>
