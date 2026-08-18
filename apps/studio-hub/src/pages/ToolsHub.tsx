@@ -4,7 +4,7 @@ import { useState } from "react";
 import "./outils.css";
 
 type Tool={id:string;code:string;category:string;title:string;text:string;accent:string;visual:string;status:string;target?:"op1"|"ep133"|"hub";anchor?:string};
-const STUDIO_URLS={op1:process.env.NEXT_PUBLIC_OP1_URL||"http://127.0.0.1:5175/",ep133:process.env.NEXT_PUBLIC_EP133_URL||"http://127.0.0.1:5177/",hub:process.env.NEXT_PUBLIC_HUB_URL||"http://127.0.0.1:5179/"};
+const STUDIO_URLS={op1:import.meta.env.VITE_OP1_URL||"http://127.0.0.1:5175/",ep133:import.meta.env.VITE_EP133_URL||"http://127.0.0.1:5177/",hub:import.meta.env.VITE_HUB_URL||"http://127.0.0.1:5179/"};
 const tools:Tool[]=[
  {id:"firmware",code:"FW-243",category:"OP-1",title:"Firmware Lab",text:"Catalogue, vérification et préparation locale des mods OP-1.",accent:"yellow",visual:"chip",status:"SANS MACHINE"},
  {id:"op1-backup",code:"BKP-OP1",category:"SAUVEGARDE",title:"Sauvegarde OP-1",text:"Tape, Album, Drum et Synth avec manifeste et contrôle d’intégrité.",accent:"blue",visual:"chip",status:"OP-1 REQUIS"},
