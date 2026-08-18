@@ -5,8 +5,9 @@ import ProfileCreator from "./pages/ProfileCreator";
 import Documentation from "./pages/Documentation";
 import Exercises from "./pages/Exercises";
 import DocOP1 from "./pages/DocOP1";
+import DocEP133 from "./pages/DocEP133";
 
-type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1";
+type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -25,6 +26,8 @@ export function App() {
       return <Exercises />;
     case "doc-op1":
       return <DocOP1 />;
+    case "doc-ep133":
+      return <DocEP133 />;
     case "landing":
     default:
       return <Landing />;

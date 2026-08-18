@@ -67,6 +67,7 @@ export default function ToolsHub(){
   // Pages spéciales du Hub
   if(tool.target==="hub"){
     if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
+    if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
     if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
     // Autres docs - montrer le modal
     if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}
