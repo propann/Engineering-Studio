@@ -64,12 +64,14 @@ export default function ToolsHub(){
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(!tool.target){setSelected(tool);return}
-  // Documentation OP-1 - open rich page
-  if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
-  // Other documentation tools - show DocsModal
-  if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}
-  // Pages internes du Hub (exercises)
-  if(tool.target==="hub"&&tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
+  // Pages spéciales du Hub
+  if(tool.target==="hub"){
+    if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
+    if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
+    // Autres docs - montrer le modal
+    if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}
+    return;
+  }
   // Navigation vers les studios externes
   const url=new URL(STUDIO_URLS[tool.target]);
   if(tool.anchor) url.hash=tool.anchor;
