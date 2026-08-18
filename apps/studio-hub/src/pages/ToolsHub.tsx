@@ -22,7 +22,7 @@ const tools:Tool[]=[
  {id:"tape",code:"TAPE-04",category:"STUDIO",title:"Tape & Album Studio",text:"Quatre pistes, transport, mixage, stems et Album en mode local.",accent:"blue",visual:"wave",status:"MIDI",section:"op1",target:"op1"},
  {id:"image",code:"PX-320",category:"CRÉATION",title:"Éditeur d’image",text:"Écrans et thèmes OP-1 au format exact 320 × 160.",accent:"purple",visual:"pixels",status:"SANS MACHINE",section:"op1",target:"op1"},
  {id:"services",code:"OP1-LAB",category:"OP-1",title:"Services OP-1",text:"Patchs son, ressources référencées et outils de préparation.",accent:"yellow",visual:"chip",status:"LOCAL",section:"op1",target:"op1"},
- {id:"op1-exercise",code:"KEY-01",category:"TRAINING LAB",title:"Exercices OP-1",text:"Suites d’accords, clavier et retour MIDI pour progresser.",accent:"green",visual:"game",status:"OP-1 REQUIS",section:"op1",target:"op1"},
+ {id:"op1-exercise",code:"KEY-01",category:"TRAINING LAB",title:"Exercices OP-1",text:"Suites d’accords, clavier et retour MIDI pour progresser.",accent:"green",visual:"game",status:"OP-1 REQUIS",section:"hub",target:"hub",anchor:"exercises"},
  {id:"op1-docs",code:"DOC-OP1",category:"DOCUMENTATION",title:"Documentation OP-1",text:"Procédures, formats, connexions et limites vérifiées.",accent:"purple",visual:"pixels",status:"LECTURE",section:"hub",target:"hub",anchor:"documentation"},
  {id:"pattern",code:"PAT-SONG",category:"STUDIO",title:"Pattern & Song Studio",text:"Groupes A/B/C/D, patterns, scènes et positions Song EP-133.",accent:"orange",visual:"pads",status:"ÉDITEUR COMPLET",section:"ep133",target:"ep133"},
  {id:"sounds",code:"PAD-64",category:"SON",title:"Sons & transferts EP-133",text:"Banques, réglages de pads, clone et transferts préparés.",accent:"pink",visual:"pads",status:"64 / 128 MO",section:"ep133",target:"ep133"},
@@ -64,6 +64,13 @@ export default function ToolsHub(){
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(!tool.target){setSelected(tool);return}
+  // Pages internes du Hub (documentation, exercises)
+  if(tool.target==="hub"&&tool.anchor){
+    if(tool.anchor==="documentation")(window as any).navigateMaquette("documentation");
+    else if(tool.anchor==="exercises")(window as any).navigateMaquette("exercises");
+    return;
+  }
+  // Navigation vers les studios externes
   const url=new URL(STUDIO_URLS[tool.target]);
   if(tool.anchor) url.hash=tool.anchor;
   url.searchParams.set("from","engineering-studio-maquette");
