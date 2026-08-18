@@ -34,6 +34,12 @@ export default function ImageEditorOP1() {
   const [animationOpen, setAnimationOpen] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
 
+  // Animation frames management
+  const [frames, setFrames] = useState<{ id: string; data: ImageData }[]>([]);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [animationFPS, setAnimationFPS] = useState(10);
+
   // Initialize canvas
   useEffect(() => {
     const canvas = mainCanvasRef.current;
