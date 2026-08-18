@@ -100,7 +100,7 @@ export default function ToolsHub(){
      onClick={()=>{
       const url=new URL(STUDIO_URLS.op1);
       url.searchParams.set("from","engineering-studio-maquette");
-      url.searchParams.set("hubReturn",window.location.origin);
+      url.searchParams.set("hubReturn",STUDIO_URLS.hub);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
       window.location.href=url.toString();
      }}
@@ -118,7 +118,7 @@ export default function ToolsHub(){
      onClick={()=>{
       const url=new URL(STUDIO_URLS.ep133);
       url.searchParams.set("from","engineering-studio-maquette");
-      url.searchParams.set("hubReturn",window.location.origin);
+      url.searchParams.set("hubReturn",STUDIO_URLS.hub);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
       window.location.href=url.toString();
      }}
