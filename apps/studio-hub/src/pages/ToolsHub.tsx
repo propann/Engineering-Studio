@@ -100,8 +100,9 @@ export default function ToolsHub(){
      onClick={()=>{
       const url=new URL(STUDIO_URLS.op1);
       url.searchParams.set("from","engineering-studio-maquette");
+      url.searchParams.set("hubReturn",window.location.origin);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.location.href=url.toString();
+      window.open(url.toString(),"OP-1-Studio","width=1280,height=800,noopener=false");
      }}
      title="Ouvrir OP-1 Studio"
     >
@@ -117,8 +118,9 @@ export default function ToolsHub(){
      onClick={()=>{
       const url=new URL(STUDIO_URLS.ep133);
       url.searchParams.set("from","engineering-studio-maquette");
+      url.searchParams.set("hubReturn",window.location.origin);
       try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.location.href=url.toString();
+      window.open(url.toString(),"EP133-Studio","width=1280,height=800,noopener=false");
      }}
      title="Ouvrir EP-133 Studio"
     >
