@@ -1,0 +1,18 @@
+/* outils.css - Styles pour ToolsHub */
+
+.tool-dialog {
+  border-radius: 0;
+  border: 4px solid #111;
+  box-shadow: 12px 12px 0 #000;
+}
+
+.tool-card {
+  border: 3px solid #4a4e48;
+  border-radius: 0;
+  clip-path: polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% 100%, 0 100%);
+}
+
+.tool-card:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0 var(--accent, #111);
+}
