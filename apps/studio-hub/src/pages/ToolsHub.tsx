@@ -95,12 +95,15 @@ export default function ToolsHub(){
    </div>
    <div className="utility-grid">
     {/* === HAUT === */}
-    <a
-     href="http://127.0.0.1:5175/?from=engineering-studio-maquette"
-     target="_blank"
-     rel="noopener noreferrer"
+    <button
      className="utility-card op1-studio-card"
-     style={{textDecoration:"none",color:"inherit"}}
+     onClick={()=>{
+      const url=new URL(STUDIO_URLS.op1);
+      url.searchParams.set("from","engineering-studio-maquette");
+      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
+      window.location.href=url.toString();
+     }}
+     title="Ouvrir OP-1 Studio"
     >
      <span>OP1</span>
      <ToolGraphic type="chip"/>
@@ -108,13 +111,16 @@ export default function ToolsHub(){
      <h3>🎹 OP-1 Studio</h3>
      <p>Tous les outils pour créer, éditer et gérer vos projets OP-1.</p>
      <div className="tool-status">OUVRIR →</div>
-    </a>
-    <a
-     href="http://127.0.0.1:5177/?from=engineering-studio-maquette"
-     target="_blank"
-     rel="noopener noreferrer"
+    </button>
+    <button
      className="utility-studio-card ep133-studio-card"
-     style={{textDecoration:"none",color:"inherit"}}
+     onClick={()=>{
+      const url=new URL(STUDIO_URLS.ep133);
+      url.searchParams.set("from","engineering-studio-maquette");
+      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
+      window.location.href=url.toString();
+     }}
+     title="Ouvrir EP-133 Studio"
     >
      <span>KO2</span>
      <ToolGraphic type="pads"/>
@@ -122,7 +128,7 @@ export default function ToolsHub(){
      <h3>🥁 EP-133 Studio</h3>
      <p>Tous les outils pour composer, performer et contrôler votre EP-133.</p>
      <div className="tool-status">OUVRIR →</div>
-    </a>
+    </button>
     <button
      className="utility-card save-card"
      onClick={()=>{
