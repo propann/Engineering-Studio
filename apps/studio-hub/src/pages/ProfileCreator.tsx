@@ -1,5 +1,12 @@
 "use client";
-const Link = ({href, className, ...props}) => <a href={"#" + href} className={className} {...props}/>;
+const Link = ({href, className, ...props}) => {
+  const handleClick = (e: any) => {
+    e.preventDefault();
+    if (href === "/outils") (window as any).navigateMaquette("outils");
+    else if (href === "/") (window as any).navigateMaquette("landing");
+  };
+  return <a href={"#" + href} onClick={handleClick} className={className} {...props}/>;
+};
 import { useEffect, useMemo, useState } from "react";
 
 type Machine={id:number;kind:"op1"|"ep133";name:string;memory?:64|128;active:boolean};

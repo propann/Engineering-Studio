@@ -1,6 +1,14 @@
 "use client";
 import { useEffect, useState } from "react";
-const Link = ({href, className, ...props}) => <a href={"#" + href} className={className} {...props}/>;
+const Link = ({href, className, ...props}) => {
+  const handleClick = (e: any) => {
+    e.preventDefault();
+    if (href === "/outils") (window as any).navigateMaquette("outils");
+    else if (href === "/fiche-personnage") (window as any).navigateMaquette("profil");
+    else if (href === "/") (window as any).navigateMaquette("landing");
+  };
+  return <a href={"#" + href} onClick={handleClick} className={className} {...props}/>;
+};
 const Image = ({src, ...props}) => <img src={src} {...props}/>;
 
 const tools = [
