@@ -97,27 +97,37 @@ export default function ToolsHub(){
     {/* === HAUT === */}
     <button
      className="utility-card op1-studio-card"
-     onClick={()=>setShowOP1Studio(true)}
-     title="Cliquez pour accéder aux outils OP-1 Studio"
+     onClick={()=>{
+      const url=new URL(STUDIO_URLS.op1);
+      url.searchParams.set("from","engineering-studio-maquette");
+      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
+      window.open(url.toString(),"_blank","noopener,noreferrer");
+     }}
+     title="Ouvrir OP-1 Studio"
     >
      <span>OP1</span>
      <ToolGraphic type="chip"/>
      <small>MACHINE</small>
      <h3>🎹 OP-1 Studio</h3>
      <p>Tous les outils pour créer, éditer et gérer vos projets OP-1.</p>
-     <div className="tool-status">{op1StudioTools.length} MODULES</div>
+     <div className="tool-status">OUVRIR →</div>
     </button>
     <button
      className="utility-studio-card ep133-studio-card"
-     onClick={()=>setShowEP133Studio(true)}
-     title="Cliquez pour accéder aux outils EP-133 Studio"
+     onClick={()=>{
+      const url=new URL(STUDIO_URLS.ep133);
+      url.searchParams.set("from","engineering-studio-maquette");
+      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
+      window.open(url.toString(),"_blank","noopener,noreferrer");
+     }}
+     title="Ouvrir EP-133 Studio"
     >
      <span>KO2</span>
      <ToolGraphic type="pads"/>
      <small>MACHINE</small>
      <h3>🥁 EP-133 Studio</h3>
      <p>Tous les outils pour composer, performer et contrôler votre EP-133.</p>
-     <div className="tool-status">{ep133StudioTools.length} MODULES</div>
+     <div className="tool-status">OUVRIR →</div>
     </button>
     <button
      className="utility-card save-card"
