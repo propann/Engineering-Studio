@@ -95,10 +95,12 @@ export default function ToolsHub(){
    </div>
    <div className="utility-grid">
     {/* === HAUT === */}
-    <button
+    <a
+     href="http://127.0.0.1:5175/?from=engineering-studio-maquette"
+     target="_blank"
+     rel="noopener noreferrer"
      className="utility-card op1-studio-card"
-     onClick={()=>openTool({id:"op1",code:"OP1-08",category:"MACHINE",title:"OP-1 Studio",text:"Tous les outils pour créer, éditer et gérer vos projets OP-1.",accent:"yellow",visual:"wave",status:"8 MODULES",target:"op1",section:"op1"})}
-     title="Ouvrir OP-1 Studio"
+     style={{textDecoration:"none",color:"inherit"}}
     >
      <span>OP1</span>
      <ToolGraphic type="chip"/>
@@ -106,11 +108,13 @@ export default function ToolsHub(){
      <h3>🎹 OP-1 Studio</h3>
      <p>Tous les outils pour créer, éditer et gérer vos projets OP-1.</p>
      <div className="tool-status">OUVRIR →</div>
-    </button>
-    <button
+    </a>
+    <a
+     href="http://127.0.0.1:5177/?from=engineering-studio-maquette"
+     target="_blank"
+     rel="noopener noreferrer"
      className="utility-studio-card ep133-studio-card"
-     onClick={()=>openTool({id:"ep133",code:"KOII-05",category:"MACHINE",title:"EP-133 Studio",text:"Tous les outils pour composer, performer et contrôler votre EP-133.",accent:"orange",visual:"pads",status:"5 MODULES",target:"ep133",section:"ep133"})}
-     title="Ouvrir EP-133 Studio"
+     style={{textDecoration:"none",color:"inherit"}}
     >
      <span>KO2</span>
      <ToolGraphic type="pads"/>
@@ -118,7 +122,7 @@ export default function ToolsHub(){
      <h3>🥁 EP-133 Studio</h3>
      <p>Tous les outils pour composer, performer et contrôler votre EP-133.</p>
      <div className="tool-status">OUVRIR →</div>
-    </button>
+    </a>
     <button
      className="utility-card save-card"
      onClick={()=>{
