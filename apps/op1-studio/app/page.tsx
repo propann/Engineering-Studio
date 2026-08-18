@@ -10,7 +10,6 @@ import { HomeHub } from "./components/HomeHub";
 // import { DocumentationPanel } from "./components/DocumentationPanel"; // Moved to Hub
 import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
 import { Op1PixelEditor } from "./components/Op1PixelEditor";
-import { ExercisePanel } from "./components/ExercisePanel";
 import { BackupPanel } from "./components/BackupPanel";
 import { SoundsPanel } from "./components/SoundsPanel";
 import { ServiceHub } from "./components/ServiceHub";
@@ -40,7 +39,7 @@ type IconName =
   | "book"
   | "image";
 
-type ToolWindow = "exercise" | "editor" | "backups" | "sounds" | "services" | "tape" | null;
+type ToolWindow = "editor" | "backups" | "sounds" | "services" | "tape" | null;
 
 function hubReturnUrl() {
   return new URLSearchParams(window.location.search).get("hubReturn") || "http://127.0.0.1:5179/";
@@ -50,7 +49,7 @@ function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
   if (typeof window === "undefined") return { tool: null, homeOpen: true };
   const requested = new URLSearchParams(window.location.search).get("hubTool");
   if (requested === "firmware") return { tool: null, homeOpen: false };
-  const tools: ToolWindow[] = ["exercise", "editor", "backups", "sounds", "services", "tape"];
+  const tools: ToolWindow[] = ["editor", "backups", "sounds", "services", "tape"];
   return tools.includes(requested as ToolWindow)
     ? { tool: requested as ToolWindow, homeOpen: false }
     : { tool: null, homeOpen: true };
@@ -936,8 +935,6 @@ export default function Home() {
     setHomeOpen(initial.homeOpen);
     setIsHydrated(true);
   }, []);
-  const [exerciseRunning, setExerciseRunning] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
   const [firmwareOptions, setFirmwareOptions] = useState({
     verify: true,
     backup: true,
@@ -1120,7 +1117,6 @@ export default function Home() {
             : toolWindow === "tape" ? "Studio"
             : toolWindow === "editor" ? "Images"
             : toolWindow === "services" ? "Services"
-            : toolWindow === "exercise" ? "Exercices MIDI"
             : toolWindow === null ? "Firmware"
             : null;
           return (
@@ -1145,11 +1141,6 @@ export default function Home() {
               <button className="nav-strip-item hub-return" onClick={returnToHub}>
                 <Icon name="archive" size={16} /><span>Hub outils</span>
               </button>
-              {currentDestination !== "Exercices MIDI" && (
-                <button className="nav-strip-item" onClick={returnToHub} title="Ouvre les exercices au Hub">
-                  <Icon name="wave" size={16} /><span>Exercices MIDI</span>
-                </button>
-              )}
               <button className="nav-strip-item" onClick={() => setNotice("Les réglages restent locaux dans la version de base.")}>
                 <Icon name="settings" size={16} /><span>Réglages</span>
               </button>
@@ -1330,7 +1321,7 @@ export default function Home() {
             <div className="tool-window-header">
               <div>
                 <span className="section-label">OP-1 STUDIO / OUTIL</span>
-                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
+                <h2 id="tool-window-title">{toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
               </div>
               <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
             </div>
@@ -1341,15 +1332,12 @@ export default function Home() {
                 ["sounds", "Sons", "wave"],
                 ["services", "Services", "book"],
                 ["tape", "Studio", "tape"],
-                ["exercise", "Exercices", "settings"],
               ].map(([id, label, icon]) => ({ id, label, icon: <Icon name={icon as IconName} size={14} /> }))} activeId={toolWindow ?? ""} onSelect={(id) => setToolWindow(id as ToolWindow)} />
 
             {/* pressedNotes pas encore branché : l'état MIDI (pressedMidiNotes) vit
                 dans TapeEditor, un composant frère, pas dans ce scope. À faire
                 remonter d'un niveau si on veut que les touches jouées en vrai
                 s'allument ici aussi ; la cible qui tombe fonctionne déjà sans. */}
-            {toolWindow === "exercise" && <ExercisePanel Icon={Icon} selectedExercise={selectedExercise} running={exerciseRunning} onExerciseChange={setSelectedExercise} onToggle={() => setExerciseRunning((running) => !running)} />}
-
 
             {toolWindow === "services" && <ServiceHub Icon={Icon} onOpenLocal={(tool) => { if (tool === "firmware") setToolWindow(null); else setToolWindow(tool); }} />}
 
