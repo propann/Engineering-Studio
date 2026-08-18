@@ -97,12 +97,7 @@ export default function ToolsHub(){
     {/* === HAUT === */}
     <button
      className="utility-card op1-studio-card"
-     onClick={()=>{
-      const url=new URL(STUDIO_URLS.op1);
-      url.searchParams.set("from","engineering-studio-maquette");
-      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"_blank","noopener,noreferrer");
-     }}
+     onClick={()=>openTool({id:"op1",code:"OP1-08",category:"MACHINE",title:"OP-1 Studio",text:"Tous les outils pour créer, éditer et gérer vos projets OP-1.",accent:"yellow",visual:"wave",status:"8 MODULES",target:"op1",section:"op1"})}
      title="Ouvrir OP-1 Studio"
     >
      <span>OP1</span>
@@ -114,12 +109,7 @@ export default function ToolsHub(){
     </button>
     <button
      className="utility-studio-card ep133-studio-card"
-     onClick={()=>{
-      const url=new URL(STUDIO_URLS.ep133);
-      url.searchParams.set("from","engineering-studio-maquette");
-      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.open(url.toString(),"_blank","noopener,noreferrer");
-     }}
+     onClick={()=>openTool({id:"ep133",code:"KOII-05",category:"MACHINE",title:"EP-133 Studio",text:"Tous les outils pour composer, performer et contrôler votre EP-133.",accent:"orange",visual:"pads",status:"5 MODULES",target:"ep133",section:"ep133"})}
      title="Ouvrir EP-133 Studio"
     >
      <span>KO2</span>
