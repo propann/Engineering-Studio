@@ -60,7 +60,7 @@ export default function ToolsHub(){
  const trainingTools = tools.filter(t => t.category === "TRAINING LAB");
  const settingsTools = tools.filter(t => t.id === "machine-test" || t.id === "midi");
  const soundTools = tools.filter(t => t.id === "tape" || t.id === "sounds" || t.id === "sample" || t.id === "library");
- const op1StudioTools = tools.filter(t => t.id === "services" || t.id === "op1-backup");
+ const op1StudioTools = tools.filter(t => t.id === "services");
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(!tool.target){setSelected(tool);return}
