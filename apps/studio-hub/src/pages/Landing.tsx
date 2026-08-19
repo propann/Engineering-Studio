@@ -22,6 +22,7 @@ export default function Home() {
     else if (toolId === "ep133") (window as any).navigateMaquette("studio-ep133");
     else if (toolId === "sounds") (window as any).navigateMaquette("sound-editor");
     else if (toolId === "visual") (window as any).navigateMaquette("image-editor-op1");
+    else if (toolId === "profil") (window as any).navigateMaquette("profil");
     else (window as any).navigateMaquette("outils");
   };
 
@@ -154,6 +155,13 @@ export default function Home() {
             <h3>EP-133 K.O. II</h3>
             <p>Gestionnaire de samples, banques de sons A/B/C/D, clonage de pads et sauvegardes.</p>
             <span className="card-link">Ouvrir le Sampler ↗</span>
+          </div>
+
+          <div className="preview-card" onClick={() => openTool("profil")}>
+            <div className="card-icon">👤</div>
+            <h3>Mon Profil</h3>
+            <p>Configurez votre atelier, vos machines (OP-1, EP-133), la capacité mémoire et vos espaces de travail.</p>
+            <span className="card-link">Créer/Éditer mon Profil ↗</span>
           </div>
 
           <div className="preview-card" onClick={() => openTool("sounds")}>
