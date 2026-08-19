@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
 
@@ -53,6 +53,9 @@ export default function CharacterPage() {
     { id: 2, kind: "ep133", name: "KO II LAB", memory: 64, active: true },
   ]);
 
+  // Reference to hidden folder picker input
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
   const [drives, setDrives] = useState<DriveModule[]>([
     { id: 101, name: "GOOGLE DRIVE STUDIO", type: "google_drive", capacityGb: 100, mountPath: "Cloud/Studio-Hub", status: "mounted", active: true },
@@ -60,64 +63,75 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker
+  // Workspace picker - supports both modern API and fallback
   const pickWorkspaceFolder = async () => {
     log.info("Workspace picker triggered");
 
-    // Check if File System Access API is available
-    if (!("showDirectoryPicker" in window)) {
-      log.warn("File System Access API not available in this browser");
-      alert(
-        "❌ Votre navigateur ne supporte pas la sélection de dossier.\n\n" +
-        "Utilisez Chrome, Edge ou Firefox à jour.\n\n" +
-        "Pour l'instant, choisissez un dossier manuellement dans l'explorateur de fichiers.\n\n" +
-        "Structure recommandée:\n" +
-        "- shared/sounds\n" +
-        "- op1/backups\n" +
-        "- op1/projects\n" +
-        "- ep133/projects\n" +
-        "- ep133/samples\n" +
-        "- drives/cloud"
-      );
-      return;
-    }
+    // Method 1: Try File System Access API (modern browsers)
+    if ("showDirectoryPicker" in window) {
+      try {
+        log.info("Using File System Access API");
+        const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+        const name = dirHandle.name;
+        log.info("Directory selected via API", { name });
+        setWorkspace(name);
 
-    try {
-      log.info("Opening directory picker dialog");
-      const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-      const name = dirHandle.name;
-      log.info("Directory selected", { name });
-      setWorkspace(name);
-
-      // Create subdirectories
-      const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
-      for (const folder of folders) {
-        const parts = folder.split("/");
-        let current = dirHandle;
-        for (const part of parts) {
-          try {
-            current = await current.getDirectoryHandle(part, { create: true });
-          } catch (error) {
-            log.warn(`Failed to create folder ${part}`, error);
+        // Create subdirectories
+        const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
+        for (const folder of folders) {
+          const parts = folder.split("/");
+          let current = dirHandle;
+          for (const part of parts) {
+            try {
+              current = await current.getDirectoryHandle(part, { create: true });
+            } catch (error) {
+              log.warn(`Failed to create folder ${part}`, error);
+            }
           }
         }
-      }
-      log.info("Workspace setup complete", { path: name });
-    } catch (error) {
-      const errorName = (error as any)?.name;
-      const errorMsg = (error as any)?.message;
-      log.error("Failed to pick workspace", error);
-
-      if (errorName === "NotAllowedError") {
-        alert("❌ Permission refusée. Vous devez autoriser l'accès aux fichiers.\n\nVérifiez les permissions du navigateur.");
-      } else if (errorName === "AbortError") {
-        // User cancelled - this is normal, don't show error
-        log.info("User cancelled directory picker");
+        log.info("Workspace setup complete via API", { path: name });
         return;
-      } else {
-        alert(`❌ Erreur lors de la sélection du dossier:\n${errorMsg || String(error)}\n\nVérifiez que votre navigateur supporte cette fonction.`);
+      } catch (error) {
+        const errorName = (error as any)?.name;
+        if (errorName === "NotAllowedError") {
+          alert("❌ Permission refusée. Vous devez autoriser l'accès aux fichiers.");
+          return;
+        } else if (errorName === "AbortError") {
+          log.info("User cancelled directory picker");
+          return;
+        }
+        log.warn("File System Access API failed, trying fallback", error);
       }
     }
+
+    // Method 2: Fallback to input[type="file" directory] (webkitdirectory)
+    log.info("Using input file picker fallback");
+    if (folderInputRef.current) {
+      folderInputRef.current.click();
+    }
+  };
+
+  // Handle folder selection from input element
+  const handleFolderInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.currentTarget.files;
+    if (files && files.length > 0) {
+      // Get the directory path from the first file
+      const firstFile = files[0];
+      const webkitRelativePath = (firstFile as any).webkitRelativePath;
+
+      if (webkitRelativePath) {
+        // Extract directory name from path
+        const pathParts = webkitRelativePath.split("/");
+        const dirName = pathParts[0] || "WORKSPACE";
+        log.info("Folder selected via input picker", { dirName, fileCount: files.length });
+        setWorkspace(dirName);
+      } else {
+        log.info("File selected via input picker (no directory support)", { fileName: firstFile.name });
+        setWorkspace(firstFile.name);
+      }
+    }
+    // Reset input so same folder can be selected again
+    event.currentTarget.value = "";
   };
 
   const toggleWorkspace = () => {
@@ -444,6 +458,17 @@ export default function CharacterPage() {
           </div>
         </div>
       </section>
+
+      {/* Hidden folder picker input (fallback) */}
+      <input
+        ref={folderInputRef}
+        type="file"
+        multiple
+        onChange={handleFolderInputChange}
+        style={{ display: "none" }}
+        aria-hidden="true"
+        {...({ webkitdirectory: true, directory: true } as any)}
+      />
     </main>
   );
 }
