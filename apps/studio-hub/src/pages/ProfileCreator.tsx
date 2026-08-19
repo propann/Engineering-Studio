@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
+import { createLogger } from "@studio-hub/audio-bridge";
+
+const log = createLogger("Hub.ProfileCreator");
 
 const Link = ({ href, className = "", ...props }: any) => {
   const handleClick = (e: any) => {
@@ -59,24 +62,61 @@ export default function CharacterPage() {
 
   // Workspace picker
   const pickWorkspaceFolder = async () => {
-    if ((window as any).showDirectoryPicker) {
-      try {
-        const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-        const name = dirHandle.name;
-        setWorkspace(name);
-        const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
-        for (const folder of folders) {
-          const parts = folder.split("/");
-          let current = dirHandle;
-          for (const part of parts) {
-            try {
-              current = await current.getDirectoryHandle(part, { create: true });
-            } catch {}
+    log.info("Workspace picker triggered");
+
+    // Check if File System Access API is available
+    if (!("showDirectoryPicker" in window)) {
+      log.warn("File System Access API not available in this browser");
+      alert(
+        "❌ Votre navigateur ne supporte pas la sélection de dossier.\n\n" +
+        "Utilisez Chrome, Edge ou Firefox à jour.\n\n" +
+        "Pour l'instant, choisissez un dossier manuellement dans l'explorateur de fichiers.\n\n" +
+        "Structure recommandée:\n" +
+        "- shared/sounds\n" +
+        "- op1/backups\n" +
+        "- op1/projects\n" +
+        "- ep133/projects\n" +
+        "- ep133/samples\n" +
+        "- drives/cloud"
+      );
+      return;
+    }
+
+    try {
+      log.info("Opening directory picker dialog");
+      const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+      const name = dirHandle.name;
+      log.info("Directory selected", { name });
+      setWorkspace(name);
+
+      // Create subdirectories
+      const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
+      for (const folder of folders) {
+        const parts = folder.split("/");
+        let current = dirHandle;
+        for (const part of parts) {
+          try {
+            current = await current.getDirectoryHandle(part, { create: true });
+          } catch (error) {
+            log.warn(`Failed to create folder ${part}`, error);
           }
         }
-      } catch (e) {}
-    } else {
-      alert("Choisir un dossier manuellement dans votre explorateur.\n\nStructure créée: shared/sounds, op1/backups, op1/projects, ep133/projects, ep133/samples, drives/cloud");
+      }
+      log.info("Workspace setup complete", { path: name });
+    } catch (error) {
+      const errorName = (error as any)?.name;
+      const errorMsg = (error as any)?.message;
+      log.error("Failed to pick workspace", error);
+
+      if (errorName === "NotAllowedError") {
+        alert("❌ Permission refusée. Vous devez autoriser l'accès aux fichiers.\n\nVérifiez les permissions du navigateur.");
+      } else if (errorName === "AbortError") {
+        // User cancelled - this is normal, don't show error
+        log.info("User cancelled directory picker");
+        return;
+      } else {
+        alert(`❌ Erreur lors de la sélection du dossier:\n${errorMsg || String(error)}\n\nVérifiez que votre navigateur supporte cette fonction.`);
+      }
     }
   };
 
