@@ -70,6 +70,8 @@ export interface StudioTapeEditorProps {
   transportPlaying: boolean;
   looping: boolean;
   reversed: boolean;
+  volume?: number;
+  onVolumeChange?: (vol: number) => void;
   audioRefs: MutableRefObject<Record<number, HTMLAudioElement | null>>;
   onFileLoad: (index: number, file: File) => void;
   onTogglePlay: (index: number) => void;
@@ -89,6 +91,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     waveformPeaks, clipOffsets, clipEnds, durations,
     muted, solo, playing, selectedTrack,
     position, transportPlaying, reversed,
+    volume = 0.85, onVolumeChange,
     audioRefs,
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
@@ -97,7 +100,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{
-    kind: "clip" | "playhead";
+    kind: "clip" | "playhead" | "volume" | "scrub";
     trackIndex: number;
     startSvgX: number;
     startOffset: number;
@@ -136,38 +139,48 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   function onSvgPointerDown(event: React.PointerEvent<SVGSVGElement>) {
     const pt = toSvgPt(event.clientX, event.clientY);
 
-    // Clic sur la zone du playhead (tolérance 3px en x)
-    if (Math.abs(pt.x - playX) < 3 && pt.y >= 116 && pt.y <= 146) {
+    // 1. Glissière de volume sur l'écran (colonne de droite x=295..318, y=10..115)
+    if (pt.x >= 295 && pt.x <= 318 && pt.y <= 118) {
       (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
-      dragRef.current = { kind: "playhead", trackIndex: -1, startSvgX: pt.x, startOffset: 0 };
+      dragRef.current = { kind: "volume", trackIndex: -1, startSvgX: pt.x, startOffset: 0 };
+      const vol = Math.max(0, Math.min(1, 1 - (pt.y - 10) / 100));
+      onVolumeChange?.(vol);
       return;
     }
 
-    // Clic dans la zone des pistes
-    const ti = trackAtY(pt.y);
-    if (ti === null) return;
-    onSelectTrack(ti);
-
-    // Clic sur un clip ?
-    const offset = clipOffsets[ti] ?? 0;
-    const end    = clipEnds[ti] ?? durations[ti] ?? 0;
-    if (Boolean(files[ti]) && end > 0) {
-      const r0 = reversed ? 1 - secToRatio(offset + end) : secToRatio(offset);
-      const r1 = reversed ? 1 - secToRatio(offset)       : secToRatio(offset + end);
-      const cx0 = TAPE_X0 + r0 * TAPE_SPAN;
-      const cx1 = TAPE_X0 + r1 * TAPE_SPAN;
-      if (pt.x >= cx0 - 2 && pt.x <= cx1 + 2) {
-        (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
-        dragRef.current = { kind: "clip", trackIndex: ti, startSvgX: pt.x, startOffset: offset };
-        return;
-      }
-    }
-
-    // Clic sur la bande vide → seek
-    if (pt.y >= 122 && pt.y <= 146 && pt.x >= TAPE_X0 && pt.x <= TAPE_X1) {
-      const ratio = (pt.x - TAPE_X0) / TAPE_SPAN;
+    // 2. Playhead ou Scrubbing direct sur la bande (clic maintenu lit la position en temps réel)
+    if ((Math.abs(pt.x - playX) < 4 && pt.y >= 110 && pt.y <= 148) || (pt.y >= 115 && pt.y <= 148 && pt.x >= TAPE_X0 && pt.x <= TAPE_X1)) {
+      (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
+      dragRef.current = { kind: "scrub", trackIndex: -1, startSvgX: pt.x, startOffset: 0 };
+      const ratio = Math.max(0, Math.min(1, (pt.x - TAPE_X0) / TAPE_SPAN));
       const t = reversed ? (1 - ratio) * TAPE_DURATION : ratio * TAPE_DURATION;
       onSeek(Math.max(0, Math.min(TAPE_DURATION, t)));
+      // Met à jour la position audio en temps réel pendant le drag
+      Object.values(audioRefs.current).forEach((audio) => {
+        if (audio) {
+          audio.currentTime = Math.max(0, Math.min(audio.duration || 360, t));
+        }
+      });
+      return;
+    }
+
+    // 3. Clic dans la zone des pistes (sélection piste ou drag de clip)
+    const ti = trackAtY(pt.y);
+    if (ti !== null) {
+      onSelectTrack(ti);
+      const offset = clipOffsets[ti] ?? 0;
+      const end    = clipEnds[ti] ?? durations[ti] ?? 0;
+      if (Boolean(files[ti]) && end > 0) {
+        const r0 = reversed ? 1 - secToRatio(offset + end) : secToRatio(offset);
+        const r1 = reversed ? 1 - secToRatio(offset)       : secToRatio(offset + end);
+        const cx0 = TAPE_X0 + r0 * TAPE_SPAN;
+        const cx1 = TAPE_X0 + r1 * TAPE_SPAN;
+        if (pt.x >= cx0 - 2 && pt.x <= cx1 + 2) {
+          (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
+          dragRef.current = { kind: "clip", trackIndex: ti, startSvgX: pt.x, startOffset: offset };
+          return;
+        }
+      }
     }
   }
 
@@ -176,10 +189,22 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     const pt = toSvgPt(event.clientX, event.clientY);
     const dx = pt.x - dragRef.current.startSvgX;
 
-    if (dragRef.current.kind === "playhead") {
+    if (dragRef.current.kind === "volume") {
+      const vol = Math.max(0, Math.min(1, 1 - (pt.y - 10) / 100));
+      onVolumeChange?.(vol);
+      return;
+    }
+
+    if (dragRef.current.kind === "scrub" || dragRef.current.kind === "playhead") {
       const ratio = Math.max(0, Math.min(1, (pt.x - TAPE_X0) / TAPE_SPAN));
       const t = reversed ? (1 - ratio) * TAPE_DURATION : ratio * TAPE_DURATION;
       onSeek(t);
+      // Scrub audio en temps réel : ajuste le currentTime de tous les canaux actifs
+      Object.values(audioRefs.current).forEach((audio) => {
+        if (audio) {
+          audio.currentTime = Math.max(0, Math.min(audio.duration || 360, t));
+        }
+      });
       return;
     }
 
@@ -291,11 +316,29 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" opacity="0.4" />
         )}
 
-        {/* Indicateur niveau (rouge) */}
-        <line x1="305.268" y1="4.451" x2="305.268" y2="110.292"
-          stroke={transportPlaying ? "#FF3A5D" : "#4E2832"} strokeWidth="1.5" />
-        <circle cx="305.268" cy="110.292" r="2.667"
-          fill={transportPlaying ? "#FF3A5D" : "#4E2832"} />
+        {/* Indicateur & Glissière de Volume Interactive (rouge TE) */}
+        {(() => {
+          const volY = 10 + (1 - Math.max(0, Math.min(1, volume))) * 100;
+          return (
+            <g style={{ cursor: "ns-resize" }}>
+              <title>Glissière de volume master (glisser verticalement)</title>
+              {/* Rail de fond */}
+              <line x1="305.268" y1="10" x2="305.268" y2="110"
+                stroke="#3a2028" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Niveau actif */}
+              <line x1="305.268" y1={volY} x2="305.268" y2="110"
+                stroke="#FF3A5D" strokeWidth="2.5" strokeLinecap="round" />
+              {/* Curseur de volume */}
+              <circle cx="305.268" cy={volY} r="4" fill="#FF3A5D" stroke="#fff" strokeWidth="1" />
+              {/* Texte % Volume */}
+              <text x="305.268" y="117" textAnchor="middle" fill="#FF3A5D" fontSize="4.5" fontFamily="monospace" fontWeight="bold">
+                {Math.round(volume * 100)}%
+              </text>
+              {/* Zone Clic Élargie */}
+              <rect x="296" y="5" width="20" height="115" fill="transparent" />
+            </g>
+          );
+        })()}
 
         {/* Numéro de piste (cadre haut gauche) */}
         <rect x="6" y="3" width="28.082" height="28.081" fill="none" stroke="#fff" strokeWidth="1.5" />

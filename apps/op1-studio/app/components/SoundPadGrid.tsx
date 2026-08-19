@@ -29,10 +29,14 @@ export function SoundPadGrid() {
   const preview = useCallback((id: number) => {
     const sample = samples[id];
     if (!sample) return;
-    audioRef.current?.pause();
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+    }
     const audio = new Audio(sample.url);
     audioRef.current = audio;
-    void audio.play();
+    audio.play().catch(() => {
+      // Ignore interrupted by pause or autoplay policy restrictions
+    });
     setSelected(id);
   }, [samples]);
 

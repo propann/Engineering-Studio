@@ -683,3 +683,144 @@
   width: 8px;
   height: 28px;
 }
+
+/* ========== MACHINE IMAGE CARDS ========== */
+.utility-card.machine-image-card {
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-radius: 12px;
+  box-shadow: 4px 4px 0 #111311;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.utility-card.machine-image-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 8px 8px 0 #ff5a1f;
+}
+
+.utility-card.machine-image-card.op1-studio-card {
+  border-top: 6px solid #4aa7ff;
+}
+
+.utility-card.machine-image-card.op1-studio-card:hover {
+  box-shadow: 8px 8px 0 #4aa7ff;
+}
+
+.utility-card.machine-image-card.ep133-studio-card {
+  border-top: 6px solid #ff5a1f;
+}
+
+.machine-header-tag {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.machine-header-tag span {
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  background: #111311;
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+}
+
+.machine-header-tag small {
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  font-weight: 800;
+  color: #747970;
+  letter-spacing: 0.05em;
+}
+
+.machine-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #f4f5ef;
+  border: 1.5px solid #11131122;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.machine-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.3s ease;
+}
+
+.utility-card.machine-image-card:hover .machine-card-image {
+  transform: scale(1.04);
+}
+
+.machine-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1.5px solid #1113111a;
+}
+
+.machine-btn {
+  width: 100%;
+  padding: 10px 14px;
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 900;
+  border: 2px solid #111311;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.machine-btn.op1-btn {
+  background: #111311;
+  color: #d9ff43;
+}
+
+.machine-btn.op1-btn:hover {
+  background: #4aa7ff;
+  color: #111311;
+  box-shadow: 2px 2px 0 #111311;
+}
+
+.machine-btn.ep133-btn.primary {
+  background: #ff5a1f;
+  color: #ffffff;
+}
+
+.machine-btn.ep133-btn.primary:hover {
+  background: #111311;
+  color: #d9ff43;
+  box-shadow: 2px 2px 0 #111311;
+}
+
+.machine-btn.ep133-btn.secondary {
+  background: #ffffff;
+  color: #111311;
+}
+
+.machine-btn.ep133-btn.secondary:hover {
+  background: #ebece6;
+  box-shadow: 2px 2px 0 #111311;
+}

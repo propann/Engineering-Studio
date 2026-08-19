@@ -5,6 +5,12 @@ import { TopBar } from "../components/TopBar";
 import "./audio-plugin-rack.css";
 
 type EnginePluginType =
+  // MUTABLE INSTRUMENTS EURORACK SUITE
+  | "mi_plaits"
+  | "mi_braids"
+  | "mi_rings"
+  | "mi_clouds"
+  | "mi_elements"
   // TOP 10 GIT OPEN SOURCE ENGINES
   | "dexed_fm"
   | "surge_xt"
@@ -15,87 +21,338 @@ type EnginePluginType =
   | "amy_engine"
   | "pl_synth"
   | "open303"
-  | "faust_dsp"
-  // MUTABLE INSTRUMENTS EURORACK SUITE
-  | "mi_plaits"
-  | "mi_braids"
-  | "mi_rings"
-  | "mi_clouds"
-  | "mi_elements";
+  | "faust_dsp";
+
+interface PatchPreset {
+  id: string;
+  name: string;
+  engine: EnginePluginType;
+  category: string;
+  isUserPatch?: boolean;
+  params: Record<string, any>;
+}
+
+// COMPREHENSIVE FACTORY PATCH BANK (75+ PRESETS)
+const FACTORY_PATCHES: Record<EnginePluginType, PatchPreset[]> = {
+  mi_plaits: [
+    { id: "pl1", name: "Virtual Analog Saw Lead", engine: "mi_plaits", category: "Lead", params: { plaitsEngine: "V_ANALOG", plaitsHarmonics: 60, plaitsTimbre: 80, plaitsMorph: 50, plaitsDecay: 70 } },
+    { id: "pl2", name: "2-OP Glass FM Bell", engine: "mi_plaits", category: "Bell", params: { plaitsEngine: "FM", plaitsHarmonics: 85, plaitsTimbre: 65, plaitsMorph: 40, plaitsDecay: 85 } },
+    { id: "pl3", name: "Wavetable 3D Sweep", engine: "mi_plaits", category: "Pad", params: { plaitsEngine: "WAVETABLE", plaitsHarmonics: 40, plaitsTimbre: 90, plaitsMorph: 75, plaitsDecay: 60 } },
+    { id: "pl4", name: "Granular Cloud Burst", engine: "mi_plaits", category: "FX", params: { plaitsEngine: "GRAIN", plaitsHarmonics: 70, plaitsTimbre: 50, plaitsMorph: 85, plaitsDecay: 90 } },
+    { id: "pl5", name: "Formant Speech Vox", engine: "mi_plaits", category: "Vocal", params: { plaitsEngine: "SPEECH", plaitsHarmonics: 95, plaitsTimbre: 70, plaitsMorph: 60, plaitsDecay: 75 } },
+    { id: "pl6", name: "4-Voice Synth Chord", engine: "mi_plaits", category: "Chord", params: { plaitsEngine: "CHORD", plaitsHarmonics: 50, plaitsTimbre: 85, plaitsMorph: 30, plaitsDecay: 65 } },
+  ],
+  mi_braids: [
+    { id: "br1", name: "CS-80 Brass Lead", engine: "mi_braids", category: "Brass", params: { braidsModel: "CS-80 SAW", braidsColor: 70, braidsTimbre: 85, braidsBitDepth: 16 } },
+    { id: "br2", name: "Wavetable Scan Wav", engine: "mi_braids", category: "Synth", params: { braidsModel: "WT-SWEEP", braidsColor: 40, braidsTimbre: 90, braidsBitDepth: 12 } },
+    { id: "br3", name: "Vowel Formant Choir", engine: "mi_braids", category: "Vocal", params: { braidsModel: "VOWEL FORMANT", braidsColor: 85, braidsTimbre: 60, braidsBitDepth: 16 } },
+    { id: "br4", name: "Metallic Bell Strike", engine: "mi_braids", category: "Perc", params: { braidsModel: "BELL HARMONIC", braidsColor: 95, braidsTimbre: 75, braidsBitDepth: 8 } },
+    { id: "br5", name: "Sub Harmonic Pulse", engine: "mi_braids", category: "Bass", params: { braidsModel: "CS-80 SAW", braidsColor: 25, braidsTimbre: 40, braidsBitDepth: 16 } },
+  ],
+  mi_rings: [
+    { id: "ri1", name: "Modal Acoustic String", engine: "mi_rings", category: "Pluck", params: { ringsResonatorMode: "STRING", ringsDamping: 35, ringsStructure: 80, ringsBrightness: 70, ringsPosition: 40, ringsPolyphony: 2 } },
+    { id: "ri2", name: "Sympathetic Tube Flute", engine: "mi_rings", category: "Wind", params: { ringsResonatorMode: "TUBE", ringsDamping: 60, ringsStructure: 45, ringsBrightness: 80, ringsPosition: 60, ringsPolyphony: 4 } },
+    { id: "ri3", name: "Inharmonic Steel Plate", engine: "mi_rings", category: "Bell", params: { ringsResonatorMode: "PLATE", ringsDamping: 20, ringsStructure: 95, ringsBrightness: 85, ringsPosition: 20, ringsPolyphony: 1 } },
+    { id: "ri4", name: "Damped Nylon Guitar", engine: "mi_rings", category: "Pluck", params: { ringsResonatorMode: "STRING", ringsDamping: 85, ringsStructure: 20, ringsBrightness: 45, ringsPosition: 30, ringsPolyphony: 2 } },
+    { id: "ri5", name: "Resonant Glass Glocken", engine: "mi_rings", category: "Bell", params: { ringsResonatorMode: "PLATE", ringsDamping: 10, ringsStructure: 90, ringsBrightness: 95, ringsPosition: 50, ringsPolyphony: 4 } },
+  ],
+  mi_clouds: [
+    { id: "cl1", name: "Granular Ether Cloud", engine: "mi_clouds", category: "Pad", params: { cloudsGranularDensity: 90, cloudsPitchShift: 7, cloudsTexture: 80, cloudsPosition: 50, cloudsFeedback: 65, cloudsReverb: 80 } },
+    { id: "cl2", name: "Time Stretch Glitch", engine: "mi_clouds", category: "FX", params: { cloudsGranularDensity: 40, cloudsPitchShift: -12, cloudsTexture: 95, cloudsPosition: 25, cloudsFeedback: 85, cloudsReverb: 40 } },
+    { id: "cl3", name: "Ambient Freeze Reverb", engine: "mi_clouds", category: "Ambient", params: { cloudsGranularDensity: 75, cloudsPitchShift: 0, cloudsTexture: 60, cloudsPosition: 80, cloudsFeedback: 90, cloudsReverb: 95 } },
+    { id: "cl4", name: "Sub Pitch Shifter Drone", engine: "mi_clouds", category: "Drone", params: { cloudsGranularDensity: 85, cloudsPitchShift: -24, cloudsTexture: 40, cloudsPosition: 10, cloudsFeedback: 70, cloudsReverb: 60 } },
+    { id: "cl5", name: "Shimmer Octave Up", engine: "mi_clouds", category: "Lead", params: { cloudsGranularDensity: 95, cloudsPitchShift: 12, cloudsTexture: 90, cloudsPosition: 60, cloudsFeedback: 50, cloudsReverb: 85 } },
+  ],
+  mi_elements: [
+    { id: "el1", name: "Percussive Strike Modal", engine: "mi_elements", category: "Perc", params: { elementsGeometry: 65, elementsBrightness: 85, elementsDamping: 40, elementsPitch: 0, elementsExciter: 80, elementsStrike: 90 } },
+    { id: "el2", name: "Resonant Bowed Metal", engine: "mi_elements", category: "Pluck", params: { elementsGeometry: 30, elementsBrightness: 60, elementsDamping: 80, elementsPitch: 5, elementsExciter: 40, elementsStrike: 30 } },
+    { id: "el3", name: "Tribal Wood Block", engine: "mi_elements", category: "Perc", params: { elementsGeometry: 90, elementsBrightness: 30, elementsDamping: 90, elementsPitch: 12, elementsExciter: 95, elementsStrike: 85 } },
+    { id: "el4", name: "Etheric Chime Choir", engine: "mi_elements", category: "Pad", params: { elementsGeometry: 40, elementsBrightness: 90, elementsDamping: 20, elementsPitch: -7, elementsExciter: 20, elementsStrike: 10 } },
+    { id: "el5", name: "Sub Impact Shell", engine: "mi_elements", category: "Bass", params: { elementsGeometry: 80, elementsBrightness: 20, elementsDamping: 50, elementsPitch: -12, elementsExciter: 90, elementsStrike: 100 } },
+  ],
+  dexed_fm: [
+    { id: "dx1", name: "80s DX7 Electric Piano", engine: "dexed_fm", category: "Keys", params: { dxAlgorithm: 5, dxOp1Ratio: 1.0, dxOp2Ratio: 2.0, dxFeedback: 6, dxAttack: 2, dxDecay: 75 } },
+    { id: "dx2", name: "Solid FM Bass", engine: "dexed_fm", category: "Bass", params: { dxAlgorithm: 1, dxOp1Ratio: 0.5, dxOp2Ratio: 1.0, dxFeedback: 9, dxAttack: 0, dxDecay: 60 } },
+    { id: "dx3", name: "Glass Mallet Bell", engine: "dexed_fm", category: "Bell", params: { dxAlgorithm: 8, dxOp1Ratio: 1.0, dxOp2Ratio: 3.5, dxFeedback: 4, dxAttack: 0, dxDecay: 85 } },
+    { id: "dx4", name: "FM Brass Horns", engine: "dexed_fm", category: "Brass", params: { dxAlgorithm: 12, dxOp1Ratio: 1.0, dxOp2Ratio: 1.0, dxFeedback: 7, dxAttack: 10, dxDecay: 65 } },
+    { id: "dx5", name: "Harpsichord FM Digital", engine: "dexed_fm", category: "Keys", params: { dxAlgorithm: 3, dxOp1Ratio: 2.0, dxOp2Ratio: 4.0, dxFeedback: 8, dxAttack: 0, dxDecay: 40 } },
+  ],
+  surge_xt: [
+    { id: "su1", name: "Acid Wavetable Lead", engine: "surge_xt", category: "Lead", params: { surgeWavetable: "Acid-Wav", surgeMorph: 75, surgeCutoff: 4200, surgeReso: 65, surgeSub: 40, surgeDrive: 30 } },
+    { id: "su2", name: "Digital Vector Pad", engine: "surge_xt", category: "Pad", params: { surgeWavetable: "Basic Vector", surgeMorph: 35, surgeCutoff: 2800, surgeReso: 25, surgeSub: 10, surgeDrive: 0 } },
+    { id: "su3", name: "Digital Bell Table", engine: "surge_xt", category: "Bell", params: { surgeWavetable: "Digital Bell", surgeMorph: 85, surgeCutoff: 6500, surgeReso: 80, surgeSub: 0, surgeDrive: 20 } },
+    { id: "su4", name: "Formant Vocal Choir", engine: "surge_xt", category: "Vocal", params: { surgeWavetable: "Vocal Formant", surgeMorph: 50, surgeCutoff: 3200, surgeReso: 45, surgeSub: 20, surgeDrive: 10 } },
+    { id: "su5", name: "Overdriven Sub Bass", engine: "surge_xt", category: "Bass", params: { surgeWavetable: "Acid-Wav", surgeMorph: 90, surgeCutoff: 1400, surgeReso: 75, surgeSub: 90, surgeDrive: 80 } },
+  ],
+  zynaddsubfx: [
+    { id: "zy1", name: "Celestial Organ Pad", engine: "zynaddsubfx", category: "Pad", params: { zynHarmonics: 12, zynBandwidth: 85, zynSubBoost: 40, zynReso: 45, zynFilterType: "lowpass", zynReverbSend: 60 } },
+    { id: "zy2", name: "Additive Synth Solo", engine: "zynaddsubfx", category: "Lead", params: { zynHarmonics: 24, zynBandwidth: 40, zynSubBoost: 10, zynReso: 80, zynFilterType: "bandpass", zynReverbSend: 30 } },
+    { id: "zy3", name: "Sub harmonic Pipe Organ", engine: "zynaddsubfx", category: "Keys", params: { zynHarmonics: 32, zynBandwidth: 95, zynSubBoost: 80, zynReso: 20, zynFilterType: "lowpass", zynReverbSend: 70 } },
+    { id: "zy4", name: "Resonant Notch Sweep", engine: "zynaddsubfx", category: "FX", params: { zynHarmonics: 8, zynBandwidth: 20, zynSubBoost: 0, zynReso: 90, zynFilterType: "highpass", zynReverbSend: 50 } },
+    { id: "zy5", name: "Warm Analog Brass", engine: "zynaddsubfx", category: "Brass", params: { zynHarmonics: 16, zynBandwidth: 60, zynSubBoost: 30, zynReso: 35, zynFilterType: "lowpass", zynReverbSend: 25 } },
+  ],
+  helm: [
+    { id: "he1", name: "Crossmod Pulse Lead", engine: "helm", category: "Lead", params: { helmCrossmod: 60, helmCutoff: 2800, helmLfoSpeed: 4.5, helmSubOct: 50, helmReverb: 40 } },
+    { id: "he2", name: "Deep Sub Bass", engine: "helm", category: "Bass", params: { helmCrossmod: 15, helmCutoff: 1200, helmLfoSpeed: 0.5, helmSubOct: 90, helmReverb: 10 } },
+    { id: "he3", name: "LFO Wobble Synth", engine: "helm", category: "Lead", params: { helmCrossmod: 80, helmCutoff: 3500, helmLfoSpeed: 12.0, helmSubOct: 30, helmReverb: 20 } },
+    { id: "he4", name: "Space Ambient Reverb", engine: "helm", category: "Pad", params: { helmCrossmod: 25, helmCutoff: 2200, helmLfoSpeed: 1.2, helmSubOct: 20, helmReverb: 90 } },
+    { id: "he5", name: "Aggressive Saw Stab", engine: "helm", category: "Stab", params: { helmCrossmod: 95, helmCutoff: 5000, helmLfoSpeed: 8.0, helmSubOct: 60, helmReverb: 15 } },
+  ],
+  fluidsynth: [
+    { id: "fl1", name: "Concert Grand Piano SF2", engine: "fluidsynth", category: "Piano", params: { fluidPreset: "Acoustic Grand Piano", fluidReverb: 60, fluidChorus: 30, fluidVolume: 90, fluidPan: 50 } },
+    { id: "fl2", name: "Stage Rhodes EP SF2", engine: "fluidsynth", category: "Keys", params: { fluidPreset: "Electric Piano Rhodes", fluidReverb: 40, fluidChorus: 60, fluidVolume: 85, fluidPan: 50 } },
+    { id: "fl3", name: "Cathedral Pipe Organ SF2", engine: "fluidsynth", category: "Organ", params: { fluidPreset: "Church Pipe Organ", fluidReverb: 85, fluidChorus: 10, fluidVolume: 95, fluidPan: 50 } },
+    { id: "fl4", name: "Symphonic Strings SF2", engine: "fluidsynth", category: "Strings", params: { fluidPreset: "Symphonic Strings", fluidReverb: 75, fluidChorus: 45, fluidVolume: 80, fluidPan: 50 } },
+    { id: "fl5", name: "Wide Stereo Rhodes SF2", engine: "fluidsynth", category: "Keys", params: { fluidPreset: "Electric Piano Rhodes", fluidReverb: 50, fluidChorus: 90, fluidVolume: 90, fluidPan: 80 } },
+  ],
+  amsynth: [
+    { id: "am1", name: "Moog Sawtooth Lead", engine: "amsynth", category: "Lead", params: { amCutoff: 2800, amReso: 75, amWave: "sawtooth", amSubWave: "square", amLfoDepth: 30, amDecay: 60 } },
+    { id: "am2", name: "Analog Square Bass", engine: "amsynth", category: "Bass", params: { amCutoff: 1400, amReso: 50, amWave: "square", amSubWave: "sine", amLfoDepth: 0, amDecay: 40 } },
+    { id: "am3", name: "Vibrato Sine Solo", engine: "amsynth", category: "Lead", params: { amCutoff: 4500, amReso: 20, amWave: "sine", amSubWave: "sine", amLfoDepth: 80, amDecay: 85 } },
+    { id: "am4", name: "Fat Dual VCO Pluck", engine: "amsynth", category: "Pluck", params: { amCutoff: 2200, amReso: 85, amWave: "sawtooth", amSubWave: "square", amLfoDepth: 10, amDecay: 25 } },
+    { id: "am5", name: "Resonant Triangle Lead", engine: "amsynth", category: "Lead", params: { amCutoff: 3600, amReso: 90, amWave: "triangle", amSubWave: "square", amLfoDepth: 45, amDecay: 70 } },
+  ],
+  amy_engine: [
+    { id: "amy1", name: "Additive Spectral Bell", engine: "amy_engine", category: "Bell", params: { amyPartialCount: 24, amySlope: 50, amySpread: 70, amyFeedback: 30, amyNoise: 10 } },
+    { id: "amy2", name: "Subharmonic Sine Pad", engine: "amy_engine", category: "Pad", params: { amyPartialCount: 12, amySlope: 85, amySpread: 30, amyFeedback: 10, amyNoise: 0 } },
+    { id: "amy3", name: "Dense 64-Partial Organ", engine: "amy_engine", category: "Organ", params: { amyPartialCount: 64, amySlope: 30, amySpread: 90, amyFeedback: 45, amyNoise: 5 } },
+    { id: "amy4", name: "Chiptune Noise Pulse", engine: "amy_engine", category: "Retro", params: { amyPartialCount: 8, amySlope: 20, amySpread: 40, amyFeedback: 80, amyNoise: 85 } },
+    { id: "amy5", name: "Glassy Additive Sweep", engine: "amy_engine", category: "Lead", params: { amyPartialCount: 32, amySlope: 60, amySpread: 80, amyFeedback: 20, amyNoise: 15 } },
+  ],
+  pl_synth: [
+    { id: "pls1", name: "GameBoy 8-Bit Lead", engine: "pl_synth", category: "Retro", params: { plBitcrush: 4, plSampleRateDiv: 3, plArpSpeed: 12, plDutyCycle: 50, plGlitch: 20 } },
+    { id: "pls2", name: "NES Square Chiptune", engine: "pl_synth", category: "Retro", params: { plBitcrush: 8, plSampleRateDiv: 1, plArpSpeed: 16, plDutyCycle: 25, plGlitch: 0 } },
+    { id: "pls3", name: "Low-Bit Glitch Monster", engine: "pl_synth", category: "FX", params: { plBitcrush: 2, plSampleRateDiv: 6, plArpSpeed: 24, plDutyCycle: 75, plGlitch: 90 } },
+    { id: "pls4", name: "Commodore 64 Arp Bass", engine: "pl_synth", category: "Bass", params: { plBitcrush: 6, plSampleRateDiv: 2, plArpSpeed: 8, plDutyCycle: 50, plGlitch: 10 } },
+    { id: "pls5", name: "Retro Arcade Coin FX", engine: "pl_synth", category: "FX", params: { plBitcrush: 3, plSampleRateDiv: 4, plArpSpeed: 20, plDutyCycle: 12, plGlitch: 60 } },
+  ],
+  open303: [
+    { id: "ac1", name: "Acid 303 Resonance Lead", engine: "open303", category: "Acid", params: { acidCutoff: 2400, acidResonance: 92, acidAccent: true, acidTuning: 0, acidEnvMod: 80, acidDecay: 65, acidWave: "sawtooth" } },
+    { id: "ac2", name: "Square Acid Sub Bass", engine: "open303", category: "Acid", params: { acidCutoff: 1200, acidResonance: 75, acidAccent: false, acidTuning: -12, acidEnvMod: 50, acidDecay: 45, acidWave: "square" } },
+    { id: "ac3", name: "Screaming Acid Lead", engine: "open303", category: "Acid", params: { acidCutoff: 3800, acidResonance: 98, acidAccent: true, acidTuning: 5, acidEnvMod: 95, acidDecay: 85, acidWave: "sawtooth" } },
+    { id: "ac4", name: "Low-Pass Acid Pulse", engine: "open303", category: "Acid", params: { acidCutoff: 800, acidResonance: 60, acidAccent: false, acidTuning: 0, acidEnvMod: 30, acidDecay: 35, acidWave: "square" } },
+    { id: "ac5", name: "High-Octane Accent Lead", engine: "open303", category: "Acid", params: { acidCutoff: 4500, acidResonance: 88, acidAccent: true, acidTuning: 12, acidEnvMod: 90, acidDecay: 70, acidWave: "sawtooth" } },
+  ],
+  faust_dsp: [
+    { id: "fa1", name: "Faust Wavefolder Distortion", engine: "faust_dsp", category: "FX", params: { faustFreqMod: 75, faustFilter: 3200, faustGain: 80, faustFeedback: 50, faustDrive: 65 } },
+    { id: "fa2", name: "Resonant DSP Ringmod", engine: "faust_dsp", category: "FX", params: { faustFreqMod: 40, faustFilter: 1800, faustGain: 50, faustFeedback: 85, faustDrive: 30 } },
+    { id: "fa3", name: "Hyper Drive Wavefolder", engine: "faust_dsp", category: "Lead", params: { faustFreqMod: 90, faustFilter: 5500, faustGain: 95, faustFeedback: 75, faustDrive: 90 } },
+    { id: "fa4", name: "Low-Pass DSP Sub Drive", engine: "faust_dsp", category: "Bass", params: { faustFreqMod: 20, faustFilter: 1100, faustGain: 60, faustFeedback: 20, faustDrive: 40 } },
+    { id: "fa5", name: "Feedback Distortion Swarm", engine: "faust_dsp", category: "FX", params: { faustFreqMod: 85, faustFilter: 2800, faustGain: 85, faustFeedback: 95, faustDrive: 80 } },
+  ],
+};
+
+// PIANO KEYS CONFIGURATION FOR VIRTUAL KEYBOARD
+const VIRTUAL_PIANO_KEYS = [
+  { note: "C4", name: "Do", freq: 261.63, isBlack: false, keyChar: "A" },
+  { note: "C#4", name: "Do#", freq: 277.18, isBlack: true, keyChar: "W" },
+  { note: "D4", name: "Ré", freq: 293.66, isBlack: false, keyChar: "S" },
+  { note: "D#4", name: "Ré#", freq: 311.13, isBlack: true, keyChar: "E" },
+  { note: "E4", name: "Mi", freq: 329.63, isBlack: false, keyChar: "D" },
+  { note: "F4", name: "Fa", freq: 349.23, isBlack: false, keyChar: "F" },
+  { note: "F#4", name: "Fa#", freq: 369.99, isBlack: true, keyChar: "T" },
+  { note: "G4", name: "Sol", freq: 392.00, isBlack: false, keyChar: "G" },
+  { note: "G#4", name: "Sol#", freq: 415.30, isBlack: true, keyChar: "Y" },
+  { note: "A4", name: "La", freq: 440.00, isBlack: false, keyChar: "H" },
+  { note: "A#4", name: "La#", freq: 466.16, isBlack: true, keyChar: "U" },
+  { note: "B4", name: "Si", freq: 493.88, isBlack: false, keyChar: "J" },
+  { note: "C5", name: "Do", freq: 523.25, isBlack: false, keyChar: "K" },
+];
 
 export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { profileName?: string; onClose?: () => void }) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
+  const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
+  const [midiConnected, setMidiConnected] = useState<boolean>(false);
+  const [activeKeyNote, setActiveKeyNote] = useState<string | null>(null);
+
+  // USER CUSTOM SAVED PATCHES PERSISTED IN LOCALSTORAGE
+  const [userPatches, setUserPatches] = useState<PatchPreset[]>(() => {
+    try {
+      const saved = localStorage.getItem("studio_hub_user_patches");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [newPatchName, setNewPatchName] = useState<string>("");
+  const [showSaveModal, setShowSaveModal] = useState<boolean>(false);
+
+  // MASTER CONTROLS
+  const [masterVolume, setMasterVolume] = useState<number>(85);
+  const [masterDetune, setMasterDetune] = useState<number>(0);
 
   // DEXED FM PARAMS
   const [dxAlgorithm, setDxAlgorithm] = useState<number>(5);
   const [dxOp1Ratio, setDxOp1Ratio] = useState<number>(1.0);
   const [dxOp2Ratio, setDxOp2Ratio] = useState<number>(2.0);
+  const [dxFeedback, setDxFeedback] = useState<number>(6);
+  const [dxAttack, setDxAttack] = useState<number>(2);
+  const [dxDecay, setDxDecay] = useState<number>(75);
 
   // SURGE XT PARAMS
-  const [surgeWavetable, setSurgeWavetable] = useState<string>("Basic Vector");
-  const [surgeMorph, setSurgeMorph] = useState<number>(50);
+  const [surgeWavetable, setSurgeWavetable] = useState<string>("Acid-Wav");
+  const [surgeMorph, setSurgeMorph] = useState<number>(75);
+  const [surgeCutoff, setSurgeCutoff] = useState<number>(4200);
+  const [surgeReso, setSurgeReso] = useState<number>(65);
+  const [surgeSub, setSurgeSub] = useState<number>(40);
+  const [surgeDrive, setSurgeDrive] = useState<number>(30);
 
   // ZYNADDSUBFX PARAMS
-  const [zynHarmonics, setZynHarmonics] = useState<number>(8);
-  const [zynBandwidth, setZynBandwidth] = useState<number>(60);
+  const [zynHarmonics, setZynHarmonics] = useState<number>(12);
+  const [zynBandwidth, setZynBandwidth] = useState<number>(85);
+  const [zynSubBoost, setZynSubBoost] = useState<number>(40);
+  const [zynReso, setZynReso] = useState<number>(45);
+  const [zynFilterType, setZynFilterType] = useState<string>("lowpass");
+  const [zynReverbSend, setZynReverbSend] = useState<number>(60);
 
   // HELM PARAMS
-  const [helmCrossmod, setHelmCrossmod] = useState<number>(45);
+  const [helmCrossmod, setHelmCrossmod] = useState<number>(60);
+  const [helmCutoff, setHelmCutoff] = useState<number>(2800);
+  const [helmLfoSpeed, setHelmLfoSpeed] = useState<number>(4.5);
+  const [helmSubOct, setHelmSubOct] = useState<number>(50);
+  const [helmReverb, setHelmReverb] = useState<number>(40);
 
   // FLUIDSYNTH SF2 PARAMS
   const [fluidPreset, setFluidPreset] = useState<string>("Acoustic Grand Piano");
+  const [fluidReverb, setFluidReverb] = useState<number>(60);
+  const [fluidChorus, setFluidChorus] = useState<number>(30);
+  const [fluidVolume, setFluidVolume] = useState<number>(90);
+  const [fluidPan, setFluidPan] = useState<number>(50);
 
   // AMSYNTH PARAMS
-  const [amCutoff, setAmCutoff] = useState<number>(3200);
+  const [amCutoff, setAmCutoff] = useState<number>(2800);
+  const [amReso, setAmReso] = useState<number>(75);
+  const [amWave, setAmWave] = useState<string>("sawtooth");
+  const [amSubWave, setAmSubWave] = useState<string>("square");
+  const [amLfoDepth, setAmLfoDepth] = useState<number>(30);
+  const [amDecay, setAmDecay] = useState<number>(60);
 
   // AMY PARAMS
-  const [amyPartialCount, setAmyPartialCount] = useState<number>(16);
+  const [amyPartialCount, setAmyPartialCount] = useState<number>(24);
+  const [amySlope, setAmySlope] = useState<number>(50);
+  const [amySpread, setAmySpread] = useState<number>(70);
+  const [amyFeedback, setAmyFeedback] = useState<number>(30);
+  const [amyNoise, setAmyNoise] = useState<number>(10);
 
   // PL_SYNTH PARAMS
-  const [plBitcrush, setPlBitcrush] = useState<number>(8);
+  const [plBitcrush, setPlBitcrush] = useState<number>(4);
+  const [plSampleRateDiv, setPlSampleRateDiv] = useState<number>(3);
+  const [plArpSpeed, setPlArpSpeed] = useState<number>(12);
+  const [plDutyCycle, setPlDutyCycle] = useState<number>(50);
+  const [plGlitch, setPlGlitch] = useState<number>(20);
 
   // OPEN303 ACID PARAMS
-  const [acidCutoff, setAcidCutoff] = useState<number>(1800);
-  const [acidResonance, setAcidResonance] = useState<number>(88);
+  const [acidCutoff, setAcidCutoff] = useState<number>(2400);
+  const [acidResonance, setAcidResonance] = useState<number>(92);
   const [acidAccent, setAcidAccent] = useState<boolean>(true);
+  const [acidTuning, setAcidTuning] = useState<number>(0);
+  const [acidEnvMod, setAcidEnvMod] = useState<number>(80);
+  const [acidDecay, setAcidDecay] = useState<number>(65);
+  const [acidWave, setAcidWave] = useState<string>("sawtooth");
 
   // FAUST DSP PARAMS
-  const [faustFreqMod, setFaustFreqMod] = useState<number>(50);
+  const [faustFreqMod, setFaustFreqMod] = useState<number>(75);
+  const [faustFilter, setFaustFilter] = useState<number>(3200);
+  const [faustGain, setFaustGain] = useState<number>(80);
+  const [faustFeedback, setFaustFeedback] = useState<number>(50);
+  const [faustDrive, setFaustDrive] = useState<number>(65);
 
   // MUTABLE PLAITS PARAMS
   const [plaitsEngine, setPlaitsEngine] = useState<"V_ANALOG" | "FM" | "WAVETABLE" | "GRAIN" | "SPEECH" | "CHORD">("V_ANALOG");
   const [plaitsHarmonics, setPlaitsHarmonics] = useState<number>(60);
-  const [plaitsTimbre, setPlaitsTimbre] = useState<number>(75);
+  const [plaitsTimbre, setPlaitsTimbre] = useState<number>(80);
   const [plaitsMorph, setPlaitsMorph] = useState<number>(50);
+  const [plaitsDecay, setPlaitsDecay] = useState<number>(70);
 
   // MUTABLE BRAIDS PARAMS
   const [braidsModel, setBraidsModel] = useState<string>("CS-80 SAW");
-  const [braidsColor, setBraidsColor] = useState<number>(65);
+  const [braidsColor, setBraidsColor] = useState<number>(70);
+  const [braidsTimbre, setBraidsTimbre] = useState<number>(85);
+  const [braidsBitDepth, setBraidsBitDepth] = useState<number>(16);
 
   // MUTABLE RINGS PARAMS
   const [ringsResonatorMode, setRingsResonatorMode] = useState<"STRING" | "TUBE" | "PLATE">("STRING");
-  const [ringsDamping, setRingsDamping] = useState<number>(40);
-  const [ringsStructure, setRingsStructure] = useState<number>(70);
+  const [ringsDamping, setRingsDamping] = useState<number>(35);
+  const [ringsStructure, setRingsStructure] = useState<number>(80);
+  const [ringsBrightness, setRingsBrightness] = useState<number>(70);
+  const [ringsPosition, setRingsPosition] = useState<number>(40);
+  const [ringsPolyphony, setRingsPolyphony] = useState<number>(2);
 
   // MUTABLE CLOUDS PARAMS
-  const [cloudsGranularDensity, setCloudsGranularDensity] = useState<number>(80);
-  const [cloudsPitchShift, setCloudsPitchShift] = useState<number>(0);
-  const [cloudsTexture, setCloudsTexture] = useState<number>(60);
+  const [cloudsGranularDensity, setCloudsGranularDensity] = useState<number>(90);
+  const [cloudsPitchShift, setCloudsPitchShift] = useState<number>(7);
+  const [cloudsTexture, setCloudsTexture] = useState<number>(80);
+  const [cloudsPosition, setCloudsPosition] = useState<number>(50);
+  const [cloudsFeedback, setCloudsFeedback] = useState<number>(65);
+  const [cloudsReverb, setCloudsReverb] = useState<number>(80);
 
   // MUTABLE ELEMENTS PARAMS
-  const [elementsGeometry, setElementsGeometry] = useState<number>(50);
-  const [elementsBrightness, setElementsBrightness] = useState<number>(80);
+  const [elementsGeometry, setElementsGeometry] = useState<number>(65);
+  const [elementsBrightness, setElementsBrightness] = useState<number>(85);
+  const [elementsDamping, setElementsDamping] = useState<number>(40);
+  const [elementsPitch, setElementsPitch] = useState<number>(0);
+  const [elementsExciter, setElementsExciter] = useState<number>(80);
+  const [elementsStrike, setElementsStrike] = useState<number>(90);
 
-  // Web Audio Context
+  // ALWAYS-UP-TO-DATE PARAMETER REF (SYNCHRONOUS ACCESS FOR REAL-TIME AUDIO)
+  const paramsRef = useRef({
+    activeEngine,
+    masterVolume,
+    masterDetune,
+    plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
+    braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
+    ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
+    cloudsGranularDensity, cloudsPitchShift, cloudsTexture, cloudsPosition, cloudsFeedback, cloudsReverb,
+    elementsGeometry, elementsBrightness, elementsDamping, elementsPitch, elementsExciter, elementsStrike,
+    dxAlgorithm, dxOp1Ratio, dxOp2Ratio, dxFeedback, dxAttack, dxDecay,
+    surgeWavetable, surgeMorph, surgeCutoff, surgeReso, surgeSub, surgeDrive,
+    zynHarmonics, zynBandwidth, zynSubBoost, zynReso, zynFilterType, zynReverbSend,
+    helmCrossmod, helmCutoff, helmLfoSpeed, helmSubOct, helmReverb,
+    fluidPreset, fluidReverb, fluidChorus, fluidVolume, fluidPan,
+    amCutoff, amReso, amWave, amSubWave, amLfoDepth, amDecay,
+    amyPartialCount, amySlope, amySpread, amyFeedback, amyNoise,
+    plBitcrush, plSampleRateDiv, plArpSpeed, plDutyCycle, plGlitch,
+    acidCutoff, acidResonance, acidAccent, acidTuning, acidEnvMod, acidDecay, acidWave,
+    faustFreqMod, faustFilter, faustGain, faustFeedback, faustDrive,
+  });
+
+  // KEEP REF SYNCED WITH STATE
+  useEffect(() => {
+    paramsRef.current = {
+      activeEngine,
+      masterVolume,
+      masterDetune,
+      plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
+      braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
+      ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
+      cloudsGranularDensity, cloudsPitchShift, cloudsTexture, cloudsPosition, cloudsFeedback, cloudsReverb,
+      elementsGeometry, elementsBrightness, elementsDamping, elementsPitch, elementsExciter, elementsStrike,
+      dxAlgorithm, dxOp1Ratio, dxOp2Ratio, dxFeedback, dxAttack, dxDecay,
+      surgeWavetable, surgeMorph, surgeCutoff, surgeReso, surgeSub, surgeDrive,
+      zynHarmonics, zynBandwidth, zynSubBoost, zynReso, zynFilterType, zynReverbSend,
+      helmCrossmod, helmCutoff, helmLfoSpeed, helmSubOct, helmReverb,
+      fluidPreset, fluidReverb, fluidChorus, fluidVolume, fluidPan,
+      amCutoff, amReso, amWave, amSubWave, amLfoDepth, amDecay,
+      amyPartialCount, amySlope, amySpread, amyFeedback, amyNoise,
+      plBitcrush, plSampleRateDiv, plArpSpeed, plDutyCycle, plGlitch,
+      acidCutoff, acidResonance, acidAccent, acidTuning, acidEnvMod, acidDecay, acidWave,
+      faustFreqMod, faustFilter, faustGain, faustFeedback, faustDrive,
+    };
+  });
+
+  // Web Audio Context & Oscilloscope
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscCanvasRef = useRef<HTMLCanvasElement>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const debounceTimerRef = useRef<any>(null);
 
   // Toast Overlay
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
+    setTimeout(() => setToastMessage(null), 2000);
   };
 
   const getAudioContext = () => {
@@ -109,17 +366,181 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     return audioCtxRef.current;
   };
 
-  // REAL-TIME SYNTHESIS FOR ALL 15 ENGINES
+  // AUDITION / SOUND PREVIEW TRIGGER (PLAY SHORT NOTE ON ADJUSTMENT)
+  const triggerAuditionNote = (freq: number = 261.63) => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      playPluginNote(freq);
+    }, 60);
+  };
+
+  // HELPER TO UPDATE A PARAMETER SYNCHRONOUSLY IN BOTH REF AND STATE + TRIGGER AUDITION
+  const updateParam = (key: string, val: any, setter: (v: any) => void) => {
+    (paramsRef.current as any)[key] = val;
+    setter(val);
+    triggerAuditionNote(261.63);
+  };
+
+  // SAVE CUSTOM USER PATCH TO LOCALSTORAGE
+  const saveUserPatch = () => {
+    if (!newPatchName.trim()) return;
+    const p = paramsRef.current;
+    const newPatch: PatchPreset = {
+      id: `usr_${Date.now()}`,
+      name: newPatchName.trim(),
+      engine: p.activeEngine,
+      category: "Custom",
+      isUserPatch: true,
+      params: { ...p },
+    };
+
+    const updated = [...userPatches, newPatch];
+    setUserPatches(updated);
+    try {
+      localStorage.setItem("studio_hub_user_patches", JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+
+    setNewPatchName("");
+    setShowSaveModal(false);
+    setSelectedPatchId(newPatch.id);
+    showToast(`💾 NOUVEAU PATCH ENREGISTRÉ : ${newPatch.name.toUpperCase()}`);
+    triggerAuditionNote(261.63);
+  };
+
+  // APPLY PATCH PRESET WITH SYNCHRONOUS REF UPDATE & SOUND AUDITION
+  const applyPatch = (patch: PatchPreset) => {
+    setSelectedPatchId(patch.id);
+    setActiveEngine(patch.engine);
+    paramsRef.current.activeEngine = patch.engine;
+    const p = patch.params;
+
+    // SYNCHRONOUSLY UPDATE PARAMS REF TO PREVENT STALE PLAYBACK
+    Object.keys(p).forEach((k) => {
+      (paramsRef.current as any)[k] = p[k];
+    });
+
+    if (patch.engine === "dexed_fm") {
+      if (p.dxAlgorithm !== undefined) setDxAlgorithm(p.dxAlgorithm);
+      if (p.dxOp1Ratio !== undefined) setDxOp1Ratio(p.dxOp1Ratio);
+      if (p.dxOp2Ratio !== undefined) setDxOp2Ratio(p.dxOp2Ratio);
+      if (p.dxFeedback !== undefined) setDxFeedback(p.dxFeedback);
+      if (p.dxAttack !== undefined) setDxAttack(p.dxAttack);
+      if (p.dxDecay !== undefined) setDxDecay(p.dxDecay);
+    } else if (patch.engine === "surge_xt") {
+      if (p.surgeWavetable !== undefined) setSurgeWavetable(p.surgeWavetable);
+      if (p.surgeMorph !== undefined) setSurgeMorph(p.surgeMorph);
+      if (p.surgeCutoff !== undefined) setSurgeCutoff(p.surgeCutoff);
+      if (p.surgeReso !== undefined) setSurgeReso(p.surgeReso);
+      if (p.surgeSub !== undefined) setSurgeSub(p.surgeSub);
+      if (p.surgeDrive !== undefined) setSurgeDrive(p.surgeDrive);
+    } else if (patch.engine === "zynaddsubfx") {
+      if (p.zynHarmonics !== undefined) setZynHarmonics(p.zynHarmonics);
+      if (p.zynBandwidth !== undefined) setZynBandwidth(p.zynBandwidth);
+      if (p.zynSubBoost !== undefined) setZynSubBoost(p.zynSubBoost);
+      if (p.zynReso !== undefined) setZynReso(p.zynReso);
+      if (p.zynFilterType !== undefined) setZynFilterType(p.zynFilterType);
+      if (p.zynReverbSend !== undefined) setZynReverbSend(p.zynReverbSend);
+    } else if (patch.engine === "helm") {
+      if (p.helmCrossmod !== undefined) setHelmCrossmod(p.helmCrossmod);
+      if (p.helmCutoff !== undefined) setHelmCutoff(p.helmCutoff);
+      if (p.helmLfoSpeed !== undefined) setHelmLfoSpeed(p.helmLfoSpeed);
+      if (p.helmSubOct !== undefined) setHelmSubOct(p.helmSubOct);
+      if (p.helmReverb !== undefined) setHelmReverb(p.helmReverb);
+    } else if (patch.engine === "fluidsynth") {
+      if (p.fluidPreset !== undefined) setFluidPreset(p.fluidPreset);
+      if (p.fluidReverb !== undefined) setFluidReverb(p.fluidReverb);
+      if (p.fluidChorus !== undefined) setFluidChorus(p.fluidChorus);
+      if (p.fluidVolume !== undefined) setFluidVolume(p.fluidVolume);
+      if (p.fluidPan !== undefined) setFluidPan(p.fluidPan);
+    } else if (patch.engine === "amsynth") {
+      if (p.amCutoff !== undefined) setAmCutoff(p.amCutoff);
+      if (p.amReso !== undefined) setAmReso(p.amReso);
+      if (p.amWave !== undefined) setAmWave(p.amWave);
+      if (p.amSubWave !== undefined) setAmSubWave(p.amSubWave);
+      if (p.amLfoDepth !== undefined) setAmLfoDepth(p.amLfoDepth);
+      if (p.amDecay !== undefined) setAmDecay(p.amDecay);
+    } else if (patch.engine === "amy_engine") {
+      if (p.amyPartialCount !== undefined) setAmyPartialCount(p.amyPartialCount);
+      if (p.amySlope !== undefined) setAmySlope(p.amySlope);
+      if (p.amySpread !== undefined) setAmySpread(p.amySpread);
+      if (p.amyFeedback !== undefined) setAmyFeedback(p.amyFeedback);
+      if (p.amyNoise !== undefined) setAmyNoise(p.amyNoise);
+    } else if (patch.engine === "pl_synth") {
+      if (p.plBitcrush !== undefined) setPlBitcrush(p.plBitcrush);
+      if (p.plSampleRateDiv !== undefined) setPlSampleRateDiv(p.plSampleRateDiv);
+      if (p.plArpSpeed !== undefined) setPlArpSpeed(p.plArpSpeed);
+      if (p.plDutyCycle !== undefined) setPlDutyCycle(p.plDutyCycle);
+      if (p.plGlitch !== undefined) setPlGlitch(p.plGlitch);
+    } else if (patch.engine === "open303") {
+      if (p.acidCutoff !== undefined) setAcidCutoff(p.acidCutoff);
+      if (p.acidResonance !== undefined) setAcidResonance(p.acidResonance);
+      if (p.acidAccent !== undefined) setAcidAccent(p.acidAccent);
+      if (p.acidTuning !== undefined) setAcidTuning(p.acidTuning);
+      if (p.acidEnvMod !== undefined) setAcidEnvMod(p.acidEnvMod);
+      if (p.acidDecay !== undefined) setAcidDecay(p.acidDecay);
+      if (p.acidWave !== undefined) setAcidWave(p.acidWave);
+    } else if (patch.engine === "faust_dsp") {
+      if (p.faustFreqMod !== undefined) setFaustFreqMod(p.faustFreqMod);
+      if (p.faustFilter !== undefined) setFaustFilter(p.faustFilter);
+      if (p.faustGain !== undefined) setFaustGain(p.faustGain);
+      if (p.faustFeedback !== undefined) setFaustFeedback(p.faustFeedback);
+      if (p.faustDrive !== undefined) setFaustDrive(p.faustDrive);
+    } else if (patch.engine === "mi_plaits") {
+      if (p.plaitsEngine !== undefined) setPlaitsEngine(p.plaitsEngine);
+      if (p.plaitsHarmonics !== undefined) setPlaitsHarmonics(p.plaitsHarmonics);
+      if (p.plaitsTimbre !== undefined) setPlaitsTimbre(p.plaitsTimbre);
+      if (p.plaitsMorph !== undefined) setPlaitsMorph(p.plaitsMorph);
+      if (p.plaitsDecay !== undefined) setPlaitsDecay(p.plaitsDecay);
+    } else if (patch.engine === "mi_braids") {
+      if (p.braidsModel !== undefined) setBraidsModel(p.braidsModel);
+      if (p.braidsColor !== undefined) setBraidsColor(p.braidsColor);
+      if (p.braidsTimbre !== undefined) setBraidsTimbre(p.braidsTimbre);
+      if (p.braidsBitDepth !== undefined) setBraidsBitDepth(p.braidsBitDepth);
+    } else if (patch.engine === "mi_rings") {
+      if (p.ringsResonatorMode !== undefined) setRingsResonatorMode(p.ringsResonatorMode);
+      if (p.ringsDamping !== undefined) setRingsDamping(p.ringsDamping);
+      if (p.ringsStructure !== undefined) setRingsStructure(p.ringsStructure);
+      if (p.ringsBrightness !== undefined) setRingsBrightness(p.ringsBrightness);
+      if (p.ringsPosition !== undefined) setRingsPosition(p.ringsPosition);
+      if (p.ringsPolyphony !== undefined) setRingsPolyphony(p.ringsPolyphony);
+    } else if (patch.engine === "mi_clouds") {
+      if (p.cloudsGranularDensity !== undefined) setCloudsGranularDensity(p.cloudsGranularDensity);
+      if (p.cloudsPitchShift !== undefined) setCloudsPitchShift(p.cloudsPitchShift);
+      if (p.cloudsTexture !== undefined) setCloudsTexture(p.cloudsTexture);
+      if (p.cloudsPosition !== undefined) setCloudsPosition(p.cloudsPosition);
+      if (p.cloudsFeedback !== undefined) setCloudsFeedback(p.cloudsFeedback);
+      if (p.cloudsReverb !== undefined) setCloudsReverb(p.cloudsReverb);
+    } else if (patch.engine === "mi_elements") {
+      if (p.elementsGeometry !== undefined) setElementsGeometry(p.elementsGeometry);
+      if (p.elementsBrightness !== undefined) setElementsBrightness(p.elementsBrightness);
+      if (p.elementsDamping !== undefined) setElementsDamping(p.elementsDamping);
+      if (p.elementsPitch !== undefined) setElementsPitch(p.elementsPitch);
+      if (p.elementsExciter !== undefined) setElementsExciter(p.elementsExciter);
+      if (p.elementsStrike !== undefined) setElementsStrike(p.elementsStrike);
+    }
+
+    showToast(`🎵 PATCH CHARGÉ : ${patch.name.toUpperCase()}`);
+    // TRIGGER LIVE SOUND AUDITION IMMEDIATELY ON PATCH SELECTION
+    triggerAuditionNote(261.63);
+  };
+
+  // REAL-TIME DSP SYNTHESIS FOR ALL 15 ENGINES
   const playPluginNote = (freq: number = 261.63) => {
     try {
       const ctx = getAudioContext();
       const now = ctx.currentTime;
+      const p = paramsRef.current;
 
       const masterGain = ctx.createGain();
-      masterGain.gain.setValueAtTime(0.35, now);
+      const vol = (p.masterVolume / 100) * 0.45;
+      masterGain.gain.setValueAtTime(vol, now);
 
-      if (activeEngine === "mi_plaits") {
-        // MUTABLE INSTRUMENTS PLAITS (Macro-Oscillator)
+      // Apply Detune Cents
+      const detunedFreq = freq * Math.pow(2, p.masterDetune / 1200);
+
+      if (p.activeEngine === "mi_plaits") {
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
@@ -133,27 +554,45 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
           CHORD: "sawtooth",
         };
 
-        osc1.type = typeMap[plaitsEngine] || "sawtooth";
-        osc1.frequency.setValueAtTime(freq, now);
+        osc1.type = typeMap[p.plaitsEngine] || "sawtooth";
+        osc1.frequency.setValueAtTime(detunedFreq, now);
 
         osc2.type = "sine";
-        osc2.frequency.setValueAtTime(freq * (1 + (plaitsHarmonics / 100) * 2), now);
+        osc2.frequency.setValueAtTime(detunedFreq * (1 + (p.plaitsHarmonics / 100) * 2), now);
 
         filter.type = "lowpass";
-        filter.frequency.setValueAtTime(200 + (plaitsTimbre / 100) * 8000, now);
+        filter.frequency.setValueAtTime(200 + (p.plaitsTimbre / 100) * 8000, now);
 
         osc1.connect(filter);
         osc2.connect(filter);
         filter.connect(masterGain);
 
+        const dec = 0.2 + (p.plaitsDecay / 100) * 2.0;
         osc1.start(now);
         osc2.start(now);
-        osc1.stop(now + 1.2);
-        osc2.stop(now + 1.2);
+        osc1.stop(now + dec);
+        osc2.stop(now + dec);
 
-        showToast(`🎛️ MUTABLE PLAITS [${plaitsEngine}] : ${freq.toFixed(1)} Hz`);
-      } else if (activeEngine === "mi_rings") {
-        // MUTABLE INSTRUMENTS RINGS (Modal Resonator / Physical Modeling)
+        showToast(`🎛️ PLAITS [${p.plaitsEngine}] : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "mi_braids") {
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = p.braidsModel.includes("SAW") ? "sawtooth" : "square";
+        osc.frequency.setValueAtTime(detunedFreq, now);
+
+        filter.type = "bandpass";
+        filter.frequency.setValueAtTime(400 + (p.braidsTimbre / 100) * 6000, now);
+        filter.Q.setValueAtTime(1 + (p.braidsColor / 100) * 15, now);
+
+        osc.connect(filter);
+        filter.connect(masterGain);
+
+        osc.start(now);
+        osc.stop(now + 0.8);
+
+        showToast(`🎛️ BRAIDS [${p.braidsModel}] : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "mi_rings") {
         const bufferSize = ctx.sampleRate * 0.04;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -163,391 +602,1585 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         noise.buffer = buffer;
 
         const delay = ctx.createDelay();
-        delay.delayTime.value = 1 / freq;
+        delay.delayTime.value = 1 / (detunedFreq * Math.pow(2, (p.ringsPosition - 50) / 100));
 
         const feedback = ctx.createGain();
-        feedback.gain.value = 0.99 - (ringsDamping / 100) * 0.12;
+        feedback.gain.value = 0.98 - (p.ringsDamping / 100) * 0.15;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = p.ringsResonatorMode === "TUBE" ? "bandpass" : "lowpass";
+        filter.frequency.setValueAtTime(500 + (p.ringsBrightness / 100) * 7000, now);
 
         noise.connect(delay);
-        delay.connect(feedback);
+        delay.connect(filter);
+        filter.connect(feedback);
         feedback.connect(delay);
         delay.connect(masterGain);
 
         noise.start(now);
         noise.stop(now + 0.02);
 
-        showToast(`🔔 MUTABLE RINGS [${ringsResonatorMode}] : ${freq.toFixed(1)} Hz`);
-      } else if (activeEngine === "mi_clouds") {
-        // MUTABLE INSTRUMENTS CLOUDS (Granular Texture Synthesizer)
+        showToast(`🔔 RINGS [${p.ringsResonatorMode}] : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "mi_clouds") {
         const osc = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
 
         osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(freq * Math.pow(2, cloudsPitchShift / 12), now);
+        osc.frequency.setValueAtTime(detunedFreq * Math.pow(2, p.cloudsPitchShift / 12), now);
 
         filter.type = "bandpass";
-        filter.frequency.setValueAtTime(1000 + (cloudsTexture / 100) * 4000, now);
+        filter.frequency.setValueAtTime(1000 + (p.cloudsTexture / 100) * 4000, now);
         filter.Q.setValueAtTime(2.0, now);
 
         osc.connect(filter);
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + 1.5);
+        osc.stop(now + 1.2);
 
-        showToast(`☁️ MUTABLE CLOUDS (Granular Texture) : ${freq.toFixed(1)} Hz`);
-      } else if (activeEngine === "open303") {
-        // ROLAND TB-303 ACID BASS
+        showToast(`☁️ CLOUDS (Granular) : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "mi_elements") {
         const osc = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
 
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(freq, now);
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(detunedFreq * Math.pow(2, p.elementsPitch / 12), now);
 
-        filter.type = "lowpass";
-        const envPeak = acidCutoff + 3500 * (acidAccent ? 1.4 : 0.8);
-        filter.frequency.setValueAtTime(envPeak, now);
-        filter.frequency.exponentialRampToValueAtTime(acidCutoff * 0.2, now + 0.35);
-        filter.Q.setValueAtTime((acidResonance / 100) * 20, now);
+        filter.type = "peaking";
+        filter.frequency.setValueAtTime(300 + (p.elementsBrightness / 100) * 6000, now);
+        filter.Q.setValueAtTime((p.elementsGeometry / 100) * 10 + 1, now);
 
         osc.connect(filter);
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + 0.4);
+        osc.stop(now + 0.8 + (100 - p.elementsDamping) / 50);
 
-        showToast(`🎛️ OPEN303 ACID BASS : ${freq.toFixed(1)} Hz`);
-      } else if (activeEngine === "dexed_fm") {
-        // DEXED FM
+        showToast(`🪘 ELEMENTS Modal : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "open303") {
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = (p.acidWave as OscillatorType) || "sawtooth";
+        osc.frequency.setValueAtTime(detunedFreq * Math.pow(2, p.acidTuning / 12), now);
+
+        filter.type = "lowpass";
+        const envPeak = p.acidCutoff + 3500 * (p.acidAccent ? 1.5 : 0.8) * (p.acidEnvMod / 100);
+        filter.frequency.setValueAtTime(envPeak, now);
+        const dec = 0.12 + (p.acidDecay / 100) * 0.7;
+        filter.frequency.exponentialRampToValueAtTime(p.acidCutoff * 0.18, now + dec);
+        filter.Q.setValueAtTime((p.acidResonance / 100) * 22, now);
+
+        osc.connect(filter);
+        filter.connect(masterGain);
+
+        osc.start(now);
+        osc.stop(now + dec + 0.1);
+
+        showToast(`🎛️ OPEN303 ACID BASS : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "dexed_fm") {
         const carrier = ctx.createOscillator();
         const mod = ctx.createOscillator();
         const modGain = ctx.createGain();
 
         carrier.type = "sine";
-        carrier.frequency.setValueAtTime(freq * dxOp1Ratio, now);
+        carrier.frequency.setValueAtTime(detunedFreq * p.dxOp1Ratio, now);
 
         mod.type = "sine";
-        mod.frequency.setValueAtTime(freq * dxOp2Ratio, now);
-        modGain.gain.setValueAtTime(600, now);
+        mod.frequency.setValueAtTime(detunedFreq * p.dxOp2Ratio, now);
+        modGain.gain.setValueAtTime(200 + p.dxFeedback * 120, now);
 
         mod.connect(modGain);
         modGain.connect(carrier.frequency);
         carrier.connect(masterGain);
 
+        const dec = 0.3 + (p.dxDecay / 100) * 1.5;
         carrier.start(now);
         mod.start(now);
-        carrier.stop(now + 1.2);
-        mod.stop(now + 1.2);
+        carrier.stop(now + dec);
+        mod.stop(now + dec);
 
-        showToast(`🎹 DEXED FM (DX7 Algo #${dxAlgorithm}) : ${freq.toFixed(1)} Hz`);
-      } else {
-        // GENERAL SYNTHESIZER FALLBACK
+        showToast(`🎹 DEXED FM (Algo #${p.dxAlgorithm}) : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "surge_xt") {
+        const osc1 = ctx.createOscillator();
+        const subOsc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
+        osc1.type = "sawtooth";
+        osc1.frequency.setValueAtTime(detunedFreq * (1 + (p.surgeMorph - 50) / 1000), now);
+
+        subOsc.type = "square";
+        subOsc.frequency.setValueAtTime(detunedFreq / 2, now);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(p.surgeCutoff, now);
+        filter.Q.setValueAtTime((p.surgeReso / 100) * 12, now);
+
+        const subGain = ctx.createGain();
+        subGain.gain.setValueAtTime(p.surgeSub / 100, now);
+
+        osc1.connect(filter);
+        subOsc.connect(subGain);
+        subGain.connect(filter);
+        filter.connect(masterGain);
+
+        osc1.start(now);
+        subOsc.start(now);
+        osc1.stop(now + 1.0);
+        subOsc.stop(now + 1.0);
+
+        showToast(`🎛️ SURGE XT [${p.surgeWavetable}] : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "zynaddsubfx") {
+        const filter = ctx.createBiquadFilter();
+        filter.type = (p.zynFilterType as BiquadFilterType) || "lowpass";
+        filter.frequency.setValueAtTime(1000 + (p.zynBandwidth / 100) * 5000, now);
+        filter.Q.setValueAtTime((p.zynReso / 100) * 10, now);
+
+        const harmCount = Math.min(12, p.zynHarmonics);
+        for (let i = 1; i <= harmCount; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(detunedFreq * i, now);
+          gain.gain.setValueAtTime((0.35 / i) * (1 + (p.zynSubBoost / 100) * (i === 1 ? 1 : 0)), now);
+
+          osc.connect(gain);
+          gain.connect(filter);
+          osc.start(now);
+          osc.stop(now + 0.8);
+        }
+
+        filter.connect(masterGain);
+        showToast(`🎹 ZYNADDSUBFX Additive : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "helm") {
         const osc = ctx.createOscillator();
+        const sub = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
         osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(freq, now);
+        osc.frequency.setValueAtTime(detunedFreq * (1 + (p.helmCrossmod / 100) * 0.1), now);
+
+        sub.type = "square";
+        sub.frequency.setValueAtTime(detunedFreq / 2, now);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(p.helmCutoff, now);
+
+        osc.connect(filter);
+        sub.connect(filter);
+        filter.connect(masterGain);
+
+        osc.start(now);
+        sub.start(now);
+        osc.stop(now + 1.0);
+        sub.stop(now + 1.0);
+
+        showToast(`🎛️ HELM Crossmod Synth : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "fluidsynth") {
+        const osc1 = ctx.createOscillator();
+        const osc2 = ctx.createOscillator();
+        osc1.type = "triangle";
+        osc2.type = "sine";
+
+        osc1.frequency.setValueAtTime(detunedFreq, now);
+        osc2.frequency.setValueAtTime(detunedFreq * 2, now);
+
+        osc1.connect(masterGain);
+        osc2.connect(masterGain);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 1.0);
+        osc2.stop(now + 1.0);
+
+        showToast(`🎹 FLUIDSYNTH [${p.fluidPreset}] : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "amsynth") {
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = (p.amWave as OscillatorType) || "sawtooth";
+        osc.frequency.setValueAtTime(detunedFreq, now);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(p.amCutoff, now);
+        filter.Q.setValueAtTime((p.amReso / 100) * 12, now);
+
+        osc.connect(filter);
+        filter.connect(masterGain);
+
+        const dec = 0.2 + (p.amDecay / 100) * 1.2;
+        osc.start(now);
+        osc.stop(now + dec);
+
+        showToast(`🎛️ AMSYNTH Dual VCO : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "amy_engine") {
+        const partials = Math.min(16, p.amyPartialCount);
+        for (let i = 1; i <= partials; i++) {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(detunedFreq * i * (1 + (p.amySpread / 100) * 0.05), now);
+          gain.gain.setValueAtTime((0.3 / Math.pow(i, p.amySlope / 50)), now);
+
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 0.8);
+        }
+
+        showToast(`🎛️ AMY Additive C/JS : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "pl_synth") {
+        const osc = ctx.createOscillator();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(detunedFreq, now);
 
         osc.connect(masterGain);
         osc.start(now);
+        osc.stop(now + 0.6);
+
+        showToast(`🕹️ PL_SYNTH 8-Bit Chiptune : ${detunedFreq.toFixed(1)} Hz`);
+      } else if (p.activeEngine === "faust_dsp") {
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(detunedFreq, now);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(p.faustFilter, now);
+
+        osc.connect(filter);
+        filter.connect(masterGain);
+
+        osc.start(now);
         osc.stop(now + 0.8);
 
-        showToast(`🔊 MOTEUR AUDIO [${activeEngine.toUpperCase()}] : ${freq.toFixed(1)} Hz`);
+        showToast(`🎛️ FAUST DSP Wavefolder : ${detunedFreq.toFixed(1)} Hz`);
       }
 
       masterGain.connect(ctx.destination);
     } catch (e) {
-      console.error(e);
+      console.error("Audio error:", e);
     }
   };
 
-  // DRAW OSCILLOSCOPE
+  // WEB MIDI & PC KEYBOARD EVENT LISTENERS
   useEffect(() => {
+    // 1. Web MIDI Setup
+    if (navigator.requestMIDIAccess) {
+      navigator.requestMIDIAccess().then((midi) => {
+        setMidiConnected(midi.inputs.size > 0);
+        const inputs = midi.inputs.values();
+        for (const input of inputs) {
+          input.onmidimessage = (msg: any) => {
+            const [command, note, velocity] = msg.data;
+            if (command === 144 && velocity > 0) {
+              const freq = 440 * Math.pow(2, (note - 69) / 12);
+              playPluginNote(freq);
+            }
+          };
+        }
+      }).catch(() => {});
+    }
+
+    // 2. PC Computer Keyboard Fallback (A, W, S, E, D, F, T, G, Y, H, U, J, K)
+    const keyToFreq: Record<string, { freq: number; note: string }> = {
+      a: { freq: 261.63, note: "C4" },
+      w: { freq: 277.18, note: "C#4" },
+      s: { freq: 293.66, note: "D4" },
+      e: { freq: 311.13, note: "D#4" },
+      d: { freq: 329.63, note: "E4" },
+      f: { freq: 349.23, note: "F4" },
+      t: { freq: 369.99, note: "F#4" },
+      g: { freq: 392.00, note: "G4" },
+      y: { freq: 415.30, note: "G#4" },
+      h: { freq: 440.00, note: "A4" },
+      u: { freq: 466.16, note: "A#4" },
+      j: { freq: 493.88, note: "B4" },
+      k: { freq: 523.25, note: "C5" },
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      const key = e.key.toLowerCase();
+      if (keyToFreq[key]) {
+        setActiveKeyNote(keyToFreq[key].note);
+        playPluginNote(keyToFreq[key].freq);
+        setTimeout(() => setActiveKeyNote(null), 300);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  // ANIMATED OSCILLOSCOPE WAVEFORM
+  useEffect(() => {
+    let phase = 0;
     const canvas = oscCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
+    const render = () => {
+      phase += 0.05;
+      const width = canvas.width;
+      const height = canvas.height;
+      const p = paramsRef.current;
 
-    ctx.fillStyle = "#0d0f18";
-    ctx.fillRect(0, 0, width, height);
+      // Dark OLED Grid
+      ctx.fillStyle = "#090b12";
+      ctx.fillRect(0, 0, width, height);
 
-    ctx.strokeStyle = "rgba(0, 237, 149, 0.15)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, height / 2);
-    ctx.lineTo(width, height / 2);
-    ctx.stroke();
-
-    ctx.strokeStyle = activeEngine.startsWith("mi_") ? "#00ed95" : "#d9ff43";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    for (let x = 0; x < width; x++) {
-      let y = height / 2;
-      if (activeEngine === "mi_plaits") {
-        y += Math.sin(x * 0.08) * 35 * Math.cos(x * 0.02 * (plaitsHarmonics / 20));
-      } else if (activeEngine === "mi_rings") {
-        y += Math.sin(x * 0.1) * Math.exp(-x * 0.004) * 40;
-      } else if (activeEngine === "open303") {
-        const saw = ((x % 20) / 20 - 0.5) * 60;
-        y += saw * Math.exp(-x * 0.003);
-      } else {
-        y += Math.sin(x * 0.05) * 30;
+      ctx.strokeStyle = "rgba(0, 237, 149, 0.1)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
       }
 
-      if (x === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  }, [activeEngine, plaitsEngine, plaitsHarmonics, plaitsTimbre, ringsResonatorMode, ringsDamping, acidCutoff, acidResonance]);
+      // Waveform line
+      const colorMap: Record<string, string> = {
+        mi_plaits: "#00ed95",
+        mi_braids: "#d9ff43",
+        mi_rings: "#b873ff",
+        mi_clouds: "#4aa7ff",
+        mi_elements: "#ff3a5d",
+        open303: "#ff3a5d",
+        dexed_fm: "#00ed95",
+        surge_xt: "#d9ff43",
+      };
 
-  // EXPORT PRESET FOR INSTRUMENTS
-  const exportPreset = () => {
-    const preset = {
-      engine: activeEngine,
-      author: profileName,
-      created: new Date().toISOString(),
-      mutable: activeEngine.startsWith("mi_"),
-      parameters: {
-        plaits: { plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph },
-        rings: { ringsResonatorMode, ringsDamping, ringsStructure },
-        clouds: { cloudsGranularDensity, cloudsPitchShift, cloudsTexture },
-        elements: { elementsGeometry, elementsBrightness },
-        dexed: { dxAlgorithm, dxOp1Ratio, dxOp2Ratio },
-        acid: { acidCutoff, acidResonance, acidAccent },
-      },
+      ctx.strokeStyle = colorMap[p.activeEngine] || "#00ed95";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+
+      for (let x = 0; x < width; x++) {
+        let y = height / 2;
+        const normX = x / width;
+
+        if (p.activeEngine === "mi_plaits") {
+          y += Math.sin(x * 0.08 + phase) * 28 * Math.cos(x * 0.02 * (p.plaitsHarmonics / 25));
+        } else if (p.activeEngine === "mi_rings") {
+          y += Math.sin(x * 0.12 + phase) * Math.exp(-normX * 3.5) * 35;
+        } else if (p.activeEngine === "mi_clouds") {
+          y += (Math.sin(x * 0.05 + phase) + (Math.random() - 0.5) * (p.cloudsGranularDensity / 50)) * 25;
+        } else if (p.activeEngine === "open303") {
+          const saw = (((x + phase * 20) % 30) / 30 - 0.5) * 50;
+          y += saw * Math.exp(-normX * 2);
+        } else if (p.activeEngine === "dexed_fm") {
+          y += Math.sin(x * 0.06 + phase) * 25 + Math.sin(x * 0.18 * p.dxOp2Ratio + phase) * 15;
+        } else {
+          y += Math.sin(x * 0.07 + phase) * 25;
+        }
+
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      animFrameRef.current = requestAnimationFrame(render);
     };
 
-    const blob = new Blob([JSON.stringify(preset, null, 2)], { type: "application/json" });
+    render();
+
+    return () => {
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+    };
+  }, []);
+
+  // EXPORT PRESET FOR INSTRUMENTS (OP-1 & EP-133 FORMATS)
+  const exportPreset = (format: "standard" | "op1" | "ep133") => {
+    const p = paramsRef.current;
+    let exportData: any;
+    let fileName: string;
+
+    if (format === "op1") {
+      exportData = {
+        name: `OP1_${p.activeEngine.toUpperCase()}`,
+        type: "synth",
+        engine: p.activeEngine,
+        octave: 0,
+        knob1: p.plaitsHarmonics || p.dxOp1Ratio || 50,
+        knob2: p.plaitsTimbre || p.surgeCutoff || 50,
+        knob3: p.plaitsMorph || p.acidResonance || 50,
+        knob4: p.plaitsDecay || p.dxDecay || 50,
+        fx_type: "delay",
+        fx_params: [50, 40, 30, 20],
+      };
+      fileName = `op1_synth_${p.activeEngine}_${Date.now()}.json`;
+    } else if (format === "ep133") {
+      exportData = {
+        device: "EP-133 KO II",
+        group: "A",
+        sample_map: {
+          engine: p.activeEngine,
+          root_note: 60,
+          params: { ...p },
+        },
+      };
+      fileName = `ep133_samplemap_${p.activeEngine}_${Date.now()}.json`;
+    } else {
+      exportData = {
+        engine: p.activeEngine,
+        author: profileName,
+        created: new Date().toISOString(),
+        mutable: p.activeEngine.startsWith("mi_"),
+        parameters: { ...p },
+      };
+      fileName = `rack_engine_${p.activeEngine}_${Date.now()}.json`;
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `rack_engine_${activeEngine}_${Date.now()}.json`;
+    a.download = fileName;
     a.click();
-    showToast(`📦 PRESET EXPORTÉ POUR OP-1 ET EP-133 : ${activeEngine.toUpperCase()}`);
+    showToast(`📦 EXPORTÉ (${format.toUpperCase()}) : ${p.activeEngine.toUpperCase()}`);
   };
+
+  const ALL_ENGINES: { id: EnginePluginType; name: string; subtitle: string; category: string; color: string }[] = [
+    // MUTABLE SUITE
+    { id: "mi_plaits", name: "MUTABLE PLAITS", subtitle: "16-Engine Macro Oscillator", category: "MUTABLE", color: "green" },
+    { id: "mi_braids", name: "MUTABLE BRAIDS", subtitle: "33-Model Macro Synth", category: "MUTABLE", color: "yellow" },
+    { id: "mi_rings", name: "MUTABLE RINGS", subtitle: "Resonator & Physical Modeling", category: "MUTABLE", color: "purple" },
+    { id: "mi_clouds", name: "MUTABLE CLOUDS", subtitle: "Granular Texture Synthesizer", category: "MUTABLE", color: "blue" },
+    { id: "mi_elements", name: "MUTABLE ELEMENTS", subtitle: "Modal Physical Modeling", category: "MUTABLE", color: "pink" },
+    // OPEN SOURCE GIT
+    { id: "dexed_fm", name: "DEXED / DX7 FM", subtitle: "6-Op FM Synthesis Engine", category: "OPEN SOURCE", color: "green" },
+    { id: "surge_xt", name: "SURGE XT", subtitle: "Hybrid Wavetable Synth", category: "OPEN SOURCE", color: "yellow" },
+    { id: "zynaddsubfx", name: "ZYNADDSUBFX", subtitle: "Additive & Pad Engine", category: "OPEN SOURCE", color: "purple" },
+    { id: "helm", name: "HELM SYNTH", subtitle: "Polyphonic Modulation Engine", category: "OPEN SOURCE", color: "blue" },
+    { id: "fluidsynth", name: "FLUIDSYNTH SF2", subtitle: "SoundFont Sample Player", category: "OPEN SOURCE", color: "pink" },
+    { id: "amsynth", name: "AMSYNTH", subtitle: "Dual VCO Analog Synth", category: "OPEN SOURCE", color: "yellow" },
+    { id: "amy_engine", name: "AMY C/JS", subtitle: "Fixed-Point Audio Synthesizer", category: "OPEN SOURCE", color: "green" },
+    { id: "pl_synth", name: "PL_SYNTH", subtitle: "8-Bit Chiptune Tracker Engine", category: "OPEN SOURCE", color: "blue" },
+    { id: "open303", name: "OPEN303 ACID", subtitle: "Roland TB-303 Acid Emulation", category: "OPEN SOURCE", color: "pink" },
+    { id: "faust_dsp", name: "FAUST DSP NODE", subtitle: "Compiled DSP WebAudio Engine", category: "OPEN SOURCE", color: "purple" },
+  ];
 
   return (
     <main className="audio-plugin-rack-page">
       <TopBar activePage="outils" profileName={profileName} />
 
-      {onClose && (
-        <button type="button" className="rack-back-btn" onClick={onClose}>
-          ← Retour aux Outils
-        </button>
-      )}
-
-      <div className="plugin-rack-wrapper">
-        <header className="plugin-rack-header">
-          <div className="rack-title-group">
-            <h1>🔌 RACK DE MOTEURS AUDIO : OPEN SOURCE & MUTABLE INSTRUMENTS</h1>
-            <p>15 Moteurs de Synthèse Légendaires (Dexed, Surge, Plaits, Rings, Clouds, 303, FluidSynth) Prêts à l'Emploi</p>
+      {/* COMPACT SINGLE-VIEWPORT WORKSPACE FRAME */}
+      <div className="plugin-rack-container">
+        
+        {/* LEFT COLUMN: VERTICAL LIST OF ALL AUDIO ENGINES WITH UNFOLDING PATCH LISTS */}
+        <aside className="rack-left-sidebar">
+          <div className="sidebar-header">
+            <h3>🎛️ MOTEURS AUDIO (15)</h3>
+            <small>Eurorack & Open Source</small>
           </div>
 
-          <button type="button" className="export-preset-btn" onClick={exportPreset}>
-            📦 EXPORTER PRESET EN RACK (OP-1 & EP-133)
-          </button>
-        </header>
+          <div className="sidebar-engines-scroll">
+            <div className="sidebar-category-title">🎛️ MUTABLE INSTRUMENTS</div>
+            {ALL_ENGINES.filter((e) => e.category === "MUTABLE").map((e) => {
+              const isSelected = activeEngine === e.id;
+              const factory = FACTORY_PATCHES[e.id] || [];
+              const custom = userPatches.filter((p) => p.engine === e.id);
+              const allPatchesForEngine = [...factory, ...custom];
 
-        {/* CATEGORY 1: MUTABLE INSTRUMENTS EURORACK SUITE */}
-        <section className="rack-category-section">
-          <h2>🎛️ RACK MUTABLE INSTRUMENTS (EURORACK OPEN SOURCE)</h2>
-          <div className="engines-selector-grid">
-            {[
-              { id: "mi_plaits", name: "MUTABLE PLAITS", subtitle: "16-Engine Macro Oscillator", color: "green" },
-              { id: "mi_braids", name: "MUTABLE BRAIDS", subtitle: "33-Model Macro Synth", color: "yellow" },
-              { id: "mi_rings", name: "MUTABLE RINGS", subtitle: "Resonator & Physical Modeling", color: "purple" },
-              { id: "mi_clouds", name: "MUTABLE CLOUDS", subtitle: "Granular Texture Synthesizer", color: "blue" },
-              { id: "mi_elements", name: "MUTABLE ELEMENTS", subtitle: "Modal Physical Modeling", color: "pink" },
-            ].map((e) => (
+              return (
+                <div key={e.id} className="engine-accordion-group">
+                  <button
+                    type="button"
+                    className={`sidebar-engine-item color-${e.color} ${isSelected ? "active" : ""}`}
+                    onClick={() => {
+                      setActiveEngine(e.id);
+                      if (allPatchesForEngine.length > 0) applyPatch(allPatchesForEngine[0]);
+                      else triggerAuditionNote(261.63);
+                    }}
+                  >
+                    <span className="engine-dot" />
+                    <div className="engine-info">
+                      <strong>{e.name}</strong>
+                      <small>{e.subtitle}</small>
+                    </div>
+                    <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
+                  </button>
+
+                  {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
+                  {isSelected && (
+                    <div className="unfolded-patch-list">
+                      <div className="patch-list-header-row">
+                        <span className="patch-list-header">🎵 PATCHES ({allPatchesForEngine.length}) :</span>
+                        <button type="button" className="add-patch-btn" onClick={() => setShowSaveModal(true)}>
+                          + CRÉER
+                        </button>
+                      </div>
+
+                      {allPatchesForEngine.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
+                          onClick={() => applyPatch(p)}
+                        >
+                          <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
+                          <span className="patch-name">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div className="sidebar-category-title">🎹 OPEN SOURCE ENGINES</div>
+            {ALL_ENGINES.filter((e) => e.category === "OPEN SOURCE").map((e) => {
+              const isSelected = activeEngine === e.id;
+              const factory = FACTORY_PATCHES[e.id] || [];
+              const custom = userPatches.filter((p) => p.engine === e.id);
+              const allPatchesForEngine = [...factory, ...custom];
+
+              return (
+                <div key={e.id} className="engine-accordion-group">
+                  <button
+                    type="button"
+                    className={`sidebar-engine-item color-${e.color} ${isSelected ? "active" : ""}`}
+                    onClick={() => {
+                      setActiveEngine(e.id);
+                      if (allPatchesForEngine.length > 0) applyPatch(allPatchesForEngine[0]);
+                      else triggerAuditionNote(261.63);
+                    }}
+                  >
+                    <span className="engine-dot" />
+                    <div className="engine-info">
+                      <strong>{e.name}</strong>
+                      <small>{e.subtitle}</small>
+                    </div>
+                    <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
+                  </button>
+
+                  {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
+                  {isSelected && (
+                    <div className="unfolded-patch-list">
+                      <div className="patch-list-header-row">
+                        <span className="patch-list-header">🎵 PATCHES ({allPatchesForEngine.length}) :</span>
+                        <button type="button" className="add-patch-btn" onClick={() => setShowSaveModal(true)}>
+                          + CRÉER
+                        </button>
+                      </div>
+
+                      {allPatchesForEngine.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
+                          onClick={() => applyPatch(p)}
+                        >
+                          <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
+                          <span className="patch-name">{p.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* RIGHT AREA: WAVEFORM + COMPREHENSIVE ENGINE CONTROLS */}
+        <section className="rack-right-workspace">
+          
+          {/* HEADER BAR & STATUS */}
+          <header className="workspace-header">
+            <div className="header-title-box">
+              <h2>MOTEUR ACTIF : <span className="active-engine-title">{activeEngine.toUpperCase().replace("_", " ")}</span></h2>
+              <p>Moteur Audio Temps Réel • Direct Export OP-1 & EP-133 KO II</p>
+            </div>
+
+            <div className="header-controls-row">
               <button
-                key={e.id}
                 type="button"
-                className={`plugin-card-btn color-${e.color} ${activeEngine === e.id ? "active-plugin" : ""}`}
-                onClick={() => setActiveEngine(e.id as EnginePluginType)}
+                className="test-sound-btn"
+                onClick={() => playPluginNote(261.63)}
               >
-                <strong>{e.name}</strong>
-                <small>{e.subtitle}</small>
+                🔊 TESTER LE SON (C4)
               </button>
-            ))}
-          </div>
-        </section>
 
-        {/* CATEGORY 2: TOP 10 GIT OPEN SOURCE ENGINES */}
-        <section className="rack-category-section">
-          <h2>🎹 TOP 10 MOTEURS AUDIO OPEN SOURCE (GITHUB)</h2>
-          <div className="engines-selector-grid">
-            {[
-              { id: "dexed_fm", name: "DEXED / DX7 FM", subtitle: "6-Op FM Engine", color: "green" },
-              { id: "surge_xt", name: "SURGE XT", subtitle: "Hybrid Wavetable Synth", color: "yellow" },
-              { id: "zynaddsubfx", name: "ZYNADDSUBFX", subtitle: "Additive & Pad Synth", color: "purple" },
-              { id: "helm", name: "HELM SYNTH", subtitle: "Polyphonic Modulation", color: "blue" },
-              { id: "fluidsynth", name: "FLUIDSYNTH SF2", subtitle: "SoundFont Sample Engine", color: "pink" },
-              { id: "amsynth", name: "AMSYNTH", subtitle: "Dual VCO Analog Synth", color: "yellow" },
-              { id: "amy_engine", name: "AMY C/JS", subtitle: "Fixed-Point Audio Engine", color: "green" },
-              { id: "pl_synth", name: "PL_SYNTH", subtitle: "8-Bit Chiptune Tracker", color: "blue" },
-              { id: "open303", name: "OPEN303 ACID", subtitle: "Roland TB-303 Emulation", color: "pink" },
-              { id: "faust_dsp", name: "FAUST DSP NODE", subtitle: "Compiled DSP WebAudio Engine", color: "purple" },
-            ].map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                className={`plugin-card-btn color-${e.color} ${activeEngine === e.id ? "active-plugin" : ""}`}
-                onClick={() => setActiveEngine(e.id as EnginePluginType)}
-              >
-                <strong>{e.name}</strong>
-                <small>{e.subtitle}</small>
-              </button>
-            ))}
-          </div>
-        </section>
+              <div className="input-source-badge">
+                {midiConnected ? (
+                  <span className="badge-connected">🎹 MIDI / OP-1 / EP-133 CONNECTÉ</span>
+                ) : (
+                  <span className="badge-keyboard">⌨️ CLAVIER PC (A, S, D, F...) & MIDI ACTIF</span>
+                )}
+              </div>
 
-        {/* OSCILLOSCOPE DISPLAY */}
-        <section className="plugin-visualizer-card">
-          <div className="vis-header">
-            <strong>MOTEUR SELECTIONNÉ : {activeEngine.toUpperCase().replace("_", " ")}</strong>
-            <small>Oscilloscope Web Audio API</small>
-          </div>
-          <div className="vis-canvas-frame">
-            <canvas ref={oscCanvasRef} width={1000} height={100} className="vis-canvas" />
-          </div>
-        </section>
-
-        {/* DYNAMIC PARAMETERS FORM FOR ACTIVE ENGINE */}
-        <section className="plugin-controls-card">
-          {activeEngine === "mi_plaits" && (
-            <div className="plugin-parameters-form">
-              <h3>🎛️ MUTABLE INSTRUMENTS PLAITS (MACRO-OSCILLATOR 16 ENGINES)</h3>
-              <div className="params-grid">
-                <label>SÉLECTION DU MOTEUR :
-                  <select value={plaitsEngine} onChange={(e) => setPlaitsEngine(e.target.value as any)}>
-                    <option value="V_ANALOG">1. VIRTUAL ANALOG (Pair Pair/Saw)</option>
-                    <option value="FM">2. FREQUENCY MODULATION (2-OP FM)</option>
-                    <option value="WAVETABLE">3. WAVETABLE (Sweepable 3D Grid)</option>
-                    <option value="GRAIN">4. GRANULAR PULSE CLOUD</option>
-                    <option value="SPEECH">5. SPEECH SYNTHESIS & FORMANT</option>
-                    <option value="CHORD">6. FOUR-VOICE CHORD GENERATOR</option>
-                  </select>
-                </label>
-                <label>HARMONICS CONTROL: {plaitsHarmonics}%
-                  <input type="range" min={0} max={100} value={plaitsHarmonics} onChange={(e) => setPlaitsHarmonics(Number(e.target.value))} />
-                </label>
-                <label>TIMBRE (FILTER CUTOFF): {plaitsTimbre}%
-                  <input type="range" min={0} max={100} value={plaitsTimbre} onChange={(e) => setPlaitsTimbre(Number(e.target.value))} />
-                </label>
-                <label>MORPH (WAVEFORM SHAPE): {plaitsMorph}%
-                  <input type="range" min={0} max={100} value={plaitsMorph} onChange={(e) => setPlaitsMorph(Number(e.target.value))} />
-                </label>
+              <div className="export-btn-group">
+                <button type="button" className="action-btn export-btn" onClick={() => exportPreset("standard")}>
+                  📦 EXPORT JSON
+                </button>
+                <button type="button" className="action-btn export-op1-btn" onClick={() => exportPreset("op1")}>
+                  🎛️ OP-1 SYNTH
+                </button>
+                <button type="button" className="action-btn export-ep133-btn" onClick={() => exportPreset("ep133")}>
+                  🎚️ EP-133 MAP
+                </button>
               </div>
             </div>
-          )}
+          </header>
 
-          {activeEngine === "mi_rings" && (
-            <div className="plugin-parameters-form">
-              <h3>🔔 MUTABLE INSTRUMENTS RINGS (RESONATOR & PHYSICAL MODELING)</h3>
-              <div className="params-grid">
-                <label>RESONATOR MODE :
-                  <select value={ringsResonatorMode} onChange={(e) => setRingsResonatorMode(e.target.value as any)}>
-                    <option value="STRING">MODAL STRING (Corde Vibrante)</option>
-                    <option value="TUBE">SYMPATHETIC STRINGS (Tubes & Flûtes)</option>
-                    <option value="PLATE">INHARMONIC STRING (Plaques & Cloches)</option>
-                  </select>
-                </label>
-                <label>DAMPING (AMORTISSEMENT): {ringsDamping}%
-                  <input type="range" min={0} max={100} value={ringsDamping} onChange={(e) => setRingsDamping(Number(e.target.value))} />
-                </label>
-                <label>STRUCTURE (INHARMONICITÉ): {ringsStructure}%
-                  <input type="range" min={0} max={100} value={ringsStructure} onChange={(e) => setRingsStructure(Number(e.target.value))} />
-                </label>
+          {/* MAIN UNIFIED FRAME: OLED WAVEFORM + MASTER + EXPANDED CONTROLS */}
+          <div className="unified-waveform-controls-frame">
+            
+            {/* WAVEFORM / OLED OSCILLOSCOPE */}
+            <div className="waveform-display-box">
+              <div className="vis-info-bar">
+                <span className="vis-title">📊 OSCILLOSCOPE TEMPS RÉEL (OLED)</span>
+                <div className="master-quick-bar">
+                  <label className="master-vol-label">VOL: {masterVolume}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={masterVolume}
+                      onChange={(e) => updateParam("masterVolume", Number(e.target.value), setMasterVolume)}
+                    />
+                  </label>
+                  <label className="master-detune-label">TUNING: {masterDetune}c
+                    <input
+                      type="range"
+                      min={-50}
+                      max={50}
+                      value={masterDetune}
+                      onChange={(e) => updateParam("masterDetune", Number(e.target.value), setMasterDetune)}
+                    />
+                  </label>
+                </div>
+              </div>
+              <canvas ref={oscCanvasRef} width={900} height={100} className="waveform-canvas" />
+            </div>
+
+            {/* EXPANDED COMPREHENSIVE PARAMETERS CONTROL PANEL FOR SELECTED ENGINE */}
+            <div className="compact-parameters-panel">
+              <div className="panel-header">
+                <strong>🎛️ CONTRÔLE ET RÉGLAGES DU SOUND ENGINE : {activeEngine.toUpperCase().replace("_", " ")}</strong>
+                <small>Modulation & Écoute Instantanée</small>
+              </div>
+
+              {/* MUTABLE PLAITS */}
+              {activeEngine === "mi_plaits" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">SÉLECTION DUAL ENGINE :
+                    <select
+                      value={plaitsEngine}
+                      onChange={(e) => updateParam("plaitsEngine", e.target.value, setPlaitsEngine as any)}
+                    >
+                      <option value="V_ANALOG">1. VIRTUAL ANALOG (Saw/Pair)</option>
+                      <option value="FM">2. FREQUENCY MODULATION (2-OP FM)</option>
+                      <option value="WAVETABLE">3. WAVETABLE (Sweep 3D Grid)</option>
+                      <option value="GRAIN">4. GRANULAR PULSE CLOUD</option>
+                      <option value="SPEECH">5. SPEECH SYNTHESIS & FORMANT</option>
+                      <option value="CHORD">6. 4-VOICE CHORD GENERATOR</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">HARMONICS FREQ: {plaitsHarmonics}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={plaitsHarmonics}
+                      onChange={(e) => updateParam("plaitsHarmonics", Number(e.target.value), setPlaitsHarmonics)}
+                    />
+                  </label>
+                  <label className="ctrl-group">TIMBRE (FILTER CUTOFF): {plaitsTimbre}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={plaitsTimbre}
+                      onChange={(e) => updateParam("plaitsTimbre", Number(e.target.value), setPlaitsTimbre)}
+                    />
+                  </label>
+                  <label className="ctrl-group">MORPH (SHAPE): {plaitsMorph}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={plaitsMorph}
+                      onChange={(e) => updateParam("plaitsMorph", Number(e.target.value), setPlaitsMorph)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DECAY ENVELOPE: {plaitsDecay}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={plaitsDecay}
+                      onChange={(e) => updateParam("plaitsDecay", Number(e.target.value), setPlaitsDecay)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* MUTABLE BRAIDS */}
+              {activeEngine === "mi_braids" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">MODELE BRAIDS :
+                    <select
+                      value={braidsModel}
+                      onChange={(e) => updateParam("braidsModel", e.target.value, setBraidsModel)}
+                    >
+                      <option value="CS-80 SAW">CS-80 SAW (Brass Synth)</option>
+                      <option value="WT-SWEEP">WT-SWEEP (Wavetable Scan)</option>
+                      <option value="VOWEL FORMANT">VOWEL FORMANT (Voix Synthétique)</option>
+                      <option value="BELL HARMONIC">BELL HARMONIC (Percussion Métallique)</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">COLOR (RESO/SPECTRUM): {braidsColor}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={braidsColor}
+                      onChange={(e) => updateParam("braidsColor", Number(e.target.value), setBraidsColor)}
+                    />
+                  </label>
+                  <label className="ctrl-group">TIMBRE (PULSE/SWEEP): {braidsTimbre}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={braidsTimbre}
+                      onChange={(e) => updateParam("braidsTimbre", Number(e.target.value), setBraidsTimbre)}
+                    />
+                  </label>
+                  <label className="ctrl-group">BIT DEPTH: {braidsBitDepth} Bits
+                    <input
+                      type="range"
+                      min={4}
+                      max={16}
+                      step={4}
+                      value={braidsBitDepth}
+                      onChange={(e) => updateParam("braidsBitDepth", Number(e.target.value), setBraidsBitDepth)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* MUTABLE RINGS */}
+              {activeEngine === "mi_rings" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">RESONATOR MODE :
+                    <select
+                      value={ringsResonatorMode}
+                      onChange={(e) => updateParam("ringsResonatorMode", e.target.value, setRingsResonatorMode as any)}
+                    >
+                      <option value="STRING">MODAL STRING (Corde Vibrante)</option>
+                      <option value="TUBE">SYMPATHETIC STRINGS (Tubes & Flûtes)</option>
+                      <option value="PLATE">INHARMONIC STRING (Cloches & Plaques)</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">DAMPING (AMORTISSEMENT): {ringsDamping}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={ringsDamping}
+                      onChange={(e) => updateParam("ringsDamping", Number(e.target.value), setRingsDamping)}
+                    />
+                  </label>
+                  <label className="ctrl-group">STRUCTURE (INHARMONICS): {ringsStructure}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={ringsStructure}
+                      onChange={(e) => updateParam("ringsStructure", Number(e.target.value), setRingsStructure)}
+                    />
+                  </label>
+                  <label className="ctrl-group">BRIGHTNESS: {ringsBrightness}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={ringsBrightness}
+                      onChange={(e) => updateParam("ringsBrightness", Number(e.target.value), setRingsBrightness)}
+                    />
+                  </label>
+                  <label className="ctrl-group">EXCITER POSITION: {ringsPosition}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={ringsPosition}
+                      onChange={(e) => updateParam("ringsPosition", Number(e.target.value), setRingsPosition)}
+                    />
+                  </label>
+                  <label className="ctrl-group">POLYPHONY VOICES: {ringsPolyphony}
+                    <input
+                      type="range"
+                      min={1}
+                      max={4}
+                      value={ringsPolyphony}
+                      onChange={(e) => updateParam("ringsPolyphony", Number(e.target.value), setRingsPolyphony)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* MUTABLE CLOUDS */}
+              {activeEngine === "mi_clouds" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">GRANULAR DENSITY: {cloudsGranularDensity}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={cloudsGranularDensity}
+                      onChange={(e) => updateParam("cloudsGranularDensity", Number(e.target.value), setCloudsGranularDensity)}
+                    />
+                  </label>
+                  <label className="ctrl-group">PITCH SHIFT (DEMI-TONS): {cloudsPitchShift}
+                    <input
+                      type="range"
+                      min={-12}
+                      max={12}
+                      value={cloudsPitchShift}
+                      onChange={(e) => updateParam("cloudsPitchShift", Number(e.target.value), setCloudsPitchShift)}
+                    />
+                  </label>
+                  <label className="ctrl-group">TEXTURE / SMOOTHING: {cloudsTexture}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={cloudsTexture}
+                      onChange={(e) => updateParam("cloudsTexture", Number(e.target.value), setCloudsTexture)}
+                    />
+                  </label>
+                  <label className="ctrl-group">GRAIN POSITION: {cloudsPosition}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={cloudsPosition}
+                      onChange={(e) => updateParam("cloudsPosition", Number(e.target.value), setCloudsPosition)}
+                    />
+                  </label>
+                  <label className="ctrl-group">FEEDBACK AMOUNT: {cloudsFeedback}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={cloudsFeedback}
+                      onChange={(e) => updateParam("cloudsFeedback", Number(e.target.value), setCloudsFeedback)}
+                    />
+                  </label>
+                  <label className="ctrl-group">REVERB DENSITY: {cloudsReverb}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={cloudsReverb}
+                      onChange={(e) => updateParam("cloudsReverb", Number(e.target.value), setCloudsReverb)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* MUTABLE ELEMENTS */}
+              {activeEngine === "mi_elements" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">GEOMETRY (RESONANCE): {elementsGeometry}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={elementsGeometry}
+                      onChange={(e) => updateParam("elementsGeometry", Number(e.target.value), setElementsGeometry)}
+                    />
+                  </label>
+                  <label className="ctrl-group">BRIGHTNESS: {elementsBrightness}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={elementsBrightness}
+                      onChange={(e) => updateParam("elementsBrightness", Number(e.target.value), setElementsBrightness)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DAMPING: {elementsDamping}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={elementsDamping}
+                      onChange={(e) => updateParam("elementsDamping", Number(e.target.value), setElementsDamping)}
+                    />
+                  </label>
+                  <label className="ctrl-group">PITCH TUNE: {elementsPitch} st
+                    <input
+                      type="range"
+                      min={-12}
+                      max={12}
+                      value={elementsPitch}
+                      onChange={(e) => updateParam("elementsPitch", Number(e.target.value), setElementsPitch)}
+                    />
+                  </label>
+                  <label className="ctrl-group">EXCITER CONTOUR: {elementsExciter}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={elementsExciter}
+                      onChange={(e) => updateParam("elementsExciter", Number(e.target.value), setElementsExciter)}
+                    />
+                  </label>
+                  <label className="ctrl-group">STRIKE FORCE: {elementsStrike}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={elementsStrike}
+                      onChange={(e) => updateParam("elementsStrike", Number(e.target.value), setElementsStrike)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* DEXED FM */}
+              {activeEngine === "dexed_fm" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">ALGORITHME FM (1-32): {dxAlgorithm}
+                    <input
+                      type="range"
+                      min={1}
+                      max={32}
+                      value={dxAlgorithm}
+                      onChange={(e) => updateParam("dxAlgorithm", Number(e.target.value), setDxAlgorithm)}
+                    />
+                  </label>
+                  <label className="ctrl-group">CARRIER RATIO: {dxOp1Ratio}
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={4.0}
+                      step={0.1}
+                      value={dxOp1Ratio}
+                      onChange={(e) => updateParam("dxOp1Ratio", Number(e.target.value), setDxOp1Ratio)}
+                    />
+                  </label>
+                  <label className="ctrl-group">MODULATOR RATIO: {dxOp2Ratio}
+                    <input
+                      type="range"
+                      min={0.5}
+                      max={8.0}
+                      step={0.1}
+                      value={dxOp2Ratio}
+                      onChange={(e) => updateParam("dxOp2Ratio", Number(e.target.value), setDxOp2Ratio)}
+                    />
+                  </label>
+                  <label className="ctrl-group">FEEDBACK AMOUNT: {dxFeedback}
+                    <input
+                      type="range"
+                      min={0}
+                      max={10}
+                      value={dxFeedback}
+                      onChange={(e) => updateParam("dxFeedback", Number(e.target.value), setDxFeedback)}
+                    />
+                  </label>
+                  <label className="ctrl-group">ATTACK TIME: {dxAttack} ms
+                    <input
+                      type="range"
+                      min={0}
+                      max={20}
+                      value={dxAttack}
+                      onChange={(e) => updateParam("dxAttack", Number(e.target.value), setDxAttack)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DECAY TIME: {dxDecay}%
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={dxDecay}
+                      onChange={(e) => updateParam("dxDecay", Number(e.target.value), setDxDecay)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* SURGE XT */}
+              {activeEngine === "surge_xt" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">WAVETABLE TABLE :
+                    <select
+                      value={surgeWavetable}
+                      onChange={(e) => updateParam("surgeWavetable", e.target.value, setSurgeWavetable)}
+                    >
+                      <option value="Acid-Wav">Acid-Wav Sweep</option>
+                      <option value="Basic Vector">Basic Vector</option>
+                      <option value="Digital Bell">Digital Bell Table</option>
+                      <option value="Vocal Formant">Vocal Formant</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">MORPH SCAN: {surgeMorph}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={surgeMorph}
+                      onChange={(e) => updateParam("surgeMorph", Number(e.target.value), setSurgeMorph)}
+                    />
+                  </label>
+                  <label className="ctrl-group">FILTER CUTOFF: {surgeCutoff} Hz
+                    <input
+                      type="range"
+                      min={200}
+                      max={8000}
+                      value={surgeCutoff}
+                      onChange={(e) => updateParam("surgeCutoff", Number(e.target.value), setSurgeCutoff)}
+                    />
+                  </label>
+                  <label className="ctrl-group">RESONANCE: {surgeReso}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={surgeReso}
+                      onChange={(e) => updateParam("surgeReso", Number(e.target.value), setSurgeReso)}
+                    />
+                  </label>
+                  <label className="ctrl-group">SUB OSC LEVEL: {surgeSub}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={surgeSub}
+                      onChange={(e) => updateParam("surgeSub", Number(e.target.value), setSurgeSub)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DRIVE BOOST: {surgeDrive}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={surgeDrive}
+                      onChange={(e) => updateParam("surgeDrive", Number(e.target.value), setSurgeDrive)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* ZYNADDSUBFX */}
+              {activeEngine === "zynaddsubfx" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">HARMONICS COUNT: {zynHarmonics}
+                    <input
+                      type="range"
+                      min={1}
+                      max={32}
+                      value={zynHarmonics}
+                      onChange={(e) => updateParam("zynHarmonics", Number(e.target.value), setZynHarmonics)}
+                    />
+                  </label>
+                  <label className="ctrl-group">BANDWIDTH: {zynBandwidth}%
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={zynBandwidth}
+                      onChange={(e) => updateParam("zynBandwidth", Number(e.target.value), setZynBandwidth)}
+                    />
+                  </label>
+                  <label className="ctrl-group">SUB BOOST: {zynSubBoost}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={zynSubBoost}
+                      onChange={(e) => updateParam("zynSubBoost", Number(e.target.value), setZynSubBoost)}
+                    />
+                  </label>
+                  <label className="ctrl-group">FILTER TYPE :
+                    <select
+                      value={zynFilterType}
+                      onChange={(e) => updateParam("zynFilterType", e.target.value, setZynFilterType)}
+                    >
+                      <option value="lowpass">Lowpass 24dB</option>
+                      <option value="bandpass">Bandpass Resonant</option>
+                      <option value="highpass">Highpass Notch</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">RESO PEAK: {zynReso}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={zynReso}
+                      onChange={(e) => updateParam("zynReso", Number(e.target.value), setZynReso)}
+                    />
+                  </label>
+                  <label className="ctrl-group">REVERB SEND: {zynReverbSend}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={zynReverbSend}
+                      onChange={(e) => updateParam("zynReverbSend", Number(e.target.value), setZynReverbSend)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* HELM */}
+              {activeEngine === "helm" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">CROSSMOD: {helmCrossmod}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={helmCrossmod}
+                      onChange={(e) => updateParam("helmCrossmod", Number(e.target.value), setHelmCrossmod)}
+                    />
+                  </label>
+                  <label className="ctrl-group">FILTER CUTOFF: {helmCutoff} Hz
+                    <input
+                      type="range"
+                      min={200}
+                      max={8000}
+                      value={helmCutoff}
+                      onChange={(e) => updateParam("helmCutoff", Number(e.target.value), setHelmCutoff)}
+                    />
+                  </label>
+                  <label className="ctrl-group">LFO SPEED: {helmLfoSpeed} Hz
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={20}
+                      step={0.1}
+                      value={helmLfoSpeed}
+                      onChange={(e) => updateParam("helmLfoSpeed", Number(e.target.value), setHelmLfoSpeed)}
+                    />
+                  </label>
+                  <label className="ctrl-group">SUB OCTAVE: {helmSubOct}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={helmSubOct}
+                      onChange={(e) => updateParam("helmSubOct", Number(e.target.value), setHelmSubOct)}
+                    />
+                  </label>
+                  <label className="ctrl-group">REVERB WET: {helmReverb}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={helmReverb}
+                      onChange={(e) => updateParam("helmReverb", Number(e.target.value), setHelmReverb)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* FLUIDSYNTH SF2 */}
+              {activeEngine === "fluidsynth" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">SOUNDFONT PRESET :
+                    <select
+                      value={fluidPreset}
+                      onChange={(e) => updateParam("fluidPreset", e.target.value, setFluidPreset)}
+                    >
+                      <option value="Acoustic Grand Piano">Acoustic Grand Piano</option>
+                      <option value="Electric Piano Rhodes">Electric Piano Rhodes</option>
+                      <option value="Church Pipe Organ">Church Pipe Organ</option>
+                      <option value="Symphonic Strings">Symphonic Strings</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">REVERB LEVEL: {fluidReverb}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={fluidReverb}
+                      onChange={(e) => updateParam("fluidReverb", Number(e.target.value), setFluidReverb)}
+                    />
+                  </label>
+                  <label className="ctrl-group">CHORUS DEPTH: {fluidChorus}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={fluidChorus}
+                      onChange={(e) => updateParam("fluidChorus", Number(e.target.value), setFluidChorus)}
+                    />
+                  </label>
+                  <label className="ctrl-group">MASTER VOLUME: {fluidVolume}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={fluidVolume}
+                      onChange={(e) => updateParam("fluidVolume", Number(e.target.value), setFluidVolume)}
+                    />
+                  </label>
+                  <label className="ctrl-group">STEREO PAN: {fluidPan}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={fluidPan}
+                      onChange={(e) => updateParam("fluidPan", Number(e.target.value), setFluidPan)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* AMSYNTH */}
+              {activeEngine === "amsynth" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">PRIMARY OSC WAVE :
+                    <select
+                      value={amWave}
+                      onChange={(e) => updateParam("amWave", e.target.value, setAmWave)}
+                    >
+                      <option value="sawtooth">Sawtooth Wave</option>
+                      <option value="square">Square Wave</option>
+                      <option value="sine">Sine Wave</option>
+                      <option value="triangle">Triangle Wave</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">SUB OSC WAVE :
+                    <select
+                      value={amSubWave}
+                      onChange={(e) => updateParam("amSubWave", e.target.value, setAmSubWave)}
+                    >
+                      <option value="square">Square Sub</option>
+                      <option value="sine">Sine Sub</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">FILTER CUTOFF: {amCutoff} Hz
+                    <input
+                      type="range"
+                      min={200}
+                      max={8000}
+                      value={amCutoff}
+                      onChange={(e) => updateParam("amCutoff", Number(e.target.value), setAmCutoff)}
+                    />
+                  </label>
+                  <label className="ctrl-group">RESONANCE: {amReso}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={amReso}
+                      onChange={(e) => updateParam("amReso", Number(e.target.value), setAmReso)}
+                    />
+                  </label>
+                  <label className="ctrl-group">LFO DEPTH: {amLfoDepth}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={amLfoDepth}
+                      onChange={(e) => updateParam("amLfoDepth", Number(e.target.value), setAmLfoDepth)}
+                    />
+                  </label>
+                  <label className="ctrl-group">AMP DECAY: {amDecay}%
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={amDecay}
+                      onChange={(e) => updateParam("amDecay", Number(e.target.value), setAmDecay)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* AMY C/JS */}
+              {activeEngine === "amy_engine" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">PARTIAL COUNT: {amyPartialCount}
+                    <input
+                      type="range"
+                      min={4}
+                      max={64}
+                      value={amyPartialCount}
+                      onChange={(e) => updateParam("amyPartialCount", Number(e.target.value), setAmyPartialCount)}
+                    />
+                  </label>
+                  <label className="ctrl-group">SPECTRAL SLOPE: {amySlope}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={amySlope}
+                      onChange={(e) => updateParam("amySlope", Number(e.target.value), setAmySlope)}
+                    />
+                  </label>
+                  <label className="ctrl-group">PARTIAL SPREAD: {amySpread}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={amySpread}
+                      onChange={(e) => updateParam("amySpread", Number(e.target.value), setAmySpread)}
+                    />
+                  </label>
+                  <label className="ctrl-group">FEEDBACK LOOP: {amyFeedback}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={amyFeedback}
+                      onChange={(e) => updateParam("amyFeedback", Number(e.target.value), setAmyFeedback)}
+                    />
+                  </label>
+                  <label className="ctrl-group">CHIPTUNE NOISE: {amyNoise}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={amyNoise}
+                      onChange={(e) => updateParam("amyNoise", Number(e.target.value), setAmyNoise)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* PL_SYNTH 8-BIT */}
+              {activeEngine === "pl_synth" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">BITCRUSH DEPTH: {plBitcrush} Bits
+                    <input
+                      type="range"
+                      min={1}
+                      max={16}
+                      value={plBitcrush}
+                      onChange={(e) => updateParam("plBitcrush", Number(e.target.value), setPlBitcrush)}
+                    />
+                  </label>
+                  <label className="ctrl-group">SAMPLE RATE DIVIDE: /{plSampleRateDiv}
+                    <input
+                      type="range"
+                      min={1}
+                      max={8}
+                      value={plSampleRateDiv}
+                      onChange={(e) => updateParam("plSampleRateDiv", Number(e.target.value), setPlSampleRateDiv)}
+                    />
+                  </label>
+                  <label className="ctrl-group">ARP SPEED: {plArpSpeed}
+                    <input
+                      type="range"
+                      min={1}
+                      max={24}
+                      value={plArpSpeed}
+                      onChange={(e) => updateParam("plArpSpeed", Number(e.target.value), setPlArpSpeed)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DUTY CYCLE: {plDutyCycle}%
+                    <input
+                      type="range"
+                      min={10}
+                      max={90}
+                      value={plDutyCycle}
+                      onChange={(e) => updateParam("plDutyCycle", Number(e.target.value), setPlDutyCycle)}
+                    />
+                  </label>
+                  <label className="ctrl-group">GLITCH FX: {plGlitch}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={plGlitch}
+                      onChange={(e) => updateParam("plGlitch", Number(e.target.value), setPlGlitch)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* OPEN303 ACID BASS */}
+              {activeEngine === "open303" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">WAVEFORM :
+                    <select
+                      value={acidWave}
+                      onChange={(e) => updateParam("acidWave", e.target.value, setAcidWave)}
+                    >
+                      <option value="sawtooth">Sawtooth (Salami Acid)</option>
+                      <option value="square">Square (Sub Acid Punch)</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">CUTOFF BASS: {acidCutoff} Hz
+                    <input
+                      type="range"
+                      min={200}
+                      max={6000}
+                      value={acidCutoff}
+                      onChange={(e) => updateParam("acidCutoff", Number(e.target.value), setAcidCutoff)}
+                    />
+                  </label>
+                  <label className="ctrl-group">RESONANCE SWEEP: {acidResonance}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={acidResonance}
+                      onChange={(e) => updateParam("acidResonance", Number(e.target.value), setAcidResonance)}
+                    />
+                  </label>
+                  <label className="ctrl-group">ENV MOD: {acidEnvMod}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={acidEnvMod}
+                      onChange={(e) => updateParam("acidEnvMod", Number(e.target.value), setAcidEnvMod)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DECAY TIME: {acidDecay}%
+                    <input
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={acidDecay}
+                      onChange={(e) => updateParam("acidDecay", Number(e.target.value), setAcidDecay)}
+                    />
+                  </label>
+                  <label className="ctrl-group">PITCH TUNING: {acidTuning} st
+                    <input
+                      type="range"
+                      min={-12}
+                      max={12}
+                      value={acidTuning}
+                      onChange={(e) => updateParam("acidTuning", Number(e.target.value), setAcidTuning)}
+                    />
+                  </label>
+                  <label className="checkbox-ctrl">
+                    <input
+                      type="checkbox"
+                      checked={acidAccent}
+                      onChange={(e) => updateParam("acidAccent", e.target.checked, setAcidAccent)}
+                    />
+                    <span>ACCENT MODE (PUNCH)</span>
+                  </label>
+                </div>
+              )}
+
+              {/* FAUST DSP NODE */}
+              {activeEngine === "faust_dsp" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">FREQ MODULATION: {faustFreqMod}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={faustFreqMod}
+                      onChange={(e) => updateParam("faustFreqMod", Number(e.target.value), setFaustFreqMod)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DSP FILTER: {faustFilter} Hz
+                    <input
+                      type="range"
+                      min={200}
+                      max={8000}
+                      value={faustFilter}
+                      onChange={(e) => updateParam("faustFilter", Number(e.target.value), setFaustFilter)}
+                    />
+                  </label>
+                  <label className="ctrl-group">GAIN BOOST: {faustGain}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={faustGain}
+                      onChange={(e) => updateParam("faustGain", Number(e.target.value), setFaustGain)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DSP FEEDBACK: {faustFeedback}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={faustFeedback}
+                      onChange={(e) => updateParam("faustFeedback", Number(e.target.value), setFaustFeedback)}
+                    />
+                  </label>
+                  <label className="ctrl-group">WAVEFOLDER DRIVE: {faustDrive}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={faustDrive}
+                      onChange={(e) => updateParam("faustDrive", Number(e.target.value), setFaustDrive)}
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* VIRTUAL INTERACTIVE PIANO KEYBOARD BAR */}
+            <div className="virtual-piano-bar">
+              <div className="piano-bar-title">
+                <span>🎹 CLAVIER INTERACTIF (CLIQUEZ UNE TOUCHE POUR TESTER LE SON) :</span>
+              </div>
+              <div className="piano-keys-row">
+                {VIRTUAL_PIANO_KEYS.map((k) => (
+                  <button
+                    key={k.note}
+                    type="button"
+                    className={`piano-key ${k.isBlack ? "black-key" : "white-key"} ${activeKeyNote === k.note ? "key-pressed" : ""}`}
+                    onClick={() => {
+                      setActiveKeyNote(k.note);
+                      playPluginNote(k.freq);
+                      setTimeout(() => setActiveKeyNote(null), 250);
+                    }}
+                  >
+                    <span className="key-note-label">{k.note}</span>
+                    <span className="key-char-label">[{k.keyChar}]</span>
+                  </button>
+                ))}
               </div>
             </div>
-          )}
 
-          {activeEngine === "mi_clouds" && (
-            <div className="plugin-parameters-form">
-              <h3>☁️ MUTABLE INSTRUMENTS CLOUDS (GRANULAR TEXTURE SYNTHESIZER)</h3>
-              <div className="params-grid">
-                <label>GRANULAR DENSITY: {cloudsGranularDensity}%
-                  <input type="range" min={0} max={100} value={cloudsGranularDensity} onChange={(e) => setCloudsGranularDensity(Number(e.target.value))} />
-                </label>
-                <label>PITCH SHIFT (SEMITONES): {cloudsPitchShift}
-                  <input type="range" min={-12} max={12} value={cloudsPitchShift} onChange={(e) => setCloudsPitchShift(Number(e.target.value))} />
-                </label>
-                <label>TEXTURE / SMOOTHING: {cloudsTexture}%
-                  <input type="range" min={0} max={100} value={cloudsTexture} onChange={(e) => setCloudsTexture(Number(e.target.value))} />
-                </label>
-              </div>
-            </div>
-          )}
-
-          {activeEngine === "open303" && (
-            <div className="plugin-parameters-form">
-              <h3>🎛️ ROLAND TB-303 ACID BASS ENGINE</h3>
-              <div className="params-grid">
-                <label>CUTOFF BASS: {acidCutoff} Hz
-                  <input type="range" min={200} max={6000} value={acidCutoff} onChange={(e) => setAcidCutoff(Number(e.target.value))} />
-                </label>
-                <label>RESONANCE SWEEP: {acidResonance}%
-                  <input type="range" min={0} max={100} value={acidResonance} onChange={(e) => setAcidResonance(Number(e.target.value))} />
-                </label>
-                <label className="checkbox-lbl">
-                  <input type="checkbox" checked={acidAccent} onChange={(e) => setAcidAccent(e.target.checked)} />
-                  <span>ACCENT MODE (PUNCH)</span>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {activeEngine === "dexed_fm" && (
-            <div className="plugin-parameters-form">
-              <h3>🎹 DEXED FM SYNTH (YAMAHA DX7 EMULATION)</h3>
-              <div className="params-grid">
-                <label>ALGORITHME (1-32): {dxAlgorithm}
-                  <input type="range" min={1} max={32} value={dxAlgorithm} onChange={(e) => setDxAlgorithm(Number(e.target.value))} />
-                </label>
-                <label>CARRIER RATIO: {dxOp1Ratio}
-                  <input type="range" min={0.5} max={4.0} step={0.1} value={dxOp1Ratio} onChange={(e) => setDxOp1Ratio(Number(e.target.value))} />
-                </label>
-                <label>MODULATOR RATIO: {dxOp2Ratio}
-                  <input type="range" min={0.5} max={8.0} step={0.1} value={dxOp2Ratio} onChange={(e) => setDxOp2Ratio(Number(e.target.value))} />
-                </label>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* VIRTUAL PIANO KEYBOARD */}
-        <section className="plugin-piano-bar">
-          <span>JOUER LE MOTEUR EN DIRECT (CLAVIER & WEB MIDI) :</span>
-          <div className="piano-keys-row">
-            {[
-              { note: "C3", freq: 130.81, key: "C3" },
-              { note: "C#3", freq: 138.59, key: "C#3", isBlack: true },
-              { note: "D3", freq: 146.83, key: "D3" },
-              { note: "D#3", freq: 155.56, key: "D#3", isBlack: true },
-              { note: "E3", freq: 164.81, key: "E3" },
-              { note: "F3", freq: 174.61, key: "F3" },
-              { note: "F#3", freq: 185.0, key: "F#3", isBlack: true },
-              { note: "G3", freq: 196.0, key: "G3" },
-              { note: "G#3", freq: 207.65, key: "G#3", isBlack: true },
-              { note: "A3", freq: 220.0, key: "A3" },
-              { note: "A#3", freq: 233.08, key: "A#3", isBlack: true },
-              { note: "B3", freq: 246.94, key: "B3" },
-              { note: "C4", freq: 261.63, key: "C4" },
-            ].map((k) => (
-              <button
-                key={k.note}
-                type="button"
-                className={`piano-key-btn ${k.isBlack ? "black-key" : "white-key"}`}
-                onClick={() => playPluginNote(k.freq)}
-              >
-                <span>{k.key}</span>
-              </button>
-            ))}
           </div>
+
         </section>
       </div>
+
+      {/* SAVE CUSTOM PATCH MODAL */}
+      {showSaveModal && (
+        <div className="patch-modal-overlay">
+          <div className="patch-modal-card">
+            <h3>💾 ENREGISTRER LE PATCH</h3>
+            <p>Sauvegarder la configuration sonore actuelle de <strong>{activeEngine.toUpperCase()}</strong> :</p>
+            <input
+              type="text"
+              placeholder="Nom de votre patch (ex: Deep Sub Lead 1)..."
+              value={newPatchName}
+              onChange={(e) => setNewPatchName(e.target.value)}
+              className="patch-name-input"
+              autoFocus
+            />
+            <div className="modal-actions-row">
+              <button type="button" className="action-btn cancel-btn" onClick={() => setShowSaveModal(false)}>
+                ANNULER
+              </button>
+              <button type="button" className="action-btn save-btn" onClick={saveUserPatch}>
+                ENREGISTRER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toastMessage && (
         <div className="plugin-toast-overlay">

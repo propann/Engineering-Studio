@@ -10,6 +10,7 @@ import RhythmHero from "./pages/RhythmHero";
 import ImageEditorOP1 from "./pages/ImageEditorOP1";
 import FirmwareGallery from "./pages/FirmwareGallery";
 import FirmwareCompiler from "./pages/FirmwareCompiler";
+import FirmwareLab from "./pages/FirmwareLab";
 import ThemeEditor from "./pages/ThemeEditor";
 import ThemeProjectEditor from "./pages/ThemeProjectEditor";
 import AdvancedImageEditor from "./pages/AdvancedImageEditor";
@@ -31,6 +32,7 @@ type Page =
   | "studio-op1"
   | "rhythm-hero" 
   | "image-editor-op1" 
+  | "firmware-lab"
   | "firmware-gallery" 
   | "firmware-compiler"
   | "theme-editor" 
@@ -67,14 +69,12 @@ export function App() {
       return <RhythmHero />;
     case "image-editor-op1":
       return <ImageEditorOP1 />;
+    case "firmware-lab":
     case "firmware-gallery":
-      return <FirmwareGallery />;
     case "firmware-compiler":
-      return <FirmwareCompiler />;
     case "theme-editor":
-      return <ThemeEditor />;
     case "theme-project":
-      return <ThemeProjectEditor />;
+      return <FirmwareLab />;
     case "advanced-image":
       return <AdvancedImageEditor />;
     case "sound-editor":

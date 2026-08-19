@@ -67,10 +67,19 @@ export default function ToolsHub(){
  function openTool(tool:Tool){
   if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
   if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
-  if(tool.id==="pattern" || tool.id==="machine-test"){(window as any).navigateMaquette("studio-ep133");return}
+  if(tool.id==="machine-test"){
+   window.history.replaceState(null, '', '?hubTool=machine-test');
+   (window as any).navigateMaquette("studio-ep133");
+   return;
+  }
+  if(tool.id==="pattern"){
+   window.history.replaceState(null, '', window.location.pathname);
+   (window as any).navigateMaquette("studio-ep133");
+   return;
+  }
   if(tool.id==="services" || tool.id==="op1-backup" || tool.id==="tape"){(window as any).navigateMaquette("studio-op1");return}
   if(tool.id==="image"){(window as any).navigateMaquette("image-editor-op1");return}
-  if(tool.id==="firmware"){(window as any).navigateMaquette("firmware-gallery");return}
+  if(tool.id==="firmware"){(window as any).navigateMaquette("firmware-lab");return}
   if(tool.id==="rhythm"){(window as any).navigateMaquette("rhythm-hero");return}
   if(tool.id==="op1-exercise"){(window as any).navigateMaquette("exercises");return}
   if(tool.id==="sample" || tool.id==="tape" || tool.id==="sounds"){(window as any).navigateMaquette("sound-editor");return}
@@ -89,33 +98,92 @@ export default function ToolsHub(){
   <TopBar activePage="outils" profileName={profileName} onDocClick={()=>setShowDocs(!showDocs)}/>
   <section className="tools-section-organized" aria-label="Outils organisés">
    <div className="utility-grid">
-    {/* === HAUT === */}
-    <button
-     className="utility-card op1-studio-card"
+    {/* === HAUT : CARTE MACHINE OP-1 === */}
+    <div
+     className="utility-card machine-image-card op1-studio-card"
      onClick={()=>{
+      window.history.replaceState(null, '', window.location.pathname);
       (window as any).navigateMaquette("studio-op1");
      }}
      title="Ouvrir OP-1 Studio"
     >
-     <span>OP1</span>
-     <ToolGraphic type="chip"/>
-     <small>MACHINE</small>
+     <div className="machine-header-tag">
+      <span>OP-1</span>
+      <small>TEENAGE ENGINEERING</small>
+     </div>
+     <div className="machine-image-wrapper">
+      <img
+       src="/media/op1.jpeg"
+       alt="OP-1 Machine"
+       className="machine-card-image"
+       referrerPolicy="no-referrer"
+      />
+     </div>
      <h3>🎹 OP-1 Studio</h3>
-     <p>Tous les outils pour créer, éditer et gérer vos projets OP-1.</p>
-     <div className="tool-status">OUVRIR →</div>
-    </button>
-    <button
-     className="utility-studio-card ep133-studio-card"
+     <p>Tous les outils pour créer, éditer et gérer vos projets OP-1 (Synth, Tape, Drum & Backup).</p>
+     <div className="machine-card-actions">
+      <button
+       className="machine-btn op1-btn"
+       onClick={(e)=>{
+        e.stopPropagation();
+        window.history.replaceState(null, '', window.location.pathname);
+        (window as any).navigateMaquette("studio-op1");
+       }}
+      >
+       OUVRIR STUDIO OP-1 →
+      </button>
+     </div>
+    </div>
+
+    {/* === HAUT : CARTE MACHINE EP-133 === */}
+    <div
+     className="utility-card machine-image-card ep133-studio-card"
      onClick={()=>{
+      window.history.replaceState(null, '', window.location.pathname);
       (window as any).navigateMaquette("studio-ep133");
      }}
      title="Ouvrir EP-133 Studio"
     >
-     <span>KO2</span>
-     <ToolGraphic type="pads"/>
-     <small>MACHINE</small>
+     <div className="machine-header-tag">
+      <span>K.O. II</span>
+      <small>TEENAGE ENGINEERING</small>
+     </div>
+     <div className="machine-image-wrapper">
+      <img
+       src="/media/ep133.jpeg"
+       alt="EP-133 K.O. II Machine"
+       className="machine-card-image"
+       referrerPolicy="no-referrer"
+      />
+     </div>
      <h3>🥁 EP-133 Studio</h3>
      <p>Tous les outils pour composer, performer et contrôler votre EP-133.</p>
+     <div className="machine-card-actions">
+      <button
+       className="machine-btn ep133-btn primary"
+       onClick={(e)=>{
+        e.stopPropagation();
+        window.history.replaceState(null, '', window.location.pathname);
+        (window as any).navigateMaquette("studio-ep133");
+       }}
+      >
+       OUVRIR STUDIO EP-133 →
+      </button>
+     </div>
+    </div>
+    <button
+     className="utility-card firmware-card"
+     onClick={()=>{
+      (window as any).navigateMaquette("firmware-gallery");
+     }}
+     title="Ouvrir le Firmware Lab & Compilateur OS OP-1"
+     style={{ borderTop: "4px solid #ff3a5d" }}
+    >
+     <span>FW-LAB</span>
+     <ToolGraphic type="chip"/>
+     <small>MODS & OS OP-1</small>
+     <h3>⚙️ Firmware Lab & Compilateur</h3>
+     <p>Catalogue, vérification, thèmes, patchs graphiques et préparation de firmwares OP-1.</p>
      <div className="tool-status">OUVRIR →</div>
     </button>
     <button

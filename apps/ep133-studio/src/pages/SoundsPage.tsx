@@ -283,12 +283,20 @@ export function SoundsPage({ machineName, machineCapacityMb, inventory, soundInd
   };
 
   const previewPerso = async (entry: LocalEntry & { kind: 'file' }) => {
-    if (playingName === entry.name) { audioRef.current?.pause(); setPlayingName(null); return; }
+    if (playingName === entry.name) {
+      if (audioRef.current) { try { audioRef.current.pause(); } catch {} }
+      setPlayingName(null);
+      return;
+    }
     const file = await entry.handle.getFile();
     if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
     const url = URL.createObjectURL(file);
     objectUrlRef.current = url;
-    if (audioRef.current) { audioRef.current.src = url; void audioRef.current.play(); }
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+      audioRef.current.src = url;
+      audioRef.current.play().catch(() => {});
+    }
     setPlayingName(entry.name);
     void ensureAudioReport(entry.name, file);
   };

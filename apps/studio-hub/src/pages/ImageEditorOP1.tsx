@@ -186,6 +186,7 @@ export type ToolType =
 
 export default function ImageEditorOP1() {
   const [profileName, setProfileName] = useState("AZOTH");
+  const [notice, setNotice] = useState<string>("");
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -866,14 +867,35 @@ export default function ImageEditorOP1() {
     }
   };
 
-  // Export PNG
+  // Export PNG & Sync Dossier Commun
   const exportPNG = () => {
     const canvas = mainCanvasRef.current;
     if (!canvas) return;
+    const dataUrl = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = `op1-screen-${Date.now()}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.href = dataUrl;
     link.click();
+
+    // Enregistrer dans le Dossier Commun partagé avec le Firmware Lab
+    try {
+      const raw = localStorage.getItem("op1-shared-drawings");
+      const currentDrawings = raw ? JSON.parse(raw) : [];
+      const asset = FIRMWARE_ASSETS[selectedAssetIndex];
+      const newDrawing = {
+        id: `draw-${Date.now()}`,
+        title: `Dessin ${asset?.name || "OP-1"} (${new Date().toLocaleTimeString()})`,
+        category: asset?.category || "system",
+        svgContent: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg"><image href="${dataUrl}" width="320" height="160"/></svg>`,
+        updatedAt: new Date().toISOString(),
+        appliedToAsset: asset?.file || "custom.svg"
+      };
+      const updated = [newDrawing, ...currentDrawings];
+      localStorage.setItem("op1-shared-drawings", JSON.stringify(updated));
+      setNotice("💾 Dessin sauvegardé dans le Dossier Commun (Lab Firmware) !");
+    } catch (e) {
+      console.warn("Erreur sauvegarde dossier commun:", e);
+    }
   };
 
   return (

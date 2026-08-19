@@ -18,6 +18,7 @@ import { StudioModeHeader } from "./components/StudioModeHeader";
 import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
+import { StudioTrackList } from "./components/StudioTrackList";
 import { StudioTransportPanel } from "./components/StudioTransportPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
@@ -47,13 +48,13 @@ function hubReturnUrl() {
 }
 
 function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
-  if (typeof window === "undefined") return { tool: null, homeOpen: true };
+  if (typeof window === "undefined") return { tool: "tape", homeOpen: false };
   const requested = new URLSearchParams(window.location.search).get("hubTool");
   if (requested === "firmware") return { tool: null, homeOpen: false };
   const tools: ToolWindow[] = ["exercise", "editor", "backups", "sounds", "services", "tape"];
   return tools.includes(requested as ToolWindow)
     ? { tool: requested as ToolWindow, homeOpen: false }
-    : { tool: null, homeOpen: true };
+    : { tool: "tape", homeOpen: false };
 }
 
 const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -395,7 +396,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [looping, setLooping] = useState(false);
   const [reversed, setReversed] = useState(false);
   const [screenFolded, setScreenFolded] = useState(false);
-  const [keyboardFolded] = useState(false);
+  const [keyboardFolded, setKeyboardFolded] = useState(false);
+  const [selectedEngine, setSelectedEngine] = useState<string>("FM");
+  const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -449,7 +452,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     };
     void request().then((access) => {
       if (disposed) return;
-      inputs = [...access.inputs.values()].filter((port) => port.name?.toUpperCase().includes("OP-1"));
+      inputs = [...access.inputs.values()];
       inputs.forEach((port) => { port.onmidimessage = handler; });
     }).catch(() => undefined);
     return () => {
@@ -515,7 +518,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const request = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
     if (!request) return;
     const access = await request();
-    const inputs = [...access.inputs.values()].filter((port) => port.name?.toUpperCase().includes("OP-1"));
+    const inputs = [...access.inputs.values()];
     const input = inputs[0];
     if (!input) return;
     setMidiNotes(0);
@@ -529,39 +532,92 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     setRecording(true);
     onNotice("Capture MIDI active : les notes de l’OP-1 sont comptées dans le projet local.");
   }
+  const [masterVolume, setMasterVolume] = useState(0.85);
   const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
 
   useEffect(() => {
-    Object.entries(audioRefs.current).forEach(([index, audio]) => { if (audio) audio.volume = gains[Number(index)] ?? 1; });
-  }, [gains]);
+    Object.entries(audioRefs.current).forEach(([index, audio]) => { if (audio) audio.volume = (gains[Number(index)] ?? 1) * masterVolume; });
+  }, [gains, masterVolume]);
 
   useEffect(() => {
     if (!transportPlaying) return;
     let frame = 0;
     const process = () => {
-      Object.entries(audioRefs.current).forEach(([rawIndex, audio]) => { if (!audio) return; const index = Number(rawIndex); const end = clipEnds[index] ?? durations[index] ?? 360; const fadeIn = fadeIns[index] ?? 0; const fadeOut = fadeOuts[index] ?? 0; if (audio.currentTime >= end) { audio.pause(); audio.currentTime = end; } let level = gains[index] ?? 1; if (fadeIn > 0 && audio.currentTime < fadeIn) level *= audio.currentTime / fadeIn; if (fadeOut > 0 && audio.currentTime > end - fadeOut) level *= Math.max(0, (end - audio.currentTime) / fadeOut); audio.volume = Math.max(0, Math.min(1, level)); });
+      Object.entries(audioRefs.current).forEach(([rawIndex, audio]) => {
+        if (!audio) return;
+        const index = Number(rawIndex);
+        const rawEnd = clipEnds[index] ?? durations[index];
+        const end = (rawEnd && rawEnd > 0) ? rawEnd : 360;
+        const fadeIn = fadeIns[index] ?? 0;
+        const fadeOut = fadeOuts[index] ?? 0;
+
+        if (audio.currentTime >= end) {
+          if (looping) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+          } else {
+            try { audio.pause(); } catch {}
+          }
+        }
+
+        let level = (gains[index] ?? 1) * masterVolume;
+        if (fadeIn > 0 && audio.currentTime < fadeIn) level *= audio.currentTime / fadeIn;
+        if (fadeOut > 0 && audio.currentTime > end - fadeOut) level *= Math.max(0, (end - audio.currentTime) / fadeOut);
+        audio.volume = Math.max(0, Math.min(1, level));
+      });
       frame = window.requestAnimationFrame(process);
     };
     frame = window.requestAnimationFrame(process);
     return () => window.cancelAnimationFrame(frame);
-  }, [clipEnds, durations, fadeIns, fadeOuts, gains, transportPlaying]);
+  }, [clipEnds, durations, fadeIns, fadeOuts, gains, looping, masterVolume, transportPlaying]);
 
   useEffect(() => {
     if (!transportPlaying) return;
     let frame = 0;
+    let lastTime = performance.now();
+
     const sync = () => {
-      const master = audioRefs.current[0] ?? Object.values(audioRefs.current).find((audio): audio is HTMLAudioElement => Boolean(audio));
-      if (master) setTransportTime(Math.min(360, master.currentTime));
-      else setTransportTime((current) => Math.min(360, current + 1 / 60));
+      const now = performance.now();
+      const deltaSec = (now - lastTime) / 1000;
+      lastTime = now;
+
+      const activeAudio = Object.values(audioRefs.current).find(
+        (audio): audio is HTMLAudioElement => Boolean(audio && !audio.paused && audio.currentTime > 0)
+      );
+
+      if (activeAudio) {
+        setTransportTime(Math.min(360, activeAudio.currentTime));
+      } else {
+        setTransportTime((current) => {
+          const next = current + deltaSec;
+          if (next >= 360) {
+            if (looping) {
+              Object.values(audioRefs.current).forEach((audio) => {
+                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+              });
+              return 0;
+            } else {
+              setTransportPlaying(false);
+              return 360;
+            }
+          }
+          return next;
+        });
+      }
       frame = window.requestAnimationFrame(sync);
     };
+
     frame = window.requestAnimationFrame(sync);
     return () => window.cancelAnimationFrame(frame);
-  }, [transportPlaying]);
+  }, [looping, transportPlaying]);
 
   const toggleGlobalPlayback = useCallback(() => {
     if (transportPlaying) {
-      Object.values(audioRefs.current).forEach((audio) => audio?.pause());
+      Object.values(audioRefs.current).forEach((audio) => {
+        if (audio) {
+          try { audio.pause(); } catch {}
+        }
+      });
       midiTimersRef.current.forEach((timer) => window.clearTimeout(timer));
       midiTimersRef.current = [];
       // Relâche visuellement les touches encore actives si on coupe la lecture en cours de route.
@@ -571,7 +627,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     }
     const loaded = Object.values(audioRefs.current).filter((audio): audio is HTMLAudioElement => Boolean(audio));
     // Le transport avance aussi avec des pistes vides pour tester le workflow Tape.
-    loaded.forEach((audio) => { audio.currentTime = transportTime < audio.duration ? transportTime : 0; void audio.play(); });
+    loaded.forEach((audio) => {
+      audio.currentTime = transportTime < audio.duration ? transportTime : 0;
+      audio.play().catch(() => {});
+    });
     midiEvents.forEach((event) => {
       const delay = Math.max(0, (event.time - transportTime) * 1000);
       const timer = window.setTimeout(() => {
@@ -585,6 +644,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     });
     setTransportPlaying(true);
   }, [midiEvents, onSendMidi, transportPlaying, transportTime]);
+
+  // Raccourci barre d'espace pour lancer / mettre en pause la lecture
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const isInput = active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA" || active.tagName === "SELECT" || (active as HTMLElement).isContentEditable);
+      if (e.code === "Space" && !isInput) {
+        e.preventDefault();
+        toggleGlobalPlayback();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleGlobalPlayback]);
 
   useEffect(() => {
     const onHubTransport = (event: Event) => {
@@ -683,11 +756,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       return;
     }
     if (playing === index) {
-      audio.pause();
+      try { audio.pause(); } catch {}
       setPlaying(null);
     } else {
-      Object.values(audioRefs.current).forEach((item) => item?.pause());
-      void audio.play();
+      Object.values(audioRefs.current).forEach((item) => {
+        if (item) {
+          try { item.pause(); } catch {}
+        }
+      });
+      audio.play().catch(() => {});
       setPlaying(index);
     }
   }
@@ -711,7 +788,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
           <span>{screenFolded ? "▶ Écran" : "◀ Replier écran"}</span>
         </button>
 
-        {/* Contenu quand déplié : SVG tape editor */}
+        {/* Contenu quand déplié : SVG tape editor (Écran OLED seulement) */}
         {!screenFolded && (
           <StudioTapeEditor
             tracks={tracks}
@@ -729,6 +806,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             position={transportTime}
             transportPlaying={transportPlaying}
             looping={looping}
+            volume={masterVolume}
+            onVolumeChange={setMasterVolume}
             audioRefs={audioRefs}
             onFileLoad={(index, file) => {
               setFiles({ ...files, [index]: file.name });
@@ -750,10 +829,33 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
           />
         )}
 
-        {/* Contenu quand replié : réglages affichage */}
+        {/* Contenu quand replié : réglages affichage & gestion de fichiers */}
         {screenFolded && (
-          <div className="panel-settings display-settings">
-            <h3>Réglages affichage</h3>
+          <div className="panel-settings display-settings" style={{ padding: "16px", background: "#f5f6f4", borderRadius: "8px", border: "1px solid #dcdfdc" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "1px solid #e0e3e0", paddingBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{ fontSize: "13px", fontWeight: "bold", color: "#202326" }}>ÉCRAN OP-1 REPLIÉ · GESTION DU STUDIO & FICHIERS</span>
+              </div>
+              <button
+                className="primary-action"
+                style={{
+                  fontSize: "12px",
+                  padding: "8px 16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "#267c65",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: "bold"
+                }}
+                onClick={() => setScreenFolded(false)}
+              >
+                ▲ Remettre / Déplier l'écran OLED
+              </button>
+            </div>
 
             {trimTrack !== null && (
               <TrackEditControls
@@ -784,13 +886,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
               onImport={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")}
             />
 
-            <div className="studio-render-actions">
+            <div className="studio-render-actions" style={{ marginTop: "12px" }}>
               <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV</button><small>Mixe les pistes.</small></div>
               <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Stems</button><small>Un AIFF mono par piste.</small></div>
               <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Album</button><small>Deux faces AIFF + manifeste.</small></div>
             </div>
 
-            <div className="tape-import-note">
+            <div className="tape-import-note" style={{ marginTop: "10px" }}>
               <Icon name="shield" size={14} />
               <span><small>Le clone prépare les pistes dans tape/. Copie vers OP-1 après sauvegarde et éjection.</small></span>
             </div>
@@ -798,50 +900,182 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
         )}
       </div>
 
-      {/* ── Panneau Clavier (escamotable) ── */}
+      {/* ── Panneau Clavier (escamotable & déroulant) ── */}
       <div className="studio-slide-panel studio-keyboard-panel">
         <button
           className="slide-panel-toggle"
           type="button"
-          disabled
-          title="Clavier Studio visible"
+          onClick={() => setKeyboardFolded(!keyboardFolded)}
+          title={keyboardFolded ? "Déplier le clavier" : "Replier le clavier"}
         >
-          <span>▼ Clavier Studio</span>
+          <span>{keyboardFolded ? "▶ Déplier Clavier Studio" : "▼ Replier Clavier Studio"}</span>
         </button>
 
         {/* Contenu quand déplié : clone clavier */}
-        <StudioMachinePanel
-          pressedNotes={pressedMidiNotes}
-          mode={studioMode}
-          playing={transportPlaying}
-          position={transportTime}
-          files={files}
-          onTogglePlayback={toggleGlobalPlayback}
-          onSendMidi={onSendMidi}
-          lastRawMidiIn={lastRawMidiIn}
-        />
+        {!keyboardFolded && (
+          <StudioMachinePanel
+            pressedNotes={pressedMidiNotes}
+            mode={studioMode}
+            playing={transportPlaying}
+            position={transportTime}
+            files={files}
+            onTogglePlayback={toggleGlobalPlayback}
+            onSendMidi={onSendMidi}
+            lastRawMidiIn={lastRawMidiIn}
+          />
+        )}
 
-        {/* Contenu quand replié : réglages clavier */}
-        {keyboardFolded && (
-          <div className="panel-settings keyboard-settings">
-            <h3>Réglages clavier</h3>
-            <div className="settings-row">
-              <label>Mode</label>
-              <select value={studioMode} onChange={(e) => setStudioMode(e.target.value as "clone" | "midi")}>
-                <option value="clone">Clone local</option>
-                <option value="midi">MIDI externe</option>
-              </select>
+        {/* ── CONTROLES MULTI-PISTES ET SELECTION DES SONS SOUS LE CLAVIER ── */}
+        <div style={{ marginTop: "16px", padding: "16px", background: "linear-gradient(145deg, #f3f4f1, #e8eae6)", borderRadius: "10px", border: "1px solid #c9ccc7" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", padding: "0 4px" }}>
+            <span style={{ fontSize: "12px", fontWeight: "bold", letterSpacing: "0.05em", color: "#1f6250" }}>ÉDITEUR MULTI-PISTES & FICHIERS AUDIO (PISTES 1 À 4)</span>
+            <span style={{ fontSize: "10px", color: "#546e64" }}>Glisser-déposer les fichiers audio ou faire glisser les clips pour éditer</span>
+          </div>
+          <StudioTrackList
+            Icon={Icon}
+            tracks={tracks}
+            files={files}
+            sources={sources}
+            sourceRefs={sourceRefs}
+            waveformPeaks={waveformPeaks}
+            clipOffsets={clipOffsets}
+            clipEnds={clipEnds}
+            durations={durations}
+            muted={muted}
+            solo={solo}
+            playing={playing}
+            selectedTrack={selectedTrack}
+            audioRefs={audioRefs}
+            onFileLoad={(index, file) => {
+              setFiles({ ...files, [index]: file.name });
+              setSourceRefs({ ...sourceRefs, [index]: { path: file.name, status: "linked" } });
+              setSources({ ...sources, [index]: URL.createObjectURL(file) });
+              setDurations({ ...durations, [index]: 0 });
+              setSelectedTrack(index);
+              onNotice(`${tracks[index]} chargée localement.`);
+            }}
+            onTogglePlay={togglePlay}
+            onSoloChange={(index) => setSolo(solo === index ? null : index)}
+            onMuteChange={(index) => setMuted({ ...muted, [index]: !muted[index] })}
+            onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))}
+            onTrackEnd={() => { setPlaying(null); }}
+            onOffsetChange={(index, offset) => setClipOffsets((current) => ({ ...current, [index]: offset }))}
+            onSelectTrack={setSelectedTrack}
+          />
+        </div>
+
+        {/* Sélection des sons, moteurs sonores & samples sous le clavier */}
+        <div className="studio-sound-selection-area" style={{ marginTop: "16px", padding: "16px", background: "linear-gradient(145deg, #1d2126, #14171a)", borderRadius: "10px", color: "#e2e8f0", border: "1px solid #333a42" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid #2d343c", paddingBottom: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Icon name="wave" size={18} />
+              <span style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "0.05em", color: "#29be87" }}>
+                SÉLECTION DES SONS & MOTEURS SONORES OP-1
+              </span>
             </div>
-            <div className="settings-row">
-              <label>Tempo</label>
-              <input type="number" min="40" max="200" value={tempo} onChange={(e) => setTempo(Number(e.target.value))} /> BPM
-            </div>
-            <div className="settings-row">
-              <label>Boucle</label>
-              <button className={`track-state${looping ? " is-active" : ""}`} onClick={() => setLooping(!looping)}>LOOP</button>
+            <span style={{ fontSize: "11px", opacity: 0.7 }}>Moteurs & banque de patchs intégrés</span>
+          </div>
+
+          {/* Sélection du Moteur Sonore */}
+          <div style={{ marginBottom: "14px" }}>
+            <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.6, display: "block", marginBottom: "6px" }}>
+              Moteurs Sonores (Synth & Drum Engines)
+            </label>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"].map((engine) => (
+                <button
+                  key={engine}
+                  onClick={() => {
+                    setSelectedEngine(engine);
+                    onNotice(`Moteur sonore sélectionné : ${engine}`);
+                  }}
+                  style={{
+                    padding: "5px 12px",
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    borderRadius: "5px",
+                    border: selectedEngine === engine ? "1px solid #29be87" : "1px solid #2b3138",
+                    background: selectedEngine === engine ? "#29be87" : "#1a1e23",
+                    color: selectedEngine === engine ? "#0f1215" : "#cbd5e1",
+                    cursor: "pointer",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  {engine}
+                </button>
+              ))}
             </div>
           </div>
-        )}
+
+          {/* Catégories de Sons & Presets */}
+          <div style={{ marginBottom: "14px" }}>
+            <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.6, display: "block", marginBottom: "6px" }}>
+              Catégorie de Patch
+            </label>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {["Synth", "Drum", "Bass", "Lead", "Pad", "Keys", "FX"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedSoundCategory(cat)}
+                  style={{
+                    padding: "4px 10px",
+                    fontSize: "11px",
+                    borderRadius: "4px",
+                    border: selectedSoundCategory === cat ? "1px solid #4cace1" : "1px solid #2b3138",
+                    background: selectedSoundCategory === cat ? "rgba(76, 172, 225, 0.2)" : "#181c20",
+                    color: selectedSoundCategory === cat ? "#4cace1" : "#94a3b8",
+                    cursor: "pointer"
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Liste des Presets du Moteur Sélectionné */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "8px" }}>
+            {[
+              { name: `${selectedEngine} Classic 01`, category: selectedSoundCategory },
+              { name: `${selectedEngine} Deep Sub`, category: "Bass" },
+              { name: `${selectedEngine} Soft Ambient`, category: "Pad" },
+              { name: `${selectedEngine} Punchy Lead`, category: "Lead" },
+            ].map((preset, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: "8px 10px",
+                  background: "#181b1f",
+                  border: "1px solid #2b3036",
+                  borderRadius: "6px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <div>
+                  <strong style={{ display: "block", fontSize: "12px", color: "#f1f5f9" }}>{preset.name}</strong>
+                  <small style={{ fontSize: "10px", color: "#64748b" }}>{selectedEngine} · {preset.category}</small>
+                </div>
+                <button
+                  onClick={() => onNotice(`Patch "${preset.name}" chargé sur l'OP-1 !`)}
+                  style={{
+                    padding: "3px 8px",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    background: "#29be87",
+                    color: "#0f1215",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer"
+                  }}
+                >
+                  LOAD
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1083,294 +1317,21 @@ export default function Home() {
 
 
   return (
-    <main className="site-canvas">
-      <section className="machine-shell" aria-label="OP-1 Studio" data-op1-hydrated={isHydrated ? "true" : undefined}>
-        <header className="machine-strip">
-          <div className="brand-block">
-            <span className="speaker-mark" aria-hidden="true">{Array.from({ length: 16 }).map((_, index) => <i key={index} />)}</span>
-            <div><strong>OP-1</strong><span>STUDIO</span></div>
-          </div>
-
-          <div className="mini-screen" aria-label="État du système">
-            <span className="screen-kicker">FIRMWARE CONTROL</span>
-            <strong>{deviceName ? "OP-1 CONNECTÉ" : "NO DEVICE"}</strong>
-            <div className="screen-wave" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
-          </div>
-
-          <div className="knob-group" aria-label="Codes couleur de progression">
-            <span className="knob knob-blue"><i /></span>
-            <span className="knob knob-green"><i /></span>
-            <span className="knob knob-white"><i /></span>
-            <span className="knob knob-orange"><i /></span>
-          </div>
-
-          <div className={`bridge-state ${stage > 0 ? "online" : ""}`}>
-            <span className="state-dot" />
-            <div><small>{midiConnected ? "MIDI USB" : "PONT LOCAL"}</small><strong>{midiConnected ? "CONNECTÉ" : "REQUIS"}</strong></div>
-          </div>
-        </header>
-
-        {/* Bande de navigation horizontale (feuille de route, 14 août 2026) :
-            remplace la colonne latérale pour gagner de la place à
-            l'affichage — même liste de destinations, disposée sous le
-            bandeau machine plutôt qu'à gauche du contenu. */}
-        {/* La destination actuelle n'affiche pas son propre bouton — inutile
-            d'y retourner depuis là où on est déjà, et ça libère de la place
-            sur la bande (demandé le 14 août 2026). */}
-        {(() => {
-          const currentDestination = homeOpen ? "Accueil"
-            : toolWindow === "backups" ? "Sauvegardes"
-            : toolWindow === "sounds" ? "Sons"
-            : toolWindow === "tape" ? "Studio"
-            : toolWindow === "editor" ? "Images"
-            : toolWindow === "services" ? "Services"
-            : toolWindow === null ? "Firmware"
-            : null;
-          return (
-            <nav className="nav-strip" aria-label="Navigation principale">
-              {currentDestination !== "Accueil" && (
-                <button className="nav-strip-item" onClick={() => { setHomeOpen(true); setToolWindow(null); }}>
-                  <Icon name="archive" size={16} /><span>Accueil</span>
-                </button>
-              )}
-              {nav.filter((item) => item.label !== currentDestination).map((item) => (
-                <button
-                  key={item.label}
-                  className="nav-strip-item"
-                  onClick={() => { setHomeOpen(false); if (item.label === "Sauvegardes") setToolWindow("backups"); else if (item.label === "Sons") setToolWindow("sounds"); else if (item.label === "Studio") setToolWindow("tape"); else if (item.label === "Images") setToolWindow("editor"); else if (item.label === "Services") setToolWindow("services"); else setToolWindow(null); }}
-                >
-                  <Icon name={item.icon} size={16} />
-                  <span>{item.label}</span>
-                  {!item.active && <small>BIENTÔT</small>}
-                </button>
-              ))}
-              <div className="nav-strip-spacer" />
-              <button className="nav-strip-item hub-return" onClick={returnToHub}>
-                <Icon name="archive" size={16} /><span>Hub outils</span>
-              </button>
-              <button className="nav-strip-item" onClick={() => setNotice("Les réglages restent locaux dans la version de base.")}>
-                <Icon name="settings" size={16} /><span>Réglages</span>
-              </button>
-            </nav>
-          );
-        })()}
-
-        <div className="workspace">
-
-          {homeOpen ? <HomeHub Icon={Icon} onOpen={(id) => { setHomeOpen(false); if (id === "graphics") setToolWindow("editor"); else if (id === "firmware") setToolWindow(null); else setToolWindow(id as ToolWindow); }} /> : <div className="content">
-            {notice && <div className="notice" role="status"><Icon name="shield" size={17} /><span>{notice}</span><button aria-label="Fermer" onClick={() => setNotice(null)}>×</button></div>}
-
-            <section className="library-folder" aria-labelledby="library-folder-title">
-              <div className="library-folder-icon"><Icon name="archive" size={21} /></div>
-              <div className="library-folder-copy">
-                <span className="section-label">BIBLIOTHÈQUE LOCALE</span>
-                <h2 id="library-folder-title">Firmwares, samples et sauvegardes</h2>
-                <p>{libraryFolder ? `Dossier actif : ${libraryFolder}` : "Choisissez un dossier racine pour réunir vos fichiers OP-1."}</p>
-              </div>
-              <button className="folder-action" onClick={chooseLibraryFolder}>{libraryFolder ? "Changer de dossier" : "Choisir un dossier"}</button>
-              <input ref={folderInputRef} className="visually-hidden" type="file" /* Chromium fallback */ {...({ webkitdirectory: "", directory: "" } as Record<string, string>)} onChange={(event) => {
-                const file = event.target.files?.[0];
-                const folder = file?.webkitRelativePath.split("/")[0];
-                if (folder) {
-                  setLibraryFolder(folder);
-                  setNotice(`Dossier local sélectionné : ${folder}. Les fichiers restent sur cet appareil.`);
-                }
-              }} />
-            </section>
-
-            <section className="device-overview" aria-labelledby="machine-title">
-              <div className="device-identity">
-                <div className="device-icon"><Icon name="chip" size={28} /></div>
-                <div>
-                  <span className="section-label">MACHINE DÉTECTÉE</span>
-                  <h2 id="machine-title">{stage >= 2 ? "OP‑1 original" : "En attente d’une machine"}</h2>
-                  <p>{deviceName ? "USB 2367:0004 · MIDI détecté" : "Connectez l’OP-1 en USB puis lancez la détection MIDI."}</p>
-                  <button className="backup-button" onClick={testBackupPlan}><Icon name="archive" size={14} />{backupTested ? "Plan vérifié" : "Tester la sauvegarde"}</button>
-                </div>
-              </div>
-              <div className="device-metrics">
-                <div><span>OS ACTUEL</span><strong>{stage >= 2 ? "243" : "—"}</strong></div>
-                <div><span>DERNIER OFFICIEL</span><strong>246</strong></div>
-                <div><span>BATTERIE</span><strong>{stage >= 2 ? "84%" : "—"}</strong></div>
-                <div><span>SAUVEGARDE</span><strong className={stage >= 3 ? "ok" : "warn"}>{stage >= 3 ? "VÉRIFIÉE" : "REQUISE"}</strong></div>
-              </div>
-            </section>
-
-            {/* Disposition inspirée d'op1REpackerGUI (référence UX uniquement,
-                voir docs/FIRMWARE_PAGE_UI_SPEC.md) : trois colonnes toujours
-                visibles plutôt qu'un parcours à 4 étapes à dérouler —
-                actions à gauche, mods au centre, outils secondaires à
-                droite. Logique et données inchangées, seule la disposition
-                change. */}
-            <section id="firmware-editor" className="firmware-editor-inline" aria-label="Préparer un firmware">
-              <div className="firmware-panes">
-                <div className="firmware-pane firmware-pane-actions">
-                  <div className="editor-release"><span className="section-label">FICHIER CIBLE</span><strong>OP-1 OS {recommendedFirmware.version}</strong><small>Catalogue officiel · modification désactivée</small><a className="firmware-download-button" href={officialFirmwareUrl} target="_blank" rel="noreferrer" download={`op1_${recommendedFirmware.version}.op1`}><Icon name="download" size={17} />Télécharger le firmware officiel</a></div>
-                  <label className="firmware-file-picker"><span className="section-label">FICHIER LOCAL À VÉRIFIER</span><strong>{firmwareFile ? firmwareFile.name : "Choisir un fichier .op1"}</strong><small>{firmwareFile ? `${(firmwareFile.size / 1024 / 1024).toFixed(2)} Mo · prêt pour analyse` : "Le fichier reste sur cet ordinateur."}</small><input type="file" accept=".op1,application/octet-stream" onChange={(event) => { const file = event.target.files?.[0]; if (file) setFirmwareFile({ name: file.name, size: file.size }); }} /></label>
-                  <div className="inline-editor-options">
-                    <div className="mod-section-heading"><div><span className="section-label">CONTRÔLES</span><strong>Plan sécurisé</strong></div><small>{Object.values(firmwareOptions).filter(Boolean).length}/3</small></div>
-                    {Object.entries({ verify: "Vérifier origine et CRC", backup: "Exiger une sauvegarde", teBoot: "Préparer TE-boot" }).map(([key, label]) => <label key={key}><input type="checkbox" checked={firmwareOptions[key as keyof typeof firmwareOptions]} onChange={(event) => setFirmwareOptions({ ...firmwareOptions, [key]: event.target.checked })} /><span>{label}</span></label>)}
-
-                    {/* Jauge de danger (feuille de route Firmware, 14 août 2026) :
-                        pas un mod isolé, la combinaison sélectionnée dans son
-                        ensemble — plus il y en a, et plus certains sont non
-                        classés/à risque, plus la jauge monte. */}
-                    <div className={`firmware-risk-gauge is-${firmwareRiskLevel}`} role="status">
-                      <div className="firmware-risk-gauge-head"><span>DANGER MODS</span><strong>{FIRMWARE_GAUGE_LABEL[firmwareRiskLevel]}</strong></div>
-                      <div className="firmware-risk-gauge-bar"><i style={{ width: `${Math.min(100, (firmwareRiskWeight / 12) * 100)}%` }} /></div>
-                      <small>{selectedFirmwareModList.length} mod{selectedFirmwareModList.length > 1 ? "s" : ""} sélectionné{selectedFirmwareModList.length > 1 ? "s" : ""}{selectedFirmwareModList.some((mod) => mod.risk === "unclassified") ? " · certains non classés" : ""}</small>
-                    </div>
-                    {firmwareRiskLevel === "eleve" && (
-                      <label className="firmware-risk-ack">
-                        <input type="checkbox" checked={firmwareRiskAck} onChange={(event) => setFirmwareRiskAck(event.target.checked)} />
-                        <span>Combinaison chargée ({selectedFirmwareModList.length} mods) — je confirme vouloir préparer ce plan.</span>
-                      </label>
-                    )}
-
-                    <button className="primary-action" disabled={!firmwareFile || firmwareRiskBlocked} onClick={() => { if (firmwareFile) { void notifyLocalPlan("firmware.plan", { filename: firmwareFile.name, verify: firmwareOptions.verify }); setNotice("Plan firmware préparé. Aucune écriture n’est exécutée dans le prototype."); } else setNotice("Choisissez d’abord un fichier .op1 local."); }}><Icon name="shield" />Préparer le plan</button>
-                  </div>
-                </div>
-
-                <div className="firmware-pane firmware-pane-mods">
-                  <div className="mod-section-heading"><div><span className="section-label">SOURCE_MODIFIEE + CATALOGUE COMMUNAUTAIRE</span><strong>Mods et ressources exploitables</strong></div><small>{Object.values(selectedMods).filter(Boolean).length}/{firmwareMods.length} sélectionnés</small></div>
-                  {/* Explorateur façon dossiers (feuille de route Firmware,
-                      14 août 2026) : une catégorie à la fois se déplie, sans
-                      vignette dans la liste — cliquer un mod ouvre son
-                      "cadre de simulation" (l'écran SVG réel + ses infos,
-                      voir plus bas .mod-detail-window) plutôt que d'étaler
-                      des images dans la liste elle-même. */}
-                  <div className="mod-explorer">
-                    {["Écrans", "Audio", "Ressources", "Fonctions", "Thèmes"].map((category) => {
-                      const modsInCategory = firmwareMods.filter((mod) => mod.category === category);
-                      const selectedInCategory = modsInCategory.filter((mod) => selectedMods[mod.id]).length;
-                      const isOpen = openModCategory === category;
-                      return (
-                        <div className="mod-folder" key={category}>
-                          <button type="button" className={`mod-folder-head${isOpen ? " is-open" : ""}`} onClick={() => setOpenModCategory(isOpen ? null : category)} aria-expanded={isOpen}>
-                            <Icon name={isOpen ? "chip" : "archive"} size={14} />
-                            <span>{category}</span>
-                            <small>{selectedInCategory > 0 ? `${selectedInCategory}/${modsInCategory.length} activés` : `${modsInCategory.length} mod${modsInCategory.length > 1 ? "s" : ""}`}</small>
-                          </button>
-                          {isOpen && (
-                            <div className="mod-folder-list">
-                              {modsInCategory.map((mod) => (
-                                <div className="mod-row" key={mod.id}>
-                                  <input type="checkbox" checked={selectedMods[mod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [mod.id]: event.target.checked })} aria-label={`Activer ${mod.title}`} />
-                                  <button type="button" className="mod-row-open" onClick={() => setSelectedMod(mod)}>
-                                    <strong>{mod.title} {mod.isNew && <em className="mod-new-badge">NOUVEAU</em>} {mod.risk !== "controlled" && <em className={`mod-risk-badge is-${mod.risk}`}>{FIRMWARE_RISK_LABEL[mod.risk]}</em>}</strong>
-                                    <small>{mod.detail}</small>
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="firmware-pane firmware-pane-tools">
-                  <div className="mod-section-heading"><div><span className="section-label">IMAGES &amp; SVG</span><strong>Outils graphiques</strong></div></div>
-                  <button type="button" className="secondary-action firmware-tool-link" onClick={() => setToolWindow("editor")}><Icon name="image" size={15} />Ouvrir l’atelier graphique</button>
-                  <p className="tool-note"><code>tools/display_bridge.py</code> trie les écrans et exporte un patch non destructif par fichier ; <code>tools/svg_preflight.py</code> valide un SVG avant modification.</p>
-
-                  <div className="mod-section-heading"><div><span className="section-label">VÉRIFICATION</span><strong>Bridges locaux</strong></div></div>
-                  <p className="tool-note"><code>tools/firmware_inspector.py</code> revalide CRC/LZMA/TAR sans jamais extraire de chemin dangereux ; <code>tools/firmware_fetch.py</code> ne télécharge que depuis l’hôte officiel. Détail complet des commandes dans <code>README.md</code>.</p>
-                </div>
-              </div>
-            </section>
-
-          </div>}
-        </div>
-      </section>
-
-      {selectedMod && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setSelectedMod(null)}>
-          <section className="mod-detail-window" role="dialog" aria-modal="true" aria-labelledby="mod-detail-title" onMouseDown={(event) => event.stopPropagation()}>
-            <button className="window-close mod-detail-close" aria-label="Fermer" onClick={() => setSelectedMod(null)}>×</button>
-            {/* "Cadre de simulation" : l'écran SVG réel du mod, vu en direct
-                au-dessus de ses informations — pas une vignette décorative. */}
-            {selectedMod.preview ? <div className="mod-detail-image" role="img" aria-label={`Aperçu agrandi ${selectedMod.title}`} style={{ backgroundImage: `url("${selectedMod.preview}")`, backgroundSize: "contain", backgroundPosition: "center", backgroundRepeat: "no-repeat" }} /> : <div className="mod-detail-placeholder"><Icon name={selectedMod.id === "op1patch" ? "wave" : "archive"} size={34} /></div>}
-            <span className="section-label">{selectedMod.category} · SOURCE_MODIFIEE{selectedMod.risk !== "controlled" && <> · <em className={`mod-risk-badge is-${selectedMod.risk}`}>{FIRMWARE_RISK_LABEL[selectedMod.risk]}</em></>}</span>
-            <h2 id="mod-detail-title">{selectedMod.title}</h2>
-            <p>{selectedMod.detail}</p>
-            <div className="mod-detail-meta"><strong>Source</strong><code>{selectedMod.source}</code><strong>État</strong><span>Disponible pour sélection · aucune écriture automatique</span></div>
-            <label className="mod-detail-enable">
-              <input type="checkbox" checked={selectedMods[selectedMod.id] === true} onChange={(event) => setSelectedMods({ ...selectedMods, [selectedMod.id]: event.target.checked })} />
-              <span>Activer ce mod dans le plan</span>
-            </label>
-          </section>
+    <main className="app-shell studio-op1-page" style={{ minHeight: "100vh", background: "#0e1314", color: "#eef3ea", padding: "12px 16px" }}>
+      {notice && (
+        <div className="notice" role="status" style={{ marginBottom: "12px" }}>
+          <Icon name="shield" size={17} />
+          <span>{notice}</span>
+          <button aria-label="Fermer" onClick={() => setNotice(null)}>×</button>
         </div>
       )}
 
-      {expertOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setExpertOpen(false)}>
-          <section className="modal" role="dialog" aria-modal="true" aria-labelledby="expert-title" onMouseDown={(event) => event.stopPropagation()}>
-            <span className="modal-icon"><Icon name="terminal" size={25} /></span>
-            <span className="section-label">ZONE À RISQUE</span>
-            <h2 id="expert-title">Le Labo expert reste séparé.</h2>
-            <p>Les outils de repack peuvent inspecter ou préparer un firmware modifié, mais ils ne pourront jamais écrire directement sur l’OP‑1 depuis cet écran.</p>
-            <ul>
-              <li>activation volontaire et avertissement persistant ;</li>
-              <li>processus isolé, version épinglée et empreinte vérifiée ;</li>
-              <li>export manuel marqué comme non officiel ;</li>
-              <li>aucun mélange avec le catalogue Teenage Engineering.</li>
-            </ul>
-            <button onClick={() => setExpertOpen(false)}>J’ai compris</button>
-          </section>
-        </div>
-      )}
-
-      {toolWindow && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setToolWindow(null)}>
-          <section className="tool-window" role="dialog" aria-modal="true" aria-labelledby="tool-window-title" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="tool-window-header">
-              <div>
-                <span className="section-label">OP-1 STUDIO / OUTIL</span>
-                <h2 id="tool-window-title">{toolWindow === "exercise" ? "Exercices MIDI" : toolWindow === "backups" ? "Sauvegardes" : toolWindow === "sounds" ? "Bibliothèque de sons" : toolWindow === "services" ? "Services OP-1" : toolWindow === "tape" ? "Studio · Tape & Album" : "Éditeur firmware"}</h2>
-              </div>
-              <button className="window-close" aria-label="Fermer" onClick={() => setToolWindow(null)}>×</button>
-            </div>
-
-            <ToolWindowTabs tabs={[
-                ["exercise", "Exercices", "settings"],
-                ["editor", "Images", "image"],
-                ["backups", "Sauvegardes", "archive"],
-                ["sounds", "Sons", "wave"],
-                ["services", "Services", "book"],
-                ["tape", "Studio", "tape"],
-              ].map(([id, label, icon]) => ({ id, label, icon: <Icon name={icon as IconName} size={14} /> }))} activeId={toolWindow ?? ""} onSelect={(id) => setToolWindow(id as ToolWindow)} />
-
-            {/* pressedNotes pas encore branché : l'état MIDI (pressedMidiNotes) vit
-                dans TapeEditor, un composant frère, pas dans ce scope. À faire
-                remonter d'un niveau si on veut que les touches jouées en vrai
-                s'allument ici aussi ; la cible qui tombe fonctionne déjà sans. */}
-
-            {toolWindow === "exercise" && <ExercisePanel Icon={Icon} selectedExercise={selectedExercise} running={exerciseRunning} onExerciseChange={setSelectedExercise} onToggle={() => setExerciseRunning((running) => !running)} />}
-
-            {toolWindow === "services" && <ServiceHub Icon={Icon} onOpenLocal={(tool) => { if (tool === "firmware") setToolWindow(null); else setToolWindow(tool); }} />}
-
-            {toolWindow === "editor" && (
-              <div className="tool-body image-studio-page">
-                <div className="image-studio-hero"><div><span className="section-label">OP-1 STUDIO / IMAGES</span><strong>L’atelier graphique</strong><small>Dessine, explore et prépare tes écrans OP-1 avec les bonnes dimensions.</small></div><span className="image-studio-count">BANQUE DYNAMIQUE</span></div>
-                <DisplayCreatorPanel Icon={Icon} onNotice={setNotice} /><DisplayEditor root={backupRoot} onNotice={setNotice} />
-                {/* L’éditeur image est autonome : le build firmware reste dans sa page dédiée. */}
-                <div className="image-studio-note"><Icon name="shield" size={14} /><span>Les originaux restent conservés. Les dimensions et profils machine sont contrôlés avant tout export.</span></div>
-              </div>
-            )}
-            {toolWindow === "backups" && <BackupPanel Icon={Icon} backupRoot={backupRoot} onNotice={setNotice} onOpenSounds={() => setToolWindow("sounds")} describePlan={(root) => { void notifyLocalPlan("backup.plan", { root }); }} />}
-
-            {toolWindow === "sounds" && <SoundsPanel Icon={Icon} ready={soundPackReady} libraryHandle={sharedSoundLibraryHandle} onSamplePrepared={() => hubCommunication.updateStats({ samplesPrepared: incrementHubCounter(OP1_SAMPLES_PREPARED_KEY) })} onPreparePack={() => { setSoundPackReady(true); void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); }} onTransfer={() => { if (soundPackReady) void notifyLocalPlan("sounds.transfer-plan", { packReady: true }); else setNotice("Préparez d’abord le pack de sons."); }} />}
-
-            {toolWindow === "tape" && <>
-              <nav className="studio-main-tabs" aria-label="Section principale du Studio"><button type="button" className="is-active"><Icon name="tape" size={14} />Tape &amp; Album</button></nav>
-              {studioSection === "tape" ? <TapeEditor onNotice={setNotice} onConnectMidi={connectMidiDevice} onSendMidi={(data) => midiOutputRef.current?.send?.(data)} /> : <div className="studio-graphics-workspace"><div className="studio-graphics-head"><div><span className="section-label">STUDIO / GRAPHISMES</span><strong>Éditeur des écrans OP-1</strong><small>Thèmes, fenêtres de synthèse et assets firmware sous contrôle des dimensions.</small></div><span className="studio-graphics-badge">53 × 320×160</span></div><DisplayCreatorPanel Icon={Icon} onNotice={setNotice} /><DisplayEditor root={backupRoot} onNotice={setNotice} /></div>}
-            </>}
-
-          </section>
-        </div>
-      )}
+      {/* Studio OP-1 Unifié : Écran Clone OLED + Éditeur Pistes Agrandies + Clavier Chassis */}
+      <TapeEditor
+        onNotice={setNotice}
+        onConnectMidi={connectMidiDevice}
+        onSendMidi={(data) => midiOutputRef.current?.send?.(data)}
+      />
     </main>
   );
 }
