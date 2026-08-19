@@ -137,8 +137,10 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       return;
     }
     candidate.input.onmidimessage = (event) => {
-      const message = parseMidiNotePacket(event.data);
-      if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
+      if (event.data) {
+        const message = parseMidiNotePacket(event.data);
+        if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
+      }
     };
     controllerInputRef.current = candidate;
     setControllerEnabled(true);

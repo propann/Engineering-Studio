@@ -4,7 +4,7 @@ import { TopBar } from "../components/TopBar";
 import SoundEditorHub from "./SoundEditorHub";
 import "./outils.css";
 
-const Link = ({href, className, ...props}) => {
+const Link = ({href, className, ...props}: {href: string; className: string; [key: string]: any}) => {
   const handleClick = (e: any) => {
     e.preventDefault();
     if (href === "/") (window as any).navigateMaquette("landing");

@@ -7,7 +7,7 @@ const log = createLogger('OP-1.HubInit');
 function readImportedProfile(queryProfile: string | null) {
   if (queryProfile) return queryProfile;
   try {
-    const cached = readHubCache<unknown>(sessionStorage.getItem('hub:playerProfile')) ?? readHubCache<unknown>(localStorage.getItem(HUB_CACHE_KEYS.profile));
+    const cached = readHubCache<unknown>(sessionStorage.getItem('hub:playerProfile') || '') ?? readHubCache<unknown>(localStorage.getItem(HUB_CACHE_KEYS.profile) || '');
     return cached === null ? null : JSON.stringify(cached);
   } catch {
     return null;

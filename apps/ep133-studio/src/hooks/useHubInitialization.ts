@@ -17,7 +17,7 @@ function resolveHubOrigin() {
 function readImportedProfile(queryProfile: string | null) {
   if (queryProfile) return queryProfile;
   try {
-    const cached = readHubCache<unknown>(sessionStorage.getItem('hub:playerProfile')) ?? readHubCache<unknown>(localStorage.getItem(HUB_CACHE_KEYS.profile));
+    const cached = readHubCache<unknown>(sessionStorage.getItem('hub:playerProfile') || '') ?? readHubCache<unknown>(localStorage.getItem(HUB_CACHE_KEYS.profile) || '');
     return cached === null ? null : JSON.stringify(cached);
   } catch {
     return null;
@@ -38,7 +38,7 @@ function readImportedMachine() {
   const capacity = params.get('hubMachineCapacityMb') === '128' ? 128 : 64;
   const name = params.get('hubMachineName');
   try {
-    const cached = readHubCache<{ name?: string; capacityMb?: 64 | 128 }>(localStorage.getItem(HUB_CACHE_KEYS.machine));
+    const cached = readHubCache<{ name?: string; capacityMb?: 64 | 128 }>(localStorage.getItem(HUB_CACHE_KEYS.machine) || "");
     return name ? { name, capacityMb: capacity as 64 | 128 } : cached ?? { name: 'EP-133 K.O. II', capacityMb: 64 as const };
   } catch {
     return { name: name || 'EP-133 K.O. II', capacityMb: capacity as 64 | 128 };

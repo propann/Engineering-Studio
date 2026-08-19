@@ -691,8 +691,8 @@ function EditorView({
   brushSize: number;
   opacity: number;
   zoom: number;
-  mainCanvasRef: React.RefObject<HTMLCanvasElement>;
-  animationCanvasRef: React.RefObject<HTMLCanvasElement>;
+  mainCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  animationCanvasRef: React.RefObject<HTMLCanvasElement | null>;
   animationPlaying: boolean;
   animationCollapsed: boolean;
   canUndo: boolean;

@@ -401,7 +401,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     try {
       localStorage.setItem("studio_hub_user_patches", JSON.stringify(updated));
     } catch (e) {
-      log.error(e);
+      log.error('Failed to save patch', e);
     }
 
     setNewPatchName("");
