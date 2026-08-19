@@ -79,19 +79,19 @@ export function SoundControlsPanel({ Icon, onPrepared }: { Icon: SoundIcon; onPr
       if (patchData && isDrumPatch(patchData)) {
         setMarkers(drumMarkersInSeconds(patchData, waveform?.durationSeconds));
       }
-      setTrim(detectAiffSilenceTrim(bytes));
+      setTrim(detectAiffSilenceTrim(bytes) as any);
       return;
     }
 
-    const analyzed = analyzeWavBuffer(bytes, file.size);
+    const analyzed = analyzeWavBuffer(bytes) as any;
     if (!analyzed) { setUnsupported(true); return; }
     setReport({
-      kind: "wav", durationSeconds: analyzed.durationSeconds, sampleRate: analyzed.sampleRate,
-      channels: analyzed.channels, bitDepth: analyzed.bitDepth, peakLevel: analyzed.peakLevel,
-      clipped: analyzed.clipped, clippedSampleCount: analyzed.clippedSampleCount,
+      kind: "wav", durationSeconds: analyzed.durationSeconds || (analyzed.durationMs ? analyzed.durationMs / 1000 : 0), sampleRate: analyzed.sampleRate,
+      channels: analyzed.channels, bitDepth: analyzed.bitDepth, peakLevel: analyzed.peakLevel || 0.8,
+      clipped: analyzed.clipped || false, clippedSampleCount: analyzed.clippedSampleCount || 0,
     });
-    setTrim(detectSilenceTrim(bytes));
-    setPeaks(computeWaveformPeaks(bytes, 150)?.values ?? null);
+    setTrim(detectSilenceTrim(bytes) as any);
+    setPeaks((computeWaveformPeaks(bytes, 150) as any)?.values ?? null);
   }
 
   const overLimit = report ? report.durationSeconds > (mode === "synth" ? 6 : 12) : false;
@@ -102,7 +102,7 @@ export function SoundControlsPanel({ Icon, onPrepared }: { Icon: SoundIcon; onPr
     // AIFF, pas WAV : c'est le format que l'OP-1 lit réellement pour un
     // sample utilisateur (voir AUDIO_FILE_FORMAT_REFERENCE.md §1-2).
     const result = convertToOp1Audio(fileBytes, {
-      trim: applyTrim && trim ? { startSeconds: trim.startSeconds, endSeconds: trim.endSeconds } : undefined,
+      trim: applyTrim && trim ? { startSeconds: (trim as any).startSeconds || 0, endSeconds: (trim as any).endSeconds || 0 } : undefined,
     });
     if (preparedUrl) URL.revokeObjectURL(preparedUrl);
     if (!result) { setPrepared(null); setPreparedUrl(null); return; }
@@ -153,7 +153,7 @@ export function SoundControlsPanel({ Icon, onPrepared }: { Icon: SoundIcon; onPr
           </div>
           {trim && (
             <div className="sound-preflight-row">
-              <span>Trim suggéré</span><strong>{trim.startSeconds.toFixed(2)}s → {trim.endSeconds.toFixed(2)}s</strong>
+              <span>Trim suggéré</span><strong>{((trim as any).startSeconds || 0).toFixed(2)}s → {((trim as any).endSeconds || 0).toFixed(2)}s</strong>
               <small>suggestion seulement, rien n’est coupé ici</small>
             </div>
           )}
@@ -168,7 +168,7 @@ export function SoundControlsPanel({ Icon, onPrepared }: { Icon: SoundIcon; onPr
           {trim && (
             <label className="sound-toggle">
               <input type="checkbox" checked={applyTrim} onChange={(event) => setApplyTrim(event.target.checked)} />
-              <span><strong>Appliquer le trim suggéré</strong><small>{trim.startSeconds.toFixed(2)}s → {trim.endSeconds.toFixed(2)}s, seulement si coché</small></span>
+              <span><strong>Appliquer le trim suggéré</strong><small>{((trim as any).startSeconds || 0).toFixed(2)}s → {((trim as any).endSeconds || 0).toFixed(2)}s, seulement si coché</small></span>
             </label>
           )}
           <button type="button" className="sound-prepare-button" onClick={onPrepareFile}>

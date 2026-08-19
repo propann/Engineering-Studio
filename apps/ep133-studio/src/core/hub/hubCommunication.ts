@@ -19,7 +19,7 @@ export type HubStats = {
 };
 
 function resolveHubOrigin() {
-  const configured = import.meta.env.VITE_HUB_ORIGIN as string | undefined;
+  const configured = (import.meta.env as any).VITE_HUB_ORIGIN as string | undefined;
   const fromLaunch = new URLSearchParams(window.location.search).get('hubReturn');
   try {
     return new URL(fromLaunch || configured || window.location.origin).origin;

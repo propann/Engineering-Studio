@@ -48,8 +48,8 @@ export function SampleEditorPanel({ Icon, onPrepared }: { Icon: SampleIcon; onPr
     setPreparedUrl(null);
     const nextBytes = await nextFile.arrayBuffer();
     const aiff = parseAiffFormat(nextBytes);
-    const wav = aiff ? null : analyzeWavBuffer(nextBytes, nextFile.size);
-    const duration = aiff ? aiff.frameCount / aiff.sampleRate : wav?.durationSeconds;
+    const wav = aiff ? null : (analyzeWavBuffer(nextBytes) as any);
+    const duration = aiff ? aiff.frameCount / aiff.sampleRate : (wav?.durationSeconds || (wav?.durationMs ? wav.durationMs / 1000 : 0));
     if (!duration) { setFile(null); setBytes(null); setReport(null); setError("Format non reconnu. Utilisez un WAV ou un AIFF PCM."); return; }
     const waveform = aiff ? computeAiffWaveformPeaks(nextBytes, 180) : computeWaveformPeaks(nextBytes, 180);
     if (!waveform) { setError("Impossible de calculer la forme d’onde de ce fichier."); return; }
@@ -57,7 +57,7 @@ export function SampleEditorPanel({ Icon, onPrepared }: { Icon: SampleIcon; onPr
     setReport({
       format: aiff ? "AIFF" : "WAV", duration, sampleRate: aiff?.sampleRate ?? wav?.sampleRate ?? 0,
       channels: aiff?.channels ?? wav?.channels ?? 0, bitDepth: aiff?.bitDepth ?? wav?.bitDepth ?? 0,
-      peaks: waveform.values,
+      peaks: (waveform as any).values || [],
     });
   }
 

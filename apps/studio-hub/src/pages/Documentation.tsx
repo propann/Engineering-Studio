@@ -8,7 +8,7 @@ export default function Documentation() {
 
   return (
     <main className="documentation-page" style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      <TopBar profileName={profileName} onDocClick={() => {}} />
+      <TopBar activePage="documentation" profileName={profileName} onDocClick={() => {}} />
 
       <section style={{ marginTop: "40px" }}>
         <h1>📚 Documentation Engineering Studio</h1>

@@ -284,7 +284,7 @@ export default function AdvancedImageEditor() {
 
   return (
     <main style={{ padding: "20px", maxWidth: "1800px", margin: "0 auto", fontFamily: "system-ui" }}>
-      <TopBar profileName={profileName} onDocClick={() => {}} />
+      <TopBar activePage="outils" profileName={profileName} onDocClick={() => {}} />
 
       <section style={{ marginTop: "40px" }}>
         <div style={{ marginBottom: "30px", display: "flex", justifyContent: "space-between" }}>

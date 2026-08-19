@@ -142,3 +142,36 @@ export function parseMidiNotePacket(data: Uint8Array | number[]): {
 
   return null;
 }
+
+export const HUB_CACHE_KEYS = {
+  PROFILE: "studio-hub:profile",
+  CACHE: "studio-hub:cache",
+  profile: "studio-hub:profile",
+  machine: "studio-hub:machine"
+};
+
+export function createHubCacheEnvelope<T>(data: T) {
+  return { data, timestamp: Date.now() };
+}
+
+export function readHubCache<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isHubNoteMessage(msg: any): msg is HubNoteMessage {
+  return msg && msg.type === "hub-note";
+}
+
+export function isHubTransportMessage(msg: any): msg is HubTransportMessage {
+  return msg && msg.type === "hub-transport";
+}
+
+export function isHubPanicMessage(msg: any): msg is HubPanicMessage {
+  return msg && msg.type === "hub-panic";
+}
+

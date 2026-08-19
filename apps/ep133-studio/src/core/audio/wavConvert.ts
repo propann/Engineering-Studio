@@ -40,13 +40,13 @@ export type ChannelMode = 'mix' | 'left' | 'right';
 
 /** Trames interleaved en Float32 [-1, 1], valeurs réelles (pas seulement leur
  * magnitude) — c'est ce que `libsamplerate-js` attend en entrée. */
-function extractInterleavedFloat32(format: ParsedWavFormat): Float32Array {
+function extractInterleavedFloat32(format: any): Float32Array {
   const out = new Float32Array(format.frameCount * format.channels);
   let index = 0;
   for (let frame = 0; frame < format.frameCount; frame += 1) {
     const frameStart = format.dataStart + frame * format.bytesPerFrame;
     for (let channel = 0; channel < format.channels; channel += 1) {
-      out[index] = Math.max(-1, Math.min(1, readSignedSample(format, frameStart + channel * format.bytesPerSample)));
+      out[index] = Math.max(-1, Math.min(1, readSignedSample(new DataView(format.buffer || new ArrayBuffer(0)), frameStart + channel * format.bytesPerSample, format.bitDepth)));
       index += 1;
     }
   }
@@ -159,7 +159,7 @@ function encodeWavPcm16(samples: Float32Array, channels: number, sampleRate: num
  * mémoire, à consommer par l'appelant (pré-écoute, futur export).
  */
 export async function convertWavForEp133(sourceBytes: ArrayBuffer, targetSampleRate: number, targetChannels?: 1 | 2, trim?: { startSeconds: number; endSeconds: number }, fade?: { fadeInSeconds: number; fadeOutSeconds: number }, channelMode: ChannelMode = 'mix'): Promise<WavConversionResult | null> {
-  const format = parseWavFormat(sourceBytes);
+  const format = parseWavFormat(sourceBytes) as any;
   if (!format || !format.frameCount) return null;
 
   let extracted = extractInterleavedFloat32(format);

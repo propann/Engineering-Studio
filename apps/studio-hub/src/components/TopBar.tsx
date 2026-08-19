@@ -1,44 +1,119 @@
 "use client";
+import { useEffect, useState } from "react";
 
-export function TopBar({ profileName = "AZOTH", onDocClick }: { profileName?: string; onDocClick?: () => void }) {
-  const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    (window as any).navigateMaquette?.("landing");
+export interface TopBarProps {
+  activePage?: string;
+  profileName?: string;
+  onDocClick?: () => void;
+  customAction?: React.ReactNode;
+}
+
+export function TopBar({
+  activePage = "landing",
+  profileName = "AZOTH",
+  onDocClick,
+  customAction,
+}: TopBarProps) {
+  const [currentName, setCurrentName] = useState(profileName);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("studio-hub-profile");
+      if (raw) {
+        const profile = JSON.parse(raw) as { name?: string };
+        if (profile.name?.trim()) setCurrentName(profile.name.trim());
+      }
+    } catch {
+      // profil local
+    }
+  }, [profileName]);
+
+  const nav = (page: string) => {
+    if ((window as any).navigateMaquette) {
+      (window as any).navigateMaquette(page);
+    }
   };
 
-  const Link = ({ href, className, ...props }: any) => {
-    const handleClick = (e: React.MouseEvent) => {
-      e.preventDefault();
-      if (href === "/outils") (window as any).navigateMaquette?.("outils");
-      else if (href === "/fiche-personnage") (window as any).navigateMaquette?.("profil");
-      else if (href === "/") (window as any).navigateMaquette?.("landing");
-    };
-    return <a href={"#" + href} onClick={handleClick} className={className} {...props} />;
-  };
+  const studioLinks = [
+    { id: "studio-op1", label: "OP-1 Studio", icon: "🎹", badge: "OP-1" },
+    { id: "studio-ep133", label: "EP-133 Studio", icon: "🥁", badge: "K.O. II" },
+    { id: "sound-editor", label: "Sons", icon: "🎵" },
+    { id: "outils", label: "Hub Outils", icon: "🔗" },
+  ];
 
   return (
-    <header className="topbar">
-      <button className="brand" onClick={handleLogoClick} style={{ border: "none", background: "none", cursor: "pointer", padding: 0 }}>
-        <span className="brand-symbol">
-          <i /><i /><i /><i />
-        </span>
-        <span>
-          <strong>Engineering</strong>
-          <b>Studio</b>
-        </span>
-      </button>
-      <nav>
-        {onDocClick && <button className="nav-docs-btn" onClick={onDocClick} style={{ border: "none", background: "transparent", color: "inherit", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit", padding: "0.5rem 1rem", marginRight: "0.5rem" }}>📖 DOCUMENTATION</button>}
-        <Link href="/outils">Outils</Link>
-      </nav>
-      <Link className="profile-link" href="/fiche-personnage">
-        <span className="profile-orb">{profileName.slice(0, 2).toUpperCase()}</span>
-        <span>
-          <small>IDENTITÉ LOCALE</small>
-          <strong>{profileName}</strong>
-        </span>
-        <b>↗</b>
-      </Link>
+    <header className="universal-topbar">
+      <div className="topbar-inner">
+        {/* Left: Brand logo button */}
+        <button
+          type="button"
+          className="topbar-brand"
+          onClick={() => nav("landing")}
+          title="Engineering Studio - Accueil"
+        >
+          <span className="brand-dots">
+            <i className="dot-cyan" />
+            <i className="dot-blue" />
+            <i className="dot-orange" />
+            <i className="dot-yellow" />
+          </span>
+          <span className="brand-title">
+            <strong>ENGINEERING</strong>
+            <b>STUDIO</b>
+          </span>
+        </button>
+
+        {/* Center: Main Studios Shortcuts */}
+        <nav className="topbar-studios-nav" aria-label="Accès direct aux Studios">
+          {studioLinks.map((item) => {
+            const isActive = activePage === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`topbar-studio-btn ${isActive ? "is-active" : ""}`}
+                onClick={() => nav(item.id)}
+              >
+                <span className="btn-icon">{item.icon}</span>
+                <span className="btn-label">{item.label}</span>
+                {item.badge && <small className="btn-badge">{item.badge}</small>}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right: Actions & Profile */}
+        <div className="topbar-actions">
+          {onDocClick && (
+            <button
+              type="button"
+              className="topbar-btn-secondary"
+              onClick={onDocClick}
+              title="Consulter la documentation"
+            >
+              📖 Docs
+            </button>
+          )}
+
+          {customAction}
+
+          <button
+            type="button"
+            className="topbar-profile-badge"
+            onClick={() => nav("profil")}
+            title="Consulter votre profil et configuration d'atelier"
+          >
+            <span className="profile-initials">
+              {(currentName || "AZ").slice(0, 2).toUpperCase()}
+            </span>
+            <div className="profile-text">
+              <small>ATELIER LOCAL</small>
+              <strong>{currentName || "AZOTH"}</strong>
+            </div>
+            <span className="profile-arrow">↗</span>
+          </button>
+        </div>
+      </div>
     </header>
   );
 }

@@ -1,0 +1,373 @@
+/* SOUND PATCH CREATOR STYLES */
+.sound-patch-creator-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  background: #0b0d14;
+  color: #f4f5ef;
+  font-family: "Courier New", monospace;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.creator-back-btn {
+  position: fixed;
+  top: 70px;
+  left: 20px;
+  padding: 6px 14px;
+  background: #1a1e28;
+  border: 1px solid #3d465c;
+  color: #00ed95;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 900;
+  font-family: "Courier New", monospace;
+  z-index: 1010;
+}
+
+.patch-creator-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 70px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* HEADER & TARGET SELECTOR */
+.patch-creator-header {
+  background: #12151f;
+  border: 1px solid #2d3345;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.live-preview-audio-btn {
+  padding: 10px 18px;
+  background: #00ed95;
+  color: #0d0f18;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(0, 237, 149, 0.4);
+}
+
+.live-preview-audio-btn:hover {
+  background: #d9ff43;
+}
+
+/* VIRTUAL PIANO KEYBOARD BAR */
+.virtual-piano-bar {
+  background: #12151f;
+  border: 1px solid #2d3345;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.piano-label {
+  font-size: 10px;
+  font-weight: 900;
+  color: #00ed95;
+}
+
+.piano-keys-row {
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.piano-key-btn {
+  min-width: 36px;
+  height: 64px;
+  border-radius: 0 0 4px 4px;
+  border: 1px solid #3d465c;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  font-size: 10px;
+  font-weight: 900;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+}
+
+.white-key {
+  background: #f0f4f8;
+  color: #0d0f18;
+}
+
+.white-key:hover {
+  background: #00ed95;
+}
+
+.black-key {
+  background: #1e2433;
+  color: #d9ff43;
+  border-color: #d9ff43;
+  height: 48px;
+}
+
+.black-key:hover {
+  background: #ff3a5d;
+  color: #ffffff;
+}
+
+.patch-creator-header h1 {
+  font-size: 20px;
+  font-weight: 900;
+  color: #00ed95;
+  margin: 0;
+}
+
+.patch-creator-header p {
+  font-size: 11px;
+  color: #a0aec0;
+  margin: 0;
+}
+
+.machine-target-selector {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.target-tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: #1a1e28;
+  border: 1px solid #3d465c;
+  border-radius: 6px;
+  color: #a0aec0;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+}
+
+.target-tab-btn.active-op1 {
+  background: #282415;
+  color: #d9ff43;
+  border-color: #d9ff43;
+}
+
+.target-tab-btn.active-ep133 {
+  background: #2a1a24;
+  color: #ff3a5d;
+  border-color: #ff3a5d;
+}
+
+/* SYNTH VISUALIZER OSCILLOSCOPE */
+.synth-visualizer-card {
+  background: #12151f;
+  border: 1px solid #2d3345;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.visualizer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.visualizer-header strong {
+  font-size: 12px;
+  color: #ffffff;
+}
+
+.visualizer-header small {
+  font-size: 9px;
+  color: #a0aec0;
+}
+
+.osc-canvas-frame {
+  width: 100%;
+  background: #0d0f18;
+  border: 1px solid #3d465c;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.osc-canvas {
+  width: 100%;
+  height: 120px;
+  display: block;
+}
+
+/* EDITOR PANEL CARD */
+.editor-panel-card {
+  background: #12151f;
+  border: 1px solid #2d3345;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.op1-panel { border-top: 4px solid #d9ff43; }
+.ep133-panel { border-top: 4px solid #ff3a5d; }
+
+.panel-title h2 {
+  font-size: 13px;
+  font-weight: 900;
+  color: #ffffff;
+  margin: 0;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.input-field {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #a0aec0;
+}
+
+.input-field input,
+.input-field select {
+  background: #1a1e28;
+  border: 1px solid #3d465c;
+  border-radius: 6px;
+  color: #ffffff;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  outline: none;
+}
+
+.input-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
+  cursor: pointer;
+  margin-top: 18px;
+}
+
+/* ENCODERS GRID (OP-1 COLORS) */
+.encoders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.encoder-box {
+  background: #1a1e28;
+  border: 1px solid #3d465c;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.encoder-blue { border-left: 4px solid #4aa7ff; }
+.encoder-green { border-left: 4px solid #00ed95; }
+.encoder-white { border-left: 4px solid #ffffff; }
+.encoder-orange { border-left: 4px solid #ff9d00; }
+
+.knob-label {
+  font-size: 8px;
+  font-weight: 900;
+  color: #a0aec0;
+}
+
+.encoder-box strong {
+  font-size: 14px;
+  color: #ffffff;
+}
+
+/* ADSR CONTROLS */
+.adsr-controls-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  background: #1a1e28;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #3d465c;
+}
+
+.adsr-controls-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #00ed95;
+}
+
+.export-patch-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.op1-btn {
+  background: #d9ff43;
+  color: #0d0f18;
+}
+
+.ep133-btn {
+  background: #ff3a5d;
+  color: #ffffff;
+}
+
+/* TOAST OVERLAY NOTIFICATION */
+.patch-toast-overlay {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #00ed95;
+  color: #0d0f18;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 4px 16px rgba(0, 237, 149, 0.4);
+  z-index: 2000;
+}

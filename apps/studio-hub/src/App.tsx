@@ -9,9 +9,36 @@ import DocEP133 from "./pages/DocEP133";
 import RhythmHero from "./pages/RhythmHero";
 import ImageEditorOP1 from "./pages/ImageEditorOP1";
 import FirmwareGallery from "./pages/FirmwareGallery";
+import FirmwareCompiler from "./pages/FirmwareCompiler";
 import ThemeEditor from "./pages/ThemeEditor";
+import ThemeProjectEditor from "./pages/ThemeProjectEditor";
+import AdvancedImageEditor from "./pages/AdvancedImageEditor";
+import SoundEditorHub from "./pages/SoundEditorHub";
+import SoundPatchCreator from "./pages/SoundPatchCreator";
+import AudioPluginRack from "./pages/AudioPluginRack";
+import EP133StudioPage from "./pages/EP133StudioPage";
+import OP1StudioPage from "./pages/OP1StudioPage";
 
-type Page = "landing" | "outils" | "profil" | "documentation" | "exercises" | "doc-op1" | "doc-ep133" | "rhythm-hero" | "image-editor-op1" | "firmware-gallery" | "theme-editor";
+type Page = 
+  | "landing" 
+  | "outils" 
+  | "profil" 
+  | "documentation" 
+  | "exercises" 
+  | "doc-op1" 
+  | "doc-ep133" 
+  | "studio-ep133"
+  | "studio-op1"
+  | "rhythm-hero" 
+  | "image-editor-op1" 
+  | "firmware-gallery" 
+  | "firmware-compiler"
+  | "theme-editor" 
+  | "theme-project"
+  | "advanced-image"
+  | "sound-editor"
+  | "sound-patch-creator"
+  | "audio-plugin-rack";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -32,14 +59,30 @@ export function App() {
       return <DocOP1 />;
     case "doc-ep133":
       return <DocEP133 />;
+    case "studio-ep133":
+      return <EP133StudioPage />;
+    case "studio-op1":
+      return <OP1StudioPage />;
     case "rhythm-hero":
       return <RhythmHero />;
     case "image-editor-op1":
       return <ImageEditorOP1 />;
     case "firmware-gallery":
       return <FirmwareGallery />;
+    case "firmware-compiler":
+      return <FirmwareCompiler />;
     case "theme-editor":
       return <ThemeEditor />;
+    case "theme-project":
+      return <ThemeProjectEditor />;
+    case "advanced-image":
+      return <AdvancedImageEditor />;
+    case "sound-editor":
+      return <SoundEditorHub onClose={() => setCurrentPage("outils")} />;
+    case "sound-patch-creator":
+      return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
+    case "audio-plugin-rack":
+      return <AudioPluginRack onClose={() => setCurrentPage("outils")} />;
     case "landing":
     default:
       return <Landing />;

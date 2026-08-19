@@ -49,18 +49,18 @@ function extractInterleaved(bytes: ArrayBuffer): ExtractedAudio | null {
     return { channels: aiff.channels, sampleRate: aiff.sampleRate, frameCount: aiff.frameCount, interleaved: out };
   }
 
-  const wav = parseWavFormat(bytes);
+  const wav = parseWavFormat(bytes) as any;
   if (wav) {
-    const out = new Float32Array(wav.frameCount * wav.channels);
+    const out = new Float32Array((wav.frameCount || 0) * wav.channels);
     let index = 0;
-    for (let frame = 0; frame < wav.frameCount; frame += 1) {
-      const frameStart = wav.dataStart + frame * wav.bytesPerFrame;
+    for (let frame = 0; frame < (wav.frameCount || 0); frame += 1) {
+      const frameStart = (wav.dataStart || 0) + frame * (wav.bytesPerFrame || 1);
       for (let channel = 0; channel < wav.channels; channel += 1) {
-        out[index] = Math.max(-1, Math.min(1, readWavSample(wav, frameStart + channel * wav.bytesPerSample)));
+        out[index] = Math.max(-1, Math.min(1, readWavSample(new DataView(bytes), frameStart + channel * (wav.bytesPerSample || 2), wav.bitDepth || 16)));
         index += 1;
       }
     }
-    return { channels: wav.channels, sampleRate: wav.sampleRate, frameCount: wav.frameCount, interleaved: out };
+    return { channels: wav.channels, sampleRate: wav.sampleRate, frameCount: wav.frameCount || 0, interleaved: out };
   }
 
   return null;

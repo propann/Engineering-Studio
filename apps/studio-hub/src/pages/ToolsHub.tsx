@@ -15,7 +15,7 @@ const Link = ({href, className, ...props}) => {
 type Tool={id:string;code:string;category:string;title:string;text:string;accent:string;visual:string;status:string;target?:"op1"|"ep133"|"hub";anchor?:string;section?:"hub"|"op1"|"ep133"};
 type Section="hub"|"op1"|"ep133"|"all";
 
-const STUDIO_URLS={op1:import.meta.env.VITE_OP1_URL||"http://127.0.0.1:5175/",ep133:import.meta.env.VITE_EP133_URL||"http://127.0.0.1:5177/",hub:import.meta.env.VITE_HUB_URL||"http://127.0.0.1:5179/"};
+const STUDIO_URLS={op1:import.meta.env.VITE_OP1_URL||"#",ep133:import.meta.env.VITE_EP133_URL||"#",hub:import.meta.env.VITE_HUB_URL||"#"};
 const tools:Tool[]=[
  {id:"firmware",code:"FW-243",category:"OP-1",title:"Firmware Lab",text:"Catalogue, vérification et préparation locale des mods OP-1.",accent:"yellow",visual:"chip",status:"SANS MACHINE",section:"op1",target:"op1"},
  {id:"op1-backup",code:"BKP-OP1",category:"SAUVEGARDE",title:"Sauvegarde OP-1",text:"Tape, Album, Drum et Synth avec manifeste et contrôle d’intégrité.",accent:"blue",visual:"chip",status:"OP-1 REQUIS",section:"op1",target:"op1"},
@@ -65,33 +65,20 @@ export default function ToolsHub(){
  const op1StudioTools = tools.filter(t => t.id === "services");
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
-  if(!tool.target){setSelected(tool);return}
-  // Pages spéciales du Hub
-  if(tool.target==="hub"){
-    if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
-    if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
-    if(tool.id==="image"){(window as any).navigateMaquette("image-editor-op1");return}
-    if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
-    // Autres docs - montrer le modal
-    if(tool.category==="DOCUMENTATION"){setShowDocs(true);return}
-    return;
-  }
-  // Exercices OP-1 ouvre direct le jeu
-  if(tool.id==="op1-exercise"){
-    const url=new URL(STUDIO_URLS["op1"]);
-    url.searchParams.set("hubTool","exercise");
-    url.searchParams.set("from","engineering-studio-maquette");
-    try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-    window.location.href=url.toString();
-    return;
-  }
-  // Navigation vers les studios externes
-  const url=new URL(STUDIO_URLS[tool.target]);
-  if(tool.id==="rhythm") url.searchParams.set("hubTool","game");
-  if(tool.anchor) url.hash=tool.anchor;
-  url.searchParams.set("from","engineering-studio-maquette");
-  try{const profile=localStorage.getItem("studio-hub-profile");if(profile&&(tool.target as string)!=="hub")url.searchParams.set("hubProfile",profile)}catch{/* profil local indisponible */}
-  window.location.href=url.toString();
+  if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
+  if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
+  if(tool.id==="pattern" || tool.id==="machine-test"){(window as any).navigateMaquette("studio-ep133");return}
+  if(tool.id==="services" || tool.id==="op1-backup" || tool.id==="tape"){(window as any).navigateMaquette("studio-op1");return}
+  if(tool.id==="image"){(window as any).navigateMaquette("image-editor-op1");return}
+  if(tool.id==="firmware"){(window as any).navigateMaquette("firmware-gallery");return}
+  if(tool.id==="rhythm"){(window as any).navigateMaquette("rhythm-hero");return}
+  if(tool.id==="op1-exercise"){(window as any).navigateMaquette("exercises");return}
+  if(tool.id==="sample" || tool.id==="tape" || tool.id==="sounds"){(window as any).navigateMaquette("sound-editor");return}
+  if(tool.id==="app-guide"){(window as any).navigateMaquette("documentation");return}
+  if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
+  if(tool.category==="DOCUMENTATION"){(window as any).navigateMaquette("documentation");return}
+
+  setSelected(tool);
  }
  // Filtre les outils mais enlève les outils en cadres spéciaux
  const filteredTools = (activeSection === "all" ? tools : tools.filter(t => t.section && t.section === activeSection))
@@ -99,33 +86,14 @@ export default function ToolsHub(){
 
  const saveTools = tools.filter(t => t.id === "op1-backup" || t.id === "vault");
  return <main className="hub-page">
-  <TopBar profileName={profileName} onDocClick={()=>setShowDocs(!showDocs)}/>
+  <TopBar activePage="outils" profileName={profileName} onDocClick={()=>setShowDocs(!showDocs)}/>
   <section className="tools-section-organized" aria-label="Outils organisés">
-   <div className="section-navigation">
-    <div className="nav-tabs">
-     {sections.map(sec => (
-      <button
-       key={sec.id}
-       className={`nav-tab ${activeSection === sec.id ? "active" : ""}`}
-       onClick={() => setActiveSection(sec.id)}
-      >
-       <span className="tab-emoji">{sec.emoji}</span>
-       <span className="tab-label">{sec.label}</span>
-       <span className="tab-count">{tools.filter(t => sec.id === "all" ? true : t.section === sec.id).length}</span>
-      </button>
-     ))}
-    </div>
-   </div>
    <div className="utility-grid">
     {/* === HAUT === */}
     <button
      className="utility-card op1-studio-card"
      onClick={()=>{
-      const url=new URL(STUDIO_URLS.op1);
-      url.searchParams.set("from","engineering-studio-maquette");
-      url.searchParams.set("hubReturn",STUDIO_URLS.hub);
-      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.location.href=url.toString();
+      (window as any).navigateMaquette("studio-op1");
      }}
      title="Ouvrir OP-1 Studio"
     >
@@ -139,11 +107,7 @@ export default function ToolsHub(){
     <button
      className="utility-studio-card ep133-studio-card"
      onClick={()=>{
-      const url=new URL(STUDIO_URLS.ep133);
-      url.searchParams.set("from","engineering-studio-maquette");
-      url.searchParams.set("hubReturn",STUDIO_URLS.hub);
-      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.location.href=url.toString();
+      (window as any).navigateMaquette("studio-ep133");
      }}
      title="Ouvrir EP-133 Studio"
     >
@@ -157,11 +121,7 @@ export default function ToolsHub(){
     <button
      className="utility-card save-card"
      onClick={()=>{
-      const url=new URL(STUDIO_URLS.hub);
-      url.hash="atelier-vault";
-      url.searchParams.set("from","engineering-studio-maquette");
-      try{const profile=localStorage.getItem("studio-hub-profile");if(profile)url.searchParams.set("hubProfile",profile)}catch{}
-      window.location.href=url.toString();
+      (window as any).navigateMaquette("sound-editor");
      }}
      title="Ouvrir Sauvegarde unifiée"
     >
@@ -170,6 +130,36 @@ export default function ToolsHub(){
      <small>COFFRE</small>
      <h3>💾 Sauvegarde</h3>
      <p>Snapshots OP-1 et EP-133, vérification SHA-256 et restauration contrôlée.</p>
+     <div className="tool-status">OUVRIR →</div>
+    </button>
+    <button
+     className="utility-card sound-creator-card"
+     onClick={()=>{
+      (window as any).navigateMaquette("sound-patch-creator");
+     }}
+     title="Ouvrir le Créateur de Patches et Sound Design"
+     style={{ borderTop: "4px solid #00ed95" }}
+    >
+     <span>PATCH-BUILD</span>
+     <ToolGraphic type="wave"/>
+     <small>SOUND DESIGN</small>
+     <h3>🎛️ Édition & Création de Son</h3>
+     <p>Fabriquez et façonnez des patches OP-1 (moteurs synthé) et des réglages pads EP-133.</p>
+     <div className="tool-status">OUVRIR →</div>
+    </button>
+    <button
+     className="utility-card audio-plugin-card"
+     onClick={()=>{
+      (window as any).navigateMaquette("audio-plugin-rack");
+     }}
+     title="Ouvrir le Rack Moteurs Audio & Plugins"
+     style={{ borderTop: "4px solid #d9ff43" }}
+    >
+     <span>RACK-PLUGINS</span>
+     <ToolGraphic type="chip"/>
+     <small>MOTEURS SYNTHÉ</small>
+     <h3>🔌 Rack Plugins & Moteurs Audio</h3>
+     <p>Dexed FM (DX7), Moog 24dB Ladder, TB-303 Acid, NES 8-Bit Chiptune et Karplus-Strong.</p>
      <div className="tool-status">OUVRIR →</div>
     </button>
 

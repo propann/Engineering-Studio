@@ -119,7 +119,7 @@ async function importIntoOriginals(sounds: FileSystemDirectoryHandle, file: File
   return { asset: { id: soundId(), name, path: `originals/${name}`, size: stored.size, sha256, kind: inferKind(name), tags: [], favorite: false, targets: ["op1", "ep133"], addedAt: new Date().toISOString() } satisfies SoundLibraryAsset };
 }
 
-export function SoundLibraryPanel({ workspaceHandle, onOpenOp1, onOpenEp133 }: { workspaceHandle: FileSystemDirectoryHandle | null; onOpenOp1: () => void; onOpenEp133: () => void }) {
+export function SoundLibraryPanel({ workspaceHandle = null, onOpenOp1 = () => {}, onOpenEp133 = () => {} }: { workspaceHandle?: FileSystemDirectoryHandle | null; onOpenOp1?: () => void; onOpenEp133?: () => void }) {
   const [assets, setAssets] = useState<SoundLibraryAsset[]>([]);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | SoundKind>("all");

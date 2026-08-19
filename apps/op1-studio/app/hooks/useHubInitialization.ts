@@ -28,9 +28,9 @@ export function useHubInitialization() {
     const params = new URLSearchParams(window.location.search);
     const hubOrigin = (() => {
       try {
-        return new URL(params.get('hubReturn') || 'http://127.0.0.1:5179/').origin;
+        return new URL(params.get('hubReturn') || window.location.origin).origin;
       } catch {
-        return 'http://127.0.0.1:5179';
+        return window.location.origin;
       }
     })();
     const queryProfile = params.get('hubProfile');

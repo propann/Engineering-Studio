@@ -43,7 +43,7 @@ type IconName =
 type ToolWindow = "exercise" | "editor" | "backups" | "sounds" | "services" | "tape" | null;
 
 function hubReturnUrl() {
-  return new URLSearchParams(window.location.search).get("hubReturn") || "http://127.0.0.1:5179/";
+  return new URLSearchParams(window.location.search).get("hubReturn") || (typeof window !== "undefined" ? window.location.origin : "/");
 }
 
 function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
@@ -59,6 +59,10 @@ function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
 const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function returnToHub() {
+  if ((window as any).navigateMaquette) {
+    (window as any).navigateMaquette("outils");
+    return;
+  }
   const target = hubReturnUrl();
   if (window.opener && !window.opener.closed) {
     window.opener.focus();

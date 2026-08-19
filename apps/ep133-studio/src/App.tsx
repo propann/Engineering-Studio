@@ -105,10 +105,14 @@ const USER_EXERCISES_KEY = 'ep133-rhythm-hero:user-exercises:v1';
 const IMPORTED_MACHINE_KEY = 'studio-hub:imported-machine';
 
 function hubReturnUrl() {
-  return new URLSearchParams(window.location.search).get('hubReturn') || 'http://127.0.0.1:5179/';
+  return new URLSearchParams(window.location.search).get('hubReturn') || (typeof window !== 'undefined' ? window.location.origin : '/');
 }
 
 function returnToHub() {
+  if ((window as any).navigateMaquette) {
+    (window as any).navigateMaquette("outils");
+    return;
+  }
   const target = hubReturnUrl();
   if (window.opener && !window.opener.closed) {
     window.opener.focus();
@@ -140,7 +144,7 @@ export default function App() {
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
   const [workspaceView, setWorkspaceView] = useState<'home' | 'sounds' | 'machine-test' | 'game'>(() => {
     const requested = new URLSearchParams(window.location.search).get('hubTool');
-    return requested === 'game' || requested === 'sounds' || requested === 'docs' || requested === 'machine-test' ? requested : 'home';
+    return requested === 'game' || requested === 'sounds' || requested === 'machine-test' ? requested : 'home';
   });
   const [hubMachine, setHubMachine] = useState(loadHubMachine);
   const [practiceLog, setPracticeLog] = useState<PracticeLogEntry[]>(() => loadPracticeLog(localStorage));
@@ -1533,7 +1537,7 @@ export default function App() {
     const demo = STUDIO_DEMOS.find((candidate) => candidate.id === id);
     if (!demo || !confirmStudioReplacement()) return;
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL}demos/${demo.file}`, { cache: 'no-store' });
+      const response = await fetch(`${(import.meta.env as any).BASE_URL || '/'}demos/${demo.file}`, { cache: 'no-store' });
       if (!response.ok) throw new Error(`Impossible de charger la démonstration (${response.status}).`);
       const document = await response.json() as Record<string, unknown>;
       applyLoadedStudioProject(studioStateFromDocument(document));
@@ -1554,7 +1558,7 @@ export default function App() {
       const demo = STUDIO_DEMOS.find((candidate) => candidate.id === id);
       if (!demo) return null;
       try {
-        const response = await fetch(`${import.meta.env.BASE_URL}demos/${demo.file}`, { cache: 'no-store' });
+        const response = await fetch(`${(import.meta.env as any).BASE_URL || '/'}demos/${demo.file}`, { cache: 'no-store' });
         return response.ok ? await response.json() as Record<string, unknown> : null;
       } catch { return null; }
     }

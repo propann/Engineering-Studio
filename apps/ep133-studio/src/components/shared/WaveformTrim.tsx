@@ -134,15 +134,15 @@ export function WaveformTrim({ file, initialTrim, onTrimChange, report, machineM
       const peaks = computeWaveformPeaks(bytes, 1000);
       if (!peaks) { setStatus('unsupported'); return; }
       try {
-        await wavesurfer.loadBlob(file, [peaks.values], peaks.durationSeconds);
+        await wavesurfer.loadBlob(file, [(peaks as any).values || []], (peaks as any).durationSeconds || 1);
       } catch {
         if (!cancelled) setStatus('unsupported');
         return;
       }
       if (cancelled) return;
       setStatus('ready');
-      setSilenceSuggestion(detectSilenceTrim(bytes));
-      const duration = peaks.durationSeconds;
+      setSilenceSuggestion(detectSilenceTrim(bytes) as any);
+      const duration = (peaks as any).durationSeconds || 1;
       const start = Math.min(initialTrim?.startSeconds ?? 0, duration);
       const end = Math.max(start, Math.min(initialTrim?.endSeconds ?? duration, duration));
       const region = regions.addRegion({
@@ -213,7 +213,7 @@ export function WaveformTrim({ file, initialTrim, onTrimChange, report, machineM
     }
   };
 
-  const peakLevel = report && report !== 'unsupported' ? report.peakLevel : null;
+  const peakLevel = report && report !== 'unsupported' ? (report as any).peakLevel : null;
   const peakDb = peakLevel && peakLevel > 0 ? 20 * Math.log10(peakLevel) : null;
   const suggestedGainDb = peakLevel !== null ? suggestNormalizationGainDb(peakLevel) : null;
   // Même règle que `convertWavForEp133` (targetChannels non fourni) —

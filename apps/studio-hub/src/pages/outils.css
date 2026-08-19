@@ -11,14 +11,68 @@
 
 /* ========== TOOLS SECTION ========== */
 .tools-section-organized {
-  padding: 60px 5vw;
-  background-color: #151815;
+  padding: 40px 5vw 80px;
+  background-color: #ebece6;
   background-image:
-    linear-gradient(#ffffff08 2px, transparent 2px),
-    linear-gradient(90deg, #ffffff08 2px, transparent 2px);
+    linear-gradient(rgba(17, 19, 17, 0.06) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(17, 19, 17, 0.06) 1.5px, transparent 1.5px);
   background-size: 24px 24px;
-  color: #f3f4ee;
+  color: #111311;
   min-height: 100vh;
+}
+
+/* Hub Header Banner */
+.hub-header-banner {
+  max-width: 1420px;
+  margin: 0 auto 36px;
+  background: #ffffff;
+  border: 2.5px solid #111311;
+  border-radius: 12px;
+  padding: 28px 36px;
+  box-shadow: 6px 6px 0 #111311;
+}
+
+.hub-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: #111311;
+  color: #ffffff;
+  border-radius: 20px;
+  margin-bottom: 14px;
+}
+
+.hub-badge small {
+  font-family: "Courier New", monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.dot-active {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #40d574;
+}
+
+.hub-header-banner h1 {
+  font-family: "Courier New", monospace;
+  font-size: clamp(28px, 3.5vw, 48px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0 0 10px 0;
+  color: #111311;
+}
+
+.hub-header-banner p {
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555b53;
+  margin: 0;
+  max-width: 900px;
 }
 
 /* Navigation par onglets */
@@ -33,42 +87,43 @@
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
-  background: #202420;
-  padding: 18px;
-  border: 3px solid #4a4e48;
-  border-radius: 0;
+  background: #ffffff;
+  padding: 14px 20px;
+  border: 2px solid #111311;
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 #111311;
 }
 
 .nav-tab {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 18px;
-  background: #3b3f3a;
-  border: 3px solid #111;
-  border-radius: 0;
+  padding: 10px 18px;
+  background: #f4f5ef;
+  border: 1.5px solid #111311;
+  border-radius: 6px;
   cursor: pointer;
   font-family: "Courier New", monospace;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
-  color: #f4f5ef;
-  transition: all 0.25s ease;
-  letter-spacing: 0.08em;
-  box-shadow: 4px 4px 0 #1116;
+  color: #111311;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+  box-shadow: 2px 2px 0 #111311;
 }
 
 .nav-tab:hover {
-  background: #505550;
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 #111;
+  background: #ffffff;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #ff5a1f;
 }
 
 .nav-tab.active {
-  background: #111;
-  color: var(--acid);
-  border-color: #111;
-  box-shadow: 6px 6px 0 var(--acid);
+  background: #111311;
+  color: #d9ff43;
+  border-color: #111311;
+  box-shadow: 3px 3px 0 #ff5a1f;
 }
 
 .tab-emoji {
@@ -103,53 +158,59 @@
 .utility-card {
   display: flex;
   flex-direction: column;
-  padding: 18px;
-  background: #242724;
-  color: #f4f5ef;
-  border: 3px solid #4a4e48;
-  border-radius: 0;
+  padding: 22px;
+  background: #ffffff;
+  color: #111311;
+  border: 2px solid #111311;
+  border-radius: 10px;
   cursor: pointer;
   font-family: "Courier New", monospace;
   text-align: left;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
   position: relative;
-  box-shadow: 4px 4px 0 #111;
-  clip-path: polygon(0 8px, 8px 8px, 8px 0, calc(100% - 8px) 0, calc(100% - 8px) 8px, 100% 8px, 100% 100%, 0 100%);
+  box-shadow: 4px 4px 0 #111311;
+  clip-path: none;
 }
 
 .utility-card:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: 8px 8px 0 var(--accent, #4a4e48);
-  border-color: var(--accent, #4a4e48);
+  transform: translateY(-4px);
+  box-shadow: 8px 8px 0 #ff5a1f;
+  border-color: #111311;
 }
 
 .utility-card > span:first-child {
-  font-size: 9px;
-  color: #969b91;
+  font-size: 10px;
+  font-weight: 800;
+  color: #555b53;
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
 
 .utility-card .hub-graphic {
-  margin: 18px 0 18px 0;
+  margin: 12px 0 16px 0;
   display: flex;
   justify-content: center;
+  align-items: center;
   min-height: 80px;
+  background: #f4f5ef;
+  border: 1px solid #11131122;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .utility-card small {
-  font-size: 9px;
-  color: var(--accent, #969b91);
+  font-size: 10px;
+  color: #ff5a1f;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .utility-card h3 {
   font-size: 20px;
-  margin: 10px 0 12px 0;
-  color: #f4f5ef;
+  margin: 8px 0 10px 0;
+  color: #111311;
   font-weight: 900;
   letter-spacing: -0.04em;
   font-family: "Courier New", monospace;
@@ -157,8 +218,8 @@
 
 .utility-card p {
   font-size: 13px;
-  color: #adb1a8;
-  margin: 0 0 12px 0;
+  color: #555b53;
+  margin: 0 0 16px 0;
   flex-grow: 1;
   line-height: 1.5;
 }
@@ -166,91 +227,136 @@
 .tool-status {
   margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid #3b403a;
-  font-size: 8px;
-  color: #81867e;
+  border-top: 1.5px solid #1113111f;
+  font-size: 10px;
+  color: #ff5a1f;
   text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 900;
+  letter-spacing: 0.05em;
 }
 
 /* ========== SPECIAL CARDS ========== */
 
-/* Documentation */
-.utility-card.docs-card {
-  background: #242724;
-  border: 4px dashed #4a4e48;
-  --accent: #ae6dff;
-}
+/* ========== MACHINE SPECIFIC CARD COLORS ========== */
 
-.utility-card.docs-card h3 {
-  color: #ae6dff;
-}
-
-/* Sauvegarde */
-.utility-card.save-card {
-  background: #242724;
-  border: 3px solid #8B4513;
-  --accent: #f2ca45;
-}
-
-.utility-card.save-card h3 {
-  color: #f2ca45;
-}
-
-/* Apprendre */
-.utility-card.learn-card {
-  background: #242724;
-  border: 3px solid #4CAF50;
-  --accent: #7bea71;
-}
-
-.utility-card.learn-card h3 {
-  color: #7bea71;
-}
-
-/* Réglages */
-.utility-card.settings-card {
-  background: #242724;
-  border: 4px double #555;
-  --accent: #999;
-}
-
-.utility-card.settings-card h3 {
-  color: #999;
-}
-
-/* Son */
-.utility-card.sound-card {
-  background: #242724;
-  border: 3px solid #28d6d0;
-  --accent: #28d6d0;
-}
-
-.utility-card.sound-card h3 {
-  color: #28d6d0;
-}
-
-/* OP-1 Studio */
-.utility-card.op1-studio-card {
-  background: #242724;
-  border: 3px solid #FFD700;
-  --accent: #FFD700;
+/* OP-1 Cards (Cyan / Blue / Yellow) */
+.utility-card.op1-studio-card,
+.utility-card.yellow,
+.utility-card.blue,
+.utility-card.cyan {
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-top: 6px solid #4aa7ff;
 }
 
 .utility-card.op1-studio-card h3 {
-  color: #FFD700;
+  color: #111311;
 }
 
-/* EP-133 Studio */
-.utility-studio-card.ep133-studio-card {
-  background: #242724;
-  border: 3px solid #ff6431;
-  --accent: #ff6431;
+.utility-card.op1-studio-card small,
+.utility-card.yellow small,
+.utility-card.blue small,
+.utility-card.cyan small {
+  color: #4aa7ff;
+  font-weight: 900;
+}
+
+.utility-card.op1-studio-card:hover,
+.utility-card.yellow:hover,
+.utility-card.blue:hover,
+.utility-card.cyan:hover {
+  box-shadow: 8px 8px 0 #4aa7ff;
+}
+
+/* EP-133 Cards (TE Orange / Amber) */
+.utility-card.ep133-studio-card,
+.utility-studio-card.ep133-studio-card,
+.utility-card.orange,
+.utility-card.pink {
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-top: 6px solid #ff5a1f;
 }
 
 .utility-studio-card.ep133-studio-card h3 {
-  color: #ff6431;
+  color: #111311;
+}
+
+.utility-studio-card.ep133-studio-card small,
+.utility-card.orange small,
+.utility-card.pink small {
+  color: #ff5a1f;
+  font-weight: 900;
+}
+
+.utility-card.ep133-studio-card:hover,
+.utility-studio-card.ep133-studio-card:hover,
+.utility-card.orange:hover,
+.utility-card.pink:hover {
+  box-shadow: 8px 8px 0 #ff5a1f;
+}
+
+/* Documentation, Vault & Settings Cards */
+.utility-card.docs-card,
+.utility-card.purple {
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-top: 6px solid #a855f7;
+}
+
+.utility-card.docs-card small,
+.utility-card.purple small {
+  color: #a855f7;
+}
+
+.utility-card.docs-card:hover,
+.utility-card.purple:hover {
+  box-shadow: 8px 8px 0 #a855f7;
+}
+
+.utility-card.save-card {
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-top: 6px solid #eab308;
+}
+
+.utility-card.save-card small {
+  color: #eab308;
+}
+
+.utility-card.save-card:hover {
+  box-shadow: 8px 8px 0 #eab308;
+}
+
+.utility-card.sound-card {
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-top: 6px solid #06b6d4;
+}
+
+.utility-card.sound-card small {
+  color: #06b6d4;
+}
+
+.utility-card.sound-card:hover {
+  box-shadow: 8px 8px 0 #06b6d4;
+}
+
+.utility-card.learn-card,
+.utility-card.green {
+  background: #ffffff;
+  border: 2px solid #111311;
+  border-top: 6px solid #22c55e;
+}
+
+.utility-card.learn-card small,
+.utility-card.green small {
+  color: #22c55e;
+}
+
+.utility-card.learn-card:hover,
+.utility-card.green:hover {
+  box-shadow: 8px 8px 0 #22c55e;
 }
 
 /* ========== MODALS ========== */

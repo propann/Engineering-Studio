@@ -11,10 +11,10 @@ type HubEvent = {
 };
 
 function resolveHubOrigin() {
-  if (typeof window === "undefined") return "http://127.0.0.1:5179";
+  if (typeof window === "undefined") return "";
   const fromLaunch = new URLSearchParams(window.location.search).get("hubReturn");
-  try { return new URL(fromLaunch || "http://127.0.0.1:5179/").origin; }
-  catch { return "http://127.0.0.1:5179"; }
+  try { return new URL(fromLaunch || window.location.origin).origin; }
+  catch { return window.location.origin; }
 }
 
 const HUB_ORIGIN = resolveHubOrigin();

@@ -2,59 +2,175 @@
 import { useEffect, useState } from "react";
 import { TopBar } from "../components/TopBar";
 
-const Link = ({href, className = "", ...props}: any) => {
-  const handleClick = (e: any) => {
-    e.preventDefault();
-    if (href === "/outils") (window as any).navigateMaquette("outils");
-    else if (href === "/fiche-personnage") (window as any).navigateMaquette("profil");
-    else if (href === "/") (window as any).navigateMaquette("landing");
+export default function Home() {
+  const [profileName, setProfileName] = useState("AZOTH");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("studio-hub-profile");
+      if (raw) {
+        const profile = JSON.parse(raw) as { name?: string };
+        if (profile.name?.trim()) setProfileName(profile.name.trim());
+      }
+    } catch {
+      /* profil local */
+    }
+  }, []);
+
+  const openTool = (toolId: string) => {
+    if (toolId === "op1") (window as any).navigateMaquette("studio-op1");
+    else if (toolId === "ep133") (window as any).navigateMaquette("studio-ep133");
+    else if (toolId === "sounds") (window as any).navigateMaquette("sound-editor");
+    else if (toolId === "visual") (window as any).navigateMaquette("image-editor-op1");
+    else (window as any).navigateMaquette("outils");
   };
-  return <a href={"#" + href} onClick={handleClick} className={className} {...props}/>;
-};
-const Image = ({src, ...props}) => <img src={src} {...props}/>;
 
-const tools = [
-  { id:"op1", index:"01", title:"OP-1 Studio", label:"Synthèse & création", description:"Samples, Tape, firmware, images et sauvegardes dans un atelier dédié.", accent:"blue", icon:"keys", meta:"8 modules" },
-  { id:"ep133", index:"02", title:"EP-133 Studio", label:"Beatmaking & performance", description:"Patterns, Song, pads, transferts et entraînement rythmique.", accent:"orange", icon:"pads", meta:"64 / 128 Mo" },
-  { id:"sounds", index:"03", title:"Bibliothèque sonore", label:"Le stock central", description:"Importer, écouter, classer et préparer les sons pour toutes les machines.", accent:"cyan", icon:"wave", meta:"Local & partagé" },
-  { id:"visual", index:"04", title:"Atelier visuel", label:"Pixels & écrans", description:"Créer les écrans, thèmes et graphismes au format exact de l’OP-1.", accent:"purple", icon:"pixels", meta:"320 × 160" },
-  { id:"games", index:"05", title:"Training Lab", label:"Jouer pour progresser", description:"Rhythm Hero, exercices MIDI, scores et programmes d’entraînement.", accent:"green", icon:"rhythm", meta:"MIDI ready" },
-  { id:"vault", index:"06", title:"Coffre de l’atelier", label:"Copies & restauration", description:"Sauvegarder les machines, contrôler l’intégrité et restaurer sans surprise.", accent:"yellow", icon:"vault", meta:"SHA-256" },
-];
+  return (
+    <main className="landing-rich-page">
+      <TopBar activePage="landing" profileName={profileName} />
 
-function ToolVisual({icon}:{icon:string}) {
-  if(icon==="keys") return <div className="visual keys">{[1,2,3,4,5].map(i=><i key={i}/>)}</div>;
-  if(icon==="pads") return <div className="visual pads">{Array.from({length:12},(_,i)=><i key={i}/>)}</div>;
-  if(icon==="wave") return <div className="visual wave">{[22,42,68,38,78,54,30,62,44].map((h,i)=><i key={i} style={{height:`${h}%`}}/>)}</div>;
-  if(icon==="pixels") return <div className="visual pixels">{Array.from({length:24},(_,i)=><i key={i} className={[2,3,8,11,12,15,20,21].includes(i)?"on":""}/>)}</div>;
-  if(icon==="rhythm") return <div className="visual rhythm"><i/><i/><b/><i/><i/><span/></div>;
-  return <div className="visual vault"><span/><span/><b/></div>;
-}
+      {/* Hero Section */}
+      <section className="rich-hero" id="top">
+        <div className="hero-badge-strip">
+          <span className="badge-dot" />
+          <b>TEENAGE ENGINEERING SUITE</b>
+          <small>· OP-1 STUDIO & EP-133 K.O. II</small>
+        </div>
 
-export default function Home(){
- const [selected,setSelected]=useState<(typeof tools)[number]|null>(null);
- const [profileName,setProfileName]=useState("AZOTH");
- // Le profil est une source locale externe : on le lit une seule fois au montage.
- // eslint-disable-next-line react-hooks/set-state-in-effect
- useEffect(()=>{try{const raw=localStorage.getItem("studio-hub-profile");if(raw){const profile=JSON.parse(raw) as {name?:string};if(profile.name?.trim())setProfileName(profile.name.trim())}}catch{/* profil local absent */}},[]);
- return <main>
-  <TopBar profileName={profileName}/>
-  <section className="hero" id="top"><div className="hero-grid"/><div className="hero-copy">
-   <p className="eyebrow"><span/> ATELIER MUSICAL MODULAIRE · LOCAL</p><h1>Construis.<br/>Connecte.<br/><em>Crée.</em></h1>
-   <p className="hero-intro">Un seul espace pour piloter tes machines, façonner tes sons et transformer les idées en instruments.</p>
-   <div className="hero-actions"><Link className="primary-action" href="/outils">Ouvrir les outils <span>→</span></Link><Link className="secondary-action" href="/fiche-personnage">Créer ma fiche <span>→</span></Link></div>
-   <div className="local-note"><i/> Aucun compte. Aucun cloud imposé. Tes fichiers restent chez toi.</div>
-  </div><div className="pixel-showcase">
-   <div className="pixel-window ep-window"><div className="pixel-window-bar"><span>EP133.EXE</span><b>01</b></div><Image src="/media/ep133.jpeg" alt="Teenage Engineering EP-133 K.O. II sampler composer en pixel art" width={512} height={512} priority sizes="(max-width: 900px) 62vw, 32vw"/><div className="machine-tag"><i/> EP-133 K.O. II · SAMPLER LAB</div></div>
-   <div className="pixel-window op-window"><div className="pixel-window-bar"><span>OP1.EXE</span><b>02</b></div><Image src="/media/op1.jpeg" alt="Teenage Engineering OP-1 music workstation en pixel art" width={512} height={512} priority sizes="(max-width: 900px) 76vw, 40vw"/><div className="machine-tag"><i/> OP-1 · SYNTH STUDIO</div></div>
-   <div className="pixel-cursor">+</div><div className="pixel-stamp">TWO MACHINES<br/><b>ONE STUDIO</b></div>
-  </div></section>
-  <section className="intro-strip" id="atelier"><span>01 / L’ATELIER</span><h2>Des outils sérieux.<br/>Une interface qui donne envie de jouer.</h2><p>Engineering Studio réunit le Hub, l’OP-1 et l’EP-133 sans transformer la musique en tableau Excel. Chaque carte est une porte vers un espace spécialisé.</p></section>
-  <section className="tools-section" id="outils"><div className="section-head"><div><p className="eyebrow"><span/> CHOISIS TON MODULE</p><h2>Tableau des outils</h2></div><p>Une page dédiée par outil.<br/>Une navigation commune pour ne jamais se perdre.</p></div>
-   <div className="tool-grid">{tools.map(tool=><button key={tool.id} className={`tool-card ${tool.accent}`} onClick={()=>setSelected(tool)}><div className="card-top"><span>{tool.index}</span><b>{tool.meta}</b></div><ToolVisual icon={tool.icon}/><div className="card-copy"><small>{tool.label}</small><h3>{tool.title}</h3><p>{tool.description}</p></div><div className="card-open"><span>Ouvrir l’outil</span><b>↗</b></div></button>)}</div>
-  </section>
-  <section className="system-strip" id="systeme"><div><span className="status-light"/><small>SYSTÈME</small><strong>Local et prêt</strong></div><div><small>MACHINES</small><strong>OP-1 · EP-133</strong></div><div><small>ESPACE</small><strong>1 atelier partagé</strong></div><Link href="/fiche-personnage">Configurer mon atelier <span>→</span></Link></section>
-  <footer><span>ENGINEERING STUDIO</span><p>Un atelier pour inventer les machines de demain.</p><b>LOCAL FIRST · 2026</b></footer>
-  {selected&&<div className="dialog-backdrop" onClick={()=>setSelected(null)}><section className={`tool-dialog ${selected.accent}`} role="dialog" aria-modal="true" onClick={e=>e.stopPropagation()}><button className="dialog-close" onClick={()=>setSelected(null)}>×</button><span className="dialog-index">MODULE {selected.index}</span><ToolVisual icon={selected.icon}/><small>{selected.label}</small><h2>{selected.title}</h2><p>{selected.description}</p><div className="dialog-state"><i/> PAGE DÉDIÉE · PROCHAINE ÉTAPE</div><button className="dialog-action" onClick={()=>setSelected(null)}>Retour à l’atelier</button></section></div>}
- </main>
+        <div className="rich-hero-grid">
+          {/* Left Hero Copy */}
+          <div className="hero-text-block">
+            <h1>
+              L’ATELIER <br />
+              <b>MODULAIRE</b> <br />
+              <em className="highlight-orange">TE HARDWARE</em>
+            </h1>
+            <p className="hero-lead">
+              Un écosystème unique pour gérer vos projets <strong>OP-1</strong> et <strong>EP-133</strong>. 
+              Sauvegardes, banques de sons, clone de pads et édition de bande magnétique en temps réel.
+            </p>
+
+            <div className="hero-buttons-row">
+              <button
+                type="button"
+                className="btn-op1-hero"
+                onClick={() => openTool("op1")}
+              >
+                <span>🎹</span>
+                <div>
+                  <strong>OP-1 STUDIO</strong>
+                  <small>4 Pistes · Workstation</small>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="btn-ep133-hero"
+                onClick={() => openTool("ep133")}
+              >
+                <span>🥁</span>
+                <div>
+                  <strong>EP-133 STUDIO</strong>
+                  <small>K.O. II · Sampler Lab</small>
+                </div>
+              </button>
+            </div>
+
+            <div className="hero-features-chips">
+              <span>⚡ Connexion WebMIDI Directe</span>
+              <span>💾 100% Local (Sans Cloud)</span>
+              <span>🎵 Synthétiseur & Samples 24-bit</span>
+            </div>
+          </div>
+
+          {/* Right Machines Showcase - Seamless blended image cards */}
+          <div className="rich-machine-showcase">
+            {/* OP-1 Machine Card */}
+            <div
+              className="machine-card-frame op1-card-frame"
+              onClick={() => openTool("op1")}
+              title="Cliquer pour lancer l'OP-1 Studio"
+            >
+              <div className="card-status-bar op1-bar">
+                <span>🎹 OP-1 WORKSTATION</span>
+                <span className="pill-active">READY</span>
+              </div>
+              <div className="img-multiply-blend">
+                <img
+                  src="/media/op1.jpeg"
+                  alt="OP-1 Synthesizer Workstation"
+                  className="op1-clean-img"
+                />
+              </div>
+              <div className="card-footer-info">
+                <span>SYNTH · TAPE · DRUM</span>
+                <strong>LANCER OP-1 STUDIO ↗</strong>
+              </div>
+            </div>
+
+            {/* EP-133 Machine Card */}
+            <div
+              className="machine-card-frame ep133-card-frame"
+              onClick={() => openTool("ep133")}
+              title="Cliquer pour lancer l'EP-133 Studio"
+            >
+              <div className="card-status-bar ep133-bar">
+                <span>🥁 EP-133 K.O. II</span>
+                <span className="pill-orange">SAMPLER</span>
+              </div>
+              <div className="ep-crop-container">
+                <img
+                  src="/media/ep133.jpeg"
+                  alt="EP-133 K.O. II Sampler"
+                  className="ep133-clean-img"
+                />
+              </div>
+              <div className="card-footer-info">
+                <span>PADS A/B/C/D · 64MB</span>
+                <strong>LANCER EP-133 STUDIO ↗</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Tools Overview Section */}
+      <section className="rich-tools-hub-preview">
+        <div className="preview-title">
+          <h2>MODULES DE L'ATELIER</h2>
+          <p>Choisissez votre outil pour commencer</p>
+        </div>
+
+        <div className="preview-cards-grid">
+          <div className="preview-card" onClick={() => openTool("op1")}>
+            <div className="card-icon">🎹</div>
+            <h3>OP-1 Studio</h3>
+            <p>Workstation complète, gestion des projets, backups et enregistreur de bande 4-pistes.</p>
+            <span className="card-link">Ouvrir le Studio ↗</span>
+          </div>
+
+          <div className="preview-card" onClick={() => openTool("ep133")}>
+            <div className="card-icon">🥁</div>
+            <h3>EP-133 K.O. II</h3>
+            <p>Gestionnaire de samples, banques de sons A/B/C/D, clonage de pads et sauvegardes.</p>
+            <span className="card-link">Ouvrir le Sampler ↗</span>
+          </div>
+
+          <div className="preview-card" onClick={() => openTool("sounds")}>
+            <div className="card-icon">🎵</div>
+            <h3>Éditeur de Sons</h3>
+            <p>Convertisseur WAV/AIFF, détection de silence, normalisation 24-bit et banques partagées.</p>
+            <span className="card-link">Lancer l'Éditeur ↗</span>
+          </div>
+
+          <div className="preview-card" onClick={() => openTool("visual")}>
+            <div className="card-icon">🖼️</div>
+            <h3>Éditeur d'Images OP-1</h3>
+            <p>Création d'animations et de visuels pixel-art pour l'écran de votre synthétiseur.</p>
+            <span className="card-link">Créer un visuel ↗</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
 }

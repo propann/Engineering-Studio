@@ -3,7 +3,7 @@ import { createHubCacheEnvelope, HUB_CACHE_KEYS, isHubNoteMessage, isHubPanicMes
 
 function resolveHubOrigin() {
   const params = new URLSearchParams(window.location.search);
-  const configured = import.meta.env.VITE_HUB_ORIGIN as string | undefined;
+  const configured = (import.meta.env as any).VITE_HUB_ORIGIN as string | undefined;
   try {
     return new URL(params.get('hubReturn') || configured || window.location.origin).origin;
   } catch {

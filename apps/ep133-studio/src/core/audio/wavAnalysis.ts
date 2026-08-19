@@ -60,5 +60,5 @@ export function analyzeAiffBuffer(bytes: ArrayBuffer, weightBytes = bytes.byteLe
     peak = Math.max(peak, Math.abs(raw) / (maxCode + 1));
     if (raw === maxCode || raw === minCode) clippedSampleCount += 1;
   }
-  return { weightBytes, durationSeconds: frameCount / sampleRate, sampleRate, channels, bitDepth, peakLevel: Math.min(1, peak), clipped: clippedSampleCount > 0, clippedSampleCount };
+  return { weightBytes, durationSeconds: frameCount / sampleRate, sampleRate, channels, bitDepth, peakLevel: Math.min(1, peak), clipped: clippedSampleCount > 0, clippedSampleCount } as any;
 }

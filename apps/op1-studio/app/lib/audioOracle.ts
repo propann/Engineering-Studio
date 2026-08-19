@@ -31,5 +31,6 @@ export type Op1SampleKind = 'synth' | 'drum';
 
 export function exceedsOp1Duration(report: WavAnalysisReport, kind: Op1SampleKind): boolean {
   const limit = kind === 'synth' ? OP1_AUDIO_LIMITS.synthMaxSeconds : OP1_AUDIO_LIMITS.drumMaxSeconds;
-  return report.durationSeconds > limit;
+  const duration = (report as any).durationSeconds || ((report as any).durationMs ? (report as any).durationMs / 1000 : 0);
+  return duration > limit;
 }

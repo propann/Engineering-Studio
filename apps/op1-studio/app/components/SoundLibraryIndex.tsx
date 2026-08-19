@@ -69,10 +69,10 @@ async function inspectFile(file: File): Promise<{ duration: number; peaks: numbe
     return { duration, peaks: waveform ? Array.from(waveform.values) : [], patch, markers };
   }
 
-  const wav = analyzeWavBuffer(bytes, file.size);
+  const wav = analyzeWavBuffer(bytes) as any;
   if (wav) {
     const waveform = computeWaveformPeaks(bytes, 48);
-    return { duration: wav.durationSeconds, peaks: waveform ? Array.from(waveform.values) : [] };
+    return { duration: wav.durationSeconds || (wav.durationMs ? wav.durationMs / 1000 : 0), peaks: (waveform as any)?.values ? Array.from((waveform as any).values) : [] };
   }
 
   const context = new AudioContext();

@@ -104,7 +104,7 @@ export default function RhythmHero() {
             Ouvre l'EP-133 Studio pour lancer Rhythm Hero et commence ton entraînement !
           </p>
           <button
-            onClick={() => window.location.href = "http://127.0.0.1:5177/?hubTool=game"}
+            onClick={() => (window as any).navigateMaquette("studio-ep133")}
             style={{
               padding: "12px 30px",
               background: "#00ed95",

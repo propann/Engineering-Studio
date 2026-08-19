@@ -278,7 +278,7 @@ export function SoundsPage({ machineName, machineCapacityMb, inventory, soundInd
   const ensureAudioReport = async (name: string, file: File) => {
     if (name in audioReports) return;
     const bytes = await file.arrayBuffer();
-    const report = /\.(aif|aiff)$/i.test(name) ? analyzeAiffBuffer(bytes, file.size) : analyzeWavBuffer(bytes, file.size);
+    const report = /\.(aif|aiff)$/i.test(name) ? analyzeAiffBuffer(bytes, file.size) : analyzeWavBuffer(bytes);
     setAudioReports((current) => ({ ...current, [name]: report ?? 'unsupported' }));
   };
 
@@ -531,7 +531,7 @@ export function SoundsPage({ machineName, machineCapacityMb, inventory, soundInd
                       <strong>{entry.name}</strong>
                       {!(entry.name in audioReports) && <small>GLISSER SUR UN PAD OU UN SLOT MACHINE</small>}
                       {audioReports[entry.name] === 'unsupported' && <small>FORMAT NON WAV · PAS DE FICHE AUDIO</small>}
-                      {audioReports[entry.name] && audioReports[entry.name] !== 'unsupported' && (() => { const report = audioReports[entry.name] as WavAnalysisReport; return <small className={`local-audio-report ${report.clipped ? 'clipped' : ''}`}>{(report.weightBytes / 1024).toFixed(0)} KO · {report.durationSeconds.toFixed(2)} S · {report.sampleRate} HZ · {report.bitDepth} BITS{report.clipped ? ` · ÉCRÊTAGE (${report.clippedSampleCount})` : ''}</small>; })()}
+                      {audioReports[entry.name] && audioReports[entry.name] !== 'unsupported' && (() => { const report = audioReports[entry.name] as any; return <small className={`local-audio-report ${report.clipped ? 'clipped' : ''}`}>{((report.weightBytes || report.fileSizeBytes || 0) / 1024).toFixed(0)} KO · {(report.durationSeconds || (report.durationMs ? report.durationMs / 1000 : 0)).toFixed(2)} S · {report.sampleRate} HZ · {report.bitDepth} BITS{report.clipped ? ` · ÉCRÊTAGE (${report.clippedSampleCount})` : ''}</small>; })()}
                       {trims[entry.name] && <small className="waveform-trim-summary">TRIM {trims[entry.name].startSeconds.toFixed(2)}S → {trims[entry.name].endSeconds.toFixed(2)}S</small>}
                       {preparedAudio[entry.name] && <small className="waveform-trim-prepared">PRÊT EP-133 · {preparedAudio[entry.name].target} · {preparedAudio[entry.name].sampleRate} HZ · {preparedAudio[entry.name].channels === 1 ? 'MONO' : 'STÉRÉO'}</small>}
                     </div>

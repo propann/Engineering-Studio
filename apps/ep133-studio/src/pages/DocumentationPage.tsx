@@ -11,7 +11,7 @@ export function DocumentationPage({ onBack }: { onBack: () => void }) {
       <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
         <button
           onClick={() => {
-            const hubUrl = new URLSearchParams(window.location.search).get('hubReturn') || 'http://127.0.0.1:5179/';
+            const hubUrl = new URLSearchParams(window.location.search).get('hubReturn') || window.location.origin;
             window.location.href = `${hubUrl}?page=documentation`;
           }}
           style={{

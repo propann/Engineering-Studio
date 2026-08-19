@@ -8,7 +8,7 @@ export default function DocOP1() {
 
   return (
     <main className="doc-page" style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>
-      <TopBar profileName={profileName} onDocClick={() => {}} />
+      <TopBar activePage="documentation" profileName={profileName} onDocClick={() => {}} />
 
       <section style={{ marginTop: "40px" }}>
         <div style={{ marginBottom: "30px" }}>
