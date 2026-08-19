@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Audit Report</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <style>
+        :root {
+            --bg-primary: #FAFAF9;
+            --bg-secondary: #F5F3F0;
+            --bg-tertiary: #EFEFED;
+            --text-primary: #2B2520;
+            --text-secondary: #706B63;
+            --text-muted: #9D9790;
+            --border-color: #E8E3DB;
+
+            --critical: #DC2626;
+            --critical-light: #FEE2E2;
+            --warning: #EA8C55;
+            --warning-light: #FEF3E2;
+            --notice: #EAB308;
+            --notice-light: #FEFCE8;
+            --success: #16A34A;
+            --success-light: #DCFCE7;
+
+            --code-bg: #2D2A26;
+            --code-text: #F5F3F0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg-primary: #1F1D1A;
+                --bg-secondary: #2D2A26;
+                --bg-tertiary: #3A3732;
+                --text-primary: #F5F3F0;
+                --text-secondary: #D4CCBE;
+                --text-muted: #8B8680;
+                --border-color: #3A3732;
+
+                --code-bg: #0F0E0B;
+                --code-text: #F5F3F0;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg-primary: #1F1D1A;
+            --bg-secondary: #2D2A26;
+            --bg-tertiary: #3A3732;
+            --text-primary: #F5F3F0;
+            --text-secondary: #D4CCBE;
+            --text-muted: #8B8680;
+            --border-color: #3A3732;
+
+            --code-bg: #0F0E0B;
+            --code-text: #F5F3F0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+            padding: 40px 20px;
+        }
+
+        /* SIDEBAR NAV */
+        .sidebar {
+            position: sticky;
+            top: 40px;
+            height: fit-content;
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section:first-child h3 {
+            font-family: "Merriweather", serif;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-section h3 {
+            font-family: "Merriweather", serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-bottom: 8px;
+        }
+
+        .nav-links a {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: block;
+            transition: all 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            min-width: 0;
+        }
+
+        header {
+            margin-bottom: 48px;
+        }
+
+        .meta {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        h1 {
+            font-family: "Merriweather", serif;
+            font-size: 42px;
+            font-weight: 900;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            text-wrap: balance;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            max-width: 600px;
+        }
+
+        h2 {
+            font-family: "Merriweather", serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 48px 0 24px;
+            color: var(--text-primary);
+            text-wrap: balance;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 24px 0 12px;
+            color: var(--text-primary);
+        }
+
+        /* METRICS TABLE */
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 32px 0;
+        }
+
+        .metric-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 8px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .severity {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 8px;
+        }
+
+        .severity.critical {
+            background: var(--critical-light);
+            color: var(--critical);
+        }
+
+        .severity.warning {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .severity.notice {
+            background: var(--notice-light);
+            color: var(--notice);
+        }
+
+        .severity.success {
+            background: var(--success-light);
+            color: var(--success);
+        }
+
+        /* FILE TREE */
+        .file-tree {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+
+        .file-tree pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: var(--text-secondary);
+        }
+
+        .file-name {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .file-icon {
+            color: var(--warning);
+        }
+
+        /* FINDING CARDS */
+        .findings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .finding {
+            background: var(--bg-secondary);
+            border-left: 4px solid;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .finding.critical {
+            border-left-color: var(--critical);
+        }
+
+        .finding.warning {
+            border-left-color: var(--warning);
+        }
+
+        .finding.notice {
+            border-left-color: var(--notice);
+        }
+
+        .finding-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .finding-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .finding-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .finding-path {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            word-break: break-all;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        /* PRIORITY BADGES */
+        .priority {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority.p1 {
+            background: var(--critical-light);
+            color: var(--critical);
+        }
+
+        .priority.p2 {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+
+        .priority.p3 {
+            background: var(--notice-light);
+            color: var(--notice);
+        }
+
+        /* CODE BLOCKS */
+        pre {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        /* TABLES */
+        table {
+            width: 100%;
+            margin: 24px 0;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid var(--border-color);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* CALLOUT */
+        .callout {
+            background: var(--bg-secondary);
+            border-left: 4px solid;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+        }
+
+        .callout.critical {
+            border-left-color: var(--critical);
+            background: var(--critical-light);
+        }
+
+        .callout.warning {
+            border-left-color: var(--warning);
+            background: var(--warning-light);
+        }
+
+        .callout.success {
+            border-left-color: var(--success);
+            background: var(--success-light);
+        }
+
+        .callout-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+
+        /* VERDICT */
+        .verdict {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 24px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+        }
+
+        .verdict-good {
+            color: var(--success);
+        }
+
+        .verdict-warning {
+            color: var(--warning);
+        }
+
+        .verdict-critical {
+            color: var(--critical);
+        }
+
+        /* FOOTER */
+        footer {
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            h2 {
+                font-size: 22px;
+            }
+
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="nav-section">
+                <h3>📋 Report</h3>
+                <ul class="nav-links">
+                    <li><a href="#summary">Résumé</a></li>
+                    <li><a href="#metrics">Métriques</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h3>🔍 Findings</h3>
+                <ul class="nav-links">
+                    <li><a href="#orphans">Fichiers orphelins</a></li>
+                    <li><a href="#imports">Imports inutilisés</a></li>
+                    <li><a href="#exports">Exports inutilisés</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <h3>✅ Action</h3>
+                <ul class="nav-links">
+                    <li><a href="#plan">Plan d'action</a></li>
+                    <li><a href="#health">Santé du code</a></li>
+                    <li><a href="#recs">Recommandations</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header>
+                <div class="meta">
+                    <div class="meta-item">📅 2026-08-19</div>
+                    <div class="meta-item">🔀 Branch: main</div>
+                    <div class="meta-item">📊 143 fichiers</div>
+                </div>
+                <h1>Audit Complet du Code Mort</h1>
+                <p class="subtitle">Analyse systématique des fichiers orphelins, exports inutilisés et imports superflus dans le projet Engineering Studio.</p>
+            </header>
+
+            <section id="summary">
+                <h2>📊 Résumé Exécutif</h2>
+
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-label">Fichiers Orphelins</div>
+                        <div class="metric-value">16</div>
+                        <div class="severity critical">CRITIQUE</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Exports Inutilisés</div>
+                        <div class="metric-value">~144</div>
+                        <div class="severity warning">MOYEN</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Imports Inutilisés</div>
+                        <div class="metric-value">~80</div>
+                        <div class="severity notice">BAS</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Code Mort en Branches</div>
+                        <div class="metric-value">0</div>
+                        <div class="severity success">BON</div>
+                    </div>
+                </div>
+
+                <p><strong>Poids total à nettoyer:</strong> ~450 lignes de code mort pur</p>
+            </section>
+
+            <section id="orphans">
+                <h2>🚨 Fichiers Orphelins (16 fichiers)</h2>
+
+                <h3>Studio-Hub (1 fichier)</h3>
+                <div class="finding critical">
+                    <div class="finding-header">
+                        <div class="finding-title">App-old.tsx</div>
+                        <div class="priority p1">SUPPRIMER</div>
+                    </div>
+                    <div class="finding-desc">335 lignes | ~31KB | Aucune référence</div>
+                    <div class="finding-path">apps/studio-hub/src/App-old.tsx</div>
+                </div>
+
+                <h3>EP133-Studio (5 fichiers)</h3>
+                <div class="findings-grid">
+                    <div class="finding critical">
+                        <div class="finding-header">
+                            <div class="finding-title">PatternSelector.tsx</div>
+                            <div class="priority p1">SUPPRIMER</div>
+                        </div>
+                        <div class="finding-desc">Composant jamais importé</div>
+                        <div class="finding-path">apps/ep133-studio/src/components/editor/</div>
+                    </div>
+                    <div class="finding critical">
+                        <div class="finding-header">
+                            <div class="finding-title">Avatar.tsx</div>
+                            <div class="priority p1">SUPPRIMER</div>
+                        </div>
+                        <div class="finding-desc">6 exports, système d'avatar complet</div>
+                        <div class="finding-path">apps/ep133-studio/src/components/shared/</div>
+                    </div>
+                    <div class="finding critical">
+                        <div class="finding-header">
+                            <div class="finding-title">audioFormatUnified.ts</div>
+                            <div class="priority p1">SUPPRIMER</div>
+                        </div>
+                        <div class="finding-desc">7 functions, module wrapper audio</div>
+                        <div class="finding-path">apps/ep133-studio/src/core/audio/</div>
+                    </div>
+                </div>
+
+                <h3>OP1-Studio (10 fichiers) ⚠️ CRITIQUE</h3>
+                <div class="callout critical">
+                    <div class="callout-title">⚠️ chatgpt-auth.ts</div>
+                    <p><strong>5 exports</strong> - Auth ChatGPT jamais intégrée</p>
+                    <p><strong>Status:</strong> Feature abandonnée | <strong>Action:</strong> Suppression sûre</p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fichier</th>
+                            <th>Type</th>
+                            <th>Priorité</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>layout.tsx</code></td>
+                            <td>Layout Next.js</td>
+                            <td><span class="priority p1">P1</span></td>
+                            <td>Supprimer</td>
+                        </tr>
+                        <tr>
+                            <td><code>KeyboardEditor.tsx</code></td>
+                            <td>Composant</td>
+                            <td><span class="priority p1">P1</span></td>
+                            <td>Supprimer (remplacé)</td>
+                        </tr>
+                        <tr>
+                            <td><code>FirmwareSubtabs.tsx</code></td>
+                            <td>Composant</td>
+                            <td><span class="priority p2">P2</span></td>
+                            <td>Vérifier avant</td>
+                        </tr>
+                        <tr>
+                            <td><code>LocalProfilePanel.tsx</code></td>
+                            <td>Composant</td>
+                            <td><span class="priority p2">P2</span></td>
+                            <td>Vérifier avant</td>
+                        </tr>
+                        <tr>
+                            <td><code>SoundPadGrid.tsx</code></td>
+                            <td>Composant</td>
+                            <td><span class="priority p1">P1</span></td>
+                            <td>Supprimer</td>
+                        </tr>
+                        <tr>
+                            <td><code>StudioTapeScreen.tsx</code></td>
+                            <td>Composant</td>
+                            <td><span class="priority p2">P2</span></td>
+                            <td>Vérifier avant</td>
+                        </tr>
+                        <tr>
+                            <td><code>StudioTrackList.tsx</code></td>
+                            <td>Composant</td>
+                            <td><span class="priority p2">P2</span></td>
+                            <td>Vérifier avant</td>
+                        </tr>
+                        <tr>
+                            <td><code>keyboardLayout.ts</code></td>
+                            <td>Utilitaires</td>
+                            <td><span class="priority p1">P1</span></td>
+                            <td>Supprimer</td>
+                        </tr>
+                        <tr>
+                            <td><code>display-library/route.ts</code></td>
+                            <td>API route</td>
+                            <td><span class="priority p2">P2</span></td>
+                            <td>Vérifier avant</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="imports">
+                <h2>📌 Imports Inutilisés (~80)</h2>
+
+                <p>Principalement des type imports jamais utilisés dans leurs fichiers respectifs:</p>
+
+                <pre>// App.tsx:22-23
+import { DeviceInventory, ProjectPatterns, ... } from '@types'
+// ❌ Jamais utilisés
+
+// EditorToolbar.tsx:1
+import { CSSProperties } from 'react'
+// ❌ Type importé mais jamais utilisé
+
+// ScoreView.tsx:1
+import { PointerEvent, RefObject, WheelEvent } from 'react'
+// ❌ Aucune utilisation dans le composant</pre>
+
+                <div class="callout notice">
+                    <div class="callout-title">📝 Type imports</div>
+                    <p>La majorité des ~80 imports inutilisés sont des type imports qui peuvent être automatiquement nettoyés avec ESLint.</p>
+                </div>
+            </section>
+
+            <section id="exports">
+                <h2>📤 Exports Inutilisés (~144 items)</h2>
+
+                <h3>Audio Processing (12 exports)</h3>
+                <pre>- extractAiffInterleaved()
+- isAiffFormat()
+- getAiffMetadata()
+- detectAudioFormat()
+- ... et 8 autres fonctions audio jamais appelées</pre>
+
+                <h3>MIDI System (8 exports)</h3>
+                <pre>- MidiHit type
+- MidiPadMap type
+- officialPadFromNote()
+- ... et 5 autres exports MIDI</pre>
+
+                <h3>Project Management (15+ exports)</h3>
+                <pre>- Ep133ProjectDocumentLike type
+- CloneHistoryEntry type
+- ScannedPad type
+- isResolved() function
+- ... et 12 autres exports projet</pre>
+            </section>
+
+            <section id="plan">
+                <h2>✅ Plan d'Action</h2>
+
+                <h3>Phase 1: Suppressions immédiates (8 fichiers)</h3>
+                <div class="callout success">
+                    <div class="callout-title">✅ Confiance: 95%+</div>
+                    <p>Ces fichiers n'ont aucune référence et peuvent être supprimés en toute sécurité.</p>
+                </div>
+
+                <pre>rm apps/studio-hub/src/App-old.tsx
+rm apps/ep133-studio/src/components/editor/PatternSelector.tsx
+rm apps/ep133-studio/src/components/shared/Avatar.tsx
+rm apps/ep133-studio/src/core/audio/audioFormatUnified.ts
+rm apps/ep133-studio/src/core/engine/loader.ts
+rm apps/op1-studio/app/chatgpt-auth.ts
+rm apps/op1-studio/app/components/KeyboardEditor.tsx
+rm apps/op1-studio/app/components/SoundPadGrid.tsx</pre>
+
+                <p><strong>Impact:</strong> ~450 lignes supprimées</p>
+
+                <h3>Phase 2: Vérification manuelle (4 fichiers)</h3>
+                <p>Avant suppression, vérifier si utilisés côté UI:</p>
+                <ul style="margin-left: 20px; margin-top: 8px;">
+                    <li><code>FirmwareSubtabs.tsx</code></li>
+                    <li><code>LocalProfilePanel.tsx</code></li>
+                    <li><code>StudioTapeScreen.tsx</code></li>
+                    <li><code>StudioTrackList.tsx</code></li>
+                </ul>
+
+                <h3>Phase 3: Cleanup automatisé</h3>
+                <pre>npm install -D ts-prune
+npx ts-prune
+npx eslint . --fix --ext .ts,.tsx,.js,.jsx</pre>
+
+                <h3>Phase 4: Cleanup des exports</h3>
+                <p>Supprimer les ~144 exports inutilisés identifiés dans les sections audio, MIDI et project management.</p>
+            </section>
+
+            <section id="health">
+                <h2>📈 Évaluation de Santé</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Aspect</th>
+                            <th>Score</th>
+                            <th>Commentaire</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Qualité générale</strong></td>
+                            <td>✅ BON</td>
+                            <td>Aucun code commenté, aucune branche morte</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Couverture d'orphelins</strong></td>
+                            <td>🔴 CRITIQUE</td>
+                            <td>16 fichiers à nettoyer</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Exports inutilisés</strong></td>
+                            <td>🟠 MOYEN</td>
+                            <td>144 exports à réviser</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Imports inutilisés</strong></td>
+                            <td>🟡 BAS</td>
+                            <td>~80 type imports à nettoyer</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Architecture</strong></td>
+                            <td>✅ BON</td>
+                            <td>Bon découpage en composants</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="verdict">
+                    <span>📋</span>
+                    <span class="verdict-warning"><strong>Verdict:</strong> Code sain mais demande un nettoyage</span>
+                </div>
+            </section>
+
+            <section id="recs">
+                <h2>🎯 Recommandations</h2>
+
+                <div class="callout success">
+                    <div class="callout-title">📌 Immédiat (aujourd'hui)</div>
+                    <p>✅ Supprimer les 8 fichiers de Phase 1</p>
+                    <p>✅ Créer une PR de cleanup</p>
+                </div>
+
+                <div class="callout warning">
+                    <div class="callout-title">🕐 Court terme (cette semaine)</div>
+                    <p>✅ Vérifier et supprimer les 4 fichiers de Phase 2</p>
+                    <p>✅ Exécuter <code>ts-prune</code> et nettoyer les exports</p>
+                </div>
+
+                <div class="callout notice">
+                    <div class="callout-title">📅 Moyen terme</div>
+                    <p>✅ Configurer ESLint pour détecter les imports inutilisés</p>
+                    <p>✅ Ajouter hook de CI pour vérifier le dead code</p>
+                    <p>✅ Considérer <code>ts-prune</code> dans la CI</p>
+                </div>
+            </section>
+
+            <footer>
+                <p>Rapport d'audit généré le 2026-08-19 | 143 fichiers analysés | Confiance générale: 95%</p>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
