@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("SoundEditor");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -395,7 +397,7 @@ export default function SoundEditorHub({ profileName = "AZOTH" }: { profileName?
       osc.start(now);
       osc.stop(now + 0.05);
     } catch (err) {
-      console.warn("Scrub sound error:", err);
+      log.warn("Scrub sound error:", err);
     }
   };
 
@@ -404,7 +406,7 @@ export default function SoundEditorHub({ profileName = "AZOTH" }: { profileName?
     try {
       if ((sound as any).audioUrl) {
         const audio = new Audio((sound as any).audioUrl);
-        audio.play().catch((err) => console.warn("Audio element play error:", err));
+        audio.play().catch((err) => log.warn("Audio element play error:", err));
         return;
       }
 
@@ -527,7 +529,7 @@ export default function SoundEditorHub({ profileName = "AZOTH" }: { profileName?
         osc.stop(now + 0.5);
       }
     } catch (err) {
-      console.error("Audio playback error:", err);
+      log.error("Audio playback error:", err);
     }
   };
 

@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("AudioRack");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -399,7 +401,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     try {
       localStorage.setItem("studio_hub_user_patches", JSON.stringify(updated));
     } catch (e) {
-      console.error(e);
+      log.error(e);
     }
 
     setNewPatchName("");
@@ -860,7 +862,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
       masterGain.connect(ctx.destination);
     } catch (e) {
-      console.error("Audio error:", e);
+      log.error("Audio error:", e);
     }
   };
 

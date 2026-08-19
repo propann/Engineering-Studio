@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("ImageEditor");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -894,7 +896,7 @@ export default function ImageEditorOP1() {
       localStorage.setItem("op1-shared-drawings", JSON.stringify(updated));
       setNotice("💾 Dessin sauvegardé dans le Dossier Commun (Lab Firmware) !");
     } catch (e) {
-      console.warn("Erreur sauvegarde dossier commun:", e);
+      log.warn("Erreur sauvegarde dossier commun:", e);
     }
   };
 

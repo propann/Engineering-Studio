@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("EP133.Hub");
 /**
  * EP-133 ↔ Hub Communication Channel
  */
@@ -40,9 +42,9 @@ class Ep133HubCommunication {
   private detectHub() {
     if (window.parent !== window || window.opener) {
       this.isConnected = true;
-      console.log('✅ EP-133: Connected to Hub');
+      log.info('✅ EP-133: Connected to Hub');
     } else {
-      console.log('ℹ️ EP-133: Running standalone (not from Hub)');
+      log.info('ℹ️ EP-133: Running standalone (not from Hub)');
     }
   }
 
@@ -53,7 +55,7 @@ class Ep133HubCommunication {
         { source: 'ep133-studio', event },
         HUB_ORIGIN
       );
-      console.log('📤 EP-133 → Hub:', event.type);
+      log.info('📤 EP-133 → Hub:', event.type);
     }
   }
 

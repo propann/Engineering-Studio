@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("FirmwareCompiler");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -51,7 +53,7 @@ export default function FirmwareCompiler() {
         setModifiedImages(map);
       }
     } catch (e) {
-      console.error("Failed to load modified images");
+      log.error("Failed to load modified images");
     }
   }, []);
 
@@ -63,7 +65,7 @@ export default function FirmwareCompiler() {
         setSavedThemes(JSON.parse(saved));
       }
     } catch (e) {
-      console.error("Failed to load themes");
+      log.error("Failed to load themes");
     }
   }, []);
 

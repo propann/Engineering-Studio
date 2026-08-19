@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("Theme");
 "use client";
 
 import { useEffect, useState } from "react";
@@ -56,7 +58,7 @@ export default function ThemeEditor() {
         setSavedThemes(JSON.parse(saved));
       }
     } catch (e) {
-      console.error("Failed to load themes");
+      log.error("Failed to load themes");
     }
   }, []);
 

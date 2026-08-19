@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 import { createHubCacheEnvelope, HUB_CACHE_KEYS, isHubNoteMessage, isHubPanicMessage, isHubTransportMessage, readHubCache } from '@studio-hub/midi-bridge';
+import { createLogger } from '@studio-hub/audio-bridge';
+
+const log = createLogger('EP-133.HubInit');
 
 function resolveHubOrigin() {
   const params = new URLSearchParams(window.location.search);
@@ -63,7 +66,7 @@ export function useHubInitialization() {
       try {
         const hubProfile = JSON.parse(hubProfileJson);
         cacheImportedProfile(hubProfile);
-        console.log('✅ EP-133: Received profile from Hub:', hubProfile.name);
+        log.info('Received profile from Hub', { name: hubProfile.name });
 
         if (queryProfile) {
           params.delete('hubProfile');
@@ -80,10 +83,10 @@ export function useHubInitialization() {
         window.dispatchEvent(new CustomEvent('hub:profileLoaded', { detail: hubProfile }));
 
       } catch (error) {
-        console.error('❌ EP-133: Failed to parse Hub profile:', error);
+        log.error('Failed to parse Hub profile', error);
       }
     } else {
-      console.warn('⚠️ EP-133: No profile from Hub');
+      log.warn('No profile from Hub');
     }
 
     const onWorkspace = (event: MessageEvent<{ type?: string; workspaceHandle?: FileSystemDirectoryHandle | null; profile?: unknown }>) => {

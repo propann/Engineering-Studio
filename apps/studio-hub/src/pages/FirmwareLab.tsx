@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("FirmwareLab");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -181,7 +183,7 @@ export default function FirmwareLab() {
           }
         }
       } catch (err) {
-        console.warn("Manifeste original non chargé ou distant:", err);
+        log.warn("Manifeste original non chargé ou distant:", err);
       } finally {
         setLoadingManifest(false);
       }
@@ -218,7 +220,7 @@ export default function FirmwareLab() {
         setUserThemes(JSON.parse(rawThemes));
       }
     } catch (e) {
-      console.error("Erreur de synchronisation du dossier commun:", e);
+      log.error("Erreur de synchronisation du dossier commun:", e);
     }
   };
 

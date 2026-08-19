@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("SoundPatch");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -140,7 +142,7 @@ export default function SoundPatchCreator({ profileName = "AZOTH", onClose }: { 
 
       showToast(`🔊 LECTURE EN DIRECT : ${freq.toFixed(1)} Hz (${op1Engine.toUpperCase()})`);
     } catch (e) {
-      console.error("Error playing Web Audio note:", e);
+      log.error("Error playing Web Audio note:", e);
     }
   };
 

@@ -1,3 +1,5 @@
+import { createLogger } from "@studio-hub/audio-bridge";
+const log = createLogger("ThemeEditor");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -64,7 +66,7 @@ export default function ThemeProjectEditor() {
         setProjects(parsed);
       }
     } catch (e) {
-      console.error("Failed to load projects");
+      log.error("Failed to load projects");
     }
   }, []);
 
@@ -125,7 +127,7 @@ export default function ThemeProjectEditor() {
 
           loaded++;
         } catch (e) {
-          console.error(`Failed to load ${asset.file}`);
+          log.error(`Failed to load ${asset.file}`);
         }
       }
 
