@@ -1,370 +1,217 @@
-# 📚 Studio Hub - Documentation Index
+# 📚 Studio Hub Documentation Index
 
-**Quick Navigation to all Project Documentation**
-
----
-
-## 🎯 Start Here
-
-### Current Product Source of Truth
-1. **[PLAN_DE_TRANSFORMATION_MASTER.md](./PLAN_DE_TRANSFORMATION_MASTER.md)** - plan master de transformation, blueprint d'architecture et guide de développement
-2. **[DOSSIER_ARCHITECTURE_RACK_CENTRAL.md](./DOSSIER_ARCHITECTURE_RACK_CENTRAL.md)** - dossier d'architecture globale du Rack Central
-3. **[GUIDE_RECABLAGE_RACK_CENTRAL.md](./GUIDE_RECABLAGE_RACK_CENTRAL.md)** - manuel de recâblage et d'intégration des modules OP-1 / EP-133
-4. **[DOC_MODULE_OP1_STUDIO_SPECIFICATION.md](./DOC_MODULE_OP1_STUDIO_SPECIFICATION.md)** - dossier de spécification technique du module OP-1 Studio pour Codex
-5. **[README.md](./README.md)** - présentation du produit, installation et commandes
-2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - parcours utilisateur et rôle de chaque atelier
-3. **[ETUDES_INDEX.md](./docs/ETUDES_INDEX.md)** - catalogue central des études et rapports
-4. **[SYNTHESE_DECISIONS_ET_TRAVAUX.md](./docs/SYNTHESE_DECISIONS_ET_TRAVAUX.md)** - décisions et prochaines portes
-5. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit, limites et priorités actuelles
-6. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - séparation logiciel / matériel et prochaines portes
-7. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - alignement des anciennes feuilles de route
-
-> `STATUS.md`, `PROGRESS.md`, `TEAM_SYNC.md` et `PHASE3_COMPLETION.md` sont
-> des rapports historiques de consolidation. Ils restent utiles pour le
-> contexte, mais ne remplacent pas la roadmap active.
-
-### For First-Time Readers
-1. **[README.md](./README.md)** - vue d’ensemble et démarrage rapide
-2. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - comprendre le produit en cinq minutes
-3. **[ETUDES_INDEX.md](./docs/ETUDES_INDEX.md)** - retrouver toute la matière produite
-4. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - état produit actuel
-5. **[STATUS.md](./STATUS.md)** - contexte historique d’architecture et de consolidation
-
-### For Project Status
-1. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - active status and next gates
-2. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - consistency review
-3. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - historical consolidation report
+**Central Navigation Point - All Documentation Organized**
 
 ---
 
-## 📁 Documentation by Topic
+## 🎯 Start Here (Choose Your Path)
 
-### Getting Started
-- **[README.md](./README.md)** - Monorepo structure and commands
-  - 🎯 What is studio-hub?
-  - 🏗️ Project structure
-  - 🚀 Quick start commands
-  - 📦 Package descriptions
-  - 🔗 Workspace dependencies
+### 👤 First Time Here?
+1. **[README.md](README.md)** - Project overview (5 min read)
+2. **[docs/guides/QUICK_START.md](docs/guides/QUICK_START.md)** - Get up and running (10 min)
+3. **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)** - How it works (15 min)
 
-### Project Phases
-- **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - Current product priorities and gates
-- **[PROGRESS.md](./PROGRESS.md#-project-phases)** - Historical phase documentation
-  - ✅ Phase 1: Quick Wins (Foundation)
-  - ✅ Phase 2: Monorepo Setup
-  - ✅ Phase 3: EP-133 Integration
-  - 🧭 Phase 4: historique de consolidation ; suivre la roadmap active pour les prochaines portes
+### 🚀 Ready to Code?
+1. **[docs/guides/STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md)** - Complete setup
+2. **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)** - System design
+3. **[docs/ROADMAP.md](docs/ROADMAP.md)** - What to work on next
 
-### Consolidation Strategy
-- **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - Audit et alignement des roadmaps
-  - Detailed analysis of both projects
-  - Consolidation roadmap
-  - Week-by-week implementation guide
+### 📊 Project Manager?
+1. **[docs/ROADMAP.md](docs/ROADMAP.md)** - Project timeline & phases
+2. **[docs/STATUS.md](docs/STATUS.md)** - Current project status
+3. **[docs/TEAM_SYNC.md](docs/TEAM_SYNC.md)** - Team updates
 
-- **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)** - Décisions d’intégration des anciens outils
-  - Phase 1 optimization opportunities
-  - Phase 2 optimization strategies
-  - Performance improvement metrics
-
-### Architecture & Design
-- **[STATUS.md](./STATUS.md)** - Detailed architecture documentation
-  - 🏗️ Current architecture overview
-  - 📦 Shared packages details
-  - 🔧 Architectural decisions
-  - ⚠️ Known issues and notes
-
-- **[PROGRESS.md](./PROGRESS.md#-architectural-decisions-made)** - Architectural decision documentation
-  - Decision 1: PlayerProfile Types (rationale)
-  - Decision 2: Build Systems (rationale)
-  - Decision 3: Shared Packages (rationale)
-
-### Build & Test Results
-- **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md#build-verification)** - Build results
-  - OP-1 build status and details
-  - EP-133 build status and details
-  - Output sizes and optimization info
-
-- **[PROGRESS.md](./PROGRESS.md#-verification-checklist)** - Verification checklist
-  - Build verification
-  - Test verification
-  - Dependency verification
-  - Documentation verification
-  - Git verification
-
-### Commands Reference
-- **[README.md](./README.md#-quick-start)** - Development commands
-- **[PROGRESS.md](./PROGRESS.md#-available-commands-complete-reference)** - Complete command reference
-  - Development commands
-  - Build commands
-  - Test commands
-  - Linting commands
-  - Monorepo management
-
-### OP-1 Studio
-- **[apps/op1-studio/README.md](./apps/op1-studio/README.md)** - OP-1 fonctionnalités et commandes
-  - Core structure overview
-  - Zustand stores
-  - File system abstraction
-  - Modernized architecture
-
-- **[apps/op1-studio/CONTEXT.md](./apps/op1-studio/CONTEXT.md)** - Contexte et décisions OP-1
-  - 8-week modernization roadmap
-  - Architecture improvements
-  - Component migration strategy
-
-### EP-133 Studio
-- **[apps/ep133-studio/README.md](./apps/ep133-studio/README.md)** - EP-133 fonctionnalités et limites
-  - Phase 1: Quick wins
-  - Phase 2: Advanced optimizations
-  - Performance metrics
+### 🎼 Understand the Architecture?
+1. **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)** - Technical overview
+2. **[docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md)** - Musical orchestration concept
+3. **[docs/architecture/DOSSIER_ARCHITECTURE_RACK_CENTRAL.md](docs/architecture/DOSSIER_ARCHITECTURE_RACK_CENTRAL.md)** - Detailed system design
 
 ---
 
-## 🔍 Find Documentation By Need
+## 📁 Documentation Organized by Topic
 
-### "I need to understand the current project status"
-→ Read **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** first
-→ Then **[README.md](./README.md)** for commands and **[STATUS.md](./STATUS.md)** for historical context
+### 🏗️ Architecture & Design
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | System design, layers, communication | Architects, developers |
+| [docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) | Musical metaphor, health monitoring | All team members |
+| [docs/architecture/DOSSIER_ARCHITECTURE_RACK_CENTRAL.md](docs/architecture/DOSSIER_ARCHITECTURE_RACK_CENTRAL.md) | Detailed system architecture | Technical leads |
 
-### "I want to run the dev server"
-→ See **[README.md](./README.md#-development)** for quick start
-→ Full commands in **[PROGRESS.md](./PROGRESS.md#-available-commands-complete-reference)**
+### 🛠️ Getting Started & Guides
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [README.md](README.md) | Project overview & quick links | Everyone |
+| [docs/guides/STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md) | Installation & setup instructions | New developers |
+| [docs/guides/QUICK_START.md](docs/guides/QUICK_START.md) | TL;DR version of startup | Busy developers |
+| [docs/guides/BRANCHING_STRATEGY.md](docs/guides/BRANCHING_STRATEGY.md) | Git workflow | Developers |
+| [docs/guides/DEPLOYMENT_FINAL.md](docs/guides/DEPLOYMENT_FINAL.md) | Production deployment | DevOps |
 
-### "I need to understand why we made certain decisions"
-→ See **[PROGRESS.md](./PROGRESS.md#-architectural-decisions-made)** for rationale
-→ Full decision trail in **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)**
+### 📅 Project Planning & Status
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Project timeline & phases | PMs, leads |
+| [docs/STATUS.md](docs/STATUS.md) | Current status & blockers | Team members |
+| [docs/TEAM_SYNC.md](docs/TEAM_SYNC.md) | Team updates & decisions | Team |
+| [docs/VERSION_SYNC_REPORT.md](docs/VERSION_SYNC_REPORT.md) | Dependency sync status | Developers |
 
-### "I want to see build and test results"
-→ See **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** for detailed results
-→ Summary in **[STATUS.md](./STATUS.md#-build-results)**
+### 📋 Specifications & Technical Details
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [docs/specs/EP133-MIDI-VERIFICATION.md](docs/specs/EP133-MIDI-VERIFICATION.md) | EP-133 MIDI connection specs | Hardware integrators |
+| [docs/specs/DOC_MODULE_OP1_STUDIO_SPECIFICATION.md](docs/specs/DOC_MODULE_OP1_STUDIO_SPECIFICATION.md) | OP-1 Studio module spec | Developers |
+| [docs/specs/STRUCTURE_SITE_MAQUETTE.md](docs/specs/STRUCTURE_SITE_MAQUETTE.md) | UI/UX structure & layout | Designers, frontend |
 
-### "I'm onboarding and need to understand everything"
-1. Start: **[README.md](./README.md)** (structure)
-2. Then: **[PROGRESS.md](./PROGRESS.md)** (complete overview)
-3. Deep dive: **[STATUS.md](./STATUS.md)** (technical details)
-4. History: **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)**
+### 💡 Vision & Strategy
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [docs/ADAPTIVE_STUDIO_VISION.md](docs/ADAPTIVE_STUDIO_VISION.md) | Product vision & future | Leadership, PMs |
+| [docs/guides/TOOLS_ORGANIZATION.md](docs/guides/TOOLS_ORGANIZATION.md) | Tools & resources available | Team |
 
-### "I need to work on the next product gate"
-→ See **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** for priorities
-→ Reference **[STATUS.md](./STATUS.md#-optimization-opportunities-next-phase)** for specific items
-
-### "I need to understand OP-1 Studio"
-→ See **[apps/op1-studio/README.md](./apps/op1-studio/README.md)** for the product surface
-→ See **[apps/op1-studio/CONTEXT.md](./apps/op1-studio/CONTEXT.md)** for history
-
-### "I need to understand EP-133 Studio"
-→ See **[apps/ep133-studio/OPTIMIZATION_PLAN.md](./apps/ep133-studio/OPTIMIZATION_PLAN.md)** for optimization
-→ See current status in **[STATUS.md](./STATUS.md)** (as part of monorepo)
-
----
-
-## 📊 Project Gates
-
-- **Git**: `main` is the canonical branch; the consolidation PR is merged.
-- **Applications**: Hub, OP-1 Studio and EP-133 Studio are present in the
-  monorepo and documented.
-- **Quality**: use `npm run typecheck:all`, `npm run build:all`,
-  `npm run test:all` and `npm run lint:all` before a product change.
-- **Hardware**: record machine results separately from local software checks;
-  see [STATUS_CURRENT.md](./STATUS_CURRENT.md).
+### 📦 Archive (Historical Reference)
+Located in [docs/archived/](docs/archived/) with 30+ historical documents:
+- Old audits & analysis reports
+- Phase-by-phase completion reports
+- Previous roadmap versions
+- Consolidation studies
 
 ---
 
-## 📋 File Structure
+## 🎯 Common Tasks
 
-### Root Level Documentation
-```
-studio-hub/
-├── README.md                    Quick start and overview
-├── STATUS.md                    Detailed technical status
-├── PHASE3_COMPLETION.md        Completion report
-├── PROGRESS.md                 Complete tracking and alignment
-└── INDEX.md                     This file - navigation guide
-```
+### "I need to..."
 
-### Project Structure
-```
-studio-hub/
-├── packages/                   Shared packages
-│   ├── types/
-│   ├── shared-stores/
-│   ├── shared-ui/
-│   ├── audio-bridge/
-│   └── compression/
-├── apps/
-│   ├── studio-hub/             Vite hub / entry point
-│   ├── op1-studio/             Next.js app
-│   └── ep133-studio/           Vite app
-├── docs/dessin/                Product and screen briefs
-├── archive/                    Experimental and historical material
-├── .git/                       Repository
-└── package.json                npm workspaces root
-```
+#### Get the Project Running
+→ [docs/guides/STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md)
 
-### Related Documentation (historical archive)
+#### Understand the Architecture
+→ [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+
+#### See What Needs Work
+→ [docs/ROADMAP.md](docs/ROADMAP.md) (Phase 4 section)
+
+#### Check Project Status
+→ [docs/STATUS.md](docs/STATUS.md)
+
+#### Deploy to Production
+→ [docs/guides/DEPLOYMENT_FINAL.md](docs/guides/DEPLOYMENT_FINAL.md)
+
+#### Understand MIDI Integration
+→ [docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md)
+
+#### Check What Changed
+→ [docs/VERSION_SYNC_REPORT.md](docs/VERSION_SYNC_REPORT.md)
+
+---
+
+## 📊 Documentation Statistics
+
 ```
-archive/legacy-material/EP-133-KO-II-Studio/OP-1-Studio/
-├── CONSOLIDATION_PLAN.md       Historical consolidation strategy
-├── CONTEXT.md                  Historical OP-1 context
-└── docs/                       Historical OP-1 specifications
+Total Documentation Files:
+├─ Active Docs: 20 files
+├─ Guides: 8 files
+├─ Architecture: 3 files
+├─ Specs: 3 files
+├─ Other: 6 files
+└─ Archived: 30+ historical files
+
+Root Directory: 2 files (README.md, INDEX.md)
+Organized in: /docs/
 ```
 
 ---
 
-## 🔗 Quick Links
+## 🗂️ Directory Structure
 
-### Essential
-- [Monorepo README](./README.md)
-- [Project Progress](./PROGRESS.md)
-- [Current Status](./STATUS.md)
-
-### Historical Context
-- [Roadmap audit](./AUDIT_ROADMAPS_2026-08-16.md)
-- [OP-1 architecture](./apps/op1-studio/CONTEXT.md)
-- [EP-133 optimization](./apps/ep133-studio/OPTIMIZATION_PLAN.md)
-
-### Development
-- [Commands Reference](./PROGRESS.md#-available-commands-complete-reference)
-- [Build Results](./PHASE3_COMPLETION.md#build-results)
-- [Architecture Details](./STATUS.md#-monorepo-structure)
-
-### Next Steps
-- [Active roadmap](./docs/ROADMAP_ACTIVE_2026-08-16.md)
-- [Code alignment](./ROADMAP_CODE_ALIGNMENT_2026-08-17.md)
-- [Known Issues](./STATUS.md#%EF%B8%8F-known-issues--notes)
-- [Optimization Opportunities](./STATUS.md#-optimization-opportunities-next-phase)
-
----
-
-## 📖 Reading Guide
-
-### For Different Roles
-
-#### Project Manager
-1. **[PRESENTATION_PRODUIT.md](./docs/PRESENTATION_PRODUIT.md)** - product overview
-2. **[ROADMAP_ACTIVE_2026-08-16.md](./docs/ROADMAP_ACTIVE_2026-08-16.md)** - current gates
-3. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - verified current state
-
-#### Developer
-1. **[README.md](./README.md)** - Quick start
-2. **[STATUS.md](./STATUS.md#-current-architecture)** - Architecture
-3. **[PROGRESS.md](./PROGRESS.md#-available-commands-complete-reference)** - Commands
-4. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - Decision rationale
-
-#### DevOps / CI-CD
-1. **[README.md](./README.md)** - Commands reference
-2. **[STATUS_CURRENT.md](./STATUS_CURRENT.md)** - current quality gates
-3. **[BRANCHING_STRATEGY.md](./BRANCHING_STRATEGY.md)** - Git workflow
-
-#### New Team Member
-1. **[README.md](./README.md)** - Start here
-2. **[PROGRESS.md](./PROGRESS.md)** - Full context
-3. **[STATUS.md](./STATUS.md)** - Technical details
-4. **[AUDIT_ROADMAPS_2026-08-16.md](./AUDIT_ROADMAPS_2026-08-16.md)** - Historical context and current corrections
-
-#### Architect / Technical Lead
-1. **[PROGRESS.md](./PROGRESS.md#-architectural-decisions-made)** - Decisions
-2. **[STATUS.md](./STATUS.md)** - Full architecture
-3. **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)** - Strategy and integration decisions
-4. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)** - Validation
-
----
-
-## 🎯 Using This Index
-
-### Searching for Information
-1. Check the **"Find Documentation By Need"** section
-2. Or use the **"Reading Guide"** for your role
-3. Then follow the **"Quick Links"** to specific sections
-
-### Navigating Between Documents
-- Each document is cross-referenced
-- Related sections are linked
-- Use Ctrl+F to search within documents
-- Check the table of contents at top of each file
-
-### Keeping Documentation Updated
-- Review documents when making changes
-- Add new sections as needed
-- Keep this INDEX.md updated with new files
-- Link related documents together
-
----
-
-## ✅ Documentation Checklist
-
-Currently Documented:
-- ✅ Project phases (1-3 complete)
-- ✅ Consolidation strategy
-- ✅ Current architecture
-- ✅ Build and test results
-- ✅ Architectural decisions with rationale
-- ✅ Available commands
-- ✅ Team alignment
-- ✅ Next phase planning
-- ✅ Known issues and notes
-
-To Be Added (Phase 4):
-- [ ] CI/CD pipeline documentation
-- [ ] Shared components library
-- [ ] Performance profiling results
-- [ ] Hardware testing results
-- [ ] Phase 4 completion report
-
----
-
-## 🚀 Getting Started Quickly
-
-### 30-Second Start
-```bash
-cd /home/azoth/studio-hub
-npm install           # Install all dependencies
-npm run dev:all       # Start Hub, OP-1 Studio and EP-133 Studio
+```
+Engineering-Studio/
+├─ README.md                          ← Start here
+├─ INDEX.md                           ← You are here
+├─ STARTUP_GUIDE.md                   ← Setup instructions (symlink)
+├─ RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md ← Orchestration (symlink)
+│
+├─ docs/                              ← All documentation
+│  ├─ ROADMAP.md                      ← Project timeline
+│  ├─ STATUS.md                       ← Current status
+│  ├─ TEAM_SYNC.md                    ← Team updates
+│  ├─ VERSION_SYNC_REPORT.md          ← Dependencies
+│  ├─ ADAPTIVE_STUDIO_VISION.md       ← Vision
+│  │
+│  ├─ architecture/                   ← System design docs
+│  │  ├─ ARCHITECTURE.md              ← Main architecture
+│  │  ├─ RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md
+│  │  └─ DOSSIER_ARCHITECTURE_RACK_CENTRAL.md
+│  │
+│  ├─ guides/                         ← How-to guides
+│  │  ├─ STARTUP_GUIDE.md
+│  │  ├─ QUICK_START.md
+│  │  ├─ DEPLOYMENT_FINAL.md
+│  │  ├─ BRANCHING_STRATEGY.md
+│  │  ├─ TOOLS_ORGANIZATION.md
+│  │  ├─ GUIDE_RECABLAGE_RACK_CENTRAL.md
+│  │  ├─ DESIGN_IMPROVEMENTS_TODO.md
+│  │  └─ CONSOLIDATION_QUICK_START.md (if exists)
+│  │
+│  ├─ specs/                          ← Technical specs
+│  │  ├─ EP133-MIDI-VERIFICATION.md
+│  │  ├─ DOC_MODULE_OP1_STUDIO_SPECIFICATION.md
+│  │  └─ STRUCTURE_SITE_MAQUETTE.md
+│  │
+│  └─ archived/                       ← Historical docs (30+)
+│     ├─ AUDIT_*.md
+│     ├─ PHASE*.md
+│     ├─ PROGRESS.md
+│     └─ ... (see folder for complete list)
+│
+├─ apps/                              ← Applications
+│  ├─ studio-hub/
+│  ├─ op1-studio/
+│  └─ ep133-studio/
+│
+└─ packages/                          ← Shared libraries
+   ├─ midi-bridge/
+   └─ audio-bridge/
 ```
 
-### 5-Minute Overview
-Read **[README.md](./README.md)** (complete overview with commands)
-
-### 30-Minute Deep Dive
-1. Read **[README.md](./README.md)** (structure)
-2. Read **[PROGRESS.md](./PROGRESS.md#-project-phases)** (phases)
-3. Skim **[STATUS.md](./STATUS.md)** (architecture)
-
-### 2-Hour Complete Understanding
-1. Read **[README.md](./README.md)**
-2. Read **[PROGRESS.md](./PROGRESS.md)** (complete)
-3. Read **[STATUS.md](./STATUS.md)** (complete)
-4. Skim **[INTEGRATION_MATRIX_2026-08-16.md](./INTEGRATION_MATRIX_2026-08-16.md)** (strategy)
-
 ---
 
-## 📞 Support & Questions
+## 🔗 Quick Links by Type
 
-### Finding Answers
-1. Check the Q&A section: **[PROGRESS.md](./PROGRESS.md#-questions--clarifications)**
-2. See known issues: **[STATUS.md](./STATUS.md#%EF%B8%8F-known-issues--notes)**
-3. Check architectural decisions: **[PROGRESS.md](./PROGRESS.md#-architectural-decisions-made)**
+### For Setup
+- [STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md)
+- [QUICK_START.md](docs/guides/QUICK_START.md)
 
-### Reporting Issues
-1. Document in the appropriate file
-2. Update the Q&A section
-3. Link related issues
-4. Mark with ⚠️ if blocking
+### For Architecture
+- [ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+- [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md)
 
-### Requesting Features
-1. Check the active roadmap
-2. File in optimization section
-3. Link to related documentation
+### For Management
+- [ROADMAP.md](docs/ROADMAP.md)
+- [STATUS.md](docs/STATUS.md)
+
+### For Developers
+- [BRANCHING_STRATEGY.md](docs/guides/BRANCHING_STRATEGY.md)
+- [TOOLS_ORGANIZATION.md](docs/guides/TOOLS_ORGANIZATION.md)
 
 ---
 
 ## 📝 Last Updated
 
-- **Date**: 2026-08-16
-- **Phase**: 4 — intégration et validation active
-- **Status**: 13 scénarios E2E Hub passants ; MIDI matériel, écritures et gros volumes ouverts
-- **Source**: `docs/ROADMAP_ACTIVE_2026-08-16.md`
+| Document | Date |
+|----------|------|
+| INDEX.md | 2026-08-19 |
+| ROADMAP.md | 2026-08-19 |
+| ARCHITECTURE.md | 2026-08-19 |
+| STATUS.md | Updating next |
 
 ---
 
-**Note**: This INDEX.md is a living document. It will be updated as new documentation is added and phases complete.
+## 💬 Questions?
+
+- **How do I get started?** → [docs/guides/STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md)
+- **How does the system work?** → [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+- **What should I work on?** → [docs/ROADMAP.md](docs/ROADMAP.md)
+- **What's the current status?** → [docs/STATUS.md](docs/STATUS.md)
+
+---
+
+**This is the central hub for all documentation. Everything is organized and linked here.**
