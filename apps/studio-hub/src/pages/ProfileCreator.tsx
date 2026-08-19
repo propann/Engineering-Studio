@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
 
@@ -53,8 +53,6 @@ export default function CharacterPage() {
     { id: 2, kind: "ep133", name: "KO II LAB", memory: 64, active: true },
   ]);
 
-  // Fallback file input for directory selection (webkitdirectory)
-  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
   const [drives, setDrives] = useState<DriveModule[]>([
@@ -63,68 +61,58 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - use File System Access API with webkitdirectory fallback
+  // Workspace picker - File System Access API only
   const pickWorkspaceFolder = async () => {
     log.info("Workspace picker triggered");
 
-    // Method 1: Try File System Access API (Chrome 86+, Edge 86+, Firefox 98+)
-    if ("showDirectoryPicker" in window) {
-      try {
-        log.info("Using File System Access API");
-        const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-        const name = dirHandle.name;
-        log.info("Directory selected via API", { name });
-        setWorkspace(name);
+    // Check if API is available
+    if (!("showDirectoryPicker" in window)) {
+      log.warn("File System Access API not available");
+      alert(
+        "⚠️ Votre navigateur ne supporte pas la sélection de dossier.\n\n" +
+        "Pour utiliser cette fonction, veuillez utiliser:\n" +
+        "• Chrome 86+ (recommandé)\n" +
+        "• Microsoft Edge 86+\n" +
+        "• Firefox 98+\n\n" +
+        "Ou mettez à jour votre navigateur à la dernière version."
+      );
+      return;
+    }
 
-        // Create subdirectories
-        const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
-        for (const folder of folders) {
-          const parts = folder.split("/");
-          let current = dirHandle;
-          for (const part of parts) {
-            try {
-              current = await current.getDirectoryHandle(part, { create: true });
-            } catch (error) {
-              log.warn(`Failed to create folder ${part}`, error);
-            }
+    try {
+      log.info("Opening directory picker dialog");
+      const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+      const name = dirHandle.name;
+      log.info("Directory selected", { name });
+      setWorkspace(name);
+
+      // Create subdirectories
+      const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
+      for (const folder of folders) {
+        const parts = folder.split("/");
+        let current = dirHandle;
+        for (const part of parts) {
+          try {
+            current = await current.getDirectoryHandle(part, { create: true });
+          } catch (error) {
+            log.warn(`Failed to create folder ${part}`, error);
           }
         }
-        log.info("Workspace setup complete via API", { path: name });
-        return;
-      } catch (error) {
-        const errorName = (error as any)?.name;
-        if (errorName === "AbortError") {
-          log.info("User cancelled directory picker");
-          return;
-        }
-        log.warn("File System Access API failed, trying fallback", error);
+      }
+      log.info("Workspace setup complete", { path: name });
+    } catch (error) {
+      const errorName = (error as any)?.name;
+      const errorMsg = (error as any)?.message;
+      log.error("Failed to pick workspace", error);
+
+      if (errorName === "NotAllowedError") {
+        alert("❌ Permission refusée.\n\nVous devez autoriser l'accès aux fichiers quand le navigateur demande.");
+      } else if (errorName === "AbortError") {
+        log.info("User cancelled directory picker");
+      } else {
+        alert(`❌ Erreur: ${errorMsg || String(error)}`);
       }
     }
-
-    // Method 2: Fallback - use webkitdirectory input (works on most browsers)
-    log.info("Using webkitdirectory input fallback");
-    if (folderInputRef.current) {
-      folderInputRef.current.click();
-    }
-  };
-
-  // Handle folder selection from input with webkitdirectory
-  const handleFolderInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.currentTarget.files;
-    if (files && files.length > 0) {
-      // Get directory name from webkitRelativePath of first file
-      const firstFile = files[0];
-      const webkitPath = (firstFile as any).webkitRelativePath || "";
-
-      if (webkitPath) {
-        // Extract the top-level folder name
-        const folderName = webkitPath.split("/")[0];
-        log.info("Directory selected via webkitdirectory", { folderName, fileCount: files.length });
-        setWorkspace(folderName);
-      }
-    }
-    // Reset input
-    event.currentTarget.value = "";
   };
 
   const toggleWorkspace = () => {
@@ -451,16 +439,6 @@ export default function CharacterPage() {
           </div>
         </div>
       </section>
-
-      {/* Hidden input for directory selection (webkitdirectory fallback) */}
-      <input
-        ref={folderInputRef}
-        type="file"
-        multiple
-        onChange={handleFolderInputChange}
-        style={{ display: "none" }}
-        {...({ webkitdirectory: true, directory: true } as any)}
-      />
     </main>
   );
 }
