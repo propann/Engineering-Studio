@@ -162,3 +162,6 @@ export function suggestNormalizationGainDb(peak: number): number {
   if (peak <= 0) return 0;
   return Math.round(20 * Math.log10(1 / peak) * 10) / 10;
 }
+
+// Logger utility for all applications
+export { createLogger, globalLogger, default as Logger } from './logger';
