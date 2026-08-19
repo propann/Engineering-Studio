@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
 
@@ -53,9 +53,6 @@ export default function CharacterPage() {
     { id: 2, kind: "ep133", name: "KO II LAB", memory: 64, active: true },
   ]);
 
-  // Reference to hidden folder picker input
-  const folderInputRef = useRef<HTMLInputElement>(null);
-
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
   const [drives, setDrives] = useState<DriveModule[]>([
     { id: 101, name: "GOOGLE DRIVE STUDIO", type: "google_drive", capacityGb: 100, mountPath: "Cloud/Studio-Hub", status: "mounted", active: true },
@@ -63,7 +60,7 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - supports both modern API and fallback
+  // Workspace picker - try modern API, fallback to manual input
   const pickWorkspaceFolder = async () => {
     log.info("Workspace picker triggered");
 
@@ -104,34 +101,27 @@ export default function CharacterPage() {
       }
     }
 
-    // Method 2: Fallback to input[type="file" directory] (webkitdirectory)
-    log.info("Using input file picker fallback");
-    if (folderInputRef.current) {
-      folderInputRef.current.click();
-    }
-  };
+    // Method 2: Fallback - ask user to type folder path manually
+    log.info("Using manual folder path input fallback");
+    const folderPath = prompt(
+      "📁 Entrez le chemin de votre dossier de travail:\n\n" +
+      "Exemples:\n" +
+      "- /Users/ton-nom/Studio-Hub\n" +
+      "- C:\\Users\\ton-nom\\Studio-Hub\n" +
+      "- ~/Documents/Studio-Hub\n\n" +
+      "Les sous-dossiers seront créés automatiquement."
+    );
 
-  // Handle folder selection from input element
-  const handleFolderInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.currentTarget.files;
-    if (files && files.length > 0) {
-      // Get the directory path from the first file
-      const firstFile = files[0];
-      const webkitRelativePath = (firstFile as any).webkitRelativePath;
-
-      if (webkitRelativePath) {
-        // Extract directory name from path
-        const pathParts = webkitRelativePath.split("/");
-        const dirName = pathParts[0] || "WORKSPACE";
-        log.info("Folder selected via input picker", { dirName, fileCount: files.length });
-        setWorkspace(dirName);
-      } else {
-        log.info("File selected via input picker (no directory support)", { fileName: firstFile.name });
-        setWorkspace(firstFile.name);
-      }
+    if (folderPath && folderPath.trim()) {
+      // Get just the folder name from the path
+      const cleanPath = folderPath.trim();
+      const folderName = cleanPath.split(/[\\/]/).pop() || "WORKSPACE";
+      log.info("Folder path entered manually", { folderName, fullPath: cleanPath });
+      setWorkspace(folderName);
+      alert(`✅ Dossier de travail configuré: ${folderName}\n\nLes sous-dossiers seront créés au prochain démarrage.`);
+    } else {
+      log.info("User cancelled manual folder input");
     }
-    // Reset input so same folder can be selected again
-    event.currentTarget.value = "";
   };
 
   const toggleWorkspace = () => {
@@ -458,17 +448,6 @@ export default function CharacterPage() {
           </div>
         </div>
       </section>
-
-      {/* Hidden folder picker input (fallback) */}
-      <input
-        ref={folderInputRef}
-        type="file"
-        multiple
-        onChange={handleFolderInputChange}
-        style={{ display: "none" }}
-        aria-hidden="true"
-        {...({ webkitdirectory: true, directory: true } as any)}
-      />
     </main>
   );
 }
