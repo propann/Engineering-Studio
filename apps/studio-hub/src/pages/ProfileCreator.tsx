@@ -282,6 +282,15 @@ export default function CharacterPage() {
                         <option value="ep133">EP-133 K.O. II</option>
                       </select>
                     </label>
+                    {machine.kind === "ep133" && (
+                      <label>
+                        MÉMOIRE
+                        <select value={machine.memory || 64} onChange={(e) => updateMachine(machine.id, { memory: Number(e.target.value) as 64 | 128 })}>
+                          <option value="64">64 MB (Standard)</option>
+                          <option value="128">128 MB (Extended)</option>
+                        </select>
+                      </label>
+                    )}
                     <button className="remove-machine" onClick={() => setMachines((list) => list.filter((m) => m.id !== machine.id))}>×</button>
                   </article>
                 ))}
