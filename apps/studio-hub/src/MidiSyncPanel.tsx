@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
+import { createLogger } from "@studio-hub/audio-bridge";
+
+const log = createLogger("Hub.MidiSync");
 
 type SyncOutput = { id: string; name: string; output: MIDIOutput };
 type SyncInput = { id: string; name: string; input: MIDIInput };
@@ -138,8 +141,12 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     }
     candidate.input.onmidimessage = (event) => {
       if (event.data) {
-        const message = parseMidiNotePacket(event.data);
-        if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
+        try {
+          const message = parseMidiNotePacket(event.data);
+          if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
+        } catch (error) {
+          log.warn("Failed to parse MIDI note packet", error);
+        }
       }
     };
     controllerInputRef.current = candidate;
@@ -236,6 +243,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
         .map((output) => ({ id: output.id, name: output.name || output.id, output }));
       outputsRef.current = nextOutputs;
       setOutputs(nextOutputs);
+      log.info("MIDI outputs connected", { count: nextOutputs.length, outputs: nextOutputs.map(o => o.name) });
       // Keep the panel compatible with minimal Web MIDI test doubles that
       // expose outputs only; real Web MIDI access always includes inputs.
       const nextInputs = [...(access.inputs?.values?.() ?? [])]
@@ -243,9 +251,12 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
         .map((input) => ({ id: input.id, name: input.name || input.id, input }));
       inputsRef.current = nextInputs;
       setInputs(nextInputs);
+      log.info("MIDI inputs connected", { count: nextInputs.length, inputs: nextInputs.map(i => i.name) });
       setStatus(nextOutputs.length >= 2 ? (nextInputs.length ? "Les deux sorties et l’entrée OP‑1 sont prêtes." : "Les deux sorties sont prêtes.") : "Branche les sorties OP‑1 et EP‑133.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Autorisation MIDI refusée.");
+      const message = error instanceof Error ? error.message : "Autorisation MIDI refusée.";
+      log.error("Failed to connect MIDI", error);
+      setStatus(message);
     }
   }
 

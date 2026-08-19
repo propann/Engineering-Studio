@@ -19,12 +19,16 @@ export function TopBar({
   useEffect(() => {
     try {
       const raw = localStorage.getItem("studio-hub-profile");
-      if (raw) {
-        const profile = JSON.parse(raw) as { name?: string };
-        if (profile.name?.trim()) setCurrentName(profile.name.trim());
+      if (raw && typeof raw === 'string') {
+        const profile = JSON.parse(raw);
+        // Validate profile shape
+        if (profile && typeof profile === 'object' && typeof profile.name === 'string' && profile.name.trim()) {
+          setCurrentName(profile.name.trim());
+        }
       }
     } catch {
-      // profil local
+      // Profile cache is convenience only; session continues with default
+      localStorage.removeItem("studio-hub-profile");
     }
   }, [profileName]);
 
