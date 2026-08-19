@@ -61,56 +61,96 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - File System Access API only
+  // Workspace picker - File System Access API with detailed logging
   const pickWorkspaceFolder = async () => {
-    log.info("Workspace picker triggered");
+    log.info("=== WORKSPACE PICKER DEBUG ===");
+    log.info("Browser info", {
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      protocol: window.location.protocol,
+    });
 
     // Check if API is available
-    if (!("showDirectoryPicker" in window)) {
-      log.warn("File System Access API not available");
-      alert(
-        "⚠️ Votre navigateur ne supporte pas la sélection de dossier.\n\n" +
-        "Pour utiliser cette fonction, veuillez utiliser:\n" +
-        "• Chrome 86+ (recommandé)\n" +
-        "• Microsoft Edge 86+\n" +
-        "• Firefox 98+\n\n" +
-        "Ou mettez à jour votre navigateur à la dernière version."
-      );
+    const hasAPI = "showDirectoryPicker" in window;
+    log.info(`File System Access API available: ${hasAPI}`);
+
+    if (!hasAPI) {
+      const debugMsg = `
+DEBUG INFO:
+- URL: ${window.location.href}
+- Protocol: ${window.location.protocol}
+- Browser: ${navigator.userAgent}
+
+❌ API NOT FOUND
+
+Possible causes:
+1. Browser too old (need Chrome 86+, Edge 86+, Firefox 98+)
+2. Page loaded via HTTP (needs HTTPS)
+3. Browser permission issue
+
+Try:
+✓ Use Chromium/Chrome
+✓ Make sure URL starts with https://
+✓ Check browser console (F12)
+      `;
+      log.warn("API not available", { hasAPI });
+      alert(debugMsg);
       return;
     }
 
     try {
-      log.info("Opening directory picker dialog");
+      log.info("Calling showDirectoryPicker()...");
+      const startTime = performance.now();
+
       const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+
+      const elapsed = performance.now() - startTime;
       const name = dirHandle.name;
-      log.info("Directory selected", { name });
+
+      log.info("✅ Directory selected!", {
+        name,
+        kind: dirHandle.kind,
+        elapsed: `${elapsed.toFixed(2)}ms`,
+      });
       setWorkspace(name);
 
       // Create subdirectories
       const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
+      let createdCount = 0;
       for (const folder of folders) {
         const parts = folder.split("/");
         let current = dirHandle;
         for (const part of parts) {
           try {
             current = await current.getDirectoryHandle(part, { create: true });
+            createdCount++;
           } catch (error) {
             log.warn(`Failed to create folder ${part}`, error);
           }
         }
       }
-      log.info("Workspace setup complete", { path: name });
+      log.info("Workspace setup complete", { path: name, foldersCreated: createdCount });
     } catch (error) {
       const errorName = (error as any)?.name;
       const errorMsg = (error as any)?.message;
-      log.error("Failed to pick workspace", error);
+      const errorCode = (error as any)?.code;
+
+      log.error("❌ ERROR in showDirectoryPicker", {
+        name: errorName,
+        message: errorMsg,
+        code: errorCode,
+        full: String(error),
+      });
 
       if (errorName === "NotAllowedError") {
-        alert("❌ Permission refusée.\n\nVous devez autoriser l'accès aux fichiers quand le navigateur demande.");
+        alert("❌ PERMISSION DENIED\n\nYou must grant file access permission when the browser asks.\n\nClick 'OK' and try again, then ALLOW when prompted.");
       } else if (errorName === "AbortError") {
         log.info("User cancelled directory picker");
+      } else if (errorName === "SecurityError") {
+        alert("❌ SECURITY ERROR\n\nFile System Access API requires HTTPS.\n\nCheck that your URL starts with 'https://'");
       } else {
-        alert(`❌ Erreur: ${errorMsg || String(error)}`);
+        const debugMsg = `❌ ERROR: ${errorMsg}\n\nError Type: ${errorName}\nFull Error: ${String(error)}\n\nCheck browser console (F12) for details.`;
+        alert(debugMsg);
       }
     }
   };
