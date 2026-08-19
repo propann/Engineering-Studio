@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
 
@@ -53,6 +53,9 @@ export default function CharacterPage() {
     { id: 2, kind: "ep133", name: "KO II LAB", memory: 64, active: true },
   ]);
 
+  // Fallback file input for directory selection (webkitdirectory)
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
   const [drives, setDrives] = useState<DriveModule[]>([
     { id: 101, name: "GOOGLE DRIVE STUDIO", type: "google_drive", capacityGb: 100, mountPath: "Cloud/Studio-Hub", status: "mounted", active: true },
@@ -60,11 +63,11 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - try modern API, fallback to manual input
+  // Workspace picker - use File System Access API with webkitdirectory fallback
   const pickWorkspaceFolder = async () => {
     log.info("Workspace picker triggered");
 
-    // Method 1: Try File System Access API (modern browsers)
+    // Method 1: Try File System Access API (Chrome 86+, Edge 86+, Firefox 98+)
     if ("showDirectoryPicker" in window) {
       try {
         log.info("Using File System Access API");
@@ -90,10 +93,7 @@ export default function CharacterPage() {
         return;
       } catch (error) {
         const errorName = (error as any)?.name;
-        if (errorName === "NotAllowedError") {
-          alert("❌ Permission refusée. Vous devez autoriser l'accès aux fichiers.");
-          return;
-        } else if (errorName === "AbortError") {
+        if (errorName === "AbortError") {
           log.info("User cancelled directory picker");
           return;
         }
@@ -101,27 +101,30 @@ export default function CharacterPage() {
       }
     }
 
-    // Method 2: Fallback - ask user to type folder path manually
-    log.info("Using manual folder path input fallback");
-    const folderPath = prompt(
-      "📁 Entrez le chemin de votre dossier de travail:\n\n" +
-      "Exemples:\n" +
-      "- /Users/ton-nom/Studio-Hub\n" +
-      "- C:\\Users\\ton-nom\\Studio-Hub\n" +
-      "- ~/Documents/Studio-Hub\n\n" +
-      "Les sous-dossiers seront créés automatiquement."
-    );
-
-    if (folderPath && folderPath.trim()) {
-      // Get just the folder name from the path
-      const cleanPath = folderPath.trim();
-      const folderName = cleanPath.split(/[\\/]/).pop() || "WORKSPACE";
-      log.info("Folder path entered manually", { folderName, fullPath: cleanPath });
-      setWorkspace(folderName);
-      alert(`✅ Dossier de travail configuré: ${folderName}\n\nLes sous-dossiers seront créés au prochain démarrage.`);
-    } else {
-      log.info("User cancelled manual folder input");
+    // Method 2: Fallback - use webkitdirectory input (works on most browsers)
+    log.info("Using webkitdirectory input fallback");
+    if (folderInputRef.current) {
+      folderInputRef.current.click();
     }
+  };
+
+  // Handle folder selection from input with webkitdirectory
+  const handleFolderInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.currentTarget.files;
+    if (files && files.length > 0) {
+      // Get directory name from webkitRelativePath of first file
+      const firstFile = files[0];
+      const webkitPath = (firstFile as any).webkitRelativePath || "";
+
+      if (webkitPath) {
+        // Extract the top-level folder name
+        const folderName = webkitPath.split("/")[0];
+        log.info("Directory selected via webkitdirectory", { folderName, fileCount: files.length });
+        setWorkspace(folderName);
+      }
+    }
+    // Reset input
+    event.currentTarget.value = "";
   };
 
   const toggleWorkspace = () => {
@@ -448,6 +451,16 @@ export default function CharacterPage() {
           </div>
         </div>
       </section>
+
+      {/* Hidden input for directory selection (webkitdirectory fallback) */}
+      <input
+        ref={folderInputRef}
+        type="file"
+        multiple
+        onChange={handleFolderInputChange}
+        style={{ display: "none" }}
+        {...({ webkitdirectory: true, directory: true } as any)}
+      />
     </main>
   );
 }
