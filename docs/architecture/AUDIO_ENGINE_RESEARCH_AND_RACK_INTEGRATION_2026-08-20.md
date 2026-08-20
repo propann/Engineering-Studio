@@ -374,3 +374,150 @@ La base actuelle permet cette évolution, mais le bon ordre est essentiel. Tone.
 
 La première implémentation raisonnable est donc : **Master Transport partagé → quantizer pur → arpéggiateur Tone.js → analyse BPM → SoundTouch**.
 
+## 9. Recherche moteurs de consoles rétro
+
+### 9.1 Orientation retenue : émuler le chip, pas la console complète
+
+Un émulateur de console complet apporte CPU, mémoire, vidéo, contrôleurs, ROM et timing de jeu. Ce n’est pas le bon niveau pour un module du Audio Plugin Rack. Le Rack veut un instrument ou un générateur de samples contrôlable par notes, paramètres et transport.
+
+La cible doit donc être un adaptateur de puce audio :
+
+```text
+MIDI / clavier / pattern
+          ↓
+  ConsoleChipAdapter
+          ↓
+  APU / FM / PSG en WASM ou JS
+          ↓
+  PCM par blocs → AudioWorklet / Web Audio
+```
+
+L’adaptateur doit exposer une API de registre ou de notes, mais ne doit jamais charger une ROM commerciale. Les ROMs, VGM, NSF et SPC seront des formats d’import/lecture séparés, avec leurs propres questions de droits.
+
+### 9.2 Game Boy DMG / CGB — priorité haute
+
+Le son Game Boy est particulièrement intéressant pour le Rack :
+
+- deux canaux pulse ;
+- un canal wave table ;
+- un canal noise ;
+- enveloppe, sweep et longueur ;
+- caractère lo-fi immédiatement reconnaissable ;
+- très faible coût CPU si l’APU est isolée.
+
+Pistes étudiées :
+
+| Piste | Intérêt | Limite |
+|---|---|---|
+| `apu-legacy` | APU autonome très légère, annoncée autour de 3 kB gzip, API simple pour produire des sons Game Boy | Licence et couverture exacte à auditer avant dépendance |
+| WasmBoy | APU incluse, WebAssembly, sortie Web Audio, performances et tests d’émulation | Émulateur complet, encore annoncé comme pré-1.0 et GPL-3.0 |
+| `raphamorim/gameboy` | Émulateur Rust/WASM, APU annoncée assez précise, licence MPL-2.0 | Il faut extraire/isoler l’APU au lieu d’embarquer toute la console |
+
+**Recommandation :** commencer par un prototype `GameBoyApuAdapter` avec quatre voix et un registre de paramètres inspiré du hardware. Ne pas intégrer WasmBoy au bundle du Rack sans décision de licence et sans besoin d’émulation complète.
+
+Sources : [apu-legacy](https://github.com/shamblesides/apu-legacy), [WasmBoy](https://github.com/torch2424/wasmboy), [Game Boy Rust/WASM](https://github.com/raphamorim/gameboy).
+
+### 9.3 NES / Famicom — priorité moyenne à haute
+
+L’APU NES standard fournit cinq voix :
+
+- pulse 1 ;
+- pulse 2 ;
+- triangle ;
+- noise ;
+- DMC/sample.
+
+Ce moteur est idéal pour un module “NES APU” et un séquenceur chiptune. Il faut toutefois distinguer le 2A03 standard des extensions d’arcade et des variantes de mapper.
+
+Pistes étudiées :
+
+- `jsnes` est un émulateur JavaScript utilisable dans le navigateur et expose une API de callback de samples audio ; il reste un émulateur complet, pas un APU autonome.
+- `WebNES` propose audio Web Audio et une implémentation de l’APU standard, mais le projet est ancien et annonce des limites de précision.
+- `cfxnes` propose une librairie NES JavaScript avec Web Audio et une licence MIT, mais son périmètre reste celui d’un émulateur.
+- Un cœur Rust/WASM APU-only, tel que celui d’un projet NES moderne, serait plus propre pour le Rack si le cœur est réellement découplé et si sa licence est compatible.
+
+**Recommandation :** produire d’abord un moteur interne minimal à cinq voix, contrôlé par paramètres musicaux, plutôt que d’embarquer un émulateur complet. Le DMC/sample doit rester une extension séparée avec son propre buffer et ses propres tests.
+
+Sources : [JSNES](https://github.com/bfirsh/jsnes), [WebNES](https://github.com/peteward44/WebNES), [CfxNES](https://github.com/jpikl/cfxnes), [NES WASM Rust](https://github.com/dustinbowers/nes-emulator).
+
+### 9.4 Mega Drive / Genesis — YM2612 + SN76489 — priorité haute
+
+Le couple Genesis est très pertinent pour le Rack :
+
+- YM2612 : FM 6 canaux, timbres métalliques, basses et leads typés ;
+- SN76489 : PSG pour pulses, bruit et basses simples ;
+- possibilité de charger ou générer des séquences VGM/XGM ;
+- complément direct aux moteurs FM déjà présents dans le Rack.
+
+`libymfm.wasm` est la piste la plus intéressante trouvée pour une intégration future : il compile en WebAssembly des cœurs Yamaha FM et expose des interfaces bas niveau de puce ainsi qu’un séquenceur VGM/XGM. Il couvre notamment YM2612, YM2149, SN76489 et plusieurs autres circuits. Le dépôt annonce une licence BSD 3-Clause.
+
+**Recommandation :** prioriser un adaptateur YM2612, puis ajouter SN76489 comme second bloc. Le module ne doit pas dépendre d’un émulateur Mega Drive complet. Les séquences VGM/XGM doivent être traitées comme un lecteur séparé du synthé live.
+
+Source : [libymfm.wasm](https://github.com/h1romas4/libymfm.wasm).
+
+### 9.5 SNES / SPC700 — priorité exploratoire
+
+Le SNES est plus complexe : son APU est un système autonome avec CPU SPC700, RAM et DSP. Un fichier SPC est une capture d’état de ce système avant lecture, pas simplement une liste de notes.
+
+La piste `spc-player` montre qu’une lecture SPC dans le navigateur est possible et documente la relation entre le SPC700, sa RAM et son DSP. Cela en fait une bonne piste pour un futur **lecteur de musiques SNES**, mais pas le premier moteur d’instrument live du Rack.
+
+**Recommandation :** garder le SNES dans une phase “lecteur/import SPC”, après Game Boy, NES et Genesis. Ne pas promettre un synthé SPC700 live avant d’avoir un cœur stable, un adaptateur AudioWorklet et une décision de licence.
+
+Source : [SPC Player](https://github.com/Kazhuu/spc-player).
+
+### 9.6 VGM / NSF / SPC — fonction intéressante séparée
+
+Un module “Console Music Player” pourrait lire des formats de musique de consoles sans devenir un émulateur de jeu :
+
+- NSF pour NES ;
+- VGM/XGM pour plusieurs puces arcade et consoles ;
+- SPC pour SNES ;
+- formats ou séquences propres aux différents cœurs.
+
+`game-music-emu` est une bibliothèque connue pour ajouter la lecture de musiques de consoles classiques. Le projet annonce LGPL, mais signale aussi des exceptions de licence selon les cœurs utilisés, notamment pour certains cœurs YM2612 MAME. Cette piste est donc utile pour une étude de lecteur, mais elle exige une matrice de licences par émulateur.
+
+Source : [Game Music Emu](https://github.com/libgme/game-music-emu).
+
+## 10. Classement console recommandé pour le Rack
+
+| Rang | Module | Usage | Décision |
+|---:|---|---|---|
+| 1 | Game Boy APU | 4 voix lo-fi, FX, arpèges et drums | Prototype APU autonome |
+| 2 | Genesis YM2612 | FM 6 voix, basses, leads et séquences | Étudier `libymfm.wasm` |
+| 3 | NES APU | 5 voix chiptune et DMC séparé | Cœur APU-only à privilégier |
+| 4 | SNES SPC700 | Lecture SPC et textures DSP | Phase exploratoire |
+| 5 | VGM/NSF/SPC Player | Écoute, import et analyse de musiques rétro | Module séparé du live rack |
+
+## 11. Contrat console proposé
+
+Un futur moteur console doit implémenter un contrat plus petit que celui d’un émulateur :
+
+```ts
+type ConsoleChipId = "gameboy-apu" | "nes-apu" | "ym2612" | "sn76489" | "spc700";
+
+interface ConsoleChipAdapter {
+  readonly id: ConsoleChipId;
+  readonly channelCount: number;
+  readonly sampleRate: number;
+  start(context: AudioContext): Promise<void>;
+  stop(): void;
+  noteOn(channel: number, note: number, velocity: number, at: number): void;
+  noteOff(channel: number, note: number, at: number): void;
+  setParameter(channel: number, key: string, value: number, at?: number): void;
+  reset(at?: number): void;
+  dispose(): void;
+}
+```
+
+Ce contrat laisse le Rack choisir entre une implémentation JS, WASM ou AudioWorklet. Il impose la même gestion du temps, des notes, des paramètres, de la destruction et du PANIC.
+
+## 12. Conclusion console
+
+Les meilleurs gains créatifs ne viennent pas d’un émulateur complet, mais de trois blocs spécialisés :
+
+1. **Game Boy APU** pour le caractère lo-fi et les FX ;
+2. **YM2612 + SN76489** pour compléter le FM et le PSG du Rack ;
+3. **NES APU** pour le chiptune séquencé.
+
+Le SNES et les lecteurs NSF/VGM/SPC doivent rester des fonctions séparées tant que les contrats de licence, de timing et d’export ne sont pas validés. La prochaine étape de recherche est de comparer les cœurs APU-only et de vérifier leurs licences dans un registre avant tout ajout de dépendance.
+
