@@ -3,7 +3,6 @@ const log = createLogger("AudioRack");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as Tone from "tone";
 import { TopBar } from "../components/TopBar";
 import "./audio-plugin-rack.css";
 
@@ -491,10 +490,10 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   //                                                                |
   //                                                    analyser --+-> sortie
   //
-  // Le contexte est celui de Tone.js : les noeuds Web Audio bruts des 15
-  // moteurs et les noeuds Tone partagent donc le même AudioContext et
-  // peuvent se connecter entre eux. Les moteurs restent écrits à la main ;
-  // Tone n'apporte que l'enveloppe.
+  // Tout est en Web Audio natif. Une tentative d'utiliser
+  // Tone.AmplitudeEnvelope a échoué : son `.input` est un objet Tone.Gain,
+  // pas un AudioNode, donc `nativeNode.connect(env.input)` lève une
+  // TypeError — avalée par le try/catch, d'où un silence total.
   // ---------------------------------------------------------------------
   const masterBusRef = useRef<GainNode | null>(null);
   // Réverbération partagée : un seul convolveur pour tout le rack, chaque
@@ -510,7 +509,8 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   // Voix actives, indexées par identifiant ("C4", "midi:60"). Permet la
   // polyphonie et le note-off.
   type Voice = {
-    env: Tone.AmplitudeEnvelope;
+    env: GainNode;
+    release: number;
     sources: AudioScheduledSourceNode[];
     naturalEnd: number; // instant d'arrêt prévu par le moteur
   };
@@ -524,16 +524,18 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     setTimeout(() => setToastMessage(null), 2000);
   };
 
-  // Renvoie le contexte brut de Tone et garantit que le bus existe.
-  // Tone.start() doit être déclenché par un geste utilisateur : tous les
-  // appelants viennent d'un clic ou d'une frappe clavier.
+  // Crée le contexte au premier appel et garantit que le bus existe.
+  // resume() exige un geste utilisateur : tous les appelants viennent d'un
+  // clic ou d'une frappe clavier.
   const getAudioContext = (): AudioContext => {
-    const ctx = Tone.getContext().rawContext as unknown as AudioContext;
+    if (!audioCtxRef.current) {
+      const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+      audioCtxRef.current = new Ctor();
+    }
+    const ctx = audioCtxRef.current;
 
     if (ctx.state === "suspended") {
-      // Tone.start() est asynchrone ; resume() suffit pour le tour courant.
-      void Tone.start().catch(() => {});
-      void ctx.resume?.();
+      void ctx.resume();
     }
 
     if (!masterBusRef.current) {
@@ -577,16 +579,22 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     const ctx = audioCtxRef.current;
     if (!ctx) return;
 
+    const t = ctx.currentTime;
     try {
-      voice.env.triggerRelease();
+      // On repart de la valeur courante : sans setValueAtTime, la rampe
+      // partirait de la dernière valeur *programmée*, pas de l'audible.
+      const current = Math.max(0.0001, voice.env.gain.value);
+      voice.env.gain.cancelScheduledValues(t);
+      voice.env.gain.setValueAtTime(current, t);
+      voice.env.gain.exponentialRampToValueAtTime(0.0001, t + voice.release);
     } catch (error) {
-      log.warn("triggerRelease failed", error);
+      log.warn("release ramp failed", error);
     }
 
     // Marge = release + sécurité. On ne prolonge jamais au-delà de la durée
     // prévue par le moteur : appeler stop() deux fois est permis, la dernière
     // valeur l'emporte.
-    const releaseSec = Number(voice.env.release) || 0.2;
+    const releaseSec = voice.release;
     const cutAt = Math.min(ctx.currentTime + releaseSec + 0.05, voice.naturalEnd);
     for (const src of voice.sources) {
       try {
@@ -597,9 +605,9 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     }
     window.setTimeout(() => {
       try {
-        voice.env.dispose();
+        voice.env.disconnect();
       } catch {
-        /* déjà libérée */
+        /* déjà détachée */
       }
     }, (releaseSec + 0.3) * 1000);
   };
@@ -795,21 +803,26 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         node.stop(when);
       };
 
-      // Enveloppe ADSR : c'est elle qui supprime les clics. Le gain restait
-      // constant puis l'oscillateur s'arrêtait net, d'où la discontinuité.
-      const env = new Tone.AmplitudeEnvelope({
-        attack: 0.008,
-        decay: 0.12,
-        sustain: 0.75,
-        release: 0.22,
-        attackCurve: "linear",
-        releaseCurve: "exponential",
-      });
+      // Enveloppe ADSR sur un GainNode natif. C'est elle qui supprime les
+      // clics : avant, le gain restait constant puis l'oscillateur
+      // s'arrêtait net, d'où la discontinuité.
+      //
+      // Les rampes sont exponentielles et ne passent jamais par zéro —
+      // exponentialRampToValueAtTime rejette 0, d'où le plancher 0.0001.
+      const ATTACK = 0.008;
+      const DECAY = 0.12;
+      const SUSTAIN = 0.75;
+      const RELEASE = 0.22;
+
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, now);
+      env.gain.exponentialRampToValueAtTime(1, now + ATTACK);
+      env.gain.exponentialRampToValueAtTime(SUSTAIN, now + ATTACK + DECAY);
 
       const masterGain = ctx.createGain();
       const vol = (p.masterVolume / 100) * 0.45;
       masterGain.gain.setValueAtTime(vol, now);
-      masterGain.connect(env.input as unknown as AudioNode);
+      masterGain.connect(env);
 
       // Envoi vers la réverbération partagée. `amount` en 0-100.
       const sendToReverb = (source: AudioNode, amount: number) => {
@@ -1440,26 +1453,24 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         );
       }
 
-      // Sortie vers le bus persistant (et donc l'analyseur), plus vers
-      // ctx.destination directement.
-      env.connect(masterBusRef.current as unknown as any);
-
-      env.triggerAttack(now);
+      // Sortie vers le bus persistant, donc vers l'analyseur.
+      env.connect(masterBusRef.current!);
 
       if (voiceId) {
-        // Note tenue : la voix reste vivante jusqu'au relâchement.
-        voicesRef.current.set(voiceId, { env, sources, naturalEnd });
+        // Note tenue : la voix reste au niveau de sustain jusqu'au
+        // relâchement, qui programmera la rampe de release.
+        voicesRef.current.set(voiceId, { env, release: RELEASE, sources, naturalEnd });
       } else {
-        // Note ponctuelle : release programmé pour finir avant l'arrêt des
-        // sources, sinon la coupure brutale réintroduit un clic.
-        const rel = 0.22;
-        const at = Math.max(now + 0.05, naturalEnd - rel);
-        env.triggerRelease(at);
+        // Note ponctuelle : release programmé pour se terminer avant l'arrêt
+        // des sources, sinon la coupure brutale réintroduit un clic.
+        const at = Math.max(now + ATTACK + 0.01, naturalEnd - RELEASE);
+        env.gain.setValueAtTime(SUSTAIN, at);
+        env.gain.exponentialRampToValueAtTime(0.0001, naturalEnd);
         window.setTimeout(() => {
           try {
-            env.dispose();
+            env.disconnect();
           } catch {
-            /* déjà libérée */
+            /* déjà détachée */
           }
         }, (naturalEnd - now + 0.4) * 1000);
       }
