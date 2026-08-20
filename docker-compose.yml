@@ -1,0 +1,61 @@
+# Docker Compose for Studio Hub - Audio Plugin Rack
+# Production-ready setup with Coolify support
+
+version: '3.8'
+
+services:
+  studio-hub:
+    container_name: studio-hub-audio-rack
+    image: studio-hub:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      NODE_ENV: production
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+    volumes:
+      # Persist patches and user data
+      - studio-hub-data:/app/data
+
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=studio-hub"
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  studio-hub-data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

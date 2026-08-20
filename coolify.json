@@ -1,0 +1,118 @@
+{
+  "applicationName": "Studio Hub - Audio Plugin Rack",
+  "version": "1.0.0",
+  "description": "Professional music production studio with 15 synthesis engines, effects, and export capabilities",
+  "repository": "https://github.com/username/engineering-studio",
+  "documentation": "https://github.com/username/engineering-studio/blob/main/AUDIO_RACK_README.md",
+
+  "build": {
+    "pack": "nodejs-npm",
+    "base": "node:18-alpine",
+    "cmd": "npm run build",
+    "distFolder": "dist"
+  },
+
+  "deploy": {
+    "port": 3000,
+    "restart": "unless-stopped",
+    "maxRetries": 3,
+    "healthcheck": {
+      "enabled": true,
+      "interval": 30,
+      "timeout": 10,
+      "retries": 3,
+      "startPeriod": 40,
+      "test": ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+    }
+  },
+
+  "environment": {
+    "NODE_ENV": {
+      "default": "production",
+      "description": "Node environment mode"
+    },
+    "VITE_API_URL": {
+      "default": "http://localhost:3000",
+      "description": "API endpoint URL"
+    },
+    "LOG_LEVEL": {
+      "default": "info",
+      "description": "Log level (debug, info, warn, error)"
+    },
+    "AUDIO_CONTEXT_SAMPLE_RATE": {
+      "default": "44100",
+      "description": "Audio sample rate in Hz"
+    },
+    "FEATURE_AUDIO_EXPORT": {
+      "default": "true",
+      "description": "Enable audio export feature"
+    },
+    "FEATURE_SAMPLE_PACKS": {
+      "default": "true",
+      "description": "Enable sample pack creator"
+    }
+  },
+
+  "resources": {
+    "cpu": {
+      "min": "0.5",
+      "max": "2",
+      "recommended": "1"
+    },
+    "memory": {
+      "min": "512M",
+      "max": "2G",
+      "recommended": "1G"
+    },
+    "disk": {
+      "min": "1G",
+      "recommended": "5G"
+    }
+  },
+
+  "volumes": [
+    {
+      "name": "studio-hub-data",
+      "mountPath": "/app/data",
+      "description": "User patches and data storage"
+    }
+  ],
+
+  "ports": [
+    {
+      "number": 3000,
+      "protocol": "http",
+      "name": "web",
+      "description": "Web interface"
+    }
+  ],
+
+  "dependencies": {
+    "nodejs": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+
+  "metadata": {
+    "category": "audio",
+    "tags": ["audio", "music", "daw", "synthesis", "effects"],
+    "author": "Audio Rack Team",
+    "license": "MIT",
+    "maintainer": "your-email@example.com"
+  },
+
+  "healthcheck": {
+    "enabled": true,
+    "interval": 30,
+    "timeout": 10,
+    "retries": 3,
+    "startPeriod": 40
+  },
+
+  "logging": {
+    "driver": "json-file",
+    "options": {
+      "max-size": "10m",
+      "max-file": "3"
+    }
+  }
+}

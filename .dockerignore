@@ -1,0 +1,66 @@
+# Docker Build Context Exclusions
+# Reduces image size and build time
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE & Editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.env.local
+.env.*.local
+
+# Node modules (will be rebuilt in Docker)
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build artifacts
+dist
+build
+.next
+out
+
+# Development
+.env.development
+.env.test
+dev-dist
+
+# Documentation
+docs
+README.md
+CHANGELOG.md
+
+# Tests
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Project files
+.claude
+AUDIO_RACK_*.md
+GETTING_STARTED.md
+MODULES_STATUS.md
+
+# Temporary files
+*.tmp
+tmp
+temp
+.cache
+
+# OS
+Thumbs.db
+Desktop.ini
