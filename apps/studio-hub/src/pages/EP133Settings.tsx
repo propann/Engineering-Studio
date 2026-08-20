@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { useWebMidi } from "../../../ep133-studio/src/core/midi/useWebMidi";
 import type { MidiObservation } from "../../../ep133-studio/src/core/midi/useWebMidi";
@@ -28,6 +28,21 @@ export default function EP133Settings() {
   }, []);
 
   const midi = useWebMidi(() => {}, handleObservation);
+
+  // L'auto-connexion de useWebMidi n'attache que les ports dont le nom
+  // correspond a /\bEP[- ]?133\b/. Si Chrome nomme le port autrement
+  // qu'ALSA, on reste sur « Entree EP-133 introuvable » sans rien recevoir.
+  //
+  // connectMonitor s'abonne a TOUTES les entrees et demande
+  // requestMIDIAccess({ sysex: true }) : on le declenche des l'ouverture au
+  // lieu d'attendre un clic. Chrome affiche alors sa demande de permission
+  // SysEx, qu'il faut accepter.
+  const autoConnected = useRef(false);
+  useEffect(() => {
+    if (autoConnected.current) return;
+    autoConnected.current = true;
+    void midi.connectMonitor();
+  }, [midi]);
 
   // La machine s'adresse par index numerique ; l'interface travaille en
   // lettres A-D. EDITOR_GROUPS fait la conversion, comme dans ep133-studio.
@@ -65,8 +80,17 @@ export default function EP133Settings() {
             </span>
           </div>
           <div className="mss-row">
+            <span className="mss-label">PORTS</span>
+            <span className={midi.inputNames.length ? "mss-ok" : "mss-warn"}>
+              {midi.inputNames.length ? midi.inputNames.join(" · ") : "aucun port attaché"}
+            </span>
+          </div>
+          <div className="mss-row">
             <span className="mss-label">MESSAGES</span>
-            <span>{observations.length} observés</span>
+            <span className={observations.length ? "mss-ok" : "mss-warn"}>
+              {observations.length} observés
+              {observations[0] ? ` · dernier : ${observations[0].hex}` : ""}
+            </span>
           </div>
         </div>
 
