@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { readProfile, DEFAULT_PROFILE_NAME, type StudioProfile } from "../core/profile";
+import { loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { VaultPanel, type MachineId } from "../VaultPanel";
 import "./backup-lab.css";
 
@@ -23,6 +24,14 @@ export default function BackupLab() {
   const [lastBackup, setLastBackup] = useState<MachineId | null>(null);
   const drives = Array.isArray(profile?.drives) ? profile.drives as DriveRecord[] : [];
   const machineSummary = profile?.machines as Record<MachineId, { enabled?: boolean }> | undefined;
+
+  useEffect(() => {
+    void loadDirectoryHandle(WORKSPACE_HANDLE_KEY).then((handle) => {
+      if (!handle) return;
+      setWorkspaceHandle(handle);
+      setWorkspaceName(handle.name);
+    });
+  }, []);
 
   return (
     <main className="backup-lab-page">
