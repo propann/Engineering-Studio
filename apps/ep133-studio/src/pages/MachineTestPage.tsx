@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { MidiObservation } from '../core/midi/useWebMidi';
+import { officialGroupIndexFromNote, officialPadFromNote, type MidiObservation } from '../core/midi/useWebMidi';
 import { MIDI_CONTROL_MAP_STORAGE_KEY, midiObservationSignature, loadControlAssignments, type ControlAssignment } from '../core/midi/controlMapping';
 import type { EditorGroup } from '../core/project/exporters.ts';
 
@@ -56,6 +56,16 @@ function downloadDiagnosticLog(context: { connected: boolean; sysexEnabled: bool
   link.click();
   URL.revokeObjectURL(url);
 }
+
+// Grille des pads dans l'ordre visuel. L'index correspond a celui que rend
+// officialPadFromNote(), ce qui permet d'allumer le bon pad a la reception
+// sans avoir besoin d'une assignation prealable.
+const PAD_LAYOUT: [string, string][] = [
+  ['7', 'LEVEL'], ['8', 'PITCH'], ['9', 'TIME'],
+  ['4', 'LPF'], ['5', 'HPF'], ['6', '\u2192 FX'],
+  ['1', 'ATK'], ['2', 'REL'], ['3', 'PAN'],
+  ['.', 'TUNE'], ['0', 'VEL'], ['ENTER', 'MOD'],
+];
 
 function controlId(section: string, label: string) {
   return `${section}:${label}`;
@@ -124,6 +134,23 @@ export function MachineTestPage({ connected, sysexEnabled, inputNames, observati
   useEffect(() => {
     if (!newestSignature) return;
     const matches = Object.keys(assignments).filter((key) => assignments[key].signature === newestSignature);
+
+    // Sans assignation, rien ne s'allumait jamais : le retour visuel
+    // n'existait qu'apres avoir fait l'apprentissage. Repli sur la
+    // correspondance officielle des pads, que useWebMidi connait deja.
+    if (!matches.length && newest?.kind === 'note' && newest.note !== undefined) {
+      const padIndex = officialPadFromNote(newest.note);
+      const groupIndex = officialGroupIndexFromNote(newest.note);
+      if (padIndex !== undefined && PAD_LAYOUT[padIndex]) {
+        matches.push(controlId('pad', PAD_LAYOUT[padIndex][0]));
+      }
+      // Le groupe se deduit de l'octave : on l'allume aussi, ca montre
+      // sur quel groupe la machine joue reellement.
+      if (groupIndex !== undefined && groupIndex < 4) {
+        matches.push(controlId('group', ['A', 'B', 'C', 'D'][groupIndex]));
+      }
+    }
+
     if (!matches.length) return;
     setRecentlyReceived((current) => new Set([...current, ...matches]));
     // Chaque message programme sa propre extinction, sans dépendre du
@@ -149,6 +176,15 @@ export function MachineTestPage({ connected, sysexEnabled, inputNames, observati
         return;
       }
       if (section === 'group') {
+        // La selection de groupe passe par des requetes fichier SysEx.
+        // Sans SysEx, selectMachineGroup echouait sur « Projet actif
+        // introuvable » — un message qui n'indique pas la vraie cause.
+        if (!sysexEnabled) {
+          setSendNotice(
+            `Groupe ${label} : SysEx requis. La selection de groupe interroge la machine par requetes fichier. Cliquez « ${connected ? 'ACTIVER SYSEX' : 'CONNECTER L\u2019EP\u2011133'} » ci-dessus.`
+          );
+          return;
+        }
         setSendNotice(`${label} : sélection en cours…`);
         try {
           const fid = await onSelectMachineGroup(['A', 'B', 'C', 'D'].indexOf(label));
@@ -216,14 +252,19 @@ export function MachineTestPage({ connected, sysexEnabled, inputNames, observati
           <div className="fader-control">{machineButton('fader', 'FADER', 'fader-track')}</div>
           <div className="shift-control">{machineButton('function', 'SHIFT')}</div>
 
-          {['A', 'B', 'C', 'D'].map((label) => <div className={`group-control group-${label.toLowerCase()}`} key={label}>{machineButton('group', label, 'group')}</div>)}
+          {/* Le groupe actif est mis en avant, et l'absence de SysEx est
+              signalee : sans lui ces boutons ne peuvent rien faire. */}
+          {['A', 'B', 'C', 'D'].map((label) => (
+            <div
+              className={`group-control group-${label.toLowerCase()}${label === machineGroup ? ' is-active' : ''}${sysexEnabled ? '' : ' needs-sysex'}`}
+              key={label}
+              title={sysexEnabled ? `Selectionner le groupe ${label}` : 'SysEx requis pour changer de groupe'}
+            >
+              {machineButton('group', label, 'group')}
+            </div>
+          ))}
 
-          {[
-            ['7', 'LEVEL'], ['8', 'PITCH'], ['9', 'TIME'],
-            ['4', 'LPF'], ['5', 'HPF'], ['6', '→ FX'],
-            ['1', 'ATK'], ['2', 'REL'], ['3', 'PAN'],
-            ['.', 'TUNE'], ['0', 'VEL'], ['ENTER', 'MOD'],
-          ].map(([label, secondary], index) => <div className={`pad-control pad-${index}`} key={label}><span>{secondary}</span>{machineButton('pad', label, 'pad')}</div>)}
+          {PAD_LAYOUT.map(([label, secondary], index) => <div className={`pad-control pad-${index}`} key={label}><span>{secondary}</span>{machineButton('pad', label, 'pad')}</div>)}
 
           <div className="sample-control">{machineButton('function', 'SAMPLE', 'split-control orange-top', 'CHOP')}</div>
           <div className="timing-control">{machineButton('function', 'TIMING', 'split-control', 'CORRECT')}</div>

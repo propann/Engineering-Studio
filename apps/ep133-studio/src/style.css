@@ -1152,3 +1152,14 @@ button:active { transform:translate(2px,2px); box-shadow:none; }
 .project-transfer-queue > .sound-sync:not(:disabled) { background:var(--ko-orange); color:#fff; }
 .project-transfer-queue > .sound-sync:disabled { opacity:.5; cursor:default; }
 @media(max-width:720px) { .project-transfer-columns { grid-template-columns:1fr; } }
+
+/* ---------------------------------------------------------------
+   Boutons de groupe A/B/C/D — page Test machine
+   Le groupe actif est mis en avant ; sans SysEx ils ne peuvent rien
+   faire, autant que ca se voie avant le clic.
+   --------------------------------------------------------------- */
+.group-control.is-active button {
+  box-shadow: 0 0 0 2px var(--ko-orange, #ff6b1a), 0 0 14px #ff6b1a66;
+}
+.group-control.needs-sysex { opacity: .5; }
+.group-control.needs-sysex button { cursor: not-allowed; }
