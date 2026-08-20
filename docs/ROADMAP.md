@@ -100,7 +100,10 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
 - [ ] Make the central workspace selector visible and understandable from both machine columns
 - [ ] Add explicit provenance badges: MACHINE, LOCAL, PROFILE, DEMO, EXPERIMENTAL, VERIFIED
 - [ ] Rename and separate the states “scan local folder” and “read machine” in the interface
-- [ ] Show detected categories, file counts and estimated size before backup
+- [x] Show detected categories, file counts and estimated size before backup — the scan
+      now reports each category separately as present, empty or absent, with its own
+      file count and size. The previous scan summed everything into one total and
+      swallowed missing categories, so an amputated backup read as complete.
 - [ ] Add clear backup states: prepared, running, complete, verified, partial and failed
 - [x] Add a restore preparation screen with comparison before writing — preflight lists
       what will be created and what will be replaced, with sizes, before the first write.
@@ -113,7 +116,10 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
 - [~] Report overwritten, skipped, incompatible and unchanged files — created and
       replaced counts are reported; skipped and incompatible are not yet distinguished.
 - [ ] Add Simple / Workshop density modes
-- [ ] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
+- [~] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
+      - [x] empty workspace, permission loss, partial scan — covered by the source scan suite
+      - [x] restore safety — preflight and return point, 24 tests
+      - [ ] interrupted copy mid-write — needs a fake that fails partway through
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
         and `test:watch` scripts, test step wired into CI, verified inside the
         `oven/bun` container the workflow uses. 114 tests currently pass.

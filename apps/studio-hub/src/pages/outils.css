@@ -992,3 +992,33 @@
   .op1-line { grid-template-columns: 58px 28px 1fr; }
   .op1-line-label { grid-column: 1 / -1; padding-left: 96px; }
 }
+
+/* ---------------------------------------------------------------
+   Coffre — detail du scan par categorie
+   Un total agrege ne disait pas si une categorie manquait.
+   --------------------------------------------------------------- */
+.vault-scan-categories {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+.scan-cat {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  border-left: 2px solid transparent;
+}
+.scan-cat-nom { font-weight: 600; }
+.scan-cat-etat { color: var(--muted, #747970); font-variant-numeric: tabular-nums; }
+.scan-cat-presente { border-left-color: #00a86b; }
+.scan-cat-vide     { border-left-color: #b5720a; }
+.scan-cat-absente  { border-left-color: #d61f3e; }
+.scan-cat-absente .scan-cat-etat { color: #d61f3e; }
+.scan-cat-vide .scan-cat-etat    { color: #b5720a; }
