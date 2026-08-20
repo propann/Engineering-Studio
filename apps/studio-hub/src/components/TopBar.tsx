@@ -10,7 +10,7 @@ export interface TopBarProps {
 
 export function TopBar({
   activePage = "landing",
-  profileName = "AZOTH",
+  profileName = "INVITÉ",
   onDocClick,
   customAction,
 }: TopBarProps) {
@@ -112,7 +112,7 @@ export function TopBar({
             </span>
             <div className="profile-text">
               <small>ATELIER LOCAL</small>
-              <strong>{currentName || "AZOTH"}</strong>
+              <strong>{currentName || "INVITÉ"}</strong>
             </div>
             <span className="profile-arrow">↗</span>
           </button>

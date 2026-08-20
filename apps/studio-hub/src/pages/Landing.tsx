@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { TopBar } from "../components/TopBar";
 
 export default function Home() {
-  const [profileName, setProfileName] = useState("AZOTH");
+  const [profileName, setProfileName] = useState("INVITÉ");
 
   useEffect(() => {
     try {
@@ -29,6 +29,17 @@ export default function Home() {
   return (
     <main className="landing-rich-page">
       <TopBar activePage="landing" profileName={profileName} />
+
+      {/* Avertissement : le site est publiquement accessible alors que le
+          developpement est en cours. Mieux vaut le dire d'entree que laisser
+          quelqu'un buter sur des fonctions inachevees. */}
+      <aside className="wip-banner" role="alert">
+        <strong>Site en cours de développement</strong>
+        <span>
+          Rien n'est stable ici : la plupart des fonctions sont incomplètes ou
+          ne marchent pas encore. Ça travaille, revenez plus tard.
+        </span>
+      </aside>
 
       {/* Hero Section */}
       <section className="rich-hero" id="top">

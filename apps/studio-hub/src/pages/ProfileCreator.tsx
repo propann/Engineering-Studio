@@ -40,8 +40,10 @@ const avatarNames = [
 const avatarLabel = (value: string) => value.replace(/-/g, " ").toUpperCase();
 
 export default function CharacterPage() {
-  const [name, setName] = useState("AZOTH");
-  const [bio, setBio] = useState("Inventeur de machines musicales et explorateur de fréquences.");
+  // Valeurs neutres : le site est public, une fiche vide evite d'exposer
+  // le profil de qui a deploye. Le profil reel est relu depuis localStorage.
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
   const [avatar, setAvatar] = useState<(typeof avatarNames)[number]>("engineer");
   const [workspace, setWorkspace] = useState("");
   const [workspaceDirHandle, setWorkspaceDirHandle] = useState<any>(null); // File System Access API handle
@@ -51,17 +53,14 @@ export default function CharacterPage() {
   const [theme, setTheme] = useState("PIXEL");
 
   const [machines, setMachines] = useState<Machine[]>([
-    { id: 1, kind: "op1", name: "OP-1 STUDIO", active: true },
-    { id: 2, kind: "ep133", name: "KO II LAB", memory: 64, active: true },
+    { id: 1, kind: "op1", name: "OP-1", active: true },
+    { id: 2, kind: "ep133", name: "EP-133 K.O. II", memory: 64, active: true },
   ]);
 
 
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
   const [drives, setDrives] = useState<DriveModule[]>([
-    { id: 101, name: "GOOGLE DRIVE STUDIO", type: "google_drive", capacityGb: 100, mountPath: "Cloud/Studio-Hub", status: "mounted", active: true },
-    { id: 102, name: "CLÉ USB BACKUP OP-1", type: "usb_drive", capacityGb: 32, mountPath: "/Volumes/OP1_BACKUP", status: "mounted", active: true },
-    { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
-  ]);
+              ]);
 
   // Scan workspace folder for files
   const scanWorkspaceFolder = async (dirHandle: any) => {

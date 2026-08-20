@@ -32,7 +32,7 @@ const OP1_WIDTH = 320;
 const OP1_HEIGHT = 160;
 
 export default function AdvancedImageEditor() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("INVITÉ");
   const [notice, setNotice] = useState("Chargez une image pour commencer");
 
   // Canvas refs

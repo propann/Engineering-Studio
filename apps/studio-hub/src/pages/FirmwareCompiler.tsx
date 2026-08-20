@@ -30,7 +30,7 @@ type CompilationReport = {
 };
 
 export default function FirmwareCompiler() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("INVITÉ");
   const [notice, setNotice] = useState("🔄 Prêt à compiler");
 
   // Compiler state

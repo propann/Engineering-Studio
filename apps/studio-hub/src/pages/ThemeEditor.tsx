@@ -32,7 +32,7 @@ const OP1_PALETTE = [
 ];
 
 export default function ThemeEditor() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("INVITÉ");
   const [notice, setNotice] = useState("");
 
   // Theme state

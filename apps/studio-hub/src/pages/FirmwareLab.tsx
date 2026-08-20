@@ -140,7 +140,7 @@ const OP1_COLOR_PALETTE = [
 ];
 
 export default function FirmwareLab() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("INVITÉ");
   const [notice, setNotice] = useState("⚡ Lab Firmware OP-1 prêt : édition, thèmes & repaquetage");
   const [activeTab, setActiveTab] = useState<"repack" | "theme" | "shared" | "gallery">("repack");
 

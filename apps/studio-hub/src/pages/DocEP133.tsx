@@ -3,7 +3,7 @@ import { useState } from "react";
 import { TopBar } from "../components/TopBar";
 
 export default function DocEP133() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("INVITÉ");
   const [activeTab, setActiveTab] = useState<"overview" | "patterns" | "sounds" | "procedures">("overview");
 
   return (

@@ -29,7 +29,7 @@ type FirmwareManifest = {
 };
 
 export default function FirmwareGallery() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("INVITÉ");
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [manifest, setManifest] = useState<FirmwareManifest | null>(null);

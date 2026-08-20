@@ -875,3 +875,33 @@
   font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; color: #9aa6bd;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------
+   Bandeau « en cours de developpement » (page d'accueil)
+   --------------------------------------------------------------- */
+.wip-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  padding: 16px 4vw;
+  background: #c81e3a;
+  color: #fff;
+  border-bottom: 3px solid #8f1327;
+  line-height: 1.5;
+}
+.wip-banner strong {
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.wip-banner span {
+  font-size: 14px;
+  opacity: 0.95;
+  max-width: 78ch;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .wip-banner { animation: wip-in 260ms ease-out; }
+  @keyframes wip-in { from { opacity: 0; transform: translateY(-6px); } }
+}
