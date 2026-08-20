@@ -101,10 +101,10 @@ export default function RhythmHero() {
         <div style={{ textAlign: "center", padding: "20px", background: "#00ed95", border: "3px solid #383572" }}>
           <h3>🚀 Prêt à jouer ?</h3>
           <p style={{ marginBottom: "15px", fontSize: "16px" }}>
-            Ouvre l'EP-133 Studio pour lancer Rhythm Hero et commence ton entraînement !
+            Retrouve Rhythm Hero dans Hub Outils → Apprendre et commence ton entraînement !
           </p>
           <button
-            onClick={() => (window as any).navigateMaquette("studio-ep133")}
+            onClick={() => (window as any).navigateMaquette("outils")}
             style={{
               padding: "12px 30px",
               background: "#00ed95",
@@ -115,7 +115,7 @@ export default function RhythmHero() {
               fontSize: "16px"
             }}
           >
-            Ouvrir Rhythm Hero en EP-133 →
+            Retourner à Hub Outils →
           </button>
         </div>
       </section>

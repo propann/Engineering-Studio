@@ -20,7 +20,7 @@ const STUDIO_PAGES: StudioPage[] = [
   { id: "doc-ep133", label: "Documentation EP-133", description: "Guides dédiés à l’EP-133.", target: "EP-133" },
   { id: "studio-op1", label: "OP-1 Studio", description: "Studio principal et gestion des projets OP-1.", target: "OP-1" },
   { id: "studio-ep133", label: "EP-133 Studio", description: "Studio principal et gestion des projets EP-133.", target: "EP-133" },
-  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement rythmique.", target: "Aucun projet" },
+  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement accessible depuis Hub Outils → Apprendre.", target: "Hub partagé" },
   { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Création et préparation des écrans OP-1.", target: "OP-1" },
   { id: "firmware-lab", label: "Firmware Lab", description: "Atelier firmware et assets OP-1.", target: "OP-1" },
   { id: "firmware-gallery", label: "Galerie firmware", description: "Galerie des firmwares et visuels OP-1.", target: "OP-1" },
