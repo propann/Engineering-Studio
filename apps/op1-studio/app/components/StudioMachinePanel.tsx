@@ -21,6 +21,10 @@ import {
   type KeyboardBlock as Block,
 } from "../lib/keyboardLayout";
 import { op1AudioEngine } from "../lib/op1SynthEngine";
+import {
+  OP1_7B_BUTTONS, OP1_7B_BY_COORDS, OP1_7B_BY_ID, OP1_CATEGORY_LABELS,
+  type OP1ButtonDef, type ControlVisual,
+} from "../lib/op1Buttons7B";
 
 function midiNoteName(note: number) {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -46,20 +50,6 @@ const BLACK_KEY_CODES = ["KeyS", "KeyD", "KeyG", "KeyH", "KeyJ", "KeyL", "Semico
 // 2026), recoupé avec OP1_KNOWLEDGE_BASE.md pour Shift+COM/TE-boot. Les
 // familles réellement câblées et testables ici (notes, T1-T4, boutons verts
 // génériques) sont listées séparément, avec leur dernier message envoyé.
-type ControlVisual =
-  | "key" | "enc" | "fn" | "trans" | "knob" | "button" | "arrow" | "speaker" | "screen" | "battery" | "plug" | "mic"
-  // Familles génériques ci-dessus ; formes propres ci-dessous pour chaque
-  // vrai bouton qu'on connaît avec certitude (14 août 2026, demande :
-  // « faut cloner un maximum les bouton officiel que nos logo soit top »).
-  // Formes recalées le 14 août 2026 (soir) sur le diagramme officiel
-  // teenage.engineering/guides/op-1/original/layout (inspection zoomée x3
-  // du SVG de la page) : « on ameliore les icone de nos bouton on les fait
-  // le plus resemblant a la machine ». `rewind`/`forward` sont un seul
-  // chevron (pas double) sur la vraie machine ; `octave-up/down` et
-  // `step-back/fwd` retirés — ce sont les MÊMES deux boutons `<`/`>`
-  // (Shift change juste la fonction), pas des boutons séparés.
-  | "synth" | "drum" | "tape-mode" | "mixer" | "seq" | "shift" | "help" | "tempo"
-  | "play" | "rec" | "stop" | "rewind" | "forward" | "split" | "drop" | "join";
 type ControlRefEntry = { id: string; label: string; visual: ControlVisual; note: string };
 const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
   { label: "Modes principaux", entries: [
@@ -204,9 +194,10 @@ const CONTROL_GLYPH_COLORS: Record<ControlVisual, string> = {
   screen: "#3a5550", battery: "#3a5550", plug: "#8a6fb0", mic: "#5a7a72",
   synth: "#00ED95", drum: "#00ED95", "tape-mode": "#00ED95", mixer: "#00ED95", seq: "#00ED95",
   shift: "#7a8a86", help: "#7a8a86", tempo: "#c9a227",
-  play: "#FF3A5D", rec: "#FF3A5D", stop: "#FF3A5D",
+  play: "#00ED95", rec: "#FF3A5D", stop: "#7a8a86",
   rewind: "#5a7a72", forward: "#5a7a72",
-  split: "#c9915a", drop: "#c9915a", join: "#c9915a",
+  split: "#c9915a", drop: "#c9915a", lift: "#c9915a", join: "#c9915a",
+  loop: "#00ED95", break: "#00ED95", m1: "#00ED95", m2: "#00ED95", in: "#00ED95", out: "#00ED95",
 };
 // Bleu, vert, blanc, orange - couleur réelle des 4 encodeurs T1-T4 (voir
 // `encRoles` pour le rôle par bloc peint). Partagé entre le rendu du
@@ -240,7 +231,7 @@ function trackDigit(id: string): { digit: string; color: string } | null {
  * bouton du clavier construit, 14 août 2026 : « on remplace la pastille de
  * couleur par le logo de la touche » une fois une association apprise). */
 function ControlGlyphShape({ visual, colorOverride }: { visual: ControlVisual; colorOverride?: string }) {
-  const c = colorOverride ?? CONTROL_GLYPH_COLORS[visual];
+  const c = colorOverride ?? CONTROL_GLYPH_COLORS[visual] ?? "#00ED95";
   switch (visual) {
     case "key": return (<>
       <rect x={2} y={2} width={5} height={14} rx={1} fill="#DFD9FF" stroke={c} strokeWidth={1} />
@@ -264,48 +255,51 @@ function ControlGlyphShape({ visual, colorOverride }: { visual: ControlVisual; c
     );
     case "synth": return (
       // Onde double, recalée sur le pictogramme reel de "layout" (18 aout 2026).
-      <path d="M1.5 11 Q4.5 4.5 7.5 11 T13.5 11" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M1.5 11 Q4.5 4.5 7.5 11 T13.5 11" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
     case "drum": return (
       // Note pointee (rond + hampe) - le vrai bouton DRUM n'affiche pas une
       // grille de pads mais une note isolee.
       <>
         <circle cx={6.5} cy={13} r={3} fill={c} />
-        <line x1={9.3} y1={13} x2={9.3} y2={3} stroke={c} strokeWidth={1.6} strokeLinecap="round" />
+        <line x1={9.3} y1={13} x2={9.3} y2={3} stroke={c} strokeWidth={1.8} strokeLinecap="round" />
       </>
     );
     case "tape-mode": return (
       // Deux bobines cote a cote, sans boitier - le vrai bouton TAPE ne
       // montre que "OO", pas un rectangle de cassette.
       <>
-        <circle cx={6} cy={9} r={4.3} fill="none" stroke={c} strokeWidth={1.3} />
-        <circle cx={12} cy={9} r={4.3} fill="none" stroke={c} strokeWidth={1.3} />
-        <circle cx={6} cy={9} r={1} fill={c} />
-        <circle cx={12} cy={9} r={1} fill={c} />
+        <circle cx={6} cy={9} r={4.3} fill="none" stroke={c} strokeWidth={1.5} />
+        <circle cx={12} cy={9} r={4.3} fill="none" stroke={c} strokeWidth={1.5} />
+        <circle cx={6} cy={9} r={1.2} fill={c} />
+        <circle cx={12} cy={9} r={1.2} fill={c} />
       </>
     );
     case "mixer": return (
       // Trois barres de hauteur differente (comme le pictogramme reel),
       // sans curseurs rapportes.
       <>
-        <line x1={4.5} y1={14} x2={4.5} y2={7} stroke={c} strokeWidth={2} strokeLinecap="round" />
-        <line x1={9} y1={14} x2={9} y2={3} stroke={c} strokeWidth={2} strokeLinecap="round" />
-        <line x1={13.5} y1={14} x2={13.5} y2={8.5} stroke={c} strokeWidth={2} strokeLinecap="round" />
+        <line x1={4.5} y1={14} x2={4.5} y2={7} stroke={c} strokeWidth={2.2} strokeLinecap="round" />
+        <line x1={9} y1={14} x2={9} y2={3} stroke={c} strokeWidth={2.2} strokeLinecap="round" />
+        <line x1={13.5} y1={14} x2={13.5} y2={8.5} stroke={c} strokeWidth={2.2} strokeLinecap="round" />
       </>
     );
     case "seq": return (<>
-      <circle cx={3.5} cy={9} r={1.7} fill={c} />
-      <circle cx={7.7} cy={9} r={1.7} fill={c} opacity={.5} />
-      <circle cx={11.9} cy={9} r={1.7} fill={c} />
-      <circle cx={14.5} cy={9} r={1.7} fill={c} opacity={.5} />
+      <circle cx={3.5} cy={9} r={1.8} fill={c} />
+      <circle cx={7.7} cy={9} r={1.8} fill={c} opacity={.5} />
+      <circle cx={11.9} cy={9} r={1.8} fill={c} />
+      <circle cx={14.5} cy={9} r={1.8} fill={c} opacity={.5} />
     </>);
     case "shift": return (
-      <path d="M9 3.5 L14.5 10 L11 10 L11 14.5 L7 14.5 L7 10 L3.5 10 Z" fill={c} />
+      <text x={9} y={9.5} textAnchor="middle" dominantBaseline="central" fontSize={7} fontFamily="monospace" fontWeight="900" fill={c}>shift</text>
     );
     case "help": return (
-      // Crochet courbe - le vrai bouton HELP affiche une virgule recourbee,
-      // pas un point d'interrogation typographique.
-      <path d="M12 5.5 Q6.5 4 6.5 8 Q6.5 10.5 10 10.8 M8.6 13.4 h.1" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      // 3 petits points ou crochet
+      <g>
+        <circle cx={4.5} cy={9} r={1.5} fill={c} />
+        <circle cx={9} cy={9} r={1.5} fill={c} />
+        <circle cx={13.5} cy={9} r={1.5} fill={c} />
+      </g>
     );
     case "tempo": return (
       // Triangle inscrit dans un cercle (metronome), pas une horloge.
@@ -320,35 +314,74 @@ function ControlGlyphShape({ visual, colorOverride }: { visual: ControlVisual; c
       // creuse, pas un disque plein.
       <>
         <circle cx={9} cy={9} r={5.6} fill="none" stroke={c} strokeWidth={2} />
-        <circle cx={9} cy={9} r={1.8} fill={c} />
+        <circle cx={9} cy={9} r={2.2} fill={c} />
       </>
     );
-    case "stop": return (<rect x={4} y={4} width={10} height={10} rx={1} fill={c} />);
+    case "stop": return (<rect x={4.5} y={4.5} width={9} height={9} rx={1} fill={c} />);
     case "rewind": return (
-      // Chevron simple "<" - le vrai bouton n'a qu'une seule fleche, pas
-      // deux ("<<").
-      <path d="M12 4 L6 9 L12 14" stroke={c} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 4 L6 9 L12 14" stroke={c} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
     case "forward": return (
-      <path d="M6 4 L12 9 L6 14" stroke={c} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 4 L12 9 L6 14" stroke={c} strokeWidth={2.2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
     );
     case "split": return (
-      // Fleche vers le haut + graduations - "decoupe en 1-4" du bouton reel.
-      <>
-        <path d="M9 12 V4 M6 6.5 L9 3.5 L12 6.5" stroke={c} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        <line x1={4} y1={14.5} x2={14} y2={14.5} stroke={c} strokeWidth={1.2} strokeLinecap="round" />
-        <line x1={4} y1={14.5} x2={4} y2={16} stroke={c} strokeWidth={1.1} strokeLinecap="round" />
-        <line x1={9} y1={14.5} x2={9} y2={16} stroke={c} strokeWidth={1.1} strokeLinecap="round" />
-        <line x1={14} y1={14.5} x2={14} y2={16} stroke={c} strokeWidth={1.1} strokeLinecap="round" />
-      </>
+      // Ciseaux / Split tape
+      <g>
+        <circle cx={6} cy={13} r={2} fill="none" stroke={c} strokeWidth={1.3} />
+        <circle cx={12} cy={13} r={2} fill="none" stroke={c} strokeWidth={1.3} />
+        <line x1={7.5} y1={11.5} x2={12.5} y2={4} stroke={c} strokeWidth={1.4} strokeLinecap="round" />
+        <line x1={10.5} y1={11.5} x2={5.5} y2={4} stroke={c} strokeWidth={1.4} strokeLinecap="round" />
+      </g>
+    );
+    case "lift": return (
+      // Fleche LIFT vers le haut
+      <g>
+        <path d="M9 13.5 V4 M5.5 7.5 L9 4 L12.5 7.5" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1={4} y1={15} x2={14} y2={15} stroke={c} strokeWidth={1.4} strokeLinecap="round" />
+      </g>
     );
     case "drop": return (
-      // Fleche vers le bas + marqueur - le bouton reel depose un point de
-      // repere.
-      <>
-        <path d="M9 4 V11.5 M6 9 L9 12 L12 9" stroke={c} strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx={9} cy={15} r={1.4} fill={c} />
-      </>
+      // Fleche DROP vers le bas
+      <g>
+        <path d="M9 4.5 V14 M5.5 10.5 L9 14 L12.5 10.5" stroke={c} strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <line x1={4} y1={3} x2={14} y2={3} stroke={c} strokeWidth={1.4} strokeLinecap="round" />
+      </g>
+    );
+    case "loop": return (
+      <g>
+        <path d="M13.5 9 A4.5 4.5 0 1 1 11.5 5" stroke={c} strokeWidth={1.6} fill="none" strokeLinecap="round" />
+        <path d="M11 2.5 L14 5 L11 7" stroke={c} strokeWidth={1.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    );
+    case "break": return (
+      <g>
+        <path d="M9 3 V15 M4.5 9 H13.5" stroke={c} strokeWidth={1.6} strokeLinecap="round" />
+        <circle cx={9} cy={9} r={1.5} fill={c} />
+      </g>
+    );
+    case "in": return (
+      <g>
+        <text x={9} y={7.5} textAnchor="middle" dominantBaseline="central" fontSize={7.5} fontFamily="monospace" fontWeight="900" fill={c}>1</text>
+        <text x={9} y={13.5} textAnchor="middle" dominantBaseline="central" fontSize={4} fontFamily="monospace" fontWeight="700" fill={c}>IN</text>
+      </g>
+    );
+    case "out": return (
+      <g>
+        <text x={9} y={7.5} textAnchor="middle" dominantBaseline="central" fontSize={7.5} fontFamily="monospace" fontWeight="900" fill={c}>2</text>
+        <text x={9} y={13.5} textAnchor="middle" dominantBaseline="central" fontSize={4} fontFamily="monospace" fontWeight="700" fill={c}>OUT</text>
+      </g>
+    );
+    case "m1": return (
+      <g>
+        <text x={9} y={7.5} textAnchor="middle" dominantBaseline="central" fontSize={7.5} fontFamily="monospace" fontWeight="900" fill={c}>7</text>
+        <text x={9} y={13.5} textAnchor="middle" dominantBaseline="central" fontSize={4} fontFamily="monospace" fontWeight="700" fill={c}>M1</text>
+      </g>
+    );
+    case "m2": return (
+      <g>
+        <text x={9} y={7.5} textAnchor="middle" dominantBaseline="central" fontSize={7.5} fontFamily="monospace" fontWeight="900" fill={c}>8</text>
+        <text x={9} y={13.5} textAnchor="middle" dominantBaseline="central" fontSize={4} fontFamily="monospace" fontWeight="700" fill={c}>M2</text>
+      </g>
     );
     case "join": return (
       // Deux points qui convergent en un - le bouton reel fusionne deux
@@ -607,6 +640,9 @@ export function StudioMachinePanel({
 
   // ── Procédure d'association touche réelle → bouton construit ───────────
   const [learnedMap, setLearnedMap] = useState<LearnedMap>(() => loadLearnedMapSync());
+  const [controlSearch, setControlSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+
   useEffect(() => {
     try { localStorage.setItem(LEARNED_MAP_KEY, JSON.stringify(learnedMap)); } catch { /* stockage indisponible (navigation privée) : tant pis, pas bloquant */ }
   }, [learnedMap]);
@@ -615,6 +651,34 @@ export function StudioMachinePanel({
   const [learnVirtual, setLearnVirtual] = useState<{ key: string; label: string } | null>(null);
   const [learnBaseline, setLearnBaseline] = useState<number[] | null>(null);
   const [learnFeedback, setLearnFeedback] = useState<string | null>(null);
+
+  function applyOfficial7BMapping() {
+    const newMap: LearnedMap = {};
+    fnBlocks.forEach((b, i) => {
+      const def = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
+      if (def) {
+        newMap[`fn-${i}`] = {
+          realId: def.id,
+          realLabel: def.label,
+          visual: def.visual,
+          midi: def.midiDefault ?? [0x99, 36 + i, 100],
+        };
+      }
+    });
+    transBlocks.forEach((b, i) => {
+      const def = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
+      if (def) {
+        newMap[`trans-${i}`] = {
+          realId: def.id,
+          realLabel: def.label,
+          visual: def.visual,
+          midi: def.midiDefault ?? [0x99, 52 + i, 100],
+        };
+      }
+    });
+    setLearnedMap(newMap);
+    setLearnFeedback("Configuration officielle 7B appliquée avec succès !");
+  }
 
   function startLearn(entry: ControlRefEntry) {
     setLearnReal(entry);
@@ -788,12 +852,8 @@ export function StudioMachinePanel({
             <div className="control-ref-section">
               <strong>Boutons à configurer</strong>
               <small className="control-ref-hint">Cliquez une touche, ou glissez-la sur un bouton du clavier construit.</small>
+
               {OP1_CONTROL_GROUPS.map((group) => {
-                // Ne montre que ce qui reste à associer - une fois qu'un
-                // contrôle réel a une signature captée (peu importe le
-                // bouton virtuel choisi), il disparaît de cette liste
-                // (18 août 2026, demande : « on met que les bouton à
-                // configurer »).
                 const remaining = group.entries.filter((entry) => !Object.values(learnedMap).some((binding) => binding.realId === entry.id));
                 if (!remaining.length) return null;
                 return (
@@ -1007,23 +1067,25 @@ export function StudioMachinePanel({
             {!notesOnly && fnBlocks.map((b, i) => {
               const key = `fn-${i}`;
               const binding = learnedMap[key];
-              const fnLabel = binding?.realLabel ?? FN_REAL_LABELS[i];
-              const fnVisual = binding?.visual ?? FN_STATIC_VISUAL[i];
-              const fnRealId = binding?.realId ?? FN_REAL_IDS[i];
-              const fnSoundNumber = fnRealId ? /^sound([1-8])$/.exec(fnRealId)?.[1] : null;
+              const def7B = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
+              const fnLabel = binding?.realLabel ?? def7B?.label ?? FN_REAL_LABELS[i] ?? `Bouton ${i + 1}`;
+              const fnVisual = binding?.visual ?? def7B?.visual ?? FN_STATIC_VISUAL[i];
+              const fnRealId = binding?.realId ?? def7B?.id ?? FN_REAL_IDS[i];
+              const fnSoundNumber = fnRealId ? (/^sound([1-8])$/.exec(fnRealId)?.[1] ?? /^track([1-4])$/.exec(fnRealId)?.[1]) : null;
               const isFnDown = pressedFn.has(i);
               const isPickTarget = learnStep === "pick-virtual";
+              const sublabel = def7B?.sublabel;
               return (
                 <g key={`fn${i}`}
                   className={`mk-key${isFnDown ? " is-down" : ""}`}
                   style={{ cursor: "pointer" }}
                   onPointerDown={(e) => {
-                    if (isPickTarget) { e.stopPropagation(); pickVirtualForLearn("fn", i, fnLabel ?? `Bouton ${i + 1}`); return; }
-                    if (configOpen) { e.stopPropagation(); selectConfig("button", i, fnLabel ?? `Bouton ${i + 1}`); return; }
+                    if (isPickTarget) { e.stopPropagation(); pickVirtualForLearn("fn", i, fnLabel); return; }
+                    if (configOpen) { e.stopPropagation(); selectConfig("button", i, fnLabel); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedFn(s => new Set(s).add(i));
                     setLastFn(i);
-                    if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : [0x99, 36 + i, 100], fnLabel ?? `Bouton ${i + 1}`);
+                    if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
                   onPointerUp={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
                   onPointerLeave={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
@@ -1032,13 +1094,18 @@ export function StudioMachinePanel({
                   onDragOver={(e) => { if (configOpen) e.preventDefault(); }}
                   onDragEnter={() => { if (configOpen) setDragOverKey(key); }}
                   onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
-                  onDrop={(e) => { if (!configOpen) return; e.preventDefault(); handleDropOnVirtual("fn", i, fnLabel ?? `Bouton ${i + 1}`); }}
+                  onDrop={(e) => { if (!configOpen) return; e.preventDefault(); handleDropOnVirtual("fn", i, fnLabel); }}
                 >
-                  <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
-                    rx={.3} fill="#cececb" stroke={dragOverKey === key ? "#00ED95" : binding ? "#267c65" : (isPickTarget ? "#00ED95" : "#a0a3a0")} strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .07}/>
+                  <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
+                    rx={.35}
+                    fill={isFnDown ? "#a8a8a4" : "#cececb"}
+                    stroke={dragOverKey === key ? "#00ED95" : binding ? "#267c65" : (isPickTarget ? "#00ED95" : "#8d9690")}
+                    strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
+                  />
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#bcbcba" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
                   {fnSoundNumber
                     ? <text x={b.col+b.w/2} y={b.row+b.h*.42} textAnchor="middle" dominantBaseline="central"
-                        fontSize={Math.min(b.w,b.h)*.34} fill="#171a1b" fontFamily="monospace" fontWeight="700">{fnSoundNumber}</text>
+                        fontSize={Math.min(b.w,b.h)*.36} fill="#171a1b" fontFamily="monospace" fontWeight="900">{fnSoundNumber}</text>
                     : fnVisual
                       ? <EmbeddedGlyph visual={fnVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
                       : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#00ED95"/>
@@ -1046,8 +1113,8 @@ export function StudioMachinePanel({
                   {fnLabel && (
                     <text x={b.col+b.w/2} y={b.row+b.h*.82}
                       textAnchor="middle" dominantBaseline="middle"
-                      fontSize={.36} fill="#3a5550" fontFamily="monospace" fontWeight="700">
-                      {fnLabel.length > 5 ? `${fnLabel.slice(0, 4)}…` : fnLabel}
+                      fontSize={.34} fill="#263430" fontFamily="monospace" fontWeight="700">
+                      {sublabel ? sublabel : (fnLabel.length > 5 ? `${fnLabel.slice(0, 4)}…` : fnLabel)}
                     </text>
                   )}
                 </g>
@@ -1057,21 +1124,23 @@ export function StudioMachinePanel({
             {!notesOnly && transBlocks.map((b, i) => {
               const key = `trans-${i}`;
               const binding = learnedMap[key];
-              const transLabel = binding?.realLabel ?? TRANS_SHORT_LABELS[i];
-              const transVisual = binding?.visual ?? TRANS_STATIC_VISUAL[i];
+              const def7B = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
+              const transLabel = binding?.realLabel ?? def7B?.label ?? TRANS_REAL_LABELS[i] ?? `Transport ${i + 1}`;
+              const transVisual = binding?.visual ?? def7B?.visual ?? TRANS_STATIC_VISUAL[i];
               const isTransDown = pressedTrans.has(i);
               const isPickTarget = learnStep === "pick-virtual";
+              const sublabel = def7B?.sublabel;
               return (
                 <g key={`tr${i}`}
                   className={`mk-key${isTransDown ? " is-down" : ""}`}
                   style={{ cursor: "pointer" }}
                   onPointerDown={(e) => {
-                    if (isPickTarget) { e.stopPropagation(); pickVirtualForLearn("trans", i, TRANS_REAL_LABELS[i] ?? `Transport ${i + 1}`); return; }
-                    if (configOpen) { e.stopPropagation(); selectConfig("transport", i, TRANS_REAL_LABELS[i] ?? `Transport ${i + 1}`); return; }
+                    if (isPickTarget) { e.stopPropagation(); pickVirtualForLearn("trans", i, transLabel); return; }
+                    if (configOpen) { e.stopPropagation(); selectConfig("transport", i, transLabel); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedTrans(s => new Set(s).add(i));
-                    if (i === 0) onTogglePlayback();
-                    if (mode === "midi" && binding) sendMidi(asPressSignature(binding.midi), transLabel);
+                    if (i === 0 || def7B?.id === "transport-play") onTogglePlayback();
+                    if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 52 + i, 100]), transLabel);
                   }}
                   onPointerUp={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
                   onPointerLeave={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
@@ -1080,10 +1149,15 @@ export function StudioMachinePanel({
                   onDragOver={(e) => { if (configOpen) e.preventDefault(); }}
                   onDragEnter={() => { if (configOpen) setDragOverKey(key); }}
                   onDragLeave={() => setDragOverKey((k) => (k === key ? null : k))}
-                  onDrop={(e) => { if (!configOpen) return; e.preventDefault(); handleDropOnVirtual("trans", i, TRANS_REAL_LABELS[i] ?? `Transport ${i + 1}`); }}
+                  onDrop={(e) => { if (!configOpen) return; e.preventDefault(); handleDropOnVirtual("trans", i, transLabel); }}
                 >
-                  <rect x={b.col+.1} y={b.row+.1} width={b.w-.2} height={b.h-.2}
-                    rx={.3} fill="#cececb" stroke={dragOverKey === key ? "#FF3A5D" : binding ? "#267c65" : (isPickTarget ? "#FF3A5D" : "#a0a3a0")} strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .07}/>
+                  <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
+                    rx={.35}
+                    fill={isTransDown ? "#a8a8a4" : "#cececb"}
+                    stroke={dragOverKey === key ? "#FF3A5D" : binding ? "#267c65" : (isPickTarget ? "#FF3A5D" : "#8d9690")}
+                    strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
+                  />
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#bcbcba" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
                   {transVisual
                     ? <EmbeddedGlyph visual={transVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
                     : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#FF3A5D"/>
@@ -1091,8 +1165,8 @@ export function StudioMachinePanel({
                   {transLabel && (
                     <text x={b.col+b.w/2} y={b.row+b.h*.82}
                       textAnchor="middle" dominantBaseline="middle"
-                      fontSize={.36} fill="#3a5550" fontFamily="monospace" fontWeight="700">
-                      {transLabel.length > 5 ? `${transLabel.slice(0, 4)}…` : transLabel}
+                      fontSize={.34} fill="#263430" fontFamily="monospace" fontWeight="700">
+                      {sublabel ? sublabel : (transLabel.length > 5 ? `${transLabel.slice(0, 4)}…` : transLabel)}
                     </text>
                   )}
                 </g>

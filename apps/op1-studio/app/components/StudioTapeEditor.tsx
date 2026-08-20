@@ -638,47 +638,53 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         <circle cx="85.887"  cy="110.354" r="3.919" fill="none" stroke="#fff" strokeWidth="1.5" />
         <circle cx="208.137" cy="108.467" r="6.8"  fill="none" stroke="#fff" strokeWidth="1.5" />
 
-        {/* Compteur de position OP-1 (agrandi, sans points/barres parasites, avec alerte couleur fin de bande) */}
+        {/* Compteur de position OP-1 (agrandi, lisible, sans points/barres parasites, avec avertissement couleur fin de bande) */}
         {(() => {
           // Calcul de la proximité de fin de bande (max 360s)
-          // Normal : Blanc cassé éclatant (#ffffff)
-          // À partir de 300s (5min) : Dégradé / transition vers Orange (#FF9436)
-          // À partir de 330s (5min30) : Rouge vif alerte OP-1 (#FF3A5D)
+          // 0:00 - 4:00 (< 240s) : Blanc éclatant (#ffffff)
+          // 4:00 - 5:15 (240s - 315s) : Orange avertissement (#FF9436)
+          // 5:15 - 6:00 (>= 315s) : Rouge alerte fin de bande OP-1 (#FF3A5D)
           let counterColor = "#ffffff";
-          let isTapeEndAlert = false;
-          if (position >= 330) {
-            counterColor = "#FF3A5D"; // Rouge alerte fin de bande
-            isTapeEndAlert = true;
-          } else if (position >= 300) {
-            counterColor = "#FF9436"; // Orange avertissement approche de fin
+          let alertStatus: "normal" | "warning" | "critical" = "normal";
+
+          if (position >= 315) {
+            counterColor = "#FF3A5D"; // Rouge critique
+            alertStatus = "critical";
+          } else if (position >= 240) {
+            counterColor = "#FF9436"; // Orange avertissement
+            alertStatus = "warning";
           }
 
           return (
             <g style={{ pointerEvents: "none" }}>
-              {isTapeEndAlert && (
+              {alertStatus !== "normal" && (
                 <rect
-                  x="126"
-                  y="12"
-                  width="68"
-                  height="19"
-                  rx="3"
-                  fill="#FF3A5D18"
-                  stroke="#FF3A5D55"
-                  strokeWidth="0.8"
+                  x="120"
+                  y="10"
+                  width="80"
+                  height="22"
+                  rx="4"
+                  fill={alertStatus === "critical" ? "#FF3A5D20" : "#FF943618"}
+                  stroke={alertStatus === "critical" ? "#FF3A5D77" : "#FF943655"}
+                  strokeWidth="1"
                 />
               )}
               <text
                 x="160"
-                y="27.5"
+                y="26.5"
                 textAnchor="middle"
                 fill={counterColor}
-                fontSize="13"
-                fontFamily="monospace"
+                fontSize="16"
+                fontFamily="'JetBrains Mono', 'Fira Code', monospace"
                 fontWeight="900"
-                letterSpacing="1.2"
+                letterSpacing="1.8"
                 style={{
-                  filter: isTapeEndAlert ? "drop-shadow(0px 0px 3px rgba(255,58,93,0.8))" : "none",
-                  transition: "fill 0.3s ease"
+                  filter: alertStatus === "critical"
+                    ? "drop-shadow(0px 0px 4px rgba(255,58,93,0.9))"
+                    : alertStatus === "warning"
+                    ? "drop-shadow(0px 0px 3px rgba(255,148,54,0.7))"
+                    : "none",
+                  transition: "fill 0.25s ease, filter 0.25s ease"
                 }}
               >
                 {formatPos(position)}
@@ -687,30 +693,27 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           );
         })()}
 
-        {/* Témoin d'état : Petit triangle vert pour la lecture, Petit rond rouge pour le rec */}
-        {transportPlaying && !recording && (
-          <g style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
-            <title>Lecture en cours (cliquer pour pause)</title>
-            {/* Petit triangle vert de lecture */}
-            <polygon points="154.5,44 167.5,50 154.5,56" fill="#00ED95" />
-            <polygon points="154.5,44 167.5,50 154.5,56" fill="none" stroke="#fff" strokeWidth="0.6" opacity="0.6" />
-          </g>
-        )}
-        {recording && (
+        {/* Témoin d'état central : Petit triangle vert de lecture et Petit rond rouge de REC */}
+        {recording ? (
           <g style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
             <title>Enregistrement en cours (cliquer pour stopper)</title>
-            {/* Petit rond rouge REC */}
-            <circle cx="160" cy="50" r="4.5" fill="#FF3A5D" stroke="#fff" strokeWidth="0.8" />
-            <circle cx="160" cy="50" r="7" fill="none" stroke="#FF3A5D" strokeWidth="1" opacity="0.8">
-              <animate attributeName="r" values="4.5;8.5;4.5" dur="1s" repeatCount="indefinite" />
+            {/* Petit rond rouge REC avec anneau pulsant */}
+            <circle cx="160" cy="50" r="5.5" fill="#FF3A5D" stroke="#ffffff" strokeWidth="0.9" />
+            <circle cx="160" cy="50" r="8.5" fill="none" stroke="#FF3A5D" strokeWidth="1.2" opacity="0.8">
+              <animate attributeName="r" values="5.5;10;5.5" dur="1s" repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite" />
             </circle>
           </g>
-        )}
-        {!transportPlaying && !recording && (
-          <g style={{ cursor: "pointer", opacity: 0.35 }} onClick={() => onToggleGlobalPlayback?.()}>
+        ) : (transportPlaying || playing !== null) ? (
+          <g style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
+            <title>Lecture en cours (cliquer pour pause)</title>
+            {/* Petit triangle vert de lecture */}
+            <polygon points="154,43.5 168,50 154,56.5" fill="#00ED95" stroke="#ffffff" strokeWidth="0.8" />
+          </g>
+        ) : (
+          <g style={{ cursor: "pointer", opacity: 0.45 }} onClick={() => onToggleGlobalPlayback?.()}>
             <title>Lecture arrêtée (cliquer pour jouer)</title>
-            <polygon points="155.5,45 165.5,50 155.5,55" fill="none" stroke="#fff" strokeWidth="1" />
+            <polygon points="154.5,44 167.5,50 154.5,56" fill="none" stroke="#ffffff" strokeWidth="1.2" />
           </g>
         )}
 
@@ -744,17 +747,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           <rect x="6" y="3" width="28.082" height="28.081" fill="#121820" stroke="#fff" strokeWidth="1.5" rx="1.5" />
           <TrackNumber index={selectedTrack} />
         </g>
-
-        {/* Points séquenceur (décoratifs) */}
-        <g fill="#698EFF">
-          <circle cx="10.938" cy="89.697" r="2.001" />
-          <circle cx="16.963" cy="83.422" r="2.001" />
-          <circle cx="22.987" cy="89.697" r="2.001" />
-          <circle cx="29.012" cy="89.697" r="2.001" />
-        </g>
-        <circle cx="19.894" cy="103.623" r="6.736" fill="none" stroke="#00ED95" strokeWidth="1.5" />
-        <circle cx="19.894" cy="104.891" r="1.334" fill="#00ED95" />
-        <line x1="19.894" y1="113.494" x2="19.894" y2="104.957" stroke="#00ED95" strokeWidth="1.5" />
 
         {/* Badge REV */}
         {reversed && (

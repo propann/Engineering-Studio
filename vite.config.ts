@@ -1,25 +1,25 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import basicSsl from "@vitejs/plugin-basic-ssl";
 import path from "node:path";
 
-// HTTPS désactivé par défaut.
+// Serveur de dev en HTTP.
 //
-// http://localhost est un contexte sécurisé par exception du navigateur : les
-// API puissantes (showDirectoryPicker, Web MIDI) y fonctionnent sans aucun
-// certificat. Le HTTPS auto-signé, lui, produit une origine « certificat en
-// erreur » sur laquelle Chrome BLOQUE Web MIDI — les appareils n'apparaissent
-// jamais, sans message d'erreur.
+// http://localhost est un contexte securise par exception du navigateur : le
+// selecteur de dossier (showDirectoryPicker) et Web MIDI y fonctionnent tous
+// les deux, sans certificat.
 //
-// N'activer HTTPS que pour accéder depuis un autre appareil du réseau, via
-// l'IP LAN, où l'exception localhost ne s'applique pas :
-//     VITE_HTTPS=1 npm run dev
-// En contrepartie, Web MIDI sera indisponible dans ce mode.
-const useHttps = process.env.VITE_HTTPS === "1";
+// Ne pas reintroduire de HTTPS auto-signe : Chrome accorde bien
+// isSecureContext sur une origine dont le certificat est en erreur, mais il
+// y BLOQUE les fonctionnalites puissantes. Web MIDI cesse alors de voir le
+// moindre appareil, sans message d'erreur. Detaille dans
+// docs/FOLDER_PICKER.md.
+//
+// Consequence assumee : depuis un autre appareil du reseau (via l'IP LAN),
+// ces deux API restent indisponibles.
 
 export default defineConfig({
   root: "apps/studio-hub",
-  plugins: useHttps ? [react(), basicSsl()] : [react()],
+  plugins: [react()],
   resolve: {
     alias: {
       "@studio-hub/midi-bridge": path.resolve(__dirname, "packages/midi-bridge/index.ts"),

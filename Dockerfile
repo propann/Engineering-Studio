@@ -1,50 +1,46 @@
-# Dockerfile for Studio Hub - Audio Plugin Rack
-# Multi-stage build for optimized production image
+# Dockerfile — Studio Hub
+#
+# Le dépôt est passé à bun : package-lock.json a été retiré au profit de
+# bun.lock. `npm ci` ne peut donc plus fonctionner ici, d'où l'image oven/bun.
+# Le développement local reste possible avec npm (`npm install`), mais la
+# construction reproductible passe par bun et son lockfile.
 
 # ============================================================================
-# Stage 1: Builder
+# Étape 1 : construction
 # ============================================================================
-FROM node:20-alpine AS builder
+FROM oven/bun:1-alpine AS builder
 
 WORKDIR /build
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci
+# Couche de dépendances séparée : elle n'est reconstruite que si le manifeste
+# ou le lockfile changent.
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
-# Copy source code
 COPY . .
-
-# Build the application
-RUN npm run build
+RUN bun run build
 
 # ============================================================================
-# Stage 2: Runtime
+# Étape 2 : exécution
 # ============================================================================
-FROM node:20-alpine
+FROM oven/bun:1-alpine
 
 WORKDIR /app
 
-
-# Copy only necessary files from builder
 COPY --from=builder /build/dist ./dist
 COPY --from=builder /build/node_modules ./node_modules
-COPY --from=builder /build/package*.json ./
+COPY --from=builder /build/package.json ./
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 && \
-    chown -R nodejs:nodejs /app
+# Exécution sans privilèges.
+RUN addgroup -g 1001 -S appuser \
+ && adduser -S appuser -u 1001 \
+ && chown -R appuser:appuser /app
 
-USER nodejs
+USER appuser
 
-# Expose port
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+    CMD bun -e "fetch('http://localhost:3000/').then(r => process.exit(r.status === 200 ? 0 : 1)).catch(() => process.exit(1))"
 
-
-# Start the application
-CMD ["npm", "run", "preview"]
+CMD ["bun", "run", "preview"]
