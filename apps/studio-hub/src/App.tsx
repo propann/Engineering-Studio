@@ -21,6 +21,7 @@ import EP133StudioPage from "./pages/EP133StudioPage";
 import OP1StudioPage from "./pages/OP1StudioPage";
 import MidiSettings from "./pages/MidiSettings";
 import OP1Settings from "./pages/OP1Settings";
+import BackupLab from "./pages/BackupLab";
 
 type Page = 
   | "landing" 
@@ -44,7 +45,8 @@ type Page =
   | "sound-patch-creator"
   | "audio-plugin-rack"
   | "midi-settings"
-  | "op1-settings";
+  | "op1-settings"
+  | "backup-lab";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -89,6 +91,8 @@ export function App() {
       return <MidiSettings />;
     case "op1-settings":
       return <OP1Settings />;
+    case "backup-lab":
+      return <BackupLab />;
     case "audio-plugin-rack":
       return <AudioPluginRack onClose={() => setCurrentPage("outils")} />;
     case "landing":

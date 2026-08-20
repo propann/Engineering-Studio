@@ -189,12 +189,14 @@ export function VaultPanel({
   workspaceHandle,
   onWorkspaceSelected,
   onBackupRecorded,
+  initialMachine = "op1",
 }: {
   workspaceHandle: FileSystemDirectoryHandle | null;
   onWorkspaceSelected: (handle: FileSystemDirectoryHandle, name: string) => void;
   onBackupRecorded: (machine: MachineId) => void;
+  initialMachine?: MachineId;
 }) {
-  const [machine, setMachine] = useState<MachineId>("op1");
+  const [machine, setMachine] = useState<MachineId>(initialMachine);
   const [source, setSource] = useState<DirectoryHandle | null>(null);
   const [sourceName, setSourceName] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<BackupCategory[]>(categoriesForMachine.op1);
@@ -208,6 +210,7 @@ export function VaultPanel({
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [lastReport, setLastReport] = useState<VaultReport | null>(null);
+  const [sourceScan, setSourceScan] = useState<{ files: number; bytes: number; categories: BackupCategory[] } | null>(null);
 
   const selectedSnapshot = useMemo(() => snapshots.find((item) => item.id === selectedSnapshotId), [snapshots, selectedSnapshotId]);
   const availableCategories = categoriesForMachine[machine];
@@ -216,6 +219,7 @@ export function VaultPanel({
     setSelectedCategories(categoriesForMachine[machine]);
     setSource(null);
     setSourceName("");
+    setSourceScan(null);
     setSelectedSnapshotId("");
     setRestoreCategories([]);
     void (async () => {
@@ -256,6 +260,19 @@ export function VaultPanel({
       await permission(root, "read");
       setSource(root);
       setSourceName(handle.name);
+      const scanCategories = categoriesForMachine[machine];
+      let files = 0;
+      let bytes = 0;
+      for (const category of scanCategories) {
+        try {
+          const categoryFiles = await collectFiles(await root.getDirectoryHandle(category) as DirectoryHandle);
+          files += categoryFiles.length;
+          for (const item of categoryFiles) bytes += (await item.handle.getFile()).size;
+        } catch {
+          // Une catégorie absente est signalée par le total partiel du scan.
+        }
+      }
+      setSourceScan({ files, bytes, categories: scanCategories });
       setStatus(`${machine.toUpperCase()} prêt pour une sauvegarde sélective.`);
     } catch (err) { if ((err as DOMException).name !== "AbortError") setError(`Dossier ${machine.toUpperCase()} invalide ou inaccessible.`); }
   }
@@ -400,7 +417,7 @@ async function createBackup() {
     <div className="vault-header"><div><span className="section-kicker">COFFRE DE L’ATELIER</span><h2>Gérer les sauvegardes</h2><p className="muted">Sélectionne exactement ce que tu veux archiver ou restaurer. Les fichiers restent dans ton workspace local.</p></div><div className="vault-workspace"><span>ESPACE MAÎTRE</span><strong>{workspaceHandle ? workspaceHandle.name : "Non connecté"}</strong><button className="secondary-button" onClick={() => void chooseWorkspace()}>{workspaceHandle ? "Changer" : "Connecter"}</button></div></div>
     <div className="vault-machine-tabs" role="tablist">{(["op1", "ep133"] as MachineId[]).map((id) => <button type="button" key={id} className={machine === id ? "active" : ""} onClick={() => setMachine(id)}>{id === "op1" ? "🎛️ OP‑1" : "🥁 EP‑133"}</button>)}</div>
     <div className="vault-grid">
-      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button type="button" className="secondary-button" onClick={() => void chooseSource()}>{source ? "Changer la source" : "Choisir la machine"}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Source connectée : ${sourceName}` : "Aucun disque ou dossier machine sélectionné"}</p><div className="category-list">{availableCategories.map((category) => <label className={`category-choice ${selectedCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} /><span><strong>{categoryInfo[category].label}</strong><small>{categoryInfo[category].description}</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action" disabled={busy || !workspaceHandle} onClick={() => void createBackup()}>{busy ? "Sauvegarde en cours…" : "Sauvegarder la sélection"}<span>↓</span></button></div>
+      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SCANNER ET SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button type="button" className="secondary-button" onClick={() => void chooseSource()}>{source ? "Relancer le scan" : "Scanner la machine"}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Source connectée : ${sourceName}` : "Aucun disque ou dossier machine sélectionné"}</p>{sourceScan && <div className="vault-scan-result" aria-live="polite"><span className="scan-ok">✓ SCAN LOCAL TERMINÉ</span><strong>{sourceScan.files} fichiers</strong><strong>{formatBytes(sourceScan.bytes)}</strong><small>{sourceScan.categories.length} catégories parcourues · aucune écriture sur la source</small></div>}<div className="category-list">{availableCategories.map((category) => <label className={`category-choice ${selectedCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} /><span><strong>{categoryInfo[category].label}</strong><small>{categoryInfo[category].description}</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action" disabled={busy || !workspaceHandle} onClick={() => void createBackup()}>{busy ? "Sauvegarde en cours…" : "Sauvegarder la sélection"}<span>↓</span></button></div>
       <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">2 · RESTAURER</span><h3>Réinjecter une sauvegarde</h3></div><button type="button" className="secondary-button" onClick={() => void chooseRestoreTarget()}>{restoreTarget ? "Changer la cible" : "Choisir la cible"}</button></div><p className="vault-path">{restoreTarget ? `Cible : ${restoreTargetName}` : "Choisis le disque machine à restaurer"}</p><label className="snapshot-select">Sauvegarde<select value={selectedSnapshotId} onChange={(event) => chooseSnapshot(event.target.value)} disabled={!snapshots.length}><option value="">Aucune sauvegarde</option>{snapshots.map((snapshot) => <option value={snapshot.id} key={snapshot.id}>{snapshot.id} · {snapshot.fileCount} fichiers · {formatBytes(snapshot.totalBytes)}</option>)}</select></label>{selectedSnapshot && <div className="snapshot-meta">{selectedSnapshot.categories.map((category) => <span key={category}>{categoryInfo[category].label}</span>)}</div>}<div className="category-list restore-list">{(selectedSnapshot?.categories ?? []).map((category) => <label className={`category-choice ${restoreCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={restoreCategories.includes(category)} onChange={() => toggleCategory(category, true)} /><span><strong>{categoryInfo[category].label}</strong><small>Restaurer cette catégorie</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar restore-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action restore" disabled={busy || !selectedSnapshot} onClick={() => void restoreBackup()}>{busy ? "Restauration en cours…" : "Restaurer la sélection"}<span>↑</span></button></div>
     </div>
     {status && <p className="vault-status success">{status}</p>}{error && <p className="vault-status error-message">{error}</p>}{lastReport && <div className="vault-report"><span>Rapport local prêt : {lastReport.fileCount} fichiers · {formatBytes(lastReport.totalBytes)}</span><button type="button" className="secondary-button" onClick={() => downloadReport(lastReport)}>Télécharger le rapport JSON</button></div>}

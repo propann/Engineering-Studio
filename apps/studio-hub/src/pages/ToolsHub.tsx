@@ -84,6 +84,10 @@ export default function ToolsHub(){
    (window as any).navigateMaquette("studio-ep133");
    return;
   }
+  if(tool.id==="vault" || tool.id==="op1-backup"){
+   (window as any).navigateMaquette("backup-lab");
+   return;
+  }
   if(tool.id==="pattern"){
    window.history.replaceState(null, '', window.location.pathname);
    (window as any).navigateMaquette("studio-ep133");
@@ -201,7 +205,7 @@ export default function ToolsHub(){
     <button
      className="utility-card save-card"
      onClick={()=>{
-      (window as any).navigateMaquette("sound-editor");
+      (window as any).navigateMaquette("backup-lab");
      }}
      title="Ouvrir Sauvegarde unifiée"
     >
