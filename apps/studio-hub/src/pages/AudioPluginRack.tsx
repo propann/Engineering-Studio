@@ -3,6 +3,7 @@ const log = createLogger("AudioRack");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import * as Tone from "tone";
 import { TopBar } from "../components/TopBar";
 import "./audio-plugin-rack.css";
 
@@ -349,6 +350,33 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   const animFrameRef = useRef<number | null>(null);
   const debounceTimerRef = useRef<any>(null);
 
+  // ---------------------------------------------------------------------
+  // CHAÎNE AUDIO PERSISTANTE
+  //
+  //   [moteur DSP] -> masterGain (volume) -> env (ADSR Tone) -> masterBus
+  //                                                                |
+  //                                                    analyser --+-> sortie
+  //
+  // Le contexte est celui de Tone.js : les noeuds Web Audio bruts des 15
+  // moteurs et les noeuds Tone partagent donc le même AudioContext et
+  // peuvent se connecter entre eux. Les moteurs restent écrits à la main ;
+  // Tone n'apporte que l'enveloppe.
+  // ---------------------------------------------------------------------
+  const masterBusRef = useRef<GainNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  // Uint8Array<ArrayBuffer> explicite : getByteTimeDomainData refuse une vue
+  // adossée à un SharedArrayBuffer, que le type par défaut autorise.
+  const scopeDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+
+  // Voix actives, indexées par identifiant ("C4", "midi:60"). Permet la
+  // polyphonie et le note-off.
+  type Voice = {
+    env: Tone.AmplitudeEnvelope;
+    sources: AudioScheduledSourceNode[];
+    naturalEnd: number; // instant d'arrêt prévu par le moteur
+  };
+  const voicesRef = useRef<Map<string, Voice>>(new Map());
+
   // Toast Overlay
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -357,15 +385,79 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     setTimeout(() => setToastMessage(null), 2000);
   };
 
-  const getAudioContext = () => {
-    if (!audioCtxRef.current) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      audioCtxRef.current = new AudioCtx();
+  // Renvoie le contexte brut de Tone et garantit que le bus existe.
+  // Tone.start() doit être déclenché par un geste utilisateur : tous les
+  // appelants viennent d'un clic ou d'une frappe clavier.
+  const getAudioContext = (): AudioContext => {
+    const ctx = Tone.getContext().rawContext as unknown as AudioContext;
+
+    if (ctx.state === "suspended") {
+      // Tone.start() est asynchrone ; resume() suffit pour le tour courant.
+      void Tone.start().catch(() => {});
+      void ctx.resume?.();
     }
-    if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
+
+    if (!masterBusRef.current) {
+      const bus = ctx.createGain();
+      bus.gain.value = 1;
+
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.smoothingTimeConstant = 0.6;
+
+      bus.connect(analyser);
+      analyser.connect(ctx.destination);
+
+      masterBusRef.current = bus;
+      analyserRef.current = analyser;
+      scopeDataRef.current = new Uint8Array(new ArrayBuffer(analyser.fftSize));
+      log.info("Master bus + analyser created", { sampleRate: ctx.sampleRate });
     }
-    return audioCtxRef.current;
+
+    audioCtxRef.current = ctx;
+    return ctx;
+  };
+
+  // Coupe une voix : déclenche le release de l'enveloppe puis arrête les
+  // sources une fois la queue écoulée.
+  const releaseVoice = (voiceId: string) => {
+    const voice = voicesRef.current.get(voiceId);
+    if (!voice) return;
+    voicesRef.current.delete(voiceId);
+
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+
+    try {
+      voice.env.triggerRelease();
+    } catch (error) {
+      log.warn("triggerRelease failed", error);
+    }
+
+    // Marge = release + sécurité. On ne prolonge jamais au-delà de la durée
+    // prévue par le moteur : appeler stop() deux fois est permis, la dernière
+    // valeur l'emporte.
+    const releaseSec = Number(voice.env.release) || 0.2;
+    const cutAt = Math.min(ctx.currentTime + releaseSec + 0.05, voice.naturalEnd);
+    for (const src of voice.sources) {
+      try {
+        src.stop(cutAt);
+      } catch {
+        /* déjà arrêtée */
+      }
+    }
+    window.setTimeout(() => {
+      try {
+        voice.env.dispose();
+      } catch {
+        /* déjà libérée */
+      }
+    }, (releaseSec + 0.3) * 1000);
+  };
+
+  // Coupe toutes les voix (changement de moteur, démontage).
+  const releaseAllVoices = () => {
+    for (const id of Array.from(voicesRef.current.keys())) releaseVoice(id);
   };
 
   // AUDITION / SOUND PREVIEW TRIGGER (PLAY SHORT NOTE ON ADJUSTMENT)
@@ -529,22 +621,53 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   };
 
   // REAL-TIME DSP SYNTHESIS FOR ALL 15 ENGINES
-  const playPluginNote = (freq: number = 261.63) => {
+  // voiceId absent  -> note ponctuelle (attaque puis release automatique)
+  // voiceId fourni  -> note tenue jusqu'à releaseVoice(voiceId)
+  const playPluginNote = (freq: number = 261.63, voiceId?: string) => {
     try {
       const ctx = getAudioContext();
       const now = ctx.currentTime;
       const p = paramsRef.current;
 
+      // Une note déjà tenue sur cet identifiant est relâchée d'abord
+      // (évite d'empiler des voix sur l'auto-repeat clavier).
+      if (voiceId && voicesRef.current.has(voiceId)) releaseVoice(voiceId);
+
+      // Sources créées par le moteur, mémorisées pour pouvoir couper la voix.
+      const sources: AudioScheduledSourceNode[] = [];
+      const trk = <T extends AudioScheduledSourceNode>(node: T): T => {
+        sources.push(node);
+        return node;
+      };
+      // Instant d'arrêt le plus tardif programmé par le moteur.
+      let naturalEnd = now;
+      const noteStop = (node: AudioScheduledSourceNode, when: number) => {
+        naturalEnd = Math.max(naturalEnd, when);
+        node.stop(when);
+      };
+
+      // Enveloppe ADSR : c'est elle qui supprime les clics. Le gain restait
+      // constant puis l'oscillateur s'arrêtait net, d'où la discontinuité.
+      const env = new Tone.AmplitudeEnvelope({
+        attack: 0.008,
+        decay: 0.12,
+        sustain: 0.75,
+        release: 0.22,
+        attackCurve: "linear",
+        releaseCurve: "exponential",
+      });
+
       const masterGain = ctx.createGain();
       const vol = (p.masterVolume / 100) * 0.45;
       masterGain.gain.setValueAtTime(vol, now);
+      masterGain.connect(env.input as unknown as AudioNode);
 
       // Apply Detune Cents
       const detunedFreq = freq * Math.pow(2, p.masterDetune / 1200);
 
       if (p.activeEngine === "mi_plaits") {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
+        const osc1 = trk(ctx.createOscillator());
+        const osc2 = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         const typeMap: Record<string, OscillatorType> = {
@@ -572,12 +695,12 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         const dec = 0.2 + (p.plaitsDecay / 100) * 2.0;
         osc1.start(now);
         osc2.start(now);
-        osc1.stop(now + dec);
-        osc2.stop(now + dec);
+        noteStop(osc1, now + dec);
+        noteStop(osc2, now + dec);
 
         showToast(`🎛️ PLAITS [${p.plaitsEngine}] : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "mi_braids") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = p.braidsModel.includes("SAW") ? "sawtooth" : "square";
@@ -591,7 +714,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + 0.8);
+        noteStop(osc, now + 0.8);
 
         showToast(`🎛️ BRAIDS [${p.braidsModel}] : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "mi_rings") {
@@ -600,7 +723,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
 
-        const noise = ctx.createBufferSource();
+        const noise = trk(ctx.createBufferSource());
         noise.buffer = buffer;
 
         const delay = ctx.createDelay();
@@ -620,11 +743,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         delay.connect(masterGain);
 
         noise.start(now);
-        noise.stop(now + 0.02);
+        noteStop(noise, now + 0.02);
 
         showToast(`🔔 RINGS [${p.ringsResonatorMode}] : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "mi_clouds") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = "sawtooth";
@@ -638,11 +761,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + 1.2);
+        noteStop(osc, now + 1.2);
 
         showToast(`☁️ CLOUDS (Granular) : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "mi_elements") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = "triangle";
@@ -656,11 +779,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + 0.8 + (100 - p.elementsDamping) / 50);
+        noteStop(osc, now + 0.8 + (100 - p.elementsDamping) / 50);
 
         showToast(`🪘 ELEMENTS Modal : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "open303") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = (p.acidWave as OscillatorType) || "sawtooth";
@@ -677,12 +800,12 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + dec + 0.1);
+        noteStop(osc, now + dec + 0.1);
 
         showToast(`🎛️ OPEN303 ACID BASS : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "dexed_fm") {
-        const carrier = ctx.createOscillator();
-        const mod = ctx.createOscillator();
+        const carrier = trk(ctx.createOscillator());
+        const mod = trk(ctx.createOscillator());
         const modGain = ctx.createGain();
 
         carrier.type = "sine";
@@ -699,13 +822,13 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         const dec = 0.3 + (p.dxDecay / 100) * 1.5;
         carrier.start(now);
         mod.start(now);
-        carrier.stop(now + dec);
-        mod.stop(now + dec);
+        noteStop(carrier, now + dec);
+        noteStop(mod, now + dec);
 
         showToast(`🎹 DEXED FM (Algo #${p.dxAlgorithm}) : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "surge_xt") {
-        const osc1 = ctx.createOscillator();
-        const subOsc = ctx.createOscillator();
+        const osc1 = trk(ctx.createOscillator());
+        const subOsc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc1.type = "sawtooth";
@@ -728,8 +851,8 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         osc1.start(now);
         subOsc.start(now);
-        osc1.stop(now + 1.0);
-        subOsc.stop(now + 1.0);
+        noteStop(osc1, now + 1.0);
+        noteStop(subOsc, now + 1.0);
 
         showToast(`🎛️ SURGE XT [${p.surgeWavetable}] : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "zynaddsubfx") {
@@ -740,7 +863,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         const harmCount = Math.min(12, p.zynHarmonics);
         for (let i = 1; i <= harmCount; i++) {
-          const osc = ctx.createOscillator();
+          const osc = trk(ctx.createOscillator());
           const gain = ctx.createGain();
           osc.type = "sine";
           osc.frequency.setValueAtTime(detunedFreq * i, now);
@@ -749,14 +872,14 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
           osc.connect(gain);
           gain.connect(filter);
           osc.start(now);
-          osc.stop(now + 0.8);
+          noteStop(osc, now + 0.8);
         }
 
         filter.connect(masterGain);
         showToast(`🎹 ZYNADDSUBFX Additive : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "helm") {
-        const osc = ctx.createOscillator();
-        const sub = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
+        const sub = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = "sawtooth";
@@ -774,13 +897,13 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         osc.start(now);
         sub.start(now);
-        osc.stop(now + 1.0);
-        sub.stop(now + 1.0);
+        noteStop(osc, now + 1.0);
+        noteStop(sub, now + 1.0);
 
         showToast(`🎛️ HELM Crossmod Synth : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "fluidsynth") {
-        const osc1 = ctx.createOscillator();
-        const osc2 = ctx.createOscillator();
+        const osc1 = trk(ctx.createOscillator());
+        const osc2 = trk(ctx.createOscillator());
         osc1.type = "triangle";
         osc2.type = "sine";
 
@@ -792,12 +915,12 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         osc1.start(now);
         osc2.start(now);
-        osc1.stop(now + 1.0);
-        osc2.stop(now + 1.0);
+        noteStop(osc1, now + 1.0);
+        noteStop(osc2, now + 1.0);
 
         showToast(`🎹 FLUIDSYNTH [${p.fluidPreset}] : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "amsynth") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = (p.amWave as OscillatorType) || "sawtooth";
@@ -812,13 +935,13 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         const dec = 0.2 + (p.amDecay / 100) * 1.2;
         osc.start(now);
-        osc.stop(now + dec);
+        noteStop(osc, now + dec);
 
         showToast(`🎛️ AMSYNTH Dual VCO : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "amy_engine") {
         const partials = Math.min(16, p.amyPartialCount);
         for (let i = 1; i <= partials; i++) {
-          const osc = ctx.createOscillator();
+          const osc = trk(ctx.createOscillator());
           const gain = ctx.createGain();
           osc.type = "sine";
           osc.frequency.setValueAtTime(detunedFreq * i * (1 + (p.amySpread / 100) * 0.05), now);
@@ -827,22 +950,22 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
           osc.connect(gain);
           gain.connect(masterGain);
           osc.start(now);
-          osc.stop(now + 0.8);
+          noteStop(osc, now + 0.8);
         }
 
         showToast(`🎛️ AMY Additive C/JS : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "pl_synth") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         osc.type = "square";
         osc.frequency.setValueAtTime(detunedFreq, now);
 
         osc.connect(masterGain);
         osc.start(now);
-        osc.stop(now + 0.6);
+        noteStop(osc, now + 0.6);
 
         showToast(`🕹️ PL_SYNTH 8-Bit Chiptune : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "faust_dsp") {
-        const osc = ctx.createOscillator();
+        const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
         osc.type = "sawtooth";
@@ -855,12 +978,34 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.connect(masterGain);
 
         osc.start(now);
-        osc.stop(now + 0.8);
+        noteStop(osc, now + 0.8);
 
         showToast(`🎛️ FAUST DSP Wavefolder : ${detunedFreq.toFixed(1)} Hz`);
       }
 
-      masterGain.connect(ctx.destination);
+      // Sortie vers le bus persistant (et donc l'analyseur), plus vers
+      // ctx.destination directement.
+      env.connect(masterBusRef.current as unknown as any);
+
+      env.triggerAttack(now);
+
+      if (voiceId) {
+        // Note tenue : la voix reste vivante jusqu'au relâchement.
+        voicesRef.current.set(voiceId, { env, sources, naturalEnd });
+      } else {
+        // Note ponctuelle : release programmé pour finir avant l'arrêt des
+        // sources, sinon la coupure brutale réintroduit un clic.
+        const rel = 0.22;
+        const at = Math.max(now + 0.05, naturalEnd - rel);
+        env.triggerRelease(at);
+        window.setTimeout(() => {
+          try {
+            env.dispose();
+          } catch {
+            /* déjà libérée */
+          }
+        }, (naturalEnd - now + 0.4) * 1000);
+      }
     } catch (e) {
       log.error("Audio error:", e);
     }
@@ -876,9 +1021,15 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         for (const input of inputs) {
           input.onmidimessage = (msg: any) => {
             const [command, note, velocity] = msg.data;
-            if (command === 144 && velocity > 0) {
+            const kind = command & 0xf0; // ignore le canal MIDI
+            const voiceId = `midi:${note}`;
+            if (kind === 0x90 && velocity > 0) {
               const freq = 440 * Math.pow(2, (note - 69) / 12);
-              playPluginNote(freq);
+              playPluginNote(freq, voiceId);
+            } else if (kind === 0x80 || (kind === 0x90 && velocity === 0)) {
+              // 0x80 = note-off ; 0x90 vélocité 0 = note-off déguisé,
+              // que beaucoup de claviers envoient à la place.
+              releaseVoice(voiceId);
             }
           };
         }
@@ -902,32 +1053,55 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       k: { freq: 523.25, note: "C5" },
     };
 
+    const isTypingTarget = (t: EventTarget | null) =>
+      t instanceof HTMLInputElement ||
+      t instanceof HTMLSelectElement ||
+      t instanceof HTMLTextAreaElement;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
-      const key = e.key.toLowerCase();
-      if (keyToFreq[key]) {
-        setActiveKeyNote(keyToFreq[key].note);
-        playPluginNote(keyToFreq[key].freq);
-        setTimeout(() => setActiveKeyNote(null), 300);
-      }
+      if (isTypingTarget(e.target)) return;
+      // e.repeat : l'auto-repeat du système déclenchait une avalanche de
+      // notes tant que la touche restait enfoncée.
+      if (e.repeat) return;
+      const entry = keyToFreq[e.key.toLowerCase()];
+      if (!entry) return;
+      setActiveKeyNote(entry.note);
+      playPluginNote(entry.freq, entry.note);
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      const entry = keyToFreq[e.key.toLowerCase()];
+      if (!entry) return;
+      releaseVoice(entry.note);
+      setActiveKeyNote((current) => (current === entry.note ? null : current));
+    };
+
+    // Onglet masqué : on ne recevrait jamais le keyup, la note resterait tenue.
+    const handleBlur = () => {
+      releaseAllVoices();
+      setActiveKeyNote(null);
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+      releaseAllVoices();
     };
   }, []);
 
   // ANIMATED OSCILLOSCOPE WAVEFORM
   useEffect(() => {
-    let phase = 0;
     const canvas = oscCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     const render = () => {
-      phase += 0.05;
       const width = canvas.width;
       const height = canvas.height;
       const p = paramsRef.current;
@@ -951,7 +1125,10 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         ctx.stroke();
       }
 
-      // Waveform line
+      // Tracé du SIGNAL RÉEL lu sur l'analyseur.
+      // Avant : des Math.sin() codés en dur par moteur, sans aucun rapport
+      // avec le son produit. L'analyseur est branché sur le bus de sortie,
+      // donc ce qui s'affiche est ce qui s'entend.
       const colorMap: Record<string, string> = {
         mi_plaits: "#00ed95",
         mi_braids: "#d9ff43",
@@ -967,27 +1144,40 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       ctx.lineWidth = 2.5;
       ctx.beginPath();
 
-      for (let x = 0; x < width; x++) {
-        let y = height / 2;
-        const normX = x / width;
+      const analyser = analyserRef.current;
+      const data = scopeDataRef.current;
 
-        if (p.activeEngine === "mi_plaits") {
-          y += Math.sin(x * 0.08 + phase) * 28 * Math.cos(x * 0.02 * (p.plaitsHarmonics / 25));
-        } else if (p.activeEngine === "mi_rings") {
-          y += Math.sin(x * 0.12 + phase) * Math.exp(-normX * 3.5) * 35;
-        } else if (p.activeEngine === "mi_clouds") {
-          y += (Math.sin(x * 0.05 + phase) + (Math.random() - 0.5) * (p.cloudsGranularDensity / 50)) * 25;
-        } else if (p.activeEngine === "open303") {
-          const saw = (((x + phase * 20) % 30) / 30 - 0.5) * 50;
-          y += saw * Math.exp(-normX * 2);
-        } else if (p.activeEngine === "dexed_fm") {
-          y += Math.sin(x * 0.06 + phase) * 25 + Math.sin(x * 0.18 * p.dxOp2Ratio + phase) * 15;
-        } else {
-          y += Math.sin(x * 0.07 + phase) * 25;
+      if (analyser && data) {
+        const n = analyser.fftSize;
+        const view = data.subarray(0, n);
+        analyser.getByteTimeDomainData(view);
+
+        // 128 = silence (centre). On mesure l'amplitude pour distinguer un
+        // vrai silence d'un signal, et afficher une ligne plate franche.
+        let peak = 0;
+        for (let i = 0; i < n; i++) {
+          const d = Math.abs(view[i] - 128);
+          if (d > peak) peak = d;
         }
 
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (peak < 2) {
+          // Silence : ligne médiane, pas de bruit de quantification amplifié.
+          ctx.moveTo(0, height / 2);
+          ctx.lineTo(width, height / 2);
+        } else {
+          const step = n / width;
+          for (let x = 0; x < width; x++) {
+            const v = view[Math.floor(x * step)] / 128 - 1; // -1 .. +1
+            const y = height / 2 - v * (height / 2 - 4);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+        }
+      } else {
+        // Analyseur pas encore créé : le contexte audio attend un geste
+        // utilisateur. Ligne plate plutôt qu'une animation mensongère.
+        ctx.moveTo(0, height / 2);
+        ctx.lineTo(width, height / 2);
       }
       ctx.stroke();
 
@@ -2140,10 +2330,21 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
                     key={k.note}
                     type="button"
                     className={`piano-key ${k.isBlack ? "black-key" : "white-key"} ${activeKeyNote === k.note ? "key-pressed" : ""}`}
-                    onClick={() => {
+                    // Souris maintenue = note tenue, comme au clavier.
+                    onPointerDown={(e) => {
+                      e.currentTarget.setPointerCapture(e.pointerId);
                       setActiveKeyNote(k.note);
-                      playPluginNote(k.freq);
-                      setTimeout(() => setActiveKeyNote(null), 250);
+                      playPluginNote(k.freq, k.note);
+                    }}
+                    onPointerUp={() => {
+                      releaseVoice(k.note);
+                      setActiveKeyNote((c) => (c === k.note ? null : c));
+                    }}
+                    // Sans ça, un pointeur relâché hors du bouton laisserait
+                    // la note tenue indéfiniment.
+                    onPointerCancel={() => {
+                      releaseVoice(k.note);
+                      setActiveKeyNote((c) => (c === k.note ? null : c));
                     }}
                   >
                     <span className="key-note-label">{k.note}</span>
