@@ -40,6 +40,14 @@ const avatarNames = [
 
 const avatarLabel = (value: string) => value.replace(/-/g, " ").toUpperCase();
 
+// avatarNames est un tuple `as const` : son .includes() n'accepte pas un
+// string generique, et ne narrow donc pas le type au passage. Ce garde fait
+// les deux — il valide la valeur relue du stockage et la retypera pour
+// setAvatar.
+type AvatarName = (typeof avatarNames)[number];
+const isAvatarName = (value: string): value is AvatarName =>
+  (avatarNames as readonly string[]).includes(value);
+
 export default function CharacterPage() {
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -192,7 +200,7 @@ export default function CharacterPage() {
       if (!profileData) return;
       if (profileData.name) setName(profileData.name);
       if (profileData.bio) setBio(profileData.bio);
-      if (profileData.avatar && avatarNames.includes(profileData.avatar)) setAvatar(profileData.avatar);
+      if (profileData.avatar && isAvatarName(profileData.avatar)) setAvatar(profileData.avatar);
       if (profileData.workspace?.name) setWorkspace(profileData.workspace.name);
       if (Array.isArray(profileData.drives) && profileData.drives.length) setDrives(profileData.drives as DriveModule[]);
       if (Array.isArray(profileData.machineInventory) && profileData.machineInventory.length) setMachines(profileData.machineInventory as Machine[]);
