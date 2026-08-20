@@ -564,6 +564,33 @@ export function StudioMachinePanel({
   // pendant la configuration, dans un champ texte, ou en cas de répétition
   // OS (une touche maintenue ne redéclenche pas noteOn en boucle).
   const heldKeysRef = useRef<Set<string>>(new Set());
+
+  // Etiquettes reelles des touches, resolues depuis la disposition de
+  // l'utilisateur. WHITE_KEY_CODES/BLACK_KEY_CODES designent des POSITIONS
+  // physiques nommees d'apres QWERTY : sur un clavier AZERTY, "KeyZ" est la
+  // touche marquee W et "KeyQ" celle marquee A. Sans affichage, impossible
+  // de deviner sur quoi appuyer.
+  const [keyLabels, setKeyLabels] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const kb = (navigator as any).keyboard;
+    if (!kb?.getLayoutMap) return;
+    let active = true;
+    void kb.getLayoutMap().then((map: Map<string, string>) => {
+      if (!active) return;
+      const out: Record<string, string> = {};
+      for (const code of [...WHITE_KEY_CODES, ...BLACK_KEY_CODES]) {
+        const label = map.get(code);
+        if (label) out[code] = label.toUpperCase();
+      }
+      setKeyLabels(out);
+    }).catch(() => { /* API indisponible : on retombe sur le code brut */ });
+    return () => { active = false; };
+  }, []);
+
+  // Repli quand l'API de disposition manque (Firefox, Safari) : on retire le
+  // prefixe "Key"/"Digit" du code, ce qui donne l'etiquette QWERTY.
+  const labelForCode = (code: string | undefined) =>
+    code ? (keyLabels[code] ?? code.replace(/^(Key|Digit)/, "")) : "";
   useEffect(() => {
     const heldKeys = heldKeysRef.current;
     function noteForCode(code: string): number | null {
@@ -967,6 +994,12 @@ export function StudioMachinePanel({
                     fontSize={.55} fill="#5a5e5a" fontFamily="monospace" fontWeight="700">
                     {name}
                   </text>
+                  {/* Touche du clavier ordinateur correspondante. */}
+                  <text x={b.col+b.w/2} y={b.row+b.h-.42}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize={.42} fill="#8b86a8" fontFamily="monospace" fontWeight="700">
+                    {labelForCode(WHITE_KEY_CODES[i])}
+                  </text>
                 </g>
               );
             })}
@@ -991,6 +1024,12 @@ export function StudioMachinePanel({
                     r={Math.min(b.w, b.h)*.32}
                     fill={isDown?"#777":"#000000"}
                   />
+                  {/* Touche du clavier ordinateur correspondante. */}
+                  <text x={b.col+b.w/2} y={b.row+b.h-.38}
+                    textAnchor="middle" dominantBaseline="middle"
+                    fontSize={.4} fill="#9a95b5" fontFamily="monospace" fontWeight="700">
+                    {labelForCode(BLACK_KEY_CODES[i])}
+                  </text>
                 </g>
               );
             })}

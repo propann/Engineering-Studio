@@ -120,6 +120,12 @@ export default function OP1Settings() {
             puis actionnez-le sur la machine : le message reçu devient sa
             signature. Les liaisons sont conservées.
           </p>
+          <p>
+            Le clavier se joue aussi au clavier de l'ordinateur : la lettre
+            inscrite en bas de chaque touche est celle à presser sur{" "}
+            <em>votre</em> disposition. Attention, ce mappage diffère de celui
+            du rack audio.
+          </p>
         </header>
 
         <div className="machine-settings-status">
