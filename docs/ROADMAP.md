@@ -104,7 +104,12 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
       now reports each category separately as present, empty or absent, with its own
       file count and size. The previous scan summed everything into one total and
       swallowed missing categories, so an amputated backup read as complete.
-- [ ] Add clear backup states: prepared, running, complete, verified, partial and failed
+- [x] Add clear backup states: prepared, running, complete, verified, partial and failed —
+      seven phases including `idle`. `complete` and `verified` stay distinct: copying and
+      verifying each file does not prove the snapshot re-reads. An `ecritureCommencee` flag
+      sits orthogonal to the phase, because a restore that fails *during* the return point
+      finalised no file — `failed` — yet the target was modified. Contract published in
+      docs/backup/CONTRAT_INTEGRATION.md for the UI to render without duplicating logic.
 - [x] Add a restore preparation screen with comparison before writing — preflight lists
       what will be created and what will be replaced, with sizes, before the first write.
       Cancelling at that point leaves the target untouched.
@@ -113,8 +118,12 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
       target, preserving their original tree, before anything is written. The path is
       reported on success and on failure — a restore that stops midway previously left
       the target half-overwritten with no indication of where the originals went.
-- [~] Report overwritten, skipped, incompatible and unchanged files — created and
-      replaced counts are reported; skipped and incompatible are not yet distinguished.
+- [x] Report overwritten, skipped, incompatible and unchanged files — the report now
+      carries `ventilation { crees, remplaces, inchanges }`, and on failure a full
+      `echec` block naming the interrupted file and the incomplete categories. `files`
+      lists only what was actually finalised and verified, never intentions — that is
+      what makes a partial report usable. Previously no report was produced at all on
+      partial failure.
 - [ ] Add Simple / Workshop density modes
 - [~] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
       - [x] empty workspace, permission loss, partial scan — covered by the source scan suite
@@ -127,7 +136,8 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
       - [x] OP-1 Disk Mode read path validated on real hardware (2026-08-20): device mounted
             read-only, 66 files / 270 MB copied and compared byte-for-byte with `cmp`,
             zero divergence. Categories present: tape, album, drum, synth.
-      - [ ] OP-1 restore path — not attempted; no return point exists yet (see below)
+      - [ ] OP-1 restore path — still not attempted on hardware. The return point now
+            exists; the disk is deliberately mounted read-only during testing.
       - [ ] EP-133 — no mass-storage mode; its sounds are reachable only through SysEx
             (`listMachineSounds`), so validation requires the browser with SysEx granted
 

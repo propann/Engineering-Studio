@@ -130,7 +130,7 @@ Le contrat doit distinguer explicitement :
 | Vérification SHA-256 | Oui | Oui | Non | Oui |
 | Restauration vers dossier vide | Oui | Oui | Non | Oui |
 | Restauration vers dossier contenant des fichiers | Oui | Oui | Non | Oui |
-| Checkpoint avant restauration | À ajouter | À ajouter | À ajouter | Oui |
+| Checkpoint avant restauration | ✅ fait | ✅ fait | À valider | Oui |
 | OP-1 lecture Disk Mode | Non | Oui | Oui | Oui pour matériel |
 | OP-1 écriture avec plan | Non | Oui | Oui avec appareil dédié | Oui pour matériel |
 | EP-133 clone lecture seule | Non | Simulé | Oui, pont local | Oui pour matériel |
@@ -142,7 +142,9 @@ Le contrat doit distinguer explicitement :
 
 1. Remplacer les chiffres fictifs du `BackupPanel` par l’état réel du coffre ou
    afficher clairement « démonstration ».
-2. Ajouter le préflight et le checkpoint de cible avant restauration Hub.
+2. ~~Ajouter le préflight et le checkpoint de cible avant restauration Hub.~~ Fait
+   le 2026-08-20 : prévol listant créations et remplacements avec leurs tailles,
+   point de retour horodaté dans la cible, 24 tests.
 3. Écrire des tests de parcours pour snapshot, restauration, fichier remplacé
    et restauration interrompue.
 4. Définir un manifeste commun sans casser les formats OP-1 et EP-133 déjà
