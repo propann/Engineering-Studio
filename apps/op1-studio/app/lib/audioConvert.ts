@@ -196,7 +196,7 @@ export function encodeAiffPcm16(samples: Float32Array, channels: number, sampleR
 }
 
 /** Encode des trames Float32 interleaved en WAV PCM 16 bits, avec dither TPDF (bruit triangulaire ~1 LSB avant l'arrondi, pas une troncature sèche). Utile en aperçu/export générique — l'OP-1 lui-même veut de l'AIFF, voir `encodeAiffPcm16`. */
-function encodeWavPcm16(samples: Float32Array, channels: number, sampleRate: number): ArrayBuffer {
+export function encodeWavPcm16(samples: Float32Array, channels: number, sampleRate: number): ArrayBuffer {
   const dataLength = samples.length * 2;
   const buffer = new ArrayBuffer(44 + dataLength);
   const view = new DataView(buffer);
