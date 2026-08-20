@@ -20,7 +20,6 @@ import AudioPluginRack from "./pages/AudioPluginRack";
 import EP133StudioPage from "./pages/EP133StudioPage";
 import OP1StudioPage from "./pages/OP1StudioPage";
 import MidiSettings from "./pages/MidiSettings";
-import EP133Settings from "./pages/EP133Settings";
 import OP1Settings from "./pages/OP1Settings";
 
 type Page = 
@@ -45,7 +44,6 @@ type Page =
   | "sound-patch-creator"
   | "audio-plugin-rack"
   | "midi-settings"
-  | "ep133-settings"
   | "op1-settings";
 
 export function App() {
@@ -89,8 +87,6 @@ export function App() {
       return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
     case "midi-settings":
       return <MidiSettings />;
-    case "ep133-settings":
-      return <EP133Settings />;
     case "op1-settings":
       return <OP1Settings />;
     case "audio-plugin-rack":

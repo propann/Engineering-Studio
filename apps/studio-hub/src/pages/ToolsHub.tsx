@@ -30,7 +30,6 @@ const tools:Tool[]=[
  {id:"machine-test",code:"SYSEX-01",category:"DIAGNOSTIC",title:"Test machine EP-133",text:"Observer MIDI/SysEx, groupes actifs et communication aller-retour.",accent:"yellow",visual:"sync",status:"LECTURE SÛRE",section:"ep133",target:"ep133"},
  {id:"rhythm",code:"GAME-01",category:"TRAINING LAB",title:"Rhythm Hero",text:"Styles, niveaux, BPM, partitions animées, scores et progression aux pads.",accent:"green",visual:"game",status:"MIDI",section:"ep133",target:"ep133"},
  {id:"ep-docs",code:"DOC-KOII",category:"DOCUMENTATION",title:"Documentation EP-133",text:"Guides Studio, formats, MIDI et procédures machine vérifiées.",accent:"orange",visual:"pixels",status:"FR · EN · ES",section:"hub",target:"hub",anchor:"documentation"},
- {id:"ep-settings",code:"SYSEX",category:"CONFIGURATION",title:"Réglages EP-133",text:"Observation des messages, assignation des contrôles et diagnostic, connexion SysEx.",accent:"yellow",visual:"sync",status:"EP-133",section:"hub",target:"hub"},
  {id:"op-settings",code:"GRID",category:"CONFIGURATION",title:"Réglages OP-1",text:"Le clavier joué et son mode config : assigner chaque contrôle par apprentissage.",accent:"green",visual:"sync",status:"OP-1",section:"hub",target:"hub"},
  {id:"midi",code:"24-PPQN",category:"TRANSPORT",title:"Synchronisation MIDI",text:"Tempo, Start, Stop, notes virtuelles, contrôleur OP-1 et PANIC communs.",accent:"blue",visual:"sync",status:"2 MACHINES",section:"hub",target:"hub"},
  {id:"library",code:"SOUND-V1",category:"OUTIL DU HUB",title:"Bibliothèque sonore",text:"Catalogue commun avec import, recherche, tags, favoris, préécoute et détection de doublons.",accent:"cyan",visual:"wave",status:"LOCAL",section:"hub",target:"hub",anchor:"sound-library"},
@@ -62,17 +61,13 @@ export default function ToolsHub(){
 
  const docTools = tools.filter(t => t.category === "DOCUMENTATION");
  const trainingTools = tools.filter(t => t.category === "TRAINING LAB");
- const settingsTools = tools.filter(t => t.id === "machine-test" || t.id === "midi" || t.id === "ep-settings" || t.id === "op-settings");
+ const settingsTools = tools.filter(t => t.id === "machine-test" || t.id === "midi" || t.id === "op-settings");
  const soundTools = tools.filter(t => t.id === "tape" || t.id === "sounds" || t.id === "sample" || t.id === "library");
  const op1StudioTools = tools.filter(t => t.id === "services");
  const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
   if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
-  if(tool.id==="ep-settings"){
-   (window as any).navigateMaquette("ep133-settings");
-   return;
-  }
   if(tool.id==="op-settings"){
    (window as any).navigateMaquette("op1-settings");
    return;
@@ -107,7 +102,7 @@ export default function ToolsHub(){
  }
  // Filtre les outils mais enlève les outils en cadres spéciaux
  const filteredTools = (activeSection === "all" ? tools : tools.filter(t => t.section && t.section === activeSection))
-   .filter(t => t.category !== "DOCUMENTATION" && t.category !== "SAUVEGARDE" && t.id !== "vault" && t.category !== "TRAINING LAB" && t.id !== "machine-test" && t.id !== "midi" && t.id !== "ep-settings" && t.id !== "op-settings" && t.id !== "tape" && t.id !== "sounds" && t.id !== "sample" && t.id !== "library" && t.id !== "firmware" && t.id !== "services" && t.id !== "op1-backup" && t.id !== "pattern");
+   .filter(t => t.category !== "DOCUMENTATION" && t.category !== "SAUVEGARDE" && t.id !== "vault" && t.category !== "TRAINING LAB" && t.id !== "machine-test" && t.id !== "midi" && t.id !== "op-settings" && t.id !== "tape" && t.id !== "sounds" && t.id !== "sample" && t.id !== "library" && t.id !== "firmware" && t.id !== "services" && t.id !== "op1-backup" && t.id !== "pattern");
 
  const saveTools = tools.filter(t => t.id === "op1-backup" || t.id === "vault");
  return <main className="hub-page">
