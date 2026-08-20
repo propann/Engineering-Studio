@@ -185,7 +185,7 @@ c'est arrivé une fois dans cette session.
 
 ## Tester
 
-179 tests, tous sur des fonctions pures exportées. Aucun test de rendu React.
+192 tests, tous sur des fonctions pures exportées. Aucun test de rendu React.
 
 ```bash
 npm test                 # local
@@ -223,7 +223,7 @@ Un test écrit sans avoir été vu échouer au moins une fois n'a pas été écr
 | Machine à états | ✅ |
 | Rapport d'échec exploitable | ✅ |
 | Fichiers déjà identiques ignorés | ✅ |
-| Test de copie interrompue | ⬜ |
+| Test de copie interrompue | ✅ |
 | Badges, densité, libellés | ⬜ interface |
 | Restauration validée sur matériel | ⬜ jamais tentée |
 

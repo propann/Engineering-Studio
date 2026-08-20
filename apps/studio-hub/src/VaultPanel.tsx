@@ -490,7 +490,17 @@ export async function creerPointDeRetour(
   return nom;
 }
 
-async function copyFile(source: FileSystemFileHandle, destinationRoot: DirectoryHandle, relativePath: string) {
+/**
+ * Copie un fichier, puis RELIT la destination pour comparer les empreintes.
+ *
+ * Cette relecture est ce qui protege d'une ecriture tronquee : un write() qui
+ * rend la main ne garantit pas que les octets sont sur le disque, ce qui
+ * compte particulierement sur un volume amovible.
+ *
+ * Exporte pour etre testable — c'est le seul endroit ou une interruption en
+ * cours d'ecriture peut etre detectee.
+ */
+export async function copyFile(source: FileSystemFileHandle, destinationRoot: DirectoryHandle, relativePath: string) {
   const parts = relativePath.split("/");
   const name = parts.pop();
   if (!name) throw new Error(`Chemin invalide : ${relativePath}`);

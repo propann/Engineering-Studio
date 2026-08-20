@@ -135,7 +135,7 @@ Le contrat doit distinguer explicitement :
 | OP-1 écriture avec plan | Non | Oui | Oui avec appareil dédié | Oui pour matériel |
 | EP-133 clone lecture seule | Non | Simulé | Oui, pont local | Oui pour matériel |
 | EP-133 écriture puis relecture | Non | Simulé | Oui, environnement contrôlé | Oui pour matériel |
-| Déconnexion pendant transfert | Simulé | Oui | Oui | Oui |
+| Déconnexion pendant transfert | ✅ simulé | ✅ fait | À valider | Oui |
 | Gros volume / reprise | Simulé | À faire | À faire | Oui |
 
 ## Priorités décidées
@@ -145,8 +145,9 @@ Le contrat doit distinguer explicitement :
 2. ~~Ajouter le préflight et le checkpoint de cible avant restauration Hub.~~ Fait
    le 2026-08-20 : prévol listant créations et remplacements avec leurs tailles,
    point de retour horodaté dans la cible, 24 tests.
-3. Écrire des tests de parcours pour snapshot, restauration, fichier remplacé
-   et restauration interrompue.
+3. ~~Écrire des tests de parcours pour snapshot, restauration, fichier remplacé
+   et restauration interrompue.~~ Fait le 2026-08-21 : 192 tests, dont la copie
+   interrompue et le fichier déjà identique.
 4. Définir un manifeste commun sans casser les formats OP-1 et EP-133 déjà
    produits.
 5. Ajouter une validation navigateur sur un vrai dossier local.

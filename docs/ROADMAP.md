@@ -125,10 +125,13 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
       what makes a partial report usable. Previously no report was produced at all on
       partial failure.
 - [ ] Add Simple / Workshop density modes
-- [~] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
+- [x] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
       - [x] empty workspace, permission loss, partial scan — covered by the source scan suite
       - [x] restore safety — preflight and return point, 24 tests
-      - [ ] interrupted copy mid-write — needs a fake that fails partway through
+      - [x] interrupted copy mid-write — 13 tests on `copyFile` with a fake filesystem
+            that truncates, corrupts, or throws during write and close. The read-back
+            check proves load-bearing: removing it fails five tests, and comparing only
+            length fails exactly the corrupted-same-size case.
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
         and `test:watch` scripts, test step wired into CI, verified inside the
         `oven/bun` container the workflow uses. 114 tests currently pass.
