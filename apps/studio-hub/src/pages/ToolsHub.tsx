@@ -67,6 +67,12 @@ export default function ToolsHub(){
  function openTool(tool:Tool){
   if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
   if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
+  if(tool.id==="midi"){
+   // Sans ce cas, l'entrée retombait sur setSelected() et n'ouvrait qu'une
+   // modale descriptive : le panneau MidiSyncPanel n'était jamais monté.
+   (window as any).navigateMaquette("midi-settings");
+   return;
+  }
   if(tool.id==="machine-test"){
    window.history.replaceState(null, '', '?hubTool=machine-test');
    (window as any).navigateMaquette("studio-ep133");

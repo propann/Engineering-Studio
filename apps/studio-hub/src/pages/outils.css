@@ -824,3 +824,28 @@
   background: #ebece6;
   box-shadow: 2px 2px 0 #111311;
 }
+
+/* ---------------------------------------------------------------
+   Page Reglages > Synchronisation MIDI
+   --------------------------------------------------------------- */
+.midi-settings-page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 4vw 64px;
+}
+.midi-settings-head {
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line, #11131124);
+}
+.midi-settings-head h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+}
+.midi-settings-head p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted, #747970);
+  line-height: 1.55;
+}

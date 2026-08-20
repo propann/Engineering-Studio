@@ -19,6 +19,7 @@ import SoundPatchCreator from "./pages/SoundPatchCreator";
 import AudioPluginRack from "./pages/AudioPluginRack";
 import EP133StudioPage from "./pages/EP133StudioPage";
 import OP1StudioPage from "./pages/OP1StudioPage";
+import MidiSettings from "./pages/MidiSettings";
 
 type Page = 
   | "landing" 
@@ -40,7 +41,8 @@ type Page =
   | "advanced-image"
   | "sound-editor"
   | "sound-patch-creator"
-  | "audio-plugin-rack";
+  | "audio-plugin-rack"
+  | "midi-settings";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -81,6 +83,8 @@ export function App() {
       return <SoundEditorHub onClose={() => setCurrentPage("outils")} />;
     case "sound-patch-creator":
       return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
+    case "midi-settings":
+      return <MidiSettings />;
     case "audio-plugin-rack":
       return <AudioPluginRack onClose={() => setCurrentPage("outils")} />;
     case "landing":
