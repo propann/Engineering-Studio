@@ -61,7 +61,7 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - File System Access API with detailed logging
+  // Workspace picker - Primary: File System Access API, Fallback: webkitdirectory
   const pickWorkspaceFolder = async () => {
     log.info("=== WORKSPACE PICKER DEBUG ===");
     log.info("Browser info", {
@@ -74,85 +74,97 @@ export default function CharacterPage() {
     const hasAPI = "showDirectoryPicker" in window;
     log.info(`File System Access API available: ${hasAPI}`);
 
-    if (!hasAPI) {
-      const debugMsg = `
-DEBUG INFO:
-- URL: ${window.location.href}
-- Protocol: ${window.location.protocol}
-- Browser: ${navigator.userAgent}
+    // Try primary method: File System Access API
+    if (hasAPI) {
+      try {
+        log.info("Calling showDirectoryPicker()...");
+        const startTime = performance.now();
 
-❌ API NOT FOUND
+        const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
 
-Possible causes:
-1. Browser too old (need Chrome 86+, Edge 86+, Firefox 98+)
-2. Page loaded via HTTP (needs HTTPS)
-3. Browser permission issue
+        const elapsed = performance.now() - startTime;
+        const name = dirHandle.name;
 
-Try:
-✓ Use Chromium/Chrome
-✓ Make sure URL starts with https://
-✓ Check browser console (F12)
-      `;
-      log.warn("API not available", { hasAPI });
-      alert(debugMsg);
-      return;
-    }
+        log.info("✅ Directory selected!", {
+          name,
+          kind: dirHandle.kind,
+          elapsed: `${elapsed.toFixed(2)}ms`,
+        });
+        setWorkspace(name);
 
-    try {
-      log.info("Calling showDirectoryPicker()...");
-      const startTime = performance.now();
-
-      const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-
-      const elapsed = performance.now() - startTime;
-      const name = dirHandle.name;
-
-      log.info("✅ Directory selected!", {
-        name,
-        kind: dirHandle.kind,
-        elapsed: `${elapsed.toFixed(2)}ms`,
-      });
-      setWorkspace(name);
-
-      // Create subdirectories
-      const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
-      let createdCount = 0;
-      for (const folder of folders) {
-        const parts = folder.split("/");
-        let current = dirHandle;
-        for (const part of parts) {
-          try {
-            current = await current.getDirectoryHandle(part, { create: true });
-            createdCount++;
-          } catch (error) {
-            log.warn(`Failed to create folder ${part}`, error);
+        // Create subdirectories
+        const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
+        let createdCount = 0;
+        for (const folder of folders) {
+          const parts = folder.split("/");
+          let current = dirHandle;
+          for (const part of parts) {
+            try {
+              current = await current.getDirectoryHandle(part, { create: true });
+              createdCount++;
+            } catch (error) {
+              log.warn(`Failed to create folder ${part}`, error);
+            }
           }
         }
-      }
-      log.info("Workspace setup complete", { path: name, foldersCreated: createdCount });
-    } catch (error) {
-      const errorName = (error as any)?.name;
-      const errorMsg = (error as any)?.message;
-      const errorCode = (error as any)?.code;
+        log.info("Workspace setup complete", { path: name, foldersCreated: createdCount });
+        return;
+      } catch (error) {
+        const errorName = (error as any)?.name;
+        const errorMsg = (error as any)?.message;
+        const errorCode = (error as any)?.code;
 
-      log.error("❌ ERROR in showDirectoryPicker", {
-        name: errorName,
-        message: errorMsg,
-        code: errorCode,
-        full: String(error),
-      });
+        log.error("❌ ERROR in showDirectoryPicker", {
+          name: errorName,
+          message: errorMsg,
+          code: errorCode,
+          full: String(error),
+        });
 
-      if (errorName === "NotAllowedError") {
-        alert("❌ PERMISSION DENIED\n\nYou must grant file access permission when the browser asks.\n\nClick 'OK' and try again, then ALLOW when prompted.");
-      } else if (errorName === "AbortError") {
-        log.info("User cancelled directory picker");
-      } else if (errorName === "SecurityError") {
-        alert("❌ SECURITY ERROR\n\nFile System Access API requires HTTPS.\n\nCheck that your URL starts with 'https://'");
-      } else {
-        const debugMsg = `❌ ERROR: ${errorMsg}\n\nError Type: ${errorName}\nFull Error: ${String(error)}\n\nCheck browser console (F12) for details.`;
-        alert(debugMsg);
+        if (errorName === "NotAllowedError") {
+          alert("❌ PERMISSION DENIED\n\nYou must grant file access permission when the browser asks.\n\nClick 'OK' and try again, then ALLOW when prompted.");
+          return;
+        } else if (errorName === "AbortError") {
+          log.info("User cancelled directory picker");
+          return;
+        } else if (errorName === "SecurityError") {
+          alert("❌ SECURITY ERROR\n\nFile System Access API requires HTTPS.\n\nCheck that your URL starts with 'https://'");
+          // Don't fall back, HTTPS is required
+          return;
+        }
+        // For other errors, try fallback
       }
     }
+
+    // Fallback: Use webkitdirectory input (works in Chrome, Edge, Opera)
+    log.info("Attempting fallback: webkitdirectory input");
+    const input = document.createElement("input") as any;
+    input.type = "file";
+    input.webkitdirectory = true;
+    input.mozdirectory = true; // Firefox support
+    input.multiple = false;
+    input.style.display = "none";
+
+    input.addEventListener("change", () => {
+      if (input.files && input.files.length > 0) {
+        // Extract folder name from file path
+        const firstFile = input.files[0];
+        const pathParts = firstFile.webkitRelativePath?.split("/") || [];
+        const folderName = pathParts[0] || "WORKSPACE";
+
+        log.info("✅ Directory selected (fallback)", {
+          folderName,
+          filesCount: input.files.length,
+        });
+        setWorkspace(folderName);
+      }
+    });
+
+    input.addEventListener("cancel", () => {
+      log.info("User cancelled directory picker (fallback)");
+    });
+
+    input.click();
   };
 
   const toggleWorkspace = () => {
