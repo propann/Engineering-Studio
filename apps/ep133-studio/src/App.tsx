@@ -138,7 +138,7 @@ function loadUserExercises(): Exercise[] {
   catch { return []; }
 }
 
-export default function App() {
+export default function App({ embeddedMode = false }: { embeddedMode?: boolean } = {}) {
   useHubInitialization();
   const language = useLanguageStore((state) => state.language);
   const changeLanguage = useLanguageStore((state) => state.setLanguage);
@@ -181,12 +181,12 @@ export default function App() {
     window.addEventListener('hub:machineLoaded', onHubMachine);
     return () => window.removeEventListener('hub:machineLoaded', onHubMachine);
   }, []);
-  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(embeddedMode || new URLSearchParams(window.location.search).get('hubTool') === 'studio');
   const [editorName, setEditorName] = useState('MON GROOVE');
   const [editorBars, setEditorBars] = useState(1);
   const [editorTargets, setEditorTargets] = useState<SequencerNote[]>([]);
   const [editorPlaying, setEditorPlaying] = useState(false);
-  const [editorMode, setEditorMode] = useState<'game' | 'complete'>('game');
+  const [editorMode, setEditorMode] = useState<'game' | 'complete'>(embeddedMode ? 'complete' : 'game');
   const [editorGroup, setEditorGroup] = useState<EditorGroup>('A');
   const [editorPatternBank, setEditorPatternBank] = useState<PatternBank>(emptyPatternBank);
   const [editorPatternLengths, setEditorPatternLengths] = useState<Record<string, number>>({ 'A:1':1, 'B:1':1, 'C:1':1, 'D:1':1 });

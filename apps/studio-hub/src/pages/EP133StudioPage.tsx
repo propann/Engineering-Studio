@@ -5,7 +5,7 @@ export default function EP133StudioPage() {
   return (
     <div className="studio-app-wrapper">
       <TopBar activePage="studio-ep133" />
-      <EP133App />
+      <EP133App embeddedMode />
     </div>
   );
 }
