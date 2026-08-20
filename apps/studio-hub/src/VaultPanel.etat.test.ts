@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  categoriesIncompletes,
   ETAT_INITIAL,
   libelleEtat,
   transition,
@@ -230,5 +231,42 @@ describe("verifierSnapshot", () => {
 
   it("traite une liste vide comme illisible", () => {
     expect(verifierSnapshot([], "a", 0, 0).verification).toBe("snapshot-illisible");
+  });
+});
+
+describe("categoriesIncompletes", () => {
+  const f = (path: string, category?: string) => ({ path, category }) as any;
+
+  it("ne signale rien quand tout est passe", () => {
+    const prevus = [f("tape/a.aif", "tape"), f("drum/b.aif", "drum")];
+    expect(categoriesIncompletes(prevus, prevus)).toEqual([]);
+  });
+
+  it("nomme la categorie partiellement copiee", () => {
+    // « 118 sur 240 » ne dit pas si une categorie entiere manque. C'est
+    // pourtant ce qui decide s'il faut tout relancer ou seulement completer.
+    const prevus = [f("tape/a.aif", "tape"), f("tape/b.aif", "tape"), f("drum/c.aif", "drum")];
+    const finalises = [f("tape/a.aif", "tape"), f("drum/c.aif", "drum")];
+    expect(categoriesIncompletes(prevus, finalises)).toEqual(["tape"]);
+  });
+
+  it("nomme une categorie totalement absente du resultat", () => {
+    const prevus = [f("tape/a.aif", "tape"), f("synth/x.aif", "synth")];
+    expect(categoriesIncompletes(prevus, [f("tape/a.aif", "tape")])).toEqual(["synth"]);
+  });
+
+  it("retombe sur le premier segment du chemin sans categorie explicite", () => {
+    // Les manifestes herites ne portent pas toujours de categorie.
+    const prevus = [f("album/a.aif"), f("album/b.aif")];
+    expect(categoriesIncompletes(prevus, [f("album/a.aif")])).toEqual(["album"]);
+  });
+
+  it("signale toutes les categories quand rien n'a abouti", () => {
+    const prevus = [f("tape/a.aif", "tape"), f("drum/b.aif", "drum")];
+    expect(categoriesIncompletes(prevus, []).sort()).toEqual(["drum", "tape"]);
+  });
+
+  it("accepte des listes vides", () => {
+    expect(categoriesIncompletes([], [])).toEqual([]);
   });
 });

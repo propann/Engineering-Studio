@@ -20,8 +20,10 @@ type BackupManifest = {
   projects?: { file: string; bytes: number; sha256?: string }[];
   sounds?: { file: string; bytes: number; sha256?: string }[];
 };
-type VaultReport = {
+export type VaultReport = {
   operation: "backup" | "restore";
+  /** Phase terminale : verified, partial ou failed. */
+  phase?: PhaseOperation;
   machine: MachineId;
   snapshotId?: string;
   sourceOrTarget: string;
@@ -29,7 +31,27 @@ type VaultReport = {
   categories: BackupCategory[];
   fileCount: number;
   totalBytes: number;
+  /**
+   * Uniquement les fichiers finalises ET verifies. Jamais des intentions :
+   * c'est ce qui rend un rapport partiel exploitable — un inventaire exact
+   * de ce qui est reellement sur le disque, avec chemin, taille et empreinte.
+   */
   files: BackupFile[];
+  /** Present des que la phase n'est pas `verified`. */
+  echec?: {
+    raison: string;
+    fichierInterrompu?: string;
+    fichiersPrevus: number;
+    octetsPrevus: number;
+    /** Categories dont tous les fichiers ne sont pas passes. */
+    categoriesIncompletes: BackupCategory[];
+    /** Le disque de l'utilisateur a-t-il ete touche ? */
+    ecritureCommencee: boolean;
+    /** Sauvegarde : le dossier incomplet a-t-il ete retire du coffre ? */
+    snapshotSupprime?: boolean;
+    /** Restauration : ou sont les originaux remplaces. */
+    pointDeRetour?: string | null;
+  };
 };
 type DirectoryPermission = { mode: "read" | "readwrite" };
 type Snapshot = {
@@ -200,6 +222,36 @@ export function verifierSnapshot(
     };
   }
   return { ok: true, verification: "confirmee" };
+}
+
+/**
+ * Categories dont tous les fichiers ne sont pas passes.
+ *
+ * Sert au rapport d'echec : savoir « 118 sur 240 » ne dit pas si une
+ * categorie entiere manque. C'est pourtant ce qui decide s'il faut relancer
+ * la sauvegarde ou seulement completer.
+ */
+export function categoriesIncompletes(
+  prevus: { category?: BackupCategory; path: string }[],
+  finalises: { category?: BackupCategory; path: string }[]
+): BackupCategory[] {
+  const compte = (liste: { category?: BackupCategory; path: string }[]) => {
+    const par = new Map<BackupCategory, number>();
+    for (const f of liste) {
+      // Repli sur le premier segment du chemin : les manifestes herites ne
+      // portent pas toujours de categorie explicite.
+      const cat = (f.category ?? f.path.split("/")[0]) as BackupCategory;
+      par.set(cat, (par.get(cat) ?? 0) + 1);
+    }
+    return par;
+  };
+  const attendus = compte(prevus);
+  const obtenus = compte(finalises);
+  const manquantes: BackupCategory[] = [];
+  for (const [cat, n] of attendus) {
+    if ((obtenus.get(cat) ?? 0) < n) manquantes.push(cat);
+  }
+  return manquantes;
 }
 
 /** Libelle et ton d'une phase. Contrat de rendu, sans balisage. */
@@ -522,6 +574,8 @@ export function VaultPanel({
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
   const [lastReport, setLastReport] = useState<VaultReport | null>(null);
+  const [etatOperation, setEtatOperation] = useState<EtatOperation>(ETAT_INITIAL);
+  const emettre = (ev: EvenementOperation) => setEtatOperation((e) => transition(e, ev));
   const [sourceScan, setSourceScan] = useState<ScanSource | null>(null);
 
   const selectedSnapshot = useMemo(() => snapshots.find((item) => item.id === selectedSnapshotId), [snapshots, selectedSnapshotId]);
@@ -598,6 +652,16 @@ async function createBackup() {
     if (!selectedCategories.length) { setError("Sélectionne au moins une catégorie à sauvegarder."); return; }
     setBusy(true);
     let completed = 0;
+    // Hisse hors du `try` : le `catch` doit pouvoir nommer le fichier qui a
+    // interrompu la copie.
+    let fichierEnCours = "";
+    // Hissee pour la meme raison : le `catch` doit savoir ce qui etait prevu
+    // afin de nommer les categories restees incompletes.
+    let filesToCopy: { category: BackupCategory; handle: FileSystemFileHandle; path: string }[] = [];
+    // Renomme depuis `manifestFiles` : ce nom masquait la fonction homonyme du
+    // module (ligne 496), si bien que le `catch` — hors de la portee du `try` —
+    // recuperait la fonction au lieu du tableau.
+    let fichiersCopies: BackupFile[] = [];
     let total = 0;
     let snapshotId = "";
     let backups: DirectoryHandle | null = null;
@@ -608,8 +672,8 @@ async function createBackup() {
       snapshotId = `${machine}_${new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z")}_${Math.random().toString(16).slice(2, 8)}`;
       const snapshot = await backups.getDirectoryHandle(snapshotId, { create: true }) as DirectoryHandle;
       const filesRoot = await snapshot.getDirectoryHandle("files", { create: true }) as DirectoryHandle;
-      const manifestFiles: BackupFile[] = [];
-      const filesToCopy: { category: BackupCategory; handle: FileSystemFileHandle; path: string }[] = [];
+      fichiersCopies = [];
+      filesToCopy = [];
       for (const category of selectedCategories) {
         const categorySource = await source.getDirectoryHandle(category) as DirectoryHandle;
         const files = await collectFiles(categorySource);
@@ -619,26 +683,34 @@ async function createBackup() {
       total = filesToCopy.length;
       let totalBytes = 0;
       for (const file of filesToCopy) totalBytes += (await file.handle.getFile()).size;
+      emettre({ type: "prepare", operation: "backup", fichiersPrevus: total, octetsPrevus: totalBytes });
       setStatus("Copie et vérification des fichiers sélectionnés…");
       setProgress({ current: 0, total, bytes: 0, totalBytes, label: `Préparation : ${total} fichiers (${formatBytes(totalBytes)})` });
       let copiedBytes = 0;
+      // La premiere ecriture sur le disque de l'utilisateur commence ici.
+      emettre({ type: "demarre" });
       for (let index = 0; index < filesToCopy.length; index += 1) {
         const file = filesToCopy[index];
+        fichierEnCours = file.path;
         setProgress({ current: index, total, bytes: copiedBytes, totalBytes, label: `Copie de ${file.path}` });
         const copied = await copyFile(file.handle, filesRoot, file.path);
-        manifestFiles.push({ path: file.path, category: file.category, ...copied });
+        fichiersCopies.push({ path: file.path, category: file.category, ...copied });
         completed = index + 1;
         copiedBytes += copied.size;
+        // Emis apres copyFile, donc apres relecture et comparaison
+        // d'empreinte : jamais un compteur d'intention.
+        emettre({ type: "fichier-finalise", octets: copied.size });
         setProgress({ current: completed, total, bytes: copiedBytes, totalBytes, label: `Vérifié : ${file.path}` });
       }
+      emettre({ type: "copie-terminee" });
       const manifest: BackupManifest = {
         snapshotId,
         createdAt: new Date().toISOString(),
         sourceLabel: sourceName || machine,
         selectedCategories,
-        fileCount: manifestFiles.length,
-        totalBytes: manifestFiles.reduce((sum, file) => sum + file.size, 0),
-        files: manifestFiles,
+        fileCount: fichiersCopies.length,
+        totalBytes: fichiersCopies.reduce((sum, file) => sum + file.size, 0),
+        files: fichiersCopies,
       };
       const manifestHandle = await snapshot.getFileHandle("manifest.json", { create: true });
       const writable = await manifestHandle.createWritable();
@@ -648,20 +720,47 @@ async function createBackup() {
       // liste ; il porte aussi la preuve que le snapshot est relisible.
       const relus = await readSnapshots(workspace, machine);
       setSnapshots(relus);
-      const scellement = verifierSnapshot(relus, snapshotId, manifestFiles.length, manifest.totalBytes ?? 0);
+      const scellement = verifierSnapshot(relus, snapshotId, fichiersCopies.length, manifest.totalBytes ?? 0);
+      emettre({ type: "scelle", ...scellement });
       if (!scellement.ok) setError(scellement.raison ?? "Snapshot non vérifiable après écriture.");
       setSelectedSnapshotId(snapshotId);
       setRestoreCategories(selectedCategories);
       onBackupRecorded(machine);
-      const report: VaultReport = { operation: "backup", machine, snapshotId, sourceOrTarget: sourceName || machine, createdAt: manifest.createdAt ?? new Date().toISOString(), categories: selectedCategories, fileCount: manifestFiles.length, totalBytes: manifest.totalBytes ?? 0, files: manifestFiles };
+      const report: VaultReport = { operation: "backup", machine, snapshotId, sourceOrTarget: sourceName || machine, createdAt: manifest.createdAt ?? new Date().toISOString(), categories: selectedCategories, fileCount: manifestFiles.length, totalBytes: manifest.totalBytes ?? 0, files: fichiersCopies, phase: "verified" };
       setLastReport(report);
-      setStatus(`Sauvegarde créée : ${manifestFiles.length} fichiers (${formatBytes(manifest.totalBytes ?? 0)}).`);
+      setStatus(`Sauvegarde créée : ${fichiersCopies.length} fichiers (${formatBytes(manifest.totalBytes ?? 0)}).`);
     } catch (err) {
       const reason = err instanceof Error ? err.message : "La sauvegarde a échoué.";
       if (backups && snapshotId && backups.removeEntry) {
         try { await backups.removeEntry(snapshotId, { recursive: true }); } catch { /* nettoyage best effort */ }
       }
-      setError(`${reason}${total ? ` (${completed}/${total} fichiers finalisés ; le snapshot incomplet reste masqué).` : ""}`);
+      emettre({ type: "echoue", raison: reason, fichierInterrompu: fichierEnCours || undefined });
+      // Un rapport etait produit uniquement en cas de succes total. Le
+      // snapshot incomplet etant supprime, un echec partiel ne laissait
+      // aucune trace de ce qui avait ete copie — juste « 118/240 ».
+      const octetsFinalises = fichiersCopies.reduce((sum, f) => sum + f.size, 0);
+      setLastReport({
+        operation: "backup",
+        phase: completed > 0 ? "partial" : "failed",
+        machine,
+        snapshotId,
+        sourceOrTarget: sourceName || machine,
+        createdAt: new Date().toISOString(),
+        categories: selectedCategories,
+        fileCount: fichiersCopies.length,
+        totalBytes: octetsFinalises,
+        files: fichiersCopies,
+        echec: {
+          raison: reason,
+          fichierInterrompu: fichierEnCours || undefined,
+          fichiersPrevus: total,
+          octetsPrevus: 0,
+          categoriesIncompletes: categoriesIncompletes(filesToCopy, fichiersCopies),
+          ecritureCommencee: completed > 0 || Boolean(snapshotId),
+          snapshotSupprime: Boolean(backups && snapshotId),
+        },
+      });
+      setError(`${reason}${total ? ` (${completed}/${total} fichiers finalisés ; le snapshot incomplet reste masqué, le rapport local reste disponible).` : ""}`);
     }
     finally { setBusy(false); setProgress(null); }
   }
