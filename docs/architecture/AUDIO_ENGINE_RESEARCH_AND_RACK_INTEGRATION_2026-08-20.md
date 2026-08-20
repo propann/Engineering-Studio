@@ -374,7 +374,11 @@ La base actuelle permet cette évolution, mais le bon ordre est essentiel. Tone.
 
 La première implémentation raisonnable est donc : **Master Transport partagé → quantizer pur → arpéggiateur Tone.js → analyse BPM → SoundTouch**.
 
-## 9. Recherche moteurs de consoles rétro
+## 9. Recherche moteurs audio rétro et chip-inspired
+
+Cette recherche ne vise pas à ajouter des consoles ni des émulateurs de jeux au Hub. Les références Game Boy, NES, Mega Drive ou SNES servent uniquement à identifier des architectures sonores intéressantes : oscillateurs, PSG, FM, bruit, enveloppes et contraintes de timing.
+
+La cible d'intégration est un **moteur audio autonome**, jouable par notes MIDI et séquenceur, avec ses propres paramètres et presets. Les émulateurs complets et les ROMs restent hors périmètre du Rack.
 
 ### 9.1 Orientation retenue : émuler le chip, pas la console complète
 
@@ -394,7 +398,7 @@ MIDI / clavier / pattern
 
 L’adaptateur doit exposer une API de registre ou de notes, mais ne doit jamais charger une ROM commerciale. Les ROMs, VGM, NSF et SPC seront des formats d’import/lecture séparés, avec leurs propres questions de droits.
 
-### 9.2 Game Boy DMG / CGB — priorité haute
+### 9.2 Game Boy DMG / CGB — option créative, sous réserve juridique
 
 Le son Game Boy est particulièrement intéressant pour le Rack :
 
@@ -413,7 +417,7 @@ Pistes étudiées :
 | WasmBoy | APU incluse, WebAssembly, sortie Web Audio, performances et tests d’émulation | Émulateur complet, encore annoncé comme pré-1.0 et GPL-3.0 |
 | `raphamorim/gameboy` | Émulateur Rust/WASM, APU annoncée assez précise, licence MPL-2.0 | Il faut extraire/isoler l’APU au lieu d’embarquer toute la console |
 
-**Recommandation :** commencer par un prototype `GameBoyApuAdapter` avec quatre voix et un registre de paramètres inspiré du hardware. Ne pas intégrer WasmBoy au bundle du Rack sans décision de licence et sans besoin d’émulation complète.
+**Recommandation :** garder la Game Boy comme option “pour le délire”, après les moteurs audio prioritaires. Un prototype `GameBoyApuAdapter` peut exposer quatre voix et un registre de paramètres inspiré du hardware, mais aucune ROM, musique, sample ou asset de jeu ne doit être embarqué. `apu-legacy` reste bloqué tant que sa licence exacte n'est pas confirmée. WasmBoy ne convient pas au bundle du Rack : c'est un émulateur complet sous GPL-3.0, alors que nous cherchons un moteur APU autonome.
 
 Sources : [apu-legacy](https://github.com/shamblesides/apu-legacy), [WasmBoy](https://github.com/torch2424/wasmboy), [Game Boy Rust/WASM](https://github.com/raphamorim/gameboy).
 
@@ -478,15 +482,16 @@ Un module “Console Music Player” pourrait lire des formats de musique de con
 
 Source : [Game Music Emu](https://github.com/libgme/game-music-emu).
 
-## 10. Classement console recommandé pour le Rack
+## 10. Classement des moteurs audio recommandé pour le Rack
 
 | Rang | Module | Usage | Décision |
 |---:|---|---|---|
-| 1 | Game Boy APU | 4 voix lo-fi, FX, arpèges et drums | Prototype APU autonome |
-| 2 | Genesis YM2612 | FM 6 voix, basses, leads et séquences | Étudier `libymfm.wasm` |
-| 3 | NES APU | 5 voix chiptune et DMC séparé | Cœur APU-only à privilégier |
-| 4 | SNES SPC700 | Lecture SPC et textures DSP | Phase exploratoire |
-| 5 | VGM/NSF/SPC Player | Écoute, import et analyse de musiques rétro | Module séparé du live rack |
+| 1 | YM2612 | FM 6 voix, basses et leads | Étudier `libymfm.wasm` en premier |
+| 2 | SN76489 / PSG | Pulses, bruit et basses simples | Ajouter comme bloc séparé ou complément YM2612 |
+| 3 | NES-style APU | 5 voix chiptune, DMC séparé | Cœur APU-only à privilégier |
+| 4 | Game Boy-style APU | 4 voix lo-fi, FX et drums | Option créative après validation de licence |
+| 5 | SNES SPC700 | Textures DSP et lecture SPC | Phase exploratoire, pas d'instrument live initial |
+| 6 | VGM/NSF/SPC Player | Écoute, import et analyse rétro | Module séparé du live rack |
 
 ## 11. Contrat console proposé
 
@@ -511,13 +516,47 @@ interface ConsoleChipAdapter {
 
 Ce contrat laisse le Rack choisir entre une implémentation JS, WASM ou AudioWorklet. Il impose la même gestion du temps, des notes, des paramètres, de la destruction et du PANIC.
 
-## 12. Conclusion console
+## 12. Jouer avec l'OP-1 en MIDI
 
-Les meilleurs gains créatifs ne viennent pas d’un émulateur complet, mais de trois blocs spécialisés :
+L'OP-1 peut servir de clavier et de contrôleur du Rack par USB MIDI. Le guide officiel indique qu'en mode OP-1, il transmet les notes MIDI, par défaut sur le canal 1, et qu'il peut contrôler des synthés logiciels. Le guide MIDI documente aussi pitch bend, program change, CC, horloge, Start, Continue, Stop et Song Position.
 
-1. **Game Boy APU** pour le caractère lo-fi et les FX ;
-2. **YM2612 + SN76489** pour compléter le FM et le PSG du Rack ;
-3. **NES APU** pour le chiptune séquencé.
+Flux cible pour jouer un moteur audio du Rack avec l'OP-1 :
 
-Le SNES et les lecteurs NSF/VGM/SPC doivent rester des fonctions séparées tant que les contrats de licence, de timing et d’export ne sont pas validés. La prochaine étape de recherche est de comparer les cœurs APU-only et de vérifier leurs licences dans un registre avant tout ajout de dépendance.
+```text
+OP-1 USB MIDI
+    → Web MIDI input
+    → @studio-hub/midi-bridge
+    → HubNoteMessage / HubTransportMessage
+    → ConsoleChipAdapter ou autre EngineAdapter
+    → AudioWorklet / Web Audio
+```
+
+Le sens inverse reste possible pour piloter l'OP-1 depuis le Hub : notes, transport, clock et changements de programme, selon les messages acceptés par le modèle d'OP-1 utilisé. Il faudra prévoir dans les réglages MIDI : port d'entrée/sortie, canal, écoute de l'horloge externe, émission de l'horloge, Start/Stop et PANIC.
+
+La clock MIDI 24 PPQN ne remplace pas l'horloge Web Audio. Le transport partagé garde la position musicale ; l'adaptateur MIDI traduit cette position en messages MIDI et l'adaptateur audio planifie les événements avec des timestamps audio.
+
+Source : [guide officiel OP-1 — connectivité MIDI](https://teenage.engineering/guides/op-1/original/song-rendering-and-connectivity), [référence MIDI OP-1](https://teenage.engineering/guides/op-1).
+
+## 13. Cadre légal et registre de provenance
+
+Avant toute dépendance moteur :
+
+- figer le dépôt, la version, le commit et la licence exacte ;
+- conserver `LICENSE`, `NOTICE` et les mentions dans le bundle si nécessaire ;
+- ne pas distribuer de ROM, BIOS, sample ou asset issu d'un jeu commercial ;
+- privilégier un cœur autonome permissif ou une réimplémentation propre des caractéristiques audio ;
+- isoler les lecteurs VGM/NSF/SPC des instruments live et auditer chaque cœur utilisé ;
+- faire valider le choix final avant publication si la licence est copyleft ou ambiguë.
+
+À ce stade, `libymfm.wasm` est le meilleur candidat de recherche pour le premier moteur : il expose des cœurs Yamaha FM, dont YM2612 et SN76489, et annonce une licence BSD 3-Clause. La Game Boy reste expérimentale jusqu'à confirmation de la licence du cœur APU retenu.
+
+## 14. Conclusion moteurs audio rétro
+
+Les meilleurs gains créatifs viennent de blocs audio spécialisés, pas d'un émulateur complet :
+
+1. **YM2612 + SN76489** pour compléter le FM et le PSG du Rack ;
+2. **NES-style APU** pour le chiptune séquencé ;
+3. **Game Boy-style APU** comme moteur bonus, si le cœur est légalement redistribuable.
+
+Le SNES et les lecteurs NSF/VGM/SPC doivent rester des fonctions séparées tant que les contrats de licence, de timing et d'export ne sont pas validés. La prochaine étape est donc : contrat `EngineAdapter` → MIDI OP-1 → YM2612/SN76489 → NES-style APU → éventuelle Game Boy APU.
 
