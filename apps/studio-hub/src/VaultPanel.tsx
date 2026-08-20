@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { saveDirectoryHandle, WORKSPACE_HANDLE_KEY } from "./core/storage/directoryHandleStore";
 
 export type MachineId = "op1" | "ep133";
 export type BackupCategory = "tape" | "album" | "drum" | "synth" | "projects" | "samples";
@@ -658,6 +659,7 @@ export function VaultPanel({
       const handle = await picker();
       const root = handle as DirectoryHandle;
       for (const path of ["shared", "shared/sounds", "shared/sounds/originals", "shared/sounds/prepared", "shared/sounds/packs", "shared/sounds/quarantine", "op1/backups", "op1/samples", "op1/firmware", "ep133/backups", "ep133/projects", "ep133/samples"]) await childDirectory(root, path, true);
+      try { await saveDirectoryHandle(WORKSPACE_HANDLE_KEY, handle); } catch { /* Le coffre reste utilisable même si IndexedDB est indisponible. */ }
       onWorkspaceSelected(handle, handle.name);
       setStatus(`Espace ${handle.name} connecté.`);
     } catch (err) { if ((err as DOMException).name !== "AbortError") setError(err instanceof Error ? err.message : "Impossible de connecter l’espace."); }

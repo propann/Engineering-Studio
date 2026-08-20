@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
 import { clearProfile, readProfile, writeProfile } from "../core/profile";
+import { forgetDirectoryHandle, loadDirectoryHandle, saveDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 
 const log = createLogger("Hub.ProfileCreator");
 
@@ -154,6 +155,11 @@ export default function CharacterPage() {
     log.info("Directory selected", { name: dirHandle.name });
     setWorkspace(dirHandle.name);
     setWorkspaceDirHandle(dirHandle);
+    try {
+      await saveDirectoryHandle(WORKSPACE_HANDLE_KEY, dirHandle);
+    } catch (error) {
+      log.warn("Unable to persist workspace handle", error);
+    }
 
     // Création des sous-dossiers (non bloquant : on signale ce qui échoue)
     const failed: string[] = [];
@@ -213,14 +219,24 @@ export default function CharacterPage() {
   useEffect(() => {
     try {
       void loadProfile(readProfile());
+      void loadDirectoryHandle(WORKSPACE_HANDLE_KEY).then(async (handle) => {
+        if (!handle) return;
+        setWorkspaceDirHandle(handle);
+        setWorkspace((current) => current || handle.name);
+        await scanWorkspaceFolder(handle);
+        log.info("✅ Workspace handle restored", { name: handle.name });
+      });
     } catch (error) {
       log.warn("Failed to load from localStorage", error);
     }
   }, []);
 
   const progress = useMemo(
-    () => 20 + (name.trim() ? 20 : 0) + (machines.some((m) => m.active) ? 20 : 0) + (drives.length ? 20 : 0) + (workspace ? 20 : 0),
-    [name, machines, drives, workspace]
+    () => {
+      const requiredSteps = [Boolean(name.trim()), machines.some((machine) => machine.active), Boolean(workspace.trim())];
+      return Math.round((requiredSteps.filter(Boolean).length / requiredSteps.length) * 100);
+    },
+    [name, machines, workspace]
   );
 
   const avatarIndex = avatarNames.indexOf(avatar);
@@ -336,6 +352,7 @@ export default function CharacterPage() {
     setWorkspace("");
     setWorkspaceDirHandle(null);
     setWorkspaceFiles([]);
+    void forgetDirectoryHandle(WORKSPACE_HANDLE_KEY);
     setMachines([]);
     setDrives([]);
   }
@@ -372,7 +389,7 @@ export default function CharacterPage() {
         </aside>
 
         <div className="creator-console">
-          <div className="quest-head"><span>CONFIGURATION PRINCIPALE & DRIVES</span><b>5 ÉTAPES</b></div>
+          <div className="quest-head"><span>CONFIGURATION PRINCIPALE & DRIVES OPTIONNELS</span><b>3 ÉTAPES REQUISES</b></div>
 
           {/* BLOCK 01: IDENTITY */}
           <section className="creator-block identity-block">
