@@ -37,6 +37,13 @@ function TrackNumber({ index }: { index: number }) {
   }
 }
 
+function formatPos(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  const t = Math.floor((sec % 1) * 10);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${t}`;
+}
+
 export type TapeClip = {
   offset: number;   // début en secondes
   clipEnd: number;  // fin en secondes (durée trim)
@@ -46,6 +53,7 @@ export function StudioTapeScreen({
   clips,
   position,
   playing,
+  recording = false,
   selectedTrack,
   looping,
   loopIn = 0,
@@ -55,6 +63,7 @@ export function StudioTapeScreen({
   clips: Record<number, TapeClip | undefined>;
   position: number;
   playing: boolean;
+  recording?: boolean;
   selectedTrack: number;
   looping: boolean;
   loopIn?: number;
@@ -249,34 +258,79 @@ export function StudioTapeScreen({
         <line x1="305.268" y1="4.451" x2="305.268" y2="110.292" stroke={playing ? "#FF3A5D" : "#4E2832"} strokeWidth="1.5" />
         <circle cx="305.268" cy="110.292" r="2.667" fill={playing ? "#FF3A5D" : "#4E2832"} />
 
-        {/* ── Transport central — play/pause (décoratif) ────────────────── */}
-        {playing ? (
-          <g opacity="0.55" fill="#fff">
-            <rect x="152" y="47" width="4.5" height="15" rx="1" />
-            <rect x="163" y="47" width="4.5" height="15" rx="1" />
+        {/* ── Compteur de position OP-1 (agrandi, avec avertissement couleur fin de bande) ── */}
+        {(() => {
+          let counterColor = "#ffffff";
+          let alertStatus: "normal" | "warning" | "critical" = "normal";
+
+          if (position >= 315) {
+            counterColor = "#FF3A5D";
+            alertStatus = "critical";
+          } else if (position >= 240) {
+            counterColor = "#FF9436";
+            alertStatus = "warning";
+          }
+
+          return (
+            <g style={{ pointerEvents: "none" }}>
+              {alertStatus !== "normal" && (
+                <rect
+                  x="120"
+                  y="10"
+                  width="80"
+                  height="22"
+                  rx="4"
+                  fill={alertStatus === "critical" ? "#FF3A5D20" : "#FF943618"}
+                  stroke={alertStatus === "critical" ? "#FF3A5D77" : "#FF943655"}
+                  strokeWidth="1"
+                />
+              )}
+              <text
+                x="160"
+                y="26.5"
+                textAnchor="middle"
+                fill={counterColor}
+                fontSize="16"
+                fontFamily="'JetBrains Mono', 'Fira Code', monospace"
+                fontWeight="900"
+                letterSpacing="1.8"
+                style={{
+                  filter: alertStatus === "critical"
+                    ? "drop-shadow(0px 0px 4px rgba(255,58,93,0.9))"
+                    : alertStatus === "warning"
+                    ? "drop-shadow(0px 0px 3px rgba(255,148,54,0.7))"
+                    : "none",
+                  transition: "fill 0.25s ease, filter 0.25s ease"
+                }}
+              >
+                {formatPos(position)}
+              </text>
+            </g>
+          );
+        })()}
+
+        {/* ── Témoin d'état central : Petit triangle vert de lecture et Petit rond rouge de REC ── */}
+        {recording ? (
+          <g>
+            <circle cx="160" cy="50" r="5.5" fill="#FF3A5D" stroke="#ffffff" strokeWidth="0.9" />
+            <circle cx="160" cy="50" r="8.5" fill="none" stroke="#FF3A5D" strokeWidth="1.2" opacity="0.8">
+              <animate attributeName="r" values="5.5;10;5.5" dur="1s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite" />
+            </circle>
+          </g>
+        ) : playing ? (
+          <g>
+            <polygon points="154,43.5 168,50 154,56.5" fill="#00ED95" stroke="#ffffff" strokeWidth="0.8" />
           </g>
         ) : (
-          <path
-            d="M154.141,47.047c0-1.052,0.747-1.482,1.657-0.955l12.843,7.411c0.909,0.522,0.909,1.385,0,1.908l-12.843,7.416c-0.91,0.523-1.657,0.094-1.657-0.954V47.047z"
-            fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" opacity="0.4"
-          />
+          <g opacity="0.45">
+            <polygon points="154.5,44 167.5,50 154.5,56" fill="none" stroke="#ffffff" strokeWidth="1.2" />
+          </g>
         )}
 
         {/* ── Numéro de piste (cadre en haut à gauche) ─────────────────── */}
-        <rect x="6" y="3" width="28.082" height="28.081" fill="none" stroke="#fff" strokeWidth="1.5" />
+        <rect x="6" y="3" width="28.082" height="28.081" fill="#121820" stroke="#fff" strokeWidth="1.5" rx="1.5" />
         <TrackNumber index={selectedTrack} />
-
-        {/* ── Symboles séquenceur / synth (bas gauche, décoratifs) ──────── */}
-        <g fill="#698EFF">
-          <circle cx="10.938" cy="89.697" r="2.001" />
-          <circle cx="16.963" cy="83.422" r="2.001" />
-          <circle cx="22.987" cy="89.697" r="2.001" />
-          <circle cx="29.012" cy="89.697" r="2.001" />
-        </g>
-        {/* Drum dot */}
-        <circle cx="19.894" cy="103.623" r="6.736" fill="none" stroke="#00ED95" strokeWidth="1.5" />
-        <circle cx="19.894" cy="104.891" r="1.334" fill="#00ED95" />
-        <line x1="19.894" y1="113.494" x2="19.894" y2="104.957" stroke="#00ED95" strokeWidth="1.5" />
       </svg>
     </div>
   );

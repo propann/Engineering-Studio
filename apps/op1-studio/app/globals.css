@@ -1353,6 +1353,215 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 /* ══════════════════════════════════════════════════════════════════════════
    OP-1 PRO STUDIO — MENU BAR & FLOATING DRAWERS (HARDWARE FOCUSED)
    ══════════════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════
+   OP-1 PRO STUDIO — COMPACT CONSOLE & UNIFIED HEADER (HAUTEUR OPTIMISÉE)
+   ══════════════════════════════════════════════════════════════════════════ */
+.op1-compact-console {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px 10px;
+  background: #14181c;
+  border: 1px solid #232b33;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.op1-compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.op1-compact-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.op1-compact-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+  border-right: 1px solid #28323c;
+  line-height: 1;
+}
+
+.op1-compact-brand strong {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #f8fafc;
+}
+
+.op1-compact-brand span {
+  font-size: 8px;
+  padding: 1px 4px;
+  background: #267c65;
+  color: #ffffff;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.op1-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  height: 25px;
+  background: #1b2229;
+  border: 1px solid #2c3742;
+  color: #cbd5e1;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.op1-pill-btn:hover {
+  background: #26303a;
+  border-color: #475569;
+  color: #ffffff;
+}
+
+.op1-pill-btn.is-active {
+  background: #19332a;
+  border-color: #29be87;
+  color: #29be87;
+  box-shadow: 0 0 8px rgba(41, 190, 135, 0.2);
+}
+
+.op1-pill-btn .badge {
+  padding: 1px 4px;
+  font-size: 8.5px;
+  background: #334155;
+  color: #94a3b8;
+  border-radius: 8px;
+}
+
+.op1-pill-btn.is-active .badge {
+  background: #29be87;
+  color: #0f1215;
+}
+
+.op1-transport-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #0d1114;
+  padding: 2px 4px;
+  border-radius: 5px;
+  border: 1px solid #1e262f;
+}
+
+.op1-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  background: rgba(0, 237, 149, 0.12);
+  border: 1px solid #00ED95;
+  color: #00ED95;
+  border-radius: 3px;
+  font-weight: 800;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.op1-play-btn:hover {
+  background: #00ED95;
+  color: #0c1011;
+}
+
+.op1-rec-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 7px;
+  background: rgba(255, 58, 93, 0.12);
+  border: 1px solid #FF3A5D;
+  color: #FF3A5D;
+  border-radius: 3px;
+  font-weight: 800;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.op1-rec-btn.is-recording {
+  background: #FF3A5D;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255, 58, 93, 0.65);
+}
+
+.op1-state-btn {
+  height: 22px;
+  padding: 0 6px;
+  background: transparent;
+  border: 1px solid #2a353f;
+  color: #94a3b8;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.op1-state-btn:hover {
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.op1-state-btn.is-active {
+  background: rgba(0, 237, 149, 0.15);
+  border-color: #00ED95;
+  color: #00ED95;
+}
+
+.op1-state-btn.is-rev-active {
+  background: rgba(255, 58, 93, 0.15);
+  border-color: #FF3A5D;
+  color: #FF3A5D;
+}
+
+.op1-tempo-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 5px;
+  background: #171d22;
+  border: 1px solid #2a353f;
+  border-radius: 3px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.op1-tempo-box input {
+  width: 40px;
+  height: 18px;
+  background: #0f1316;
+  border: 1px solid #334155;
+  border-radius: 2px;
+  color: #38bdf8;
+  font-weight: bold;
+  font-size: 10px;
+  text-align: center;
+  padding: 0;
+}
+
 .op1-pro-bar {
   display: flex;
   align-items: center;

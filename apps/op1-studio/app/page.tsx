@@ -1053,232 +1053,317 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   return (
     <div className="tool-body tape-editor" onClick={() => { if (activeDropdown) setActiveDropdown(null); }}>
 
-      {/* ── BARRE DE MENU PRO STUDIO (Menus déroulants & tiroirs d'action) ── */}
-      <div className="op1-pro-bar">
-        <div className="op1-pro-bar-left">
-          <div className="op1-pro-bar-brand">
-            <strong>OP-1 STUDIO</strong>
-            <span>PRO</span>
-          </div>
+      {/* ── CONSOLE DE CONTRÔLE COMPACTE OP-1 STUDIO (Hauteur optimisée) ── */}
+      <div className="op1-compact-console">
+        {/* Ligne 1 : Navigation, Modals & Menus déroulants */}
+        <div className="op1-compact-row">
+          <div className="op1-compact-group">
+            <div className="op1-compact-brand">
+              <strong>OP-1 STUDIO</strong>
+              <span>PRO</span>
+            </div>
 
-          {/* Menu 1 : Tiroir Multi-Pistes */}
-          <button
-            type="button"
-            className={`op1-pro-menu-btn ${activeModal === "tracks" ? "is-active" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveModal(activeModal === "tracks" ? null : "tracks");
-              setActiveDropdown(null);
-            }}
-            title="Ouvrir le mixeur et l'éditeur multi-pistes 1 à 4"
-          >
-            <Icon name="tape" size={14} />
-            <span>Mixer & Pistes (1-4)</span>
-            <span className="badge">{loadedTracksCount}/4</span>
-          </button>
-
-          {/* Menu 2 : Moteurs Sonores & Presets */}
-          <button
-            type="button"
-            className={`op1-pro-menu-btn ${activeModal === "engines" ? "is-active" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveModal(activeModal === "engines" ? null : "engines");
-              setActiveDropdown(null);
-            }}
-            title="Sélectionner un moteur sonore ou un patch"
-          >
-            <Icon name="wave" size={14} />
-            <span>Moteurs & Sons</span>
-            <span className="badge">{selectedEngine}</span>
-          </button>
-
-          {/* Menu 3 : Projet & Exports (Dropdown) */}
-          <div className="op1-pro-menu-group">
+            {/* Sélecteur de mode compact Clone / MIDI */}
             <button
               type="button"
-              className={`op1-pro-menu-btn ${activeDropdown === "project" ? "is-active" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(activeDropdown === "project" ? null : "project");
+              className={`op1-pill-btn ${studioMode === "clone" ? "is-active" : ""}`}
+              onClick={async () => {
+                const nextMode = studioMode === "clone" ? "midi" : "clone";
+                setStudioMode(nextMode);
+                if (nextMode === "midi") await onConnectMidi();
               }}
+              title="Basculer entre Clone local OP-1 et Contrôleur MIDI physique"
             >
-              <Icon name="archive" size={14} />
-              <span>Projet & Exports</span>
-              <span style={{ fontSize: "9px" }}>▼</span>
+              <Icon name={studioMode === "clone" ? "chip" : "plug"} size={12} />
+              <span>{studioMode === "clone" ? "Mode Clone" : "Mode MIDI"}</span>
             </button>
 
-            {activeDropdown === "project" && (
-              <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                <div style={{ padding: "4px 6px", borderBottom: "1px solid #232b33", marginBottom: "4px" }}>
-                  <label style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: "3px" }}>Nom du projet</label>
-                  <input
-                    type="text"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    style={{ width: "100%", padding: "4px 8px", background: "#0f1215", border: "1px solid #334155", borderRadius: "4px", color: "#f8fafc", fontSize: "11px" }}
-                  />
+            {/* Menu 1 : Tiroir Multi-Pistes */}
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeModal === "tracks" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModal(activeModal === "tracks" ? null : "tracks");
+                setActiveDropdown(null);
+              }}
+              title="Ouvrir le mixeur et l'éditeur multi-pistes 1 à 4"
+            >
+              <Icon name="tape" size={12} />
+              <span>Mixer (1-4)</span>
+              <span className="badge">{loadedTracksCount}/4</span>
+            </button>
+
+            {/* Menu 2 : Moteurs Sonores & Presets */}
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeModal === "engines" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModal(activeModal === "engines" ? null : "engines");
+                setActiveDropdown(null);
+              }}
+              title="Sélectionner un moteur sonore ou un patch"
+            >
+              <Icon name="wave" size={12} />
+              <span>Moteur</span>
+              <span className="badge">{selectedEngine}</span>
+            </button>
+
+            {/* Menu 3 : Projet & Exports (Dropdown) */}
+            <div className="op1-pro-menu-group">
+              <button
+                type="button"
+                className={`op1-pill-btn ${activeDropdown === "project" ? "is-active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === "project" ? null : "project");
+                }}
+              >
+                <Icon name="archive" size={12} />
+                <span>Projet & Exports</span>
+                <span style={{ fontSize: "8px" }}>▼</span>
+              </button>
+
+              {activeDropdown === "project" && (
+                <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                  <div style={{ padding: "4px 6px", borderBottom: "1px solid #232b33", marginBottom: "4px" }}>
+                    <label style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: "3px" }}>Nom du projet</label>
+                    <input
+                      type="text"
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      style={{ width: "100%", padding: "4px 8px", background: "#0f1215", border: "1px solid #334155", borderRadius: "4px", color: "#f8fafc", fontSize: "11px" }}
+                    />
+                  </div>
+                  <button className="op1-pro-dropdown-item" onClick={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); setActiveDropdown(null); }}>
+                    <span>📄 Nouveau projet</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { projectInputRef.current?.click(); setActiveDropdown(null); }}>
+                    <span>📂 Ouvrir projet (.json)</span>
+                  </button>
+                  <input ref={projectInputRef} type="file" accept=".json,.op1studio.json" style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (file) loadProject(file); }} />
+                  <button className="op1-pro-dropdown-item" onClick={() => { saveProject(); setActiveDropdown(null); }}>
+                    <span>💾 Enregistrer projet</span>
+                  </button>
+                  <div style={{ height: "1px", background: "#232b33", margin: "4px 0" }} />
+                  <button className="op1-pro-dropdown-item" onClick={() => { renderOffline(); setActiveDropdown(null); }}>
+                    <span style={{ color: "#29be87", fontWeight: "bold" }}>🌊 Rendu WAV Mix</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { exportTapeStems(); setActiveDropdown(null); }}>
+                    <span>📼 Exporter Stems AIFF (4 pistes)</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { exportAlbumFaces(); setActiveDropdown(null); }}>
+                    <span>💽 Exporter Album (Face A/B)</span>
+                  </button>
                 </div>
-                <button className="op1-pro-dropdown-item" onClick={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); setActiveDropdown(null); }}>
-                  <span>📄 Nouveau projet</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { projectInputRef.current?.click(); setActiveDropdown(null); }}>
-                  <span>📂 Ouvrir projet (.json)</span>
-                </button>
-                <input ref={projectInputRef} type="file" accept=".json,.op1studio.json" style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (file) loadProject(file); }} />
-                <button className="op1-pro-dropdown-item" onClick={() => { saveProject(); setActiveDropdown(null); }}>
-                  <span>💾 Enregistrer projet</span>
-                </button>
-                <div style={{ height: "1px", background: "#232b33", margin: "4px 0" }} />
-                <button className="op1-pro-dropdown-item" onClick={() => { renderOffline(); setActiveDropdown(null); }}>
-                  <span style={{ color: "#29be87", fontWeight: "bold" }}>🌊 Rendu WAV Mix</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { exportTapeStems(); setActiveDropdown(null); }}>
-                  <span>📼 Exporter Stems AIFF (4 pistes)</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { exportAlbumFaces(); setActiveDropdown(null); }}>
-                  <span>💽 Exporter Album (Face A/B)</span>
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Menu 4 : MIDI & Connectivité (Dropdown) */}
-          <div className="op1-pro-menu-group">
-            <button
-              type="button"
-              className={`op1-pro-menu-btn ${activeDropdown === "midi" ? "is-active" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(activeDropdown === "midi" ? null : "midi");
-              }}
-            >
-              <Icon name="plug" size={14} />
-              <span>MIDI & Sync</span>
-              <span style={{ fontSize: "9px" }}>▼</span>
-            </button>
+            {/* Menu 4 : MIDI & Sync (Dropdown) */}
+            <div className="op1-pro-menu-group">
+              <button
+                type="button"
+                className={`op1-pill-btn ${activeDropdown === "midi" ? "is-active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === "midi" ? null : "midi");
+                }}
+              >
+                <Icon name="plug" size={12} />
+                <span>MIDI</span>
+                <span style={{ fontSize: "8px" }}>▼</span>
+              </button>
 
-            {activeDropdown === "midi" && (
-              <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                <button className="op1-pro-dropdown-item" onClick={() => { onConnectMidi(); setActiveDropdown(null); }}>
-                  <span>🔌 Connecter OP-1 physique</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { quantizeMidi(); setActiveDropdown(null); }}>
-                  <span>📐 Quantifier MIDI (1/16)</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { setPressedMidiNotes([]); onNotice("Notes MIDI relâchées (Panic)."); setActiveDropdown(null); }}>
-                  <span>🛑 MIDI Panic (Reset Notes)</span>
-                </button>
-                <div style={{ padding: "6px 8px", fontSize: "10px", color: "#64748b", borderTop: "1px solid #232b33", marginTop: "4px" }}>
-                  Notes capturées : <strong style={{ color: "#29be87" }}>{midiNotes}</strong>
+              {activeDropdown === "midi" && (
+                <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                  <button className="op1-pro-dropdown-item" onClick={() => { onConnectMidi(); setActiveDropdown(null); }}>
+                    <span>🔌 Connecter OP-1 physique</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { quantizeMidi(); setActiveDropdown(null); }}>
+                    <span>📐 Quantifier MIDI (1/16)</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { setPressedMidiNotes([]); onNotice("Notes MIDI relâchées (Panic)."); setActiveDropdown(null); }}>
+                    <span>🛑 MIDI Panic (Reset Notes)</span>
+                  </button>
+                  <div style={{ padding: "6px 8px", fontSize: "10px", color: "#64748b", borderTop: "1px solid #232b33", marginTop: "4px" }}>
+                    Notes capturées : <strong style={{ color: "#29be87" }}>{midiNotes}</strong>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Menu 5 : Disposition / Vue (Dropdown) */}
+            <div className="op1-pro-menu-group">
+              <button
+                type="button"
+                className={`op1-pill-btn ${activeDropdown === "view" ? "is-active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === "view" ? null : "view");
+                }}
+              >
+                <Icon name="settings" size={12} />
+                <span>Vue</span>
+                <span style={{ fontSize: "8px" }}>▼</span>
+              </button>
+
+              {activeDropdown === "view" && (
+                <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                  <button className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
+                    <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
+                    <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
+                  </button>
+                  <button className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
+                    <span>{reversed ? "🔄 Sens Normal Bande" : "🔄 Inverser Bande (Tape Invert)"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Menu 5 : Disposition / Vue (Dropdown) */}
-          <div className="op1-pro-menu-group">
-            <button
-              type="button"
-              className={`op1-pro-menu-btn ${activeDropdown === "view" ? "is-active" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveDropdown(activeDropdown === "view" ? null : "view");
-              }}
-            >
-              <Icon name="settings" size={14} />
-              <span>Affichage</span>
-              <span style={{ fontSize: "9px" }}>▼</span>
-            </button>
-
-            {activeDropdown === "view" && (
-              <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                <button className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
-                  <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
-                  <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
-                </button>
-                <button className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
-                  <span>{reversed ? "🔄 Sens Normal Bande" : "🔄 Inverser Bande (Tape Invert)"}</span>
-                </button>
-              </div>
-            )}
+          {/* Côté droit ligne 1 : Nom du projet & infos */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#94a3b8" }}>
+            <span>Projet : <strong style={{ color: "#f1f5f9" }}>{projectName}</strong></span>
           </div>
         </div>
 
-        {/* Côté droit de la barre : Statut du Projet */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "11px", color: "#94a3b8" }}>
-          <span>Tempo : <strong style={{ color: "#38bdf8" }}>{tempo} BPM</strong></span>
-          <span>Projet : <strong style={{ color: "#f1f5f9" }}>{projectName}</strong></span>
+        {/* Ligne 2 : Transport direct & Outils de boucle */}
+        <div className="op1-compact-row" style={{ paddingTop: "2px" }}>
+          {/* Groupe Transport compact */}
+          <div className="op1-compact-group">
+            <div className="op1-transport-cluster">
+              <button
+                type="button"
+                className="op1-play-btn"
+                onClick={toggleGlobalPlayback}
+                title="Lecture / Pause (Espace)"
+              >
+                <Icon name="wave" size={11} />
+                <span>PLAY</span>
+              </button>
+
+              <button
+                type="button"
+                className={`op1-rec-btn ${recording ? "is-recording" : ""}`}
+                onClick={toggleTapeRecording}
+                title="Enregistrement multi-pistes & MIDI"
+              >
+                <span style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "#FF3A5D",
+                  display: "inline-block",
+                  animation: recording ? "pulse 1s infinite" : "none"
+                }} />
+                <span>REC</span>
+              </button>
+
+              <button
+                type="button"
+                className={`op1-state-btn ${looping ? "is-active" : ""}`}
+                onClick={() => setLooping(!looping)}
+                title="Activer / Désactiver la lecture en boucle"
+              >
+                LOOP
+              </button>
+
+              <button
+                type="button"
+                className={`op1-state-btn ${reversed ? "is-rev-active" : ""}`}
+                onClick={() => setReversed(!reversed)}
+                title="Lecture bande inversée (Reverse)"
+              >
+                REV
+              </button>
+
+              <div className="op1-tempo-box">
+                <span>BPM</span>
+                <input
+                  type="number"
+                  min="40"
+                  max="200"
+                  value={tempo}
+                  onChange={(e) => setTempo(Number(e.target.value))}
+                />
+              </div>
+            </div>
+
+            {/* Outils de boucle In / Out / Copier / Coller */}
+            <div className="op1-compact-group" style={{ marginLeft: "4px" }}>
+              <button
+                type="button"
+                className="op1-pill-btn"
+                onClick={setLoopInAtHead}
+                title="Définir le début de boucle calé sur la mesure actuelle"
+                style={{ color: "#00ED95", borderColor: "#00ED9544" }}
+              >
+                <span>📍 IN : {loopIn.toFixed(1)}s</span>
+              </button>
+
+              <button
+                type="button"
+                className="op1-pill-btn"
+                onClick={setLoopOutAtHead}
+                title="Définir la fin de boucle calée sur la mesure actuelle"
+                style={{ color: "#00ED95", borderColor: "#00ED9544" }}
+              >
+                <span>🏁 OUT : {loopOut.toFixed(1)}s</span>
+              </button>
+
+              <button
+                type="button"
+                className="op1-pill-btn"
+                onClick={copyLoop}
+                title="Copier les clips de la zone de boucle"
+                style={{ color: "#38bdf8", borderColor: "#38bdf844" }}
+              >
+                <span>✂️ Copier</span>
+              </button>
+
+              <button
+                type="button"
+                className="op1-pill-btn"
+                onClick={pasteLoop}
+                title="Coller les clips à la position de tête de lecture"
+                style={{ color: "#d8b4fe", borderColor: "#a855f744" }}
+              >
+                <span>📋 Coller</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Raccourcis rapides à droite */}
+          <div className="op1-compact-group">
+            <button
+              type="button"
+              className="op1-pill-btn"
+              onClick={renderOffline}
+              title="Exporter le mixage audio au format WAV"
+            >
+              <span>🌊 Mix WAV</span>
+            </button>
+            <button
+              type="button"
+              className="op1-pill-btn"
+              onClick={exportTapeStems}
+              title="Exporter les 4 pistes séparées en AIFF"
+            >
+              <span>📼 Stems</span>
+            </button>
+            <button
+              type="button"
+              className={`op1-pill-btn ${!keyboardFolded ? "is-active" : ""}`}
+              onClick={() => setKeyboardFolded(!keyboardFolded)}
+              title="Afficher ou masquer le châssis clavier OP-1"
+            >
+              <span>🎹 Clavier</span>
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* ── Transport strip (toujours visible, synchro et réactif) ── */}
-      <div className="studio-top-strip">
-        <StudioModeHeader Icon={Icon} mode={studioMode} onModeChange={setStudioMode} onConnectMidi={onConnectMidi} />
-        <StudioTransportPanel Icon={Icon} tempo={tempo} recording={recording} looping={looping} reversed={reversed} mode={studioMode} midiNotes={midiNotes} onPlay={toggleGlobalPlayback} onRecord={toggleTapeRecording} onQuantize={quantizeMidi} onLoopChange={setLooping} onTempoChange={setTempo} onConnectMidi={onConnectMidi} onReversedChange={setReversed} />
-      </div>
-
-      {/* ── Bande de raccourcis rapides (Quick Actions & Boucles) ── */}
-      <div className="op1-quick-chips-bar">
-        <span style={{ fontSize: "10px", color: "#64748b", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em" }}>Accès direct :</span>
-        <button className={`op1-quick-chip ${activeModal === "tracks" ? "is-active" : ""}`} onClick={() => setActiveModal("tracks")}>
-          <Icon name="tape" size={12} />
-          <span>Éditeur Multipiste ({loadedTracksCount}/4)</span>
-        </button>
-        <button className={`op1-quick-chip ${activeModal === "engines" ? "is-active" : ""}`} onClick={() => setActiveModal("engines")}>
-          <Icon name="wave" size={12} />
-          <span>Moteur : {selectedEngine}</span>
-        </button>
-
-        <div style={{ width: "1px", height: "16px", background: "#334155", margin: "0 2px" }} />
-
-        {/* Boutons de boucle tempo au menu supérieur */}
-        <button
-          className="op1-quick-chip"
-          onClick={setLoopInAtHead}
-          title="Définir le début de la boucle calé sur la mesure actuelle"
-          style={{ color: "#00ED95", borderColor: "#00ED9544" }}
-        >
-          <span>📍 Début boucle [IN] : {loopIn.toFixed(1)}s</span>
-        </button>
-        <button
-          className="op1-quick-chip"
-          onClick={setLoopOutAtHead}
-          title="Définir la fin de la boucle calée sur la mesure actuelle"
-          style={{ color: "#00ED95", borderColor: "#00ED9544" }}
-        >
-          <span>🏁 Fin boucle [OUT] : {loopOut.toFixed(1)}s</span>
-        </button>
-        <button
-          className="op1-quick-chip"
-          onClick={copyLoop}
-          title="Copier les clips des pistes 1-4 situés dans la région de la boucle"
-          style={{ color: "#38bdf8", borderColor: "#38bdf844" }}
-        >
-          <span>✂️ Copier Boucle</span>
-        </button>
-        <button
-          className="op1-quick-chip"
-          onClick={pasteLoop}
-          title="Coller la boucle à la position actuelle (calée sur les mesures)"
-          style={{ color: "#d8b4fe", borderColor: "#a855f744" }}
-        >
-          <span>📋 Coller Boucle</span>
-        </button>
-
-        <div style={{ width: "1px", height: "16px", background: "#334155", margin: "0 2px" }} />
-
-        <button className="op1-quick-chip" onClick={renderOffline}>
-          <span>🌊 Rendu WAV</span>
-        </button>
-        <button className="op1-quick-chip" onClick={exportTapeStems}>
-          <span>📼 Stems AIFF</span>
-        </button>
-        <button className="op1-quick-chip" onClick={() => setKeyboardFolded(!keyboardFolded)}>
-          <span>🎹 Clavier : {keyboardFolded ? "Masqué" : "Visible"}</span>
-        </button>
       </div>
 
       {/* ── Panneau Écran OLED Clone (Centré & Immersif) ── */}
