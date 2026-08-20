@@ -30,16 +30,11 @@ jobs:
       - name: Run type check
         run: bun run typecheck
 
+      - name: Run tests
+        run: bun run test
+
       - name: Verify production build
         run: bun run build
-
-      # NOTE: pas d'étape de tests — aucun runner n'est installé à la racine
-      # (ni vitest ni jest dans devDependencies, pas de script `test`).
-      # Réactiver ce bloc une fois vitest ajouté :
-      #   - name: Run tests
-      #     run: npm run test -- --run --coverage
-      #   - name: Upload coverage
-      #     uses: codecov/codecov-action@v3
 
   build:
     name: Build Docker Image
@@ -104,66 +99,20 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-  deploy:
-    name: Deploy to Coolify
-    runs-on: ubuntu-latest
-    needs: [build, security-scan]
-    if: success()
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Trigger Coolify deployment
-        run: |
-          curl -X POST \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
-            -d '{
-              "image": "${{ needs.build.outputs.image-tag }}",
-              "environment": "production",
-              "version": "${{ github.sha }}",
-              "message": "Deployed from GitHub Actions"
-            }' \
-            ${{ secrets.COOLIFY_WEBHOOK_URL }}
-
-      - name: Notify deployment
-        if: always()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          text: |
-            Studio Hub Deployment ${{ job.status }}
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref }}
-            Image: ${{ needs.build.outputs.image-tag }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-
-  notify:
-    name: Post Deployment
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: always()
-
-    steps:
-      - name: Post to Slack
-        if: success()
-        uses: slackapi/slack-github-action@v1
-        with:
-          payload: |
-            {
-              "text": "✅ Studio Hub deployed successfully!",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Studio Hub Deployment* ✅\n*Branch:* ${{ github.ref }}\n*Commit:* ${{ github.sha }}\n*Environment:* Production"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+# Les jobs `deploy` et `notify` ont ete retires.
+#
+# Ils appelaient l'API Coolify avec COOLIFY_API_TOKEN / COOLIFY_WEBHOOK_URL et
+# Slack avec SLACK_WEBHOOK — trois secrets jamais renseignes, donc trois etapes
+# qui echouaient systematiquement.
+#
+# Surtout, ils faisaient doublon : Coolify surveille le depot directement et
+# redeploie de lui-meme. Faire commander le deploiement par GitHub n'apportait
+# rien qui ne se produise deja.
+#
+# Ce workflow ne garde donc que sa fonction utile : verifier que le code
+# compile et que l'image se construit, avant que Coolify ne deploie.
+#
+# Pour retablir un declenchement pilote par GitHub, il faudrait creer un jeton
+# d'API dans Coolify et le poser ici :
+#     gh secret set COOLIFY_API_TOKEN
+#     gh secret set COOLIFY_WEBHOOK_URL
