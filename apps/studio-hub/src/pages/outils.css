@@ -871,3 +871,7 @@
 .mss-label { color: #55607a; letter-spacing: 0.08em; font-weight: 600; font-size: 11px; }
 .mss-ok { color: #00ed95; }
 .mss-warn { color: #f0b429; }
+.mss-mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; color: #9aa6bd;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
