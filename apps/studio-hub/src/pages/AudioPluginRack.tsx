@@ -300,6 +300,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
   const [midiConnected, setMidiConnected] = useState<boolean>(false);
   const [midiDeviceName, setMidiDeviceName] = useState<string>("");
+  // Diagnostic visible : on debuggait a l'aveugle via la console.
+  const [midiStatus, setMidiStatus] = useState<string>("initialisation…");
+  const [lastMidi, setLastMidi] = useState<string>("—");
+  const [lastNote, setLastNote] = useState<string>("—");
+  const [audioState, setAudioState] = useState<string>("non demarre");
   const [activeKeyNote, setActiveKeyNote] = useState<string | null>(null);
 
   // USER CUSTOM SAVED PATCHES PERSISTED IN LOCALSTORAGE
@@ -777,6 +782,8 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       const ctx = getAudioContext();
       const now = ctx.currentTime;
       const p = paramsRef.current;
+      setAudioState(ctx.state);
+      setLastNote(`${p.activeEngine} @ ${freq.toFixed(1)} Hz${voiceId ? ` (${voiceId})` : ""}`);
 
       // Une note déjà tenue sur cet identifiant est relâchée d'abord
       // (évite d'empiler des voix sur l'auto-repeat clavier).
@@ -1489,7 +1496,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         }, (audibleEnd - now + 0.6) * 1000);
       }
     } catch (e) {
+      // Cette erreur partait uniquement dans un log : deux pannes de son ont
+      // ete diagnostiquees a l'aveugle a cause de ca. Elle est desormais
+      // affichee dans le bandeau de diagnostic.
       log.error("Audio error:", e);
+      setLastNote(`ERREUR : ${(e as any)?.message ?? String(e)}`);
     }
   };
 
@@ -1503,8 +1514,18 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     let midiAccess: any = null;
 
     const bindInput = (input: any) => {
+      // Ouverture explicite : un port peut etre liste mais refuser de
+      // s'ouvrir (deja pris par une autre application, par exemple).
+      try {
+        void input.open?.();
+      } catch (error) {
+        log.warn("input.open a echoue", { name: input.name, error });
+      }
       input.onmidimessage = (msg: any) => {
         const [command, note, velocity] = msg.data;
+        setLastMidi(
+          `[${Array.from(msg.data as Uint8Array).map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] ${input.name ?? ""}`
+        );
         const kind = command & 0xf0; // ignore le canal MIDI
         const voiceId = `midi:${note}`;
         if (kind === 0x90 && velocity > 0) {
@@ -1527,6 +1548,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       });
       setMidiConnected(names.length > 0);
       setMidiDeviceName(names.join(" · "));
+      setMidiStatus(
+        names.length > 0
+          ? `${names.length} entree(s) : ${names.join(" · ")}`
+          : "acces accorde, aucune entree detectee"
+      );
       log.info("MIDI inputs", { count: names.length, names });
     };
 
@@ -1543,9 +1569,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
           };
         })
         .catch((error) => {
-          log.warn("requestMIDIAccess refusé", error);
+          setMidiStatus(`acces refuse : ${(error as any)?.message ?? error}`);
+          log.warn("requestMIDIAccess refuse", error);
         });
     } else {
+      setMidiStatus("Web MIDI indisponible (navigateur ou contexte non securise)");
       log.warn("Web MIDI indisponible sur ce navigateur");
     }
 
@@ -1914,6 +1942,33 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
               >
                 🔊 TESTER LE SON (C4)
               </button>
+
+              {/* Bandeau de diagnostic : etat reel du moteur audio et du MIDI.
+                  Ajoute apres deux pannes de son diagnostiquees a l'aveugle. */}
+              <div className="rack-diagnostic">
+                <div className="diag-row">
+                  <span className="diag-label">AUDIO</span>
+                  <span className={`diag-value ${audioState === "running" ? "diag-ok" : "diag-warn"}`}>
+                    {audioState}
+                  </span>
+                </div>
+                <div className="diag-row">
+                  <span className="diag-label">MIDI</span>
+                  <span className={`diag-value ${midiConnected ? "diag-ok" : "diag-warn"}`}>
+                    {midiStatus}
+                  </span>
+                </div>
+                <div className="diag-row">
+                  <span className="diag-label">DERNIER MSG</span>
+                  <span className="diag-value diag-mono">{lastMidi}</span>
+                </div>
+                <div className="diag-row">
+                  <span className="diag-label">DERNIERE NOTE</span>
+                  <span className={`diag-value diag-mono ${lastNote.startsWith("ERREUR") ? "diag-err" : ""}`}>
+                    {lastNote}
+                  </span>
+                </div>
+              </div>
 
               <div className="input-source-badge">
                 {midiConnected ? (

@@ -662,3 +662,41 @@
     opacity: 1;
   }
 }
+
+/* ---------------------------------------------------------------
+   Bandeau de diagnostic du rack
+   Ajoute apres deux pannes de son diagnostiquees a l'aveugle :
+   l'erreur partait dans un log console que personne ne regardait.
+   --------------------------------------------------------------- */
+.rack-diagnostic {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 10px 0;
+  padding: 8px 10px;
+  background: #090b12;
+  border: 1px solid #1f2733;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.diag-row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+  align-items: baseline;
+}
+.diag-label {
+  color: #55607a;
+  letter-spacing: 0.09em;
+  font-weight: 600;
+}
+.diag-value {
+  color: #9aa6bd;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.diag-mono { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+.diag-ok   { color: #00ed95; }
+.diag-warn { color: #f0b429; }
+.diag-err  { color: #ff3a5d; }
