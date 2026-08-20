@@ -1,28 +1,40 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import Landing from "./pages/Landing";
-import ToolsHub from "./pages/ToolsHub";
-import ProfileCreator from "./pages/ProfileCreator";
-import Documentation from "./pages/Documentation";
-import Exercises from "./pages/Exercises";
-import DocOP1 from "./pages/DocOP1";
-import DocEP133 from "./pages/DocEP133";
-import RhythmHero from "./pages/RhythmHero";
-import ImageEditorOP1 from "./pages/ImageEditorOP1";
-import FirmwareGallery from "./pages/FirmwareGallery";
-import FirmwareCompiler from "./pages/FirmwareCompiler";
-import FirmwareLab from "./pages/FirmwareLab";
-import ThemeEditor from "./pages/ThemeEditor";
-import ThemeProjectEditor from "./pages/ThemeProjectEditor";
-import AdvancedImageEditor from "./pages/AdvancedImageEditor";
-import SoundEditorHub from "./pages/SoundEditorHub";
-import SoundPatchCreator from "./pages/SoundPatchCreator";
-import AudioPluginRack from "./pages/AudioPluginRack";
-import EP133StudioPage from "./pages/EP133StudioPage";
-import OP1StudioPage from "./pages/OP1StudioPage";
-import MidiSettings from "./pages/MidiSettings";
-import OP1Settings from "./pages/OP1Settings";
-import BackupLab from "./pages/BackupLab";
-import OrphanPages from "./pages/OrphanPages";
+
+/**
+ * Pages chargees a la demande.
+ *
+ * Elles etaient toutes importees statiquement, si bien que la page d'accueil
+ * embarquait l'application entiere — dont deux stations audio completes,
+ * ep133-studio (8800 lignes) et op1-studio (9500 lignes), qu'un visiteur
+ * telechargeait sans jamais les ouvrir.
+ *
+ * Landing reste en import direct : c'est la premiere vue affichee, la
+ * differer n'ajouterait qu'un ecran d'attente.
+ */
+const ToolsHub = lazy(() => import("./pages/ToolsHub"));
+const ProfileCreator = lazy(() => import("./pages/ProfileCreator"));
+const Documentation = lazy(() => import("./pages/Documentation"));
+const Exercises = lazy(() => import("./pages/Exercises"));
+const DocOP1 = lazy(() => import("./pages/DocOP1"));
+const DocEP133 = lazy(() => import("./pages/DocEP133"));
+const RhythmHero = lazy(() => import("./pages/RhythmHero"));
+const ImageEditorOP1 = lazy(() => import("./pages/ImageEditorOP1"));
+const FirmwareGallery = lazy(() => import("./pages/FirmwareGallery"));
+const FirmwareCompiler = lazy(() => import("./pages/FirmwareCompiler"));
+const FirmwareLab = lazy(() => import("./pages/FirmwareLab"));
+const ThemeEditor = lazy(() => import("./pages/ThemeEditor"));
+const ThemeProjectEditor = lazy(() => import("./pages/ThemeProjectEditor"));
+const AdvancedImageEditor = lazy(() => import("./pages/AdvancedImageEditor"));
+const SoundEditorHub = lazy(() => import("./pages/SoundEditorHub"));
+const SoundPatchCreator = lazy(() => import("./pages/SoundPatchCreator"));
+const AudioPluginRack = lazy(() => import("./pages/AudioPluginRack"));
+const EP133StudioPage = lazy(() => import("./pages/EP133StudioPage"));
+const OP1StudioPage = lazy(() => import("./pages/OP1StudioPage"));
+const MidiSettings = lazy(() => import("./pages/MidiSettings"));
+const OP1Settings = lazy(() => import("./pages/OP1Settings"));
+const BackupLab = lazy(() => import("./pages/BackupLab"));
+const OrphanPages = lazy(() => import("./pages/OrphanPages"));
 
 type Page = 
   | "landing" 
@@ -56,6 +68,26 @@ export function App() {
   // Navigation helper pour les pages
   (window as any).navigateMaquette = (page: Page) => setCurrentPage(page);
 
+  // `key` force le remontage a chaque changement de page : sans elle,
+  // Suspense reutilise la frontiere precedente et l'ecran d'attente ne
+  // s'affiche pas lors d'une navigation.
+  return (
+    <Suspense key={currentPage} fallback={<EcranChargement />}>
+      {rendrePage(currentPage, setCurrentPage)}
+    </Suspense>
+  );
+}
+
+/** Ecran d'attente pendant le telechargement d'une page. */
+function EcranChargement() {
+  return (
+    <div className="page-loading" role="status" aria-live="polite">
+      <span>Chargement…</span>
+    </div>
+  );
+}
+
+function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
   switch (currentPage) {
     case "outils":
       return <ToolsHub />;

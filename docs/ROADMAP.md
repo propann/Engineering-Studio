@@ -204,7 +204,14 @@ appeared on the roadmap.
 - [ ] MIDI latency profiling (< 20ms target)
 - [ ] Audio synthesis optimization
 - [ ] React component memoization
-- [ ] Bundle size analysis & optimization
+- [x] Bundle size analysis & optimization — the 24 route pages were all statically
+      imported, so the landing page shipped the whole application, including two full
+      DAWs (ep133-studio 8800 lines, op1-studio 9500) a visitor might never open.
+      Converted to React.lazy + Suspense: initial JS 1140 kB -> 205 kB, 316 kB -> 65 kB
+      gzipped, CSS 253 kB -> 107 kB. Landing stays eagerly imported — it is the first
+      view, deferring it would only add a spinner.
+      Note: the 2 MB wavConvert chunk was already correctly deferred and documented;
+      it was not the problem.
 - [ ] Load time profiling
 
 **Est. Start**: 2026-08-23  
