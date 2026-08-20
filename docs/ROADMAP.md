@@ -82,6 +82,42 @@ A unified suite for Teenage Engineering instruments (OP-1, EP-133) integrated wi
 
 **Est. Completion**: 2026-08-22
 
+### Phase 4.3: Backup Lab & Local Data Reliability (🔄 PRIORITY)
+
+The Backup Lab becomes the first complete product workflow of the Hub. It is the reference implementation for local-first data handling, clear machine states and safe file operations.
+
+#### Objective
+- Make the OP-1 and EP-133 backup journeys understandable, verifiable and safe before expanding to other machine tools.
+- Keep the interface honest about the difference between a local folder scan and direct hardware communication.
+- Use the Backup Lab as the UX model for all future machine operations.
+
+#### Order of work
+- [x] Two-column Backup Lab for OP-1 and EP-133
+- [x] Shared local workspace with machine-specific backup paths
+- [x] Selective category backup
+- [x] Local snapshots with manifest and SHA-256 verification
+- [x] Restore reports and progress feedback
+- [ ] Make the central workspace selector visible and understandable from both machine columns
+- [ ] Add explicit provenance badges: MACHINE, LOCAL, PROFILE, DEMO, EXPERIMENTAL, VERIFIED
+- [ ] Rename and separate the states “scan local folder” and “read machine” in the interface
+- [ ] Show detected categories, file counts and estimated size before backup
+- [ ] Add clear backup states: prepared, running, complete, verified, partial and failed
+- [ ] Add a restore preparation screen with comparison before writing
+- [ ] Create an automatic return point before overwriting files during restore
+- [ ] Report overwritten, skipped, incompatible and unchanged files
+- [ ] Add Simple / Workshop density modes
+- [ ] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
+- [ ] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
+
+#### Product rule
+The interface must never imply that a machine was read or written when the application only inspected or copied a local folder. Every operation must state its source, destination, risk and verification result.
+
+**Acceptance target**: a new user can identify the machine, destination, selected content and operation risk in under five seconds; no restore can start without a comparison and explicit confirmation.
+
+**Estimated sequence**: reliability foundations → restore safety → real hardware validation → visual polish.
+
+---
+
 ### Phase 4.3: Performance Optimization (⏳ PLANNED)
 - [ ] MIDI latency profiling (< 20ms target)
 - [ ] Audio synthesis optimization
@@ -226,6 +262,6 @@ The project applies orchestration principles to service architecture:
 
 ---
 
-**Last Updated**: 2026-08-19  
+**Last Updated**: 2026-08-20  
 **Next Review**: 2026-08-25  
 **Owner**: Engineering Team
