@@ -1632,6 +1632,17 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
       releaseAllVoices();
+
+      // Detacher le MIDI, sinon le rack continue de capter apres avoir
+      // quitte la page. onstatechange est le plus nuisible : il survit au
+      // demontage et, au prochain branchement, reattache les gestionnaires
+      // du rack par-dessus ceux de la page active, qui cesse de recevoir.
+      if (midiAccess) {
+        midiAccess.onstatechange = null;
+        midiAccess.inputs.forEach((input: any) => {
+          input.onmidimessage = null;
+        });
+      }
     };
   }, []);
 

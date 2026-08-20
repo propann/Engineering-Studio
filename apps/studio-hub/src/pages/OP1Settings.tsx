@@ -88,9 +88,14 @@ export default function OP1Settings() {
       });
 
     return () => {
-      access?.inputs?.forEach((input: any) => {
-        input.onmidimessage = null;
-      });
+      // onstatechange doit partir aussi : sans ca il survit au demontage et
+      // reattache nos gestionnaires par-dessus ceux de la page suivante.
+      if (access) {
+        access.onstatechange = null;
+        access.inputs.forEach((input: any) => {
+          input.onmidimessage = null;
+        });
+      }
     };
   }, []);
 
