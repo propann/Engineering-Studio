@@ -851,86 +851,23 @@
 }
 
 /* ---------------------------------------------------------------
-   Page Reglages > Correspondances MIDI (apprentissage)
+   Pages Reglages > EP-133 / OP-1
+   Les composants embarques (MachineTestPage, KeyboardEditor)
+   apportent leurs propres styles ; on n'habille que le cadre.
    --------------------------------------------------------------- */
-.mapping-page { max-width: 1080px; margin: 0 auto; padding: 28px 4vw 72px; }
-.mapping-head { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--line, #11131124); }
-.mapping-head h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -0.01em; }
-.mapping-head p { margin: 0; max-width: 64ch; color: var(--muted, #747970); line-height: 1.55; }
-
-.mapping-machines { display: flex; gap: 8px; margin-bottom: 16px; }
-.mapping-tab {
-  padding: 9px 18px; border: 1px solid var(--line, #11131124); border-radius: 4px;
-  background: transparent; color: inherit; cursor: pointer; font-weight: 600; font-size: 14px;
+.machine-settings-page { max-width: 1180px; margin: 0 auto; padding: 28px 3vw 72px; }
+.machine-settings-head {
+  margin-bottom: 18px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--line, #11131124);
 }
-.mapping-tab.active { background: var(--ink, #111311); color: var(--paper, #ebece6); border-color: var(--ink, #111311); }
-
-.mapping-status {
-  display: flex; flex-direction: column; gap: 3px; margin-bottom: 16px;
-  padding: 10px 12px; background: #090b12; border: 1px solid #1f2733; border-radius: 4px; font-size: 12px;
+.machine-settings-head h1 { margin: 0 0 8px; font-size: 26px; letter-spacing: -0.01em; }
+.machine-settings-head p { margin: 0; max-width: 66ch; color: var(--muted, #747970); line-height: 1.55; }
+.machine-settings-status {
+  display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px;
+  padding: 10px 12px; background: #090b12; border: 1px solid #1f2733;
+  border-radius: 4px; font-size: 12px;
 }
-.mapping-status-row { display: grid; grid-template-columns: 118px 1fr; gap: 10px; align-items: baseline; }
-.mapping-label { color: #55607a; letter-spacing: 0.08em; font-weight: 600; font-size: 11px; }
-.mapping-ok { color: #00ed95; }
-.mapping-warn { color: #f0b429; }
-.mapping-mono {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; color: #9aa6bd;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-
-.mapping-learning {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  padding: 12px 14px; margin-bottom: 12px; border-radius: 4px;
-  background: #f0b4291a; border: 1px solid #f0b429; color: inherit;
-}
-.mapping-cancel {
-  margin-left: auto; padding: 5px 12px; border: 1px solid currentColor;
-  border-radius: 3px; background: transparent; color: inherit; cursor: pointer; font-size: 13px;
-}
-.mapping-notice {
-  padding: 10px 14px; margin-bottom: 12px; border-radius: 4px;
-  background: #00ed9518; border: 1px solid #00a86b; font-size: 13px;
-}
-
-.mapping-toolbar { display: flex; gap: 8px; margin-bottom: 20px; }
-.mapping-search {
-  flex: 1; padding: 9px 12px; border: 1px solid var(--line, #11131124);
-  border-radius: 4px; background: transparent; color: inherit; font-size: 14px;
-}
-.mapping-clear-all {
-  padding: 9px 16px; border: 1px solid var(--line, #11131124); border-radius: 4px;
-  background: transparent; color: inherit; cursor: pointer; font-size: 14px;
-}
-.mapping-clear-all:disabled { opacity: 0.4; cursor: default; }
-
-.mapping-group { margin-bottom: 26px; }
-.mapping-group h2 {
-  margin: 0 0 10px; font-size: 12px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--muted, #747970);
-}
-.mapping-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 8px; }
-
-.mapping-item {
-  display: flex; flex-direction: column; gap: 6px; padding: 10px 12px;
-  border: 1px solid var(--line, #11131124); border-radius: 4px;
-  border-left: 3px solid transparent;
-}
-.mapping-item.assigned { border-left-color: #00a86b; }
-.mapping-item.learning { border-left-color: #f0b429; background: #f0b4290d; }
-.mapping-item-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.mapping-item-head strong { font-size: 14px; }
-.mapping-item-clear {
-  border: 0; background: none; cursor: pointer; color: var(--muted, #747970);
-  font-size: 13px; line-height: 1; padding: 2px 4px;
-}
-.mapping-item-clear:hover { color: #d61f3e; }
-.mapping-item-value {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
-  font-size: 11.5px; color: var(--muted, #747970);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mapping-learn {
-  padding: 6px 10px; border: 1px solid var(--line, #11131124); border-radius: 3px;
-  background: transparent; color: inherit; cursor: pointer; font-size: 12.5px;
-}
-.mapping-learn:hover { border-color: var(--ink, #111311); }
+.mss-row { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: baseline; }
+.mss-label { color: #55607a; letter-spacing: 0.08em; font-weight: 600; font-size: 11px; }
+.mss-ok { color: #00ed95; }
+.mss-warn { color: #f0b429; }

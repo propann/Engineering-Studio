@@ -20,7 +20,8 @@ import AudioPluginRack from "./pages/AudioPluginRack";
 import EP133StudioPage from "./pages/EP133StudioPage";
 import OP1StudioPage from "./pages/OP1StudioPage";
 import MidiSettings from "./pages/MidiSettings";
-import MachineMapping from "./pages/MachineMapping";
+import EP133Settings from "./pages/EP133Settings";
+import OP1Settings from "./pages/OP1Settings";
 
 type Page = 
   | "landing" 
@@ -44,7 +45,8 @@ type Page =
   | "sound-patch-creator"
   | "audio-plugin-rack"
   | "midi-settings"
-  | "machine-mapping";
+  | "ep133-settings"
+  | "op1-settings";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -87,8 +89,10 @@ export function App() {
       return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
     case "midi-settings":
       return <MidiSettings />;
-    case "machine-mapping":
-      return <MachineMapping />;
+    case "ep133-settings":
+      return <EP133Settings />;
+    case "op1-settings":
+      return <OP1Settings />;
     case "audio-plugin-rack":
       return <AudioPluginRack onClose={() => setCurrentPage("outils")} />;
     case "landing":
