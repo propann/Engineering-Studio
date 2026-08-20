@@ -365,33 +365,44 @@ docker stats studio-hub
 
 ## 📝 Deployment Checklist
 
-### Pre-Deployment
-- [ ] All tests passing locally
-- [ ] Code reviewed and merged to main
-- [ ] Environment variables configured
-- [ ] Domain registered and DNS set
-- [ ] SSL certificate requested
-- [ ] Coolify application created
-- [ ] GitHub secrets configured
-- [ ] Backups configured
+État au 2026-08-20. Rien n'a encore été déployé : Coolify n'est pas configuré.
 
-### Deployment
-- [ ] Push to deploy/coolify-production
-- [ ] GitHub Actions workflow completes
-- [ ] Docker image built successfully
-- [ ] Security scan passes
-- [ ] Coolify deployment succeeds
-- [ ] Health checks pass
-- [ ] Application accessible
+### Préparation — fait
+- [x] Code poussé et fusionné sur `main` (`5ded027`)
+- [x] `npm run typecheck` : 0 erreur
+- [x] `npm run build` : passe
+- [x] `docker build` : passe en local (Node 20 Alpine)
+- [x] `Dockerfile`, `docker-compose.yml`, `.dockerignore` écrits et testés
+- [x] `coolify.json` et `.env.production` écrits
+- [x] Workflow GitHub Actions écrit et corrigé (il appelait des scripts inexistants)
 
-### Post-Deployment
-- [ ] Verify all features working
-- [ ] Test audio synthesis
-- [ ] Test patch save/load
-- [ ] Monitor error logs
-- [ ] Check CPU/Memory usage
-- [ ] Performance baseline established
-- [ ] Monitoring alerts configured
+### Préparation — à faire
+- [ ] Application Coolify créée
+- [ ] Secrets GitHub renseignés — `COOLIFY_API_TOKEN`, `COOLIFY_WEBHOOK_URL` (voir `DEPLOY_SECRETS.md`)
+- [ ] Variables d'environnement renseignées côté Coolify
+- [ ] Domaine enregistré et DNS pointé
+- [ ] Certificat SSL demandé (Let's Encrypt via Coolify)
+- [ ] Sauvegardes configurées
+- [ ] ~~Tests passants~~ — sans objet : aucune infra de test sur studio-hub
+
+### Déploiement — à faire
+- [ ] Push sur `deploy/coolify-production`
+- [ ] Le workflow GitHub Actions se termine
+- [ ] Image Docker construite et poussée sur le registre
+- [ ] Scan de sécurité Trivy passé
+- [ ] Déploiement Coolify réussi
+- [ ] Healthchecks au vert
+- [ ] Application accessible depuis le domaine
+
+### Après déploiement — à faire
+- [ ] Vérifier les fonctionnalités
+- [ ] Tester la synthèse audio
+- [ ] Tester la sauvegarde/chargement de patch
+- [ ] Tester le sélecteur de dossier (le TLS Coolify fournit le contexte sécurisé)
+- [ ] Surveiller les logs d'erreur
+- [ ] Relever CPU/mémoire
+- [ ] Établir une référence de performance
+- [ ] Configurer les alertes de supervision
 
 ---
 

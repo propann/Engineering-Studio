@@ -66,10 +66,24 @@ npm run dev
 ## 🎯 Today's Goals
 
 ### ✅ Day 1 Goals
-- [ ] Patch Search tests written (1-2h)
-- [ ] Patch Search integrated into AudioPluginRack (1-2h)
-- [ ] Multi-Tap Delay Processor stub created (30m)
-- [ ] Multi-Tap Delay UI started (1-2h)
+Fait le 2026-08-20 :
+
+- [x] Architecture posée — `core/types/audio.ts` (40+ interfaces), `core/store/audioRackStore.ts`
+- [x] Module 1 écrit — `PatchSearchEngine.ts` + `PatchSearchModule.tsx`
+- [x] Alias `@studio-hub/core/*` déclaré dans `tsconfig.json` et `vite.config.ts`
+- [x] `npm run typecheck` : 0 erreur
+- [x] `npm run build` : passe
+- [x] Déploiement Docker/Coolify : `Dockerfile`, `docker-compose.yml`, `coolify.json`, workflow CI
+- [x] Build Docker vérifié en local
+- [x] Correctif du sélecteur de dossier (ProfileCreator) + HTTPS sur le serveur de dev
+- [x] Documentation réalignée sur l'état réel du dépôt
+
+Reste à faire :
+
+- [ ] **Brancher le module 1 dans `AudioPluginRack.tsx`** — écrit mais importé nulle part
+- [ ] Faire consommer le store Zustand par `AudioPluginRack.tsx` (il garde ses 50+ useState)
+- [ ] Installer vitest, puis écrire les tests du module 1
+- [ ] Module 2 (Multi-Tap Delay) — répertoire vide
 
 ### 📈 Expected Progress
 - Patch Search: 100% → Ready for production

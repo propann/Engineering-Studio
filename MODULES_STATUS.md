@@ -23,12 +23,18 @@
 ## Phase 1: Core Features (Week 1) 🚀
 
 ### Module 1: Patch Search & Tagging ⏱️ 2-3h
-**Status**: 🟡 IN PROGRESS (50%)  
+**Status**: 🟡 IN PROGRESS (~40 %) — **écrit mais pas branché**  
 **Files**:
 - ✅ `PatchSearchEngine.ts` - Complete
 - ✅ `PatchSearchModule.tsx` - Complete
-- ❌ `patch-search.test.ts` - TODO
+- ❌ `patch-search.test.ts` - TODO (vitest non installé)
 - ❌ Integration in AudioPluginRack.tsx - TODO
+
+> ⚠️ Vérifié le 2026-08-20 : ni `PatchSearchModule` ni `PatchSearchEngine` ne
+> sont importés hors de leur propre répertoire. Le store `audioRackStore` non
+> plus. `AudioPluginRack.tsx` conserve ses ~50 `useState` et ses types locaux.
+> **En l'état, tout ce code est mort** — il compile mais ne s'exécute jamais.
+> Le brancher est le prochain jalon utile.
 
 **Description**: Search and filter patches by name, tag, engine, category. Favorite/recent features.
 
@@ -232,25 +238,29 @@ Week 2:
 ## 🧪 Testing Requirements
 
 For each module:
-- [ ] Unit tests (Vitest)
+Aucun de ces points n'est atteint. Préalable à tous : installer un runner
+(`npm i -D vitest @vitest/coverage-v8` + script `test`).
+
+- [ ] Unit tests (Vitest) — runner non installé
 - [ ] Integration tests
 - [ ] Audio quality tests
 - [ ] Performance benchmarks
 - [ ] Mobile responsiveness
-- [ ] Cross-browser testing
+- [ ] Cross-browser testing — noter que Firefox/Safari ne supportent pas
+      l'API File System Access, le sélecteur de dossier y est inopérant
 
 ---
 
 ## 🚀 Deployment Checklist
 
-- [ ] All modules complete
-- [ ] 90%+ test coverage
-- [ ] Performance profiling (<10% CPU)
-- [ ] Documentation 100%
+- [ ] All modules complete — 0/12 branchés (module 1 écrit mais pas importé)
+- [ ] 90%+ test coverage — 0 %, aucun test
+- [ ] Performance profiling (<10% CPU) — jamais mesuré
+- [x] Documentation alignée sur l'état réel du dépôt (2026-08-20)
 - [ ] Mobile testing passed
 - [ ] Accessibility testing
 - [ ] Code review completed
-- [ ] Production build successful
+- [x] Production build successful — `npm run build` et `docker build` passent
 
 ---
 

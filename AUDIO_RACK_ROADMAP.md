@@ -18,23 +18,34 @@ Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where u
 - ✅ **Create sample packs** for instruments
 - ✅ Document everything for rapid development
 
+
+> ## ⚠️ Lire avant d'utiliser ce document
+>
+> Les cases de ce fichier avaient été générées **pré-cochées depuis un gabarit**.
+> Elles ont été remises à zéro le 2026-08-20 après vérification du dépôt.
+> Seul ce qui est réellement présent dans le code est coché.
+>
+> **État vérifié :** les répertoires des modules 2 à 5 sont **vides**. Les modules
+> 6 à 12 n'ont même pas de répertoire. Aucun test n'existe (pas de runner installé).
+> Le module 1 est écrit mais **pas branché** dans l'application.
+
 ---
 
 ## 📋 PHASE 1: CORE EFFECTS & SEQUENCING (Week 1)
 
 ### Module 1: Preset Search & Tagging ⏱️ 2-3h
 **File**: `apps/studio-hub/src/modules/audio-rack-01-patch-search/`
-- [x] PatchSearchEngine class
-- [x] React UI component
-- [x] Tag system integration
-- [x] Favorite/Recent features
-- [ ] Tests
+- [x] PatchSearchEngine class — `PatchSearchEngine.ts` (recherche, tags, favoris, récents)
+- [x] React UI component — `PatchSearchModule.tsx`
+- [ ] **Intégration dans `AudioPluginRack.tsx`** ← bloquant : le module n'est
+      importé nulle part, c'est du code mort en l'état
+- [ ] Tests — nécessite vitest, non installé
 
 **Deliverables**:
-- `PatchSearchEngine.ts` - Search logic
-- `PatchSearchModule.tsx` - UI component
-- `patch-search.test.ts` - Unit tests
-- Update `AudioPluginRack.tsx` to use new search
+- `PatchSearchEngine.ts` ✅ écrit
+- `PatchSearchModule.tsx` ✅ écrit
+- `patch-search.test.ts` ❌ absent
+- Update `AudioPluginRack.tsx` to use new search ❌ pas fait
 
 **Branch**: `feature/patch-search`
 
@@ -42,11 +53,11 @@ Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where u
 
 ### Module 2: Multi-Tap Delay Effect ⏱️ 3-4h
 **File**: `apps/studio-hub/src/modules/audio-rack-02-delay/`
-- [x] DelayProcessor Web Audio class
-- [x] React parameter controls
-- [x] 2-8 tap configuration
-- [x] Tempo sync (BPM)
-- [x] Real-time audition
+- [ ] DelayProcessor Web Audio class
+- [ ] React parameter controls
+- [ ] 2-8 tap configuration
+- [ ] Tempo sync (BPM)
+- [ ] Real-time audition
 
 **Deliverables**:
 - `MultiTapDelayProcessor.ts` - DSP engine
@@ -60,11 +71,11 @@ Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where u
 
 ### Module 3: Parametric EQ ⏱️ 4-5h
 **File**: `apps/studio-hub/src/modules/audio-rack-03-eq/`
-- [x] 3-band EQ (Low/Mid/High)
-- [x] Shelving + Peaking filters
-- [x] Frequency response visualizer
-- [x] Real-time graph (Canvas/SVG)
-- [x] Preset EQ curves (Bright, Warm, Neutral)
+- [ ] 3-band EQ (Low/Mid/High)
+- [ ] Shelving + Peaking filters
+- [ ] Frequency response visualizer
+- [ ] Real-time graph (Canvas/SVG)
+- [ ] Preset EQ curves (Bright, Warm, Neutral)
 
 **Deliverables**:
 - `ParametricEQProcessor.ts` - Filter chain
@@ -78,11 +89,11 @@ Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where u
 
 ### Module 4: ADSR Envelope Generator ⏱️ 3-4h
 **File**: `apps/studio-hub/src/modules/audio-rack-04-adsr/`
-- [x] ADSR parameter processor
-- [x] Linear/Exponential curves
-- [x] Envelope visualizer
-- [x] Real-time parameter adjustment
-- [x] Preset envelopes (Piano, Pad, Pluck, Bell)
+- [ ] ADSR parameter processor
+- [ ] Linear/Exponential curves
+- [ ] Envelope visualizer
+- [ ] Real-time parameter adjustment
+- [ ] Preset envelopes (Piano, Pad, Pluck, Bell)
 
 **Deliverables**:
 - `ADSREnvelopeProcessor.ts` - Envelope engine
@@ -96,11 +107,11 @@ Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where u
 
 ### Module 5: Arpeggiator ⏱️ 3-4h
 **File**: `apps/studio-hub/src/modules/audio-rack-05-arpeggiator/`
-- [x] Multiple arp modes (up, down, up-down, random, chord)
-- [x] BPM tempo sync
-- [x] Octave range control
-- [x] Gate length (note velocity duration)
-- [x] MIDI note recording
+- [ ] Multiple arp modes (up, down, up-down, random, chord)
+- [ ] BPM tempo sync
+- [ ] Octave range control
+- [ ] Gate length (note velocity duration)
+- [ ] MIDI note recording
 
 **Deliverables**:
 - `ArpeggiatorEngine.ts` - Sequencer logic
