@@ -359,6 +359,36 @@
   box-shadow: 8px 8px 0 #22c55e;
 }
 
+/* ========== DOCUMENTATION CENTRALE ========== */
+.hub-documentation {
+  max-width: 1420px;
+  margin: 56px auto 0;
+  padding: 30px;
+  background: #111311;
+  color: #f4f5ef;
+  border: 2px solid #111311;
+  border-radius: 10px;
+  box-shadow: 8px 8px 0 #ff5a1f;
+  scroll-margin-top: 24px;
+}
+
+.hub-documentation-heading { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.hub-documentation-heading > div > span { color: #d9ff43; font: 800 10px "Courier New", monospace; letter-spacing: .12em; }
+.hub-documentation-heading h2 { margin: 8px 0 0; font: 900 clamp(24px, 3vw, 36px) "Courier New", monospace; letter-spacing: -.05em; }
+.hub-documentation-heading p { max-width: 430px; margin: 0; color: #aeb5ad; font: 13px/1.5 "Courier New", monospace; }
+.hub-documentation-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.hub-documentation-card { display: flex; flex-direction: column; min-height: 270px; padding: 18px; border: 1.5px solid #586158; border-top: 5px solid #a855f7; background: #ebece6; color: #111311; text-align: left; cursor: pointer; font-family: "Courier New", monospace; transition: transform .2s ease, box-shadow .2s ease; }
+.hub-documentation-card:hover { transform: translateY(-4px); box-shadow: 5px 5px 0 #d9ff43; }
+.hub-documentation-card-top { display: flex; justify-content: space-between; gap: 8px; color: #555b53; font-size: 10px; font-weight: 900; }
+.hub-documentation-card-top small { color: #a855f7; font-size: 9px; }
+.hub-documentation-card .hub-graphic { min-height: 54px; margin: 14px 0; background: #f4f5ef; }
+.hub-documentation-category { color: #a855f7; font-size: 10px; font-weight: 900; letter-spacing: .1em; }
+.hub-documentation-card h3 { margin: 7px 0; font-size: 16px; letter-spacing: -.04em; }
+.hub-documentation-card p { flex-grow: 1; margin: 0 0 16px; color: #555b53; font: 12px/1.45 "Courier New", monospace; }
+.hub-documentation-card strong { color: #a855f7; font-size: 10px; }
+@media (max-width: 1050px) { .hub-documentation-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .hub-documentation { padding: 20px; } .hub-documentation-heading { align-items: start; flex-direction: column; } .hub-documentation-grid { grid-template-columns: 1fr; } }
+
 /* ========== MODALS ========== */
 
 .docs-modal-backdrop,

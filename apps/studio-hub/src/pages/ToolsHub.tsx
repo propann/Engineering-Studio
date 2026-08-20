@@ -31,6 +31,7 @@ const tools:Tool[]=[
  {id:"machine-test",code:"SYSEX-01",category:"DIAGNOSTIC",title:"Test machine EP-133",text:"Observer MIDI/SysEx, groupes actifs et communication aller-retour.",accent:"yellow",visual:"sync",status:"LECTURE SÛRE",section:"ep133",target:"ep133"},
  {id:"rhythm",code:"GAME-01",category:"TRAINING LAB",title:"Rhythm Hero",text:"Styles, niveaux, BPM, partitions animées, scores et progression aux pads.",accent:"green",visual:"game",status:"MIDI",section:"ep133",target:"ep133"},
  {id:"ep-docs",code:"DOC-KOII",category:"DOCUMENTATION",title:"Documentation EP-133",text:"Guides Studio, formats, MIDI et procédures machine vérifiées.",accent:"orange",visual:"pixels",status:"FR · EN · ES",section:"hub",target:"hub",anchor:"documentation"},
+ {id:"documentation",code:"DOC-HUB",category:"DOCUMENTATION",title:"Centre documentaire",text:"Vue d’ensemble des ressources, procédures et repères de l’Engineering Studio.",accent:"purple",visual:"pixels",status:"CENTRE HUB",section:"hub",target:"hub",anchor:"documentation"},
  {id:"op-settings",code:"GRID",category:"CONFIGURATION",title:"Réglages OP-1",text:"Le clavier joué et son mode config : assigner chaque contrôle par apprentissage.",accent:"green",visual:"sync",status:"OP-1",section:"hub",target:"hub"},
  {id:"midi",code:"24-PPQN",category:"TRANSPORT",title:"Synchronisation MIDI",text:"Tempo, Start, Stop, notes virtuelles, contrôleur OP-1 et PANIC communs.",accent:"blue",visual:"sync",status:"2 MACHINES",section:"hub",target:"hub"},
  {id:"library",code:"SOUND-V1",category:"OUTIL DU HUB",title:"Bibliothèque sonore",text:"Catalogue commun avec import, recherche, tags, favoris, préécoute et détection de doublons.",accent:"cyan",visual:"wave",status:"LOCAL",section:"hub",target:"hub",anchor:"sound-library"},
@@ -48,7 +49,6 @@ const sections:Array<{id:Section;label:string;emoji:string}> = [
 export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
  const [activeSection,setActiveSection]=useState<Section>("all");
- const [showDocs,setShowDocs]=useState(false);
  const [showSave,setShowSave]=useState(false);
  const [showTraining,setShowTraining]=useState(false);
  const [showSettings,setShowSettings]=useState(false);
@@ -105,13 +105,14 @@ export default function ToolsHub(){
 
   setSelected(tool);
  }
+ const scrollToDocumentation = () => document.getElementById("hub-documentation")?.scrollIntoView({ behavior: "smooth", block: "start" });
  // Filtre les outils mais enlève les outils en cadres spéciaux
  const filteredTools = (activeSection === "all" ? tools : tools.filter(t => t.section && t.section === activeSection))
    .filter(t => t.category !== "DOCUMENTATION" && t.category !== "SAUVEGARDE" && t.id !== "vault" && t.category !== "TRAINING LAB" && t.id !== "machine-test" && t.id !== "midi" && t.id !== "op-settings" && t.id !== "tape" && t.id !== "sounds" && t.id !== "sample" && t.id !== "library" && t.id !== "firmware" && t.id !== "services" && t.id !== "op1-backup" && t.id !== "pattern");
 
  const saveTools = tools.filter(t => t.id === "op1-backup" || t.id === "vault");
  return <main className="hub-page">
-  <TopBar activePage="outils" profileName={profileName} onDocClick={()=>setShowDocs(!showDocs)}/>
+  <TopBar activePage="outils" profileName={profileName} onDocClick={scrollToDocumentation}/>
   <section className="tools-section-organized" aria-label="Outils organisés">
    <div className="utility-grid">
     {/* === HAUT : CARTE MACHINE OP-1 === */}
@@ -290,7 +291,7 @@ export default function ToolsHub(){
     {/* === BAS === */}
     <button
      className="utility-card docs-card"
-     onClick={()=>setShowDocs(true)}
+     onClick={scrollToDocumentation}
      title="Cliquez pour voir toutes les documentations et guides"
     >
      <span>DOC-ALL</span>
@@ -311,13 +312,13 @@ export default function ToolsHub(){
      <h3>📚 Apprendre</h3>
      <p>Exercices OP-1, Rhythm Hero et jeux d'entraînement pour progresser.</p>
      <div className="tool-status">{trainingTools.length} PROGRAMMES</div>
-    </button>
-   </div>
-  </section>
+   </button>
+  </div>
+  <DocumentationShelf docs={docTools} onSelectTool={openTool} />
+ </section>
 
   {showSoundEditor&&<SoundEditorHub profileName={profileName} onClose={()=>setShowSoundEditor(false)}/>}
   {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
-  {showDocs&&<DocsModal docs={docTools} onClose={()=>setShowDocs(false)} onSelectTool={(tool)=>{openTool(tool);setShowDocs(false);}}/>}
   {showSave&&<SaveModal saves={saveTools} onClose={()=>setShowSave(false)} onSelectTool={(tool)=>{openTool(tool);setShowSave(false);}}/>}
   {showTraining&&<TrainingModal training={trainingTools} onClose={()=>setShowTraining(false)} onSelectTool={(tool)=>{openTool(tool);setShowTraining(false);}}/>}
   {showSettings&&<SettingsModal settings={settingsTools} onClose={()=>setShowSettings(false)} onSelectTool={(tool)=>{openTool(tool);setShowSettings(false);}}/>}
@@ -446,27 +447,23 @@ function SaveModal({saves,onClose,onSelectTool}:{saves:Tool[];onClose:()=>void;o
  </div>
 }
 
-function DocsModal({docs,onClose,onSelectTool}:{docs:Tool[];onClose:()=>void;onSelectTool:(t:Tool)=>void}){
- return <div className="docs-modal-backdrop" onClick={onClose}>
-  <section className="docs-modal" onClick={e=>e.stopPropagation()}>
-   <button className="docs-modal-close" onClick={onClose}>✕</button>
-   <div className="docs-modal-header">
-    <h2>📖 DOCUMENTATION & TRAINING</h2>
-    <p>Guides, références et jeux d'entraînement</p>
-   </div>
-   <div className="docs-grid">
-    {docs.map(doc => (
-     <button key={doc.id} className={`doc-card ${doc.accent}`} onClick={()=>onSelectTool(doc)}>
-      <ToolGraphic type={doc.visual}/>
-      <h3>{doc.title}</h3>
-      <small>{doc.category}</small>
-      <p>{doc.text}</p>
-      <div className="doc-status">{doc.status}</div>
-     </button>
-    ))}
-   </div>
-  </section>
- </div>
+function DocumentationShelf({docs,onSelectTool}:{docs:Tool[];onSelectTool:(t:Tool)=>void}){
+ return <section id="hub-documentation" className="hub-documentation" aria-labelledby="hub-documentation-title">
+  <div className="hub-documentation-heading">
+   <div><span>02 · RÉFÉRENCES CENTRALES</span><h2 id="hub-documentation-title">Documentation & repères</h2></div>
+   <p>Tout ce qui explique l’atelier est rangé ici. Les ressources restent liées à leur machine ou au Hub pour éviter les doublons.</p>
+  </div>
+  <div className="hub-documentation-grid">
+   {docs.map(doc => <button key={doc.id} className={`hub-documentation-card ${doc.accent}`} onClick={() => onSelectTool(doc)}>
+    <div className="hub-documentation-card-top"><span>{doc.code}</span><small>{doc.status}</small></div>
+    <ToolGraphic type={doc.visual}/>
+    <small className="hub-documentation-category">{doc.id === "op1-docs" ? "OP-1" : doc.id === "ep-docs" ? "EP-133" : "HUB"}</small>
+    <h3>{doc.title}</h3>
+    <p>{doc.text}</p>
+    <strong>OUVRIR LA RESSOURCE →</strong>
+   </button>)}
+  </div>
+ </section>
 }
 
 function Modal({tool,onClose}:{tool:Tool;onClose:()=>void}){return <div className="hub-modal-backdrop" onClick={onClose}><section className={`hub-modal ${tool.accent}`} onClick={e=>e.stopPropagation()}><button className="hub-modal-close" onClick={onClose}>×</button><span>{tool.code} · {tool.category}</span><ToolGraphic type={tool.visual}/><h2>{tool.title}</h2><p>{tool.text}</p><div>PAGE OUTIL · PROCHAINE INTÉGRATION</div><button onClick={onClose}>RETOUR AU HUB</button></section></div>}
