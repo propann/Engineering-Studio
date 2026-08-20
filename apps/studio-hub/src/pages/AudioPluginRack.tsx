@@ -967,6 +967,20 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
 
         mod.type = "sine";
         mod.frequency.setValueAtTime(detunedFreq * p.dxOp2Ratio, now);
+
+        // dxAlgorithm : sur un DX7 l'algorithme decrit le routage des
+        // operateurs. Les six operateurs ne sont pas reproduits ici, mais le
+        // reglage doit s'entendre : les algorithmes bas empilent les
+        // operateurs (modulation profonde, timbre metallique), les hauts les
+        // mettent en parallele (addition, timbre plus doux et plus riche).
+        const algo = Math.max(1, Math.min(32, p.dxAlgorithm));
+        const enSerie = 1 - (algo - 1) / 31; // 1 = tout empile, 0 = tout parallele
+
+        // Part additive : un operateur non modulant, mixe directement.
+        const additif = ctx.createGain();
+        additif.gain.setValueAtTime((1 - enSerie) * 0.5, now);
+        mod.connect(additif);
+        additif.connect(masterGain);
         modGain.gain.setValueAtTime(200 + p.dxFeedback * 120, now);
 
         // dxAttack : montee de l'indice de modulation. Sur un DX7 c'est ce
@@ -974,8 +988,10 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         const atk = 0.002 + (p.dxAttack / 100) * 0.6;
         const modPeak = 200 + p.dxFeedback * 120;
         modGain.gain.cancelScheduledValues(now);
-        modGain.gain.setValueAtTime(modPeak * 0.05, now);
-        modGain.gain.linearRampToValueAtTime(modPeak, now + atk);
+        // La profondeur de modulation suit l'algorithme : empile, il module
+        // fort ; parallele, il se contente d'additionner.
+        modGain.gain.setValueAtTime(modPeak * enSerie * 0.05, now);
+        modGain.gain.linearRampToValueAtTime(modPeak * enSerie, now + atk);
 
         mod.connect(modGain);
         modGain.connect(carrier.frequency);
@@ -993,10 +1009,21 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         const subOsc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
 
-        osc1.type = "sawtooth";
+        // surgeWavetable : chaque table a son propre profil harmonique.
+        // Le nom ne servait qu'a alimenter le toast ; il pilote maintenant la
+        // forme d'onde et la richesse du spectre.
+        const tables: Record<string, { type: OscillatorType; sub: OscillatorType }> = {
+          "Acid-Wav": { type: "sawtooth", sub: "square" },
+          "Basic Vector": { type: "triangle", sub: "sine" },
+          "Digital Bell": { type: "square", sub: "triangle" },
+          "Vocal Formant": { type: "sawtooth", sub: "triangle" },
+        };
+        const table = tables[p.surgeWavetable] ?? tables["Acid-Wav"];
+
+        osc1.type = table.type;
         osc1.frequency.setValueAtTime(detunedFreq * (1 + (p.surgeMorph - 50) / 1000), now);
 
-        subOsc.type = "square";
+        subOsc.type = table.sub;
         subOsc.frequency.setValueAtTime(detunedFreq / 2, now);
 
         filter.type = "lowpass";
@@ -1092,11 +1119,30 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         const osc1 = trk(ctx.createOscillator());
         const osc2 = trk(ctx.createOscillator());
         const dur = 1.0;
-        osc1.type = "triangle";
-        osc2.type = "sine";
+
+        // fluidPreset : le nom du SoundFont ne servait qu'au toast. Chaque
+        // preset a pourtant un profil reconnaissable — un orgue tient sans
+        // decroitre, un Rhodes s'eteint vite avec une quinte marquee, un
+        // piano decroit franchement. Ces trois traits suffisent a rendre le
+        // choix audible sans embarquer de banque d'echantillons.
+        const presets: Record<string, { base: OscillatorType; harm: OscillatorType; ratio: number; niveau: number }> = {
+          "Acoustic Grand Piano": { base: "triangle", harm: "sine", ratio: 2, niveau: 0.35 },
+          "Electric Piano Rhodes": { base: "sine", harm: "sine", ratio: 3, niveau: 0.5 },
+          "Church Pipe Organ": { base: "square", harm: "sine", ratio: 4, niveau: 0.7 },
+          "Symphonic Strings": { base: "sawtooth", harm: "triangle", ratio: 2, niveau: 0.45 },
+        };
+        const preset = presets[p.fluidPreset] ?? presets["Acoustic Grand Piano"];
+
+        osc1.type = preset.base;
+        osc2.type = preset.harm;
 
         osc1.frequency.setValueAtTime(detunedFreq, now);
-        osc2.frequency.setValueAtTime(detunedFreq * 2, now);
+        osc2.frequency.setValueAtTime(detunedFreq * preset.ratio, now);
+
+        // Dosage de l'harmonique : c'est lui qui separe un orgue riche d'un
+        // piano sobre.
+        const harmGain = ctx.createGain();
+        harmGain.gain.setValueAtTime(preset.niveau, now);
 
         // fluidChorus : deux voix légèrement désaccordées et retardées.
         // C'est ce dédoublement qui fait l'épaisseur d'un Rhodes.
@@ -1131,7 +1177,8 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         panner.pan.setValueAtTime(Math.max(-1, Math.min(1, (p.fluidPan - 50) / 50)), now);
 
         osc1.connect(level);
-        osc2.connect(level);
+        osc2.connect(harmGain);
+        harmGain.connect(level);
         chorusMix.connect(level);
         level.connect(panner);
         panner.connect(masterGain);
