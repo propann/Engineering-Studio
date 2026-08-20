@@ -42,6 +42,179 @@ type Snapshot = {
   categories: BackupCategory[];
 };
 
+/**
+ * Phases d'une operation de coffre.
+ *
+ * Les valeurs restent en anglais : elles sont reprises telles quelles dans le
+ * rapport JSON telecharge et dans docs/ROADMAP.md. Les noms de types et de
+ * fonctions suivent la convention francaise du reste du module.
+ *
+ * `complete` est une phase de passage : toute execution qui l'atteint se
+ * resout ensuite en `verified` ou `partial`.
+ */
+export type PhaseOperation =
+  | "idle"       // aucune operation en cours
+  | "prepared"   // inventaire connu, rien d'ecrit
+  | "running"    // ecriture en cours sur le disque de l'utilisateur
+  | "complete"   // tous les fichiers copies et verifies un par un
+  | "verified"   // controle a posteriori concluant
+  | "partial"    // arret apres au moins un fichier finalise
+  | "failed";    // arret sans aucun fichier finalise
+
+export type EtatOperation = {
+  phase: PhaseOperation;
+  operation: "backup" | "restore" | null;
+  /** Fichiers copies ET verifies. Jamais un compteur d'intention. */
+  fichiersFinalises: number;
+  fichiersPrevus: number;
+  octetsFinalises: number;
+  octetsPrevus: number;
+  /**
+   * Vrai des l'entree en `running` : le disque de l'utilisateur a ete touche.
+   *
+   * Orthogonal a la phase, et necessaire : une restauration qui echoue
+   * PENDANT la creation du point de retour n'a finalise aucun fichier, donc
+   * `failed` — alors qu'un dossier a moitie rempli existe desormais dans la
+   * cible. L'utilisateur doit le savoir.
+   */
+  ecritureCommencee: boolean;
+  raison?: string;
+  fichierInterrompu?: string;
+  /** Pourquoi l'operation n'a pas atteint `verified`. */
+  verification?: "confirmee" | "empreintes-absentes" | "snapshot-illisible" | "totaux-divergents";
+};
+
+export const ETAT_INITIAL: EtatOperation = {
+  phase: "idle",
+  operation: null,
+  fichiersFinalises: 0,
+  fichiersPrevus: 0,
+  octetsFinalises: 0,
+  octetsPrevus: 0,
+  ecritureCommencee: false,
+};
+
+export type EvenementOperation =
+  | { type: "prepare"; operation: "backup" | "restore"; fichiersPrevus: number; octetsPrevus: number }
+  | { type: "demarre" }
+  | { type: "fichier-finalise"; octets: number }
+  | { type: "copie-terminee" }
+  | { type: "scelle"; ok: boolean; verification: EtatOperation["verification"]; raison?: string }
+  | { type: "echoue"; raison: string; fichierInterrompu?: string }
+  | { type: "annule" }
+  | { type: "reinitialise" };
+
+/**
+ * Applique un evenement a l'etat d'operation. Fonction pure.
+ *
+ * Un evenement illegal depuis la phase courante rend l'etat INCHANGE, sans
+ * lever : `echoue` est emis depuis un bloc `catch`, et lever depuis un catch
+ * masquerait l'erreur d'origine — exactement le contraire du but recherche.
+ */
+export function transition(etat: EtatOperation, ev: EvenementOperation): EtatOperation {
+  switch (ev.type) {
+    case "prepare":
+      if (etat.phase !== "idle") return etat;
+      return {
+        ...ETAT_INITIAL,
+        phase: "prepared",
+        operation: ev.operation,
+        fichiersPrevus: ev.fichiersPrevus,
+        octetsPrevus: ev.octetsPrevus,
+      };
+
+    case "demarre":
+      if (etat.phase !== "prepared") return etat;
+      return { ...etat, phase: "running", ecritureCommencee: true };
+
+    case "fichier-finalise":
+      if (etat.phase !== "running") return etat;
+      return {
+        ...etat,
+        fichiersFinalises: etat.fichiersFinalises + 1,
+        octetsFinalises: etat.octetsFinalises + ev.octets,
+      };
+
+    case "copie-terminee":
+      if (etat.phase !== "running") return etat;
+      return { ...etat, phase: "complete" };
+
+    case "scelle":
+      if (etat.phase !== "complete") return etat;
+      // Les fichiers sont bons, mais l'artefact ne l'est pas : `partial`.
+      return { ...etat, phase: ev.ok ? "verified" : "partial", verification: ev.verification, raison: ev.raison };
+
+    case "echoue":
+      if (etat.phase !== "running" && etat.phase !== "prepared") return etat;
+      return {
+        ...etat,
+        // Depuis `prepared` rien n'a ete ecrit : toujours `failed`.
+        phase: etat.phase === "prepared" ? "failed" : etat.fichiersFinalises > 0 ? "partial" : "failed",
+        raison: ev.raison,
+        fichierInterrompu: ev.fichierInterrompu,
+      };
+
+    case "annule":
+      if (etat.phase !== "prepared") return etat;
+      return ETAT_INITIAL;
+
+    case "reinitialise":
+      return ETAT_INITIAL;
+
+    default:
+      return etat;
+  }
+}
+
+/**
+ * Verifie qu'un snapshot fraichement ecrit est reellement relisible.
+ *
+ * Le manifeste etait ecrit sans jamais etre relu. Or c'est lui qui rend le
+ * snapshot visible et restaurable : readSnapshots le parse, et si le parse
+ * echoue, l'exception est avalee et le snapshot DISPARAIT de la liste en
+ * silence. L'utilisateur lisait « Sauvegarde creee : 240 fichiers » et ne la
+ * trouvait pas dans le menu deroulant.
+ *
+ * Le controle ne coute rien : readSnapshots est deja appele juste apres
+ * l'ecriture, et son resultat etait simplement jete.
+ */
+export function verifierSnapshot(
+  relus: { id: string; fileCount: number; totalBytes: number }[],
+  id: string,
+  fichiersAttendus: number,
+  octetsAttendus: number
+): { ok: boolean; verification: EtatOperation["verification"]; raison?: string } {
+  const trouve = relus.find((s) => s.id === id);
+  if (!trouve) {
+    return {
+      ok: false,
+      verification: "snapshot-illisible",
+      raison: "Le snapshot a été écrit mais ne peut pas être relu : son manifeste est illisible.",
+    };
+  }
+  if (trouve.fileCount !== fichiersAttendus || trouve.totalBytes !== octetsAttendus) {
+    return {
+      ok: false,
+      verification: "totaux-divergents",
+      raison: `Relecture divergente : ${trouve.fileCount} fichiers relus pour ${fichiersAttendus} écrits.`,
+    };
+  }
+  return { ok: true, verification: "confirmee" };
+}
+
+/** Libelle et ton d'une phase. Contrat de rendu, sans balisage. */
+export function libelleEtat(phase: PhaseOperation): { texte: string; ton: "neutre" | "succes" | "alerte" | "erreur" } {
+  switch (phase) {
+    case "idle": return { texte: "Au repos", ton: "neutre" };
+    case "prepared": return { texte: "Prêt — rien n'a été écrit", ton: "neutre" };
+    case "running": return { texte: "Écriture en cours", ton: "alerte" };
+    case "complete": return { texte: "Fichiers copiés — vérification", ton: "neutre" };
+    case "verified": return { texte: "Vérifié", ton: "succes" };
+    case "partial": return { texte: "Interrompu — partiel", ton: "alerte" };
+    case "failed": return { texte: "Échec", ton: "erreur" };
+  }
+}
+
 const categoryInfo: Record<BackupCategory, { label: string; description: string; machines: MachineId[] }> = {
   tape: { label: "Bandes", description: "Les quatre pistes tape de l’OP‑1", machines: ["op1"] },
   album: { label: "Album", description: "Les deux faces album de l’OP‑1", machines: ["op1"] },
@@ -471,7 +644,12 @@ async function createBackup() {
       const writable = await manifestHandle.createWritable();
       await writable.write(JSON.stringify(manifest, null, 2));
       await writable.close();
-      setSnapshots(await readSnapshots(workspace, machine));
+      // Le resultat de readSnapshots servait uniquement a rafraichir la
+      // liste ; il porte aussi la preuve que le snapshot est relisible.
+      const relus = await readSnapshots(workspace, machine);
+      setSnapshots(relus);
+      const scellement = verifierSnapshot(relus, snapshotId, manifestFiles.length, manifest.totalBytes ?? 0);
+      if (!scellement.ok) setError(scellement.raison ?? "Snapshot non vérifiable après écriture.");
       setSelectedSnapshotId(snapshotId);
       setRestoreCategories(selectedCategories);
       onBackupRecorded(machine);
@@ -516,6 +694,11 @@ async function createBackup() {
     setBusy(true);
     let restored = 0;
     let total = 0;
+    // Hissees hors du `try` : le `catch` en avait besoin et ne les voyait pas.
+    // Consequence corrigee ici : le message d'erreur affirmait TOUJOURS que
+    // les originaux etaient dans _point-de-retour/, y compris quand aucun
+    // n'avait ete cree.
+    let pointDeRetour: string | null = null;
     try {
       const manifestFile = await selectedSnapshot.handle.getFileHandle("manifest.json");
       const manifest = JSON.parse(await (await manifestFile.getFile()).text()) as BackupManifest;
@@ -556,7 +739,6 @@ async function createBackup() {
       }
 
       // Point de retour avant la premiere ecriture.
-      let pointDeRetour: string | null = null;
       if (prevol.aRemplacer.length) {
         setStatus("Création du point de retour…");
         pointDeRetour = await creerPointDeRetour(prevol.aRemplacer, restoreTarget, (fait, tot) =>
@@ -587,11 +769,14 @@ async function createBackup() {
       );
     } catch (err) {
       const reason = err instanceof Error ? err.message : "La restauration a échoué.";
-      // Sans indiquer le point de retour, une restauration interrompue laisse
-      // la cible a moitie ecrasee sans que personne sache ou est l'original.
+      // Le point de retour n'est mentionne que s'il existe vraiment. La
+      // version precedente l'affirmait dans tous les cas, y compris quand
+      // aucun fichier n'etait a remplacer et qu'aucun point n'avait ete cree.
       setError(
         `${reason}${total ? ` (${restored}/${total} fichiers restaurés).` : ""}` +
-          ` Les fichiers d'origine remplacés sont dans _point-de-retour/ à la racine de la cible.`
+          (pointDeRetour
+            ? ` Les fichiers d'origine remplacés sont dans ${pointDeRetour} à la racine de la cible.`
+            : " Aucun fichier existant n'avait à être remplacé : rien n'a été écrasé.")
       );
     }
     finally { setBusy(false); setProgress(null); }
