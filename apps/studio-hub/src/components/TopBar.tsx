@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { clearProfile, readProfileName } from "../core/profile";
 
 export interface TopBarProps {
   activePage?: string;
@@ -18,17 +19,10 @@ export function TopBar({
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem("studio-hub-profile");
-      if (raw && typeof raw === 'string') {
-        const profile = JSON.parse(raw);
-        // Validate profile shape
-        if (profile && typeof profile === 'object' && typeof profile.name === 'string' && profile.name.trim()) {
-          setCurrentName(profile.name.trim());
-        }
-      }
+      setCurrentName(readProfileName(profileName));
     } catch {
       // Profile cache is convenience only; session continues with default
-      localStorage.removeItem("studio-hub-profile");
+      clearProfile();
     }
   }, [profileName]);
 

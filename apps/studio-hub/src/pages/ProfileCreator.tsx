@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
+import { clearProfile, readProfile, writeProfile } from "../core/profile";
 
 const log = createLogger("Hub.ProfileCreator");
 
@@ -40,8 +41,6 @@ const avatarNames = [
 const avatarLabel = (value: string) => value.replace(/-/g, " ").toUpperCase();
 
 export default function CharacterPage() {
-  // Valeurs neutres : le site est public, une fiche vide evite d'exposer
-  // le profil de qui a deploye. Le profil reel est relu depuis localStorage.
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [avatar, setAvatar] = useState<(typeof avatarNames)[number]>("engineer");
@@ -52,15 +51,11 @@ export default function CharacterPage() {
   const [keyboard, setKeyboard] = useState("AZERTY");
   const [theme, setTheme] = useState("PIXEL");
 
-  const [machines, setMachines] = useState<Machine[]>([
-    { id: 1, kind: "op1", name: "OP-1", active: true },
-    { id: 2, kind: "ep133", name: "EP-133 K.O. II", memory: 64, active: true },
-  ]);
+  const [machines, setMachines] = useState<Machine[]>([]);
 
 
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
-  const [drives, setDrives] = useState<DriveModule[]>([
-              ]);
+  const [drives, setDrives] = useState<DriveModule[]>([]);
 
   // Scan workspace folder for files
   const scanWorkspaceFolder = async (dirHandle: any) => {
@@ -192,14 +187,15 @@ export default function CharacterPage() {
   };
 
   // Load existing profile from localStorage or workspace
-  const loadProfile = async (profileData: any) => {
+  const loadProfile = async (profileData: ReturnType<typeof readProfile>) => {
     try {
+      if (!profileData) return;
       if (profileData.name) setName(profileData.name);
       if (profileData.bio) setBio(profileData.bio);
       if (profileData.avatar && avatarNames.includes(profileData.avatar)) setAvatar(profileData.avatar);
       if (profileData.workspace?.name) setWorkspace(profileData.workspace.name);
-      if (profileData.drives?.length) setDrives(profileData.drives);
-      if (profileData.machineInventory?.length) setMachines(profileData.machineInventory);
+      if (Array.isArray(profileData.drives) && profileData.drives.length) setDrives(profileData.drives as DriveModule[]);
+      if (Array.isArray(profileData.machineInventory) && profileData.machineInventory.length) setMachines(profileData.machineInventory as Machine[]);
       log.info("✅ Profile loaded", { name: profileData.name });
     } catch (error) {
       log.error("Failed to load profile", error);
@@ -208,12 +204,7 @@ export default function CharacterPage() {
 
   useEffect(() => {
     try {
-      // First, try to load from localStorage
-      const raw = localStorage.getItem("studio-hub-profile");
-      if (raw) {
-        const profile = JSON.parse(raw);
-        loadProfile(profile);
-      }
+      void loadProfile(readProfile());
     } catch (error) {
       log.warn("Failed to load from localStorage", error);
     }
@@ -297,8 +288,11 @@ export default function CharacterPage() {
       savedAt: new Date().toISOString(),
     };
 
-    // 1. Save to localStorage (always)
-    localStorage.setItem("studio-hub-profile", JSON.stringify(profileData));
+    // 1. Save to the local browser profile store (always)
+    if (!writeProfile(profileData)) {
+      alert("⚠️ Impossible d’enregistrer la fiche dans le stockage local du navigateur.");
+      return;
+    }
     log.info("✅ Profile saved to localStorage");
 
     // 2. Try to save to workspace folder (if available)
@@ -324,6 +318,18 @@ export default function CharacterPage() {
       log.info("No workspace handle available, profile saved to localStorage only");
       alert(`✅ Fiche enregistrée en local!\n\nNom: ${name}\n\nℹ️ Choisir un dossier de sauvegarde pour enregistrer dans le système de fichiers.`);
     }
+  }
+
+  function clearLocalProfile() {
+    if (!window.confirm("Supprimer la fiche locale de ce navigateur ? Le fichier déjà écrit dans le dossier restera intact.")) return;
+    clearProfile();
+    setName("");
+    setBio("");
+    setWorkspace("");
+    setWorkspaceDirHandle(null);
+    setWorkspaceFiles([]);
+    setMachines([]);
+    setDrives([]);
   }
 
   return (
@@ -564,6 +570,9 @@ export default function CharacterPage() {
 
           <div className="creator-actions">
             <Link href="/">ANNULER</Link>
+            <button type="button" className="reset-profile-link" onClick={clearLocalProfile}>
+              SUPPRIMER LA FICHE LOCALE
+            </button>
             <Link className="save-profile-link" href="/outils" onClick={saveProfile}>
               ENREGISTRER MA FICHE <span>→</span>
             </Link>

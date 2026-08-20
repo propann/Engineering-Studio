@@ -17,7 +17,7 @@ restent à valider progressivement.
 | Déploiement Coolify | Opérationnel sur le port 3000 |
 | HTTPS | Actif via le proxy Coolify |
 | Nouvel arrivant neutre | Corrigé dans les valeurs par défaut |
-| Profil local | Fonctionnel via localStorage |
+| Profil local | Module partagé, migration v2, lecture/écriture/suppression |
 | Workspace local | Fonctionnel après permission navigateur |
 | Hub de navigation | Fonctionnel, routage React interne |
 | OP-1 Studio | Intégré, validation matérielle à poursuivre |
@@ -35,6 +35,7 @@ restent à valider progressivement.
 - Valeurs personnelles retirées des nouveaux profils.
 - Exemples audio personnels renommés en exemples de démonstration.
 - Documentation principale rangée dans docs/INDEX.md.
+- Module profil partagé ajouté dans apps/studio-hub/src/core/profile.ts.
 
 ## Ce qui est fiable
 
@@ -46,11 +47,11 @@ restent à valider progressivement.
 
 ## Prochaines étapes recommandées
 
-1. Ajouter un module partagé de lecture/écriture du profil.
-2. Ajouter des tests de démarrage avec localStorage vide.
-3. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS.
+1. Ajouter des tests de démarrage avec localStorage vide.
+2. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS.
+3. Brancher les pages restantes sur le module profil partagé.
 4. Ajouter une vérification de build dans CI.
-5. Auditer les pages qui ont encore des états locaux indépendants.
+5. Auditer les états locaux indépendants des modules.
 6. Préparer un routage URL stable avant de rendre les pages partageables.
 
 ## Règle de communication
@@ -59,4 +60,3 @@ Ne pas utiliser « Production Ready » pour l’ensemble du produit tant que les
 tests automatisés, les parcours navigateur et la validation matérielle ne sont
 pas documentés. Dire plutôt : « Hub local fonctionnel, intégration matérielle
 en cours ».
-

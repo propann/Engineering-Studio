@@ -1,20 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { TopBar } from "../components/TopBar";
+import { readProfileName } from "../core/profile";
 
 export default function Home() {
   const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("studio-hub-profile");
-      if (raw) {
-        const profile = JSON.parse(raw) as { name?: string };
-        if (profile.name?.trim()) setProfileName(profile.name.trim());
-      }
-    } catch {
-      /* profil local */
-    }
+    setProfileName(readProfileName());
   }, []);
 
   const openTool = (toolId: string) => {
@@ -29,17 +22,6 @@ export default function Home() {
   return (
     <main className="landing-rich-page">
       <TopBar activePage="landing" profileName={profileName} />
-
-      {/* Avertissement : le site est publiquement accessible alors que le
-          developpement est en cours. Mieux vaut le dire d'entree que laisser
-          quelqu'un buter sur des fonctions inachevees. */}
-      <aside className="wip-banner" role="alert">
-        <strong>Site en cours de développement</strong>
-        <span>
-          Rien n'est stable ici : la plupart des fonctions sont incomplètes ou
-          ne marchent pas encore. Ça travaille, revenez plus tard.
-        </span>
-      </aside>
 
       {/* Hero Section */}
       <section className="rich-hero" id="top">
