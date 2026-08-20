@@ -162,6 +162,140 @@ const VIRTUAL_PIANO_KEYS = [
   { note: "C5", name: "Do", freq: 523.25, isBlack: false, keyChar: "K" },
 ];
 
+// =====================================================================
+// BRIQUES DSP PARTAGÉES
+//
+// Chacune sert plusieurs moteurs. Les 33 paramètres qui n'avaient aucun
+// effet sur le son se ramènent à ces quelques traitements réutilisables.
+// =====================================================================
+
+/**
+ * Réponse impulsionnelle synthétique pour ConvolverNode.
+ * Bruit blanc à décroissance exponentielle : évite de charger un fichier
+ * externe tout en donnant une queue de réverbération crédible.
+ */
+function buildImpulseResponse(ctx: BaseAudioContext, seconds: number, decay: number): AudioBuffer {
+  const len = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  return buf;
+}
+
+/**
+ * Courbe de quantification pour WaveShaperNode.
+ * `bits` marches d'escalier : c'est la réduction de résolution qui donne
+ * le grain 8-bit. 16 bits = quasi transparent, 1-2 bits = destruction.
+ */
+function buildBitcrushCurve(bits: number): Float32Array<ArrayBuffer> {
+  const n = 4096;
+  const curve = new Float32Array(new ArrayBuffer(n * 4));
+  const steps = Math.pow(2, Math.max(1, Math.min(16, bits)));
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curve[i] = Math.round(x * steps) / steps;
+  }
+  return curve;
+}
+
+/**
+ * Courbe de saturation.
+ *  - "soft" : tanh, écrêtage progressif, chaleur analogique.
+ *  - "fold" : repliement d'onde. L'amplitude qui dépasse ne sature pas,
+ *    elle se replie et crée des harmoniques supérieures. C'est le
+ *    traitement que faust_dsp annonçait sans jamais l'appliquer.
+ */
+function buildSaturationCurve(amount: number, mode: "soft" | "fold" = "soft"): Float32Array<ArrayBuffer> {
+  const n = 4096;
+  const curve = new Float32Array(new ArrayBuffer(n * 4));
+  const k = Math.max(0.001, amount / 100);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curve[i] =
+      mode === "fold"
+        ? Math.sin(x * (1 + k * 6) * Math.PI * 0.5)
+        : Math.tanh(x * (1 + k * 12)) / Math.tanh(1 + k * 12);
+  }
+  return curve;
+}
+
+/**
+ * Onde périodique à rapport cyclique variable, par synthèse de Fourier.
+ * Un OscillatorNode "square" est figé à 50 % ; cette forme permet le
+ * balayage de largeur d'impulsion caractéristique des puces sonores.
+ */
+function buildPulseWave(ctx: BaseAudioContext, duty: number): PeriodicWave {
+  const n = 32;
+  const real = new Float32Array(new ArrayBuffer(n * 4));
+  const imag = new Float32Array(new ArrayBuffer(n * 4));
+  const d = Math.max(0.02, Math.min(0.98, duty / 100));
+  for (let h = 1; h < n; h++) {
+    // Série de Fourier d'un train d'impulsions de rapport cyclique d.
+    real[h] = (2 / (h * Math.PI)) * Math.sin(Math.PI * h * d);
+  }
+  return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+}
+
+/**
+ * LFO branché sur un AudioParam. Renvoie l'oscillateur pour que l'appelant
+ * puisse l'arrêter avec la voix.
+ */
+function attachLfo(
+  ctx: BaseAudioContext,
+  target: AudioParam,
+  rateHz: number,
+  depth: number,
+  now: number,
+  shape: OscillatorType = "sine"
+): OscillatorNode {
+  const lfo = ctx.createOscillator();
+  const amt = ctx.createGain();
+  lfo.type = shape;
+  lfo.frequency.setValueAtTime(Math.max(0.01, rateHz), now);
+  amt.gain.setValueAtTime(depth, now);
+  lfo.connect(amt);
+  amt.connect(target);
+  lfo.start(now);
+  return lfo;
+}
+
+/**
+ * Boucle de retour amortie : délai rebouclé via un gain, avec passe-bas
+ * dans la boucle. Le gain est plafonné sous 1 — au-delà la boucle
+ * s'emballe et produit un larsen.
+ */
+function buildFeedbackLoop(
+  ctx: BaseAudioContext,
+  delaySec: number,
+  feedback: number,
+  dampHz: number
+): { input: GainNode; output: GainNode } {
+  const input = ctx.createGain();
+  const output = ctx.createGain();
+  const delay = ctx.createDelay(2);
+  const fb = ctx.createGain();
+  const damp = ctx.createBiquadFilter();
+
+  delay.delayTime.value = Math.max(0.001, delaySec);
+  fb.gain.value = Math.min(0.92, Math.max(0, feedback / 100) * 0.92);
+  damp.type = "lowpass";
+  damp.frequency.value = dampHz;
+
+  input.connect(delay);
+  delay.connect(damp);
+  damp.connect(fb);
+  fb.connect(delay);
+  delay.connect(output);
+  input.connect(output);
+
+  return { input, output };
+}
+
+
 export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { profileName?: string; onClose?: () => void }) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
@@ -363,6 +497,11 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   // Tone n'apporte que l'enveloppe.
   // ---------------------------------------------------------------------
   const masterBusRef = useRef<GainNode | null>(null);
+  // Réverbération partagée : un seul convolveur pour tout le rack, chaque
+  // moteur y envoie via son propre gain auxiliaire. Sert fluidReverb,
+  // zynReverbSend, helmReverb et cloudsReverb.
+  const reverbRef = useRef<ConvolverNode | null>(null);
+  const reverbReturnRef = useRef<GainNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   // Uint8Array<ArrayBuffer> explicite : getByteTimeDomainData refuse une vue
   // adossée à un SharedArrayBuffer, que le type par défaut autorise.
@@ -408,8 +547,18 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       bus.connect(analyser);
       analyser.connect(ctx.destination);
 
+      // Retour de réverbération : convolveur -> gain de retour -> bus.
+      const reverb = ctx.createConvolver();
+      reverb.buffer = buildImpulseResponse(ctx, 2.6, 2.4);
+      const reverbReturn = ctx.createGain();
+      reverbReturn.gain.value = 1;
+      reverb.connect(reverbReturn);
+      reverbReturn.connect(bus);
+
       masterBusRef.current = bus;
       analyserRef.current = analyser;
+      reverbRef.current = reverb;
+      reverbReturnRef.current = reverbReturn;
       scopeDataRef.current = new Uint8Array(new ArrayBuffer(analyser.fftSize));
       log.info("Master bus + analyser created", { sampleRate: ctx.sampleRate });
     }
@@ -662,6 +811,15 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       masterGain.gain.setValueAtTime(vol, now);
       masterGain.connect(env.input as unknown as AudioNode);
 
+      // Envoi vers la réverbération partagée. `amount` en 0-100.
+      const sendToReverb = (source: AudioNode, amount: number) => {
+        if (!reverbRef.current || amount <= 0) return;
+        const send = ctx.createGain();
+        send.gain.setValueAtTime((amount / 100) * 0.5, now);
+        source.connect(send);
+        send.connect(reverbRef.current);
+      };
+
       // Apply Detune Cents
       const detunedFreq = freq * Math.pow(2, p.masterDetune / 1200);
 
@@ -688,8 +846,17 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.type = "lowpass";
         filter.frequency.setValueAtTime(200 + (p.plaitsTimbre / 100) * 8000, now);
 
-        osc1.connect(filter);
-        osc2.connect(filter);
+        // plaitsMorph : dosage entre les deux oscillateurs. osc2 etait
+        // mixe a plein niveau quelle que soit la valeur du controle.
+        const morphA = ctx.createGain();
+        const morphB = ctx.createGain();
+        morphA.gain.setValueAtTime(1 - (p.plaitsMorph / 100) * 0.75, now);
+        morphB.gain.setValueAtTime((p.plaitsMorph / 100) * 0.85, now);
+
+        osc1.connect(morphA);
+        osc2.connect(morphB);
+        morphA.connect(filter);
+        morphB.connect(filter);
         filter.connect(masterGain);
 
         const dec = 0.2 + (p.plaitsDecay / 100) * 2.0;
@@ -710,7 +877,14 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.frequency.setValueAtTime(400 + (p.braidsTimbre / 100) * 6000, now);
         filter.Q.setValueAtTime(1 + (p.braidsColor / 100) * 15, now);
 
-        osc.connect(filter);
+        // braidsBitDepth : quantification. Braids est un module numerique,
+        // sa resolution fait partie de son timbre.
+        const crush = ctx.createWaveShaper();
+        crush.curve = buildBitcrushCurve(p.braidsBitDepth);
+        crush.oversample = "none";
+
+        osc.connect(crush);
+        crush.connect(filter);
         filter.connect(masterGain);
 
         osc.start(now);
@@ -740,30 +914,86 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         delay.connect(filter);
         filter.connect(feedback);
         feedback.connect(delay);
-        delay.connect(masterGain);
+        // ringsStructure : inharmonicite. Un passe-tout decale la phase des
+        // partiels, eloignant le resonateur du spectre harmonique.
+        const disperse = ctx.createBiquadFilter();
+        disperse.type = "allpass";
+        disperse.frequency.setValueAtTime(200 + (p.ringsStructure / 100) * 5000, now);
+        disperse.Q.setValueAtTime(0.5 + (p.ringsStructure / 100) * 6, now);
+        delay.connect(disperse);
+
+        // ringsPolyphony : cordes sympathiques accordees en quintes.
+        const voiceMix = ctx.createGain();
+        voiceMix.gain.setValueAtTime(1 / Math.max(1, p.ringsPolyphony), now);
+        disperse.connect(voiceMix);
+
+        for (let v = 1; v < Math.max(1, p.ringsPolyphony); v++) {
+          const symDelay = ctx.createDelay(1);
+          symDelay.delayTime.value = delay.delayTime.value / Math.pow(1.5, v);
+          const symFb = ctx.createGain();
+          symFb.gain.value = feedback.gain.value * 0.85;
+          symDelay.connect(symFb);
+          symFb.connect(symDelay);
+          noise.connect(symDelay);
+          symDelay.connect(voiceMix);
+        }
+
+        voiceMix.connect(masterGain);
 
         noise.start(now);
         noteStop(noise, now + 0.02);
 
         showToast(`🔔 RINGS [${p.ringsResonatorMode}] : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "mi_clouds") {
-        const osc = trk(ctx.createOscillator());
+        // Vrai moteur granulaire. Le module s'appelait "Clouds" mais
+        // produisait une simple dent de scie filtrée : quatre de ses six
+        // contrôles n'avaient aucun effet.
+        const dur = 1.2;
+        const shifted = detunedFreq * Math.pow(2, p.cloudsPitchShift / 12);
+
         const filter = ctx.createBiquadFilter();
-
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(detunedFreq * Math.pow(2, p.cloudsPitchShift / 12), now);
-
         filter.type = "bandpass";
         filter.frequency.setValueAtTime(1000 + (p.cloudsTexture / 100) * 4000, now);
         filter.Q.setValueAtTime(2.0, now);
 
-        osc.connect(filter);
-        filter.connect(masterGain);
+        // cloudsFeedback : boucle de retour, la queue diffuse du module.
+        const loop = buildFeedbackLoop(ctx, 0.09, p.cloudsFeedback, 3600);
+        filter.connect(loop.input);
+        loop.output.connect(masterGain);
 
-        osc.start(now);
-        noteStop(osc, now + 1.2);
+        // cloudsReverb : envoi vers le convolveur partagé.
+        sendToReverb(loop.output, p.cloudsReverb);
 
-        showToast(`☁️ CLOUDS (Granular) : ${detunedFreq.toFixed(1)} Hz`);
+        // cloudsGranularDensity : nombre de grains sur la durée.
+        // cloudsPosition : dispersion temporelle de leur déclenchement.
+        const grains = Math.max(1, Math.round(2 + (p.cloudsGranularDensity / 100) * 22));
+        const spread = (p.cloudsPosition / 100) * dur * 0.8;
+        const grainLen = 0.05 + (1 - p.cloudsGranularDensity / 100) * 0.18;
+
+        for (let g = 0; g < grains; g++) {
+          const at = now + (g / grains) * (dur - grainLen) + Math.random() * spread * 0.3;
+          const grain = trk(ctx.createOscillator());
+          grain.type = "sawtooth";
+          // Léger désaccord par grain : c'est ce qui donne la texture
+          // de nuage plutôt qu'un empilement d'oscillateurs identiques.
+          grain.frequency.setValueAtTime(shifted * (1 + (Math.random() - 0.5) * 0.03), at);
+
+          // Fenêtre d'amplitude par grain. Sans elle, chaque début et fin
+          // de grain produit un clic.
+          const win = ctx.createGain();
+          win.gain.setValueAtTime(0.0001, at);
+          win.gain.exponentialRampToValueAtTime(0.9 / Math.sqrt(grains), at + grainLen * 0.35);
+          win.gain.exponentialRampToValueAtTime(0.0001, at + grainLen);
+
+          grain.connect(win);
+          win.connect(filter);
+          grain.start(at);
+          noteStop(grain, at + grainLen);
+        }
+
+        showToast(
+          `☁️ CLOUDS ${grains} grains · fb ${p.cloudsFeedback}% : ${shifted.toFixed(1)} Hz`
+        );
       } else if (p.activeEngine === "mi_elements") {
         const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
@@ -774,6 +1004,25 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.type = "peaking";
         filter.frequency.setValueAtTime(300 + (p.elementsBrightness / 100) * 6000, now);
         filter.Q.setValueAtTime((p.elementsGeometry / 100) * 10 + 1, now);
+
+        // elementsStrike : bruit d'attaque percussif. Elements est un module
+        // exciteur/resonateur ; sans exciteur il ne reste que le resonateur.
+        const strikeLen = 0.004 + (p.elementsStrike / 100) * 0.03;
+        const nBuf = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * strikeLen)), ctx.sampleRate);
+        const nData = nBuf.getChannelData(0);
+        for (let i = 0; i < nData.length; i++) {
+          nData[i] = (Math.random() * 2 - 1) * (1 - i / nData.length);
+        }
+        const strike = trk(ctx.createBufferSource());
+        strike.buffer = nBuf;
+
+        // elementsExciter : dosage exciteur / corps resonant.
+        const exciterGain = ctx.createGain();
+        exciterGain.gain.setValueAtTime((p.elementsExciter / 100) * 0.7, now);
+        strike.connect(exciterGain);
+        exciterGain.connect(filter);
+        strike.start(now);
+        noteStop(strike, now + strikeLen);
 
         osc.connect(filter);
         filter.connect(masterGain);
@@ -815,6 +1064,14 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         mod.frequency.setValueAtTime(detunedFreq * p.dxOp2Ratio, now);
         modGain.gain.setValueAtTime(200 + p.dxFeedback * 120, now);
 
+        // dxAttack : montee de l'indice de modulation. Sur un DX7 c'est ce
+        // qui distingue une cloche d'un cuivre.
+        const atk = 0.002 + (p.dxAttack / 100) * 0.6;
+        const modPeak = 200 + p.dxFeedback * 120;
+        modGain.gain.cancelScheduledValues(now);
+        modGain.gain.setValueAtTime(modPeak * 0.05, now);
+        modGain.gain.linearRampToValueAtTime(modPeak, now + atk);
+
         mod.connect(modGain);
         modGain.connect(carrier.frequency);
         carrier.connect(masterGain);
@@ -844,10 +1101,16 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         const subGain = ctx.createGain();
         subGain.gain.setValueAtTime(p.surgeSub / 100, now);
 
+        // surgeDrive : saturation douce en sortie de filtre.
+        const drive = ctx.createWaveShaper();
+        drive.curve = buildSaturationCurve(p.surgeDrive, "soft");
+        drive.oversample = "2x";
+
         osc1.connect(filter);
         subOsc.connect(subGain);
         subGain.connect(filter);
-        filter.connect(masterGain);
+        filter.connect(drive);
+        drive.connect(masterGain);
 
         osc1.start(now);
         subOsc.start(now);
@@ -876,6 +1139,10 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         }
 
         filter.connect(masterGain);
+
+        // zynReverbSend : envoi vers le convolveur partage.
+        sendToReverb(filter, p.zynReverbSend);
+
         showToast(`🎹 ZYNADDSUBFX Additive : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "helm") {
         const osc = trk(ctx.createOscillator());
@@ -891,9 +1158,24 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.type = "lowpass";
         filter.frequency.setValueAtTime(p.helmCutoff, now);
 
+        // helmSubOct : niveau du sous-oscillateur. Il était mixé à plein
+        // niveau quelle que soit la valeur du contrôle.
+        const subGain = ctx.createGain();
+        subGain.gain.setValueAtTime((p.helmSubOct / 100) * 0.8, now);
+
+        // helmLfoSpeed : ondulation du cutoff, le "wobble" du module.
+        const lfo = trk(
+          attachLfo(ctx, filter.frequency, p.helmLfoSpeed, p.helmCutoff * 0.45, now)
+        );
+        noteStop(lfo, now + 1.0);
+
         osc.connect(filter);
-        sub.connect(filter);
+        sub.connect(subGain);
+        subGain.connect(filter);
         filter.connect(masterGain);
+
+        // helmReverb : envoi vers le convolveur partagé.
+        sendToReverb(filter, p.helmReverb);
 
         osc.start(now);
         sub.start(now);
@@ -904,21 +1186,62 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       } else if (p.activeEngine === "fluidsynth") {
         const osc1 = trk(ctx.createOscillator());
         const osc2 = trk(ctx.createOscillator());
+        const dur = 1.0;
         osc1.type = "triangle";
         osc2.type = "sine";
 
         osc1.frequency.setValueAtTime(detunedFreq, now);
         osc2.frequency.setValueAtTime(detunedFreq * 2, now);
 
-        osc1.connect(masterGain);
-        osc2.connect(masterGain);
+        // fluidChorus : deux voix légèrement désaccordées et retardées.
+        // C'est ce dédoublement qui fait l'épaisseur d'un Rhodes.
+        const chorusMix = ctx.createGain();
+        chorusMix.gain.setValueAtTime((p.fluidChorus / 100) * 0.6, now);
+        if (p.fluidChorus > 0) {
+          const voice = trk(ctx.createOscillator());
+          voice.type = "triangle";
+          voice.frequency.setValueAtTime(detunedFreq, now);
+          voice.detune.setValueAtTime(6 + (p.fluidChorus / 100) * 14, now);
+
+          const chorusDelay = ctx.createDelay(0.05);
+          chorusDelay.delayTime.setValueAtTime(0.012, now);
+          // Ondulation lente du retard : sans elle le chorus est statique.
+          const modLfo = trk(
+            attachLfo(ctx, chorusDelay.delayTime, 0.6, 0.003 * (p.fluidChorus / 100), now)
+          );
+          noteStop(modLfo, now + dur);
+
+          voice.connect(chorusDelay);
+          chorusDelay.connect(chorusMix);
+          voice.start(now);
+          noteStop(voice, now + dur);
+        }
+
+        // fluidVolume : niveau du module.
+        const level = ctx.createGain();
+        level.gain.setValueAtTime((p.fluidVolume / 100) * 1.1, now);
+
+        // fluidPan : placement stéréo, -100..+100 ramené à -1..+1.
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(Math.max(-1, Math.min(1, (p.fluidPan - 50) / 50)), now);
+
+        osc1.connect(level);
+        osc2.connect(level);
+        chorusMix.connect(level);
+        level.connect(panner);
+        panner.connect(masterGain);
+
+        // fluidReverb : envoi vers le convolveur partagé.
+        sendToReverb(panner, p.fluidReverb);
 
         osc1.start(now);
         osc2.start(now);
-        noteStop(osc1, now + 1.0);
-        noteStop(osc2, now + 1.0);
+        noteStop(osc1, now + dur);
+        noteStop(osc2, now + dur);
 
-        showToast(`🎹 FLUIDSYNTH [${p.fluidPreset}] : ${detunedFreq.toFixed(1)} Hz`);
+        showToast(
+          `🎹 FLUIDSYNTH [${p.fluidPreset}] rev ${p.fluidReverb}% · cho ${p.fluidChorus}%`
+        );
       } else if (p.activeEngine === "amsynth") {
         const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
@@ -930,16 +1253,44 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         filter.frequency.setValueAtTime(p.amCutoff, now);
         filter.Q.setValueAtTime((p.amReso / 100) * 12, now);
 
+        const dec = 0.2 + (p.amDecay / 100) * 1.2;
+
+        // amSubWave : le second VCO. Le module s'annonce "Dual VCO" mais
+        // n'en instanciait qu'un seul.
+        const sub2 = trk(ctx.createOscillator());
+        sub2.type = (p.amSubWave as OscillatorType) || "square";
+        sub2.frequency.setValueAtTime(detunedFreq / 2, now);
+        const subLevel = ctx.createGain();
+        subLevel.gain.setValueAtTime(0.45, now);
+        sub2.connect(subLevel);
+        subLevel.connect(filter);
+        sub2.start(now);
+        noteStop(sub2, now + dec);
+
+        // amLfoDepth : vibrato sur la hauteur des deux oscillateurs.
+        if (p.amLfoDepth > 0) {
+          const depth = (p.amLfoDepth / 100) * detunedFreq * 0.03;
+          const lfoA = trk(attachLfo(ctx, osc.frequency, 5.2, depth, now));
+          const lfoB = trk(attachLfo(ctx, sub2.frequency, 5.2, depth * 0.5, now));
+          noteStop(lfoA, now + dec);
+          noteStop(lfoB, now + dec);
+        }
+
         osc.connect(filter);
         filter.connect(masterGain);
 
-        const dec = 0.2 + (p.amDecay / 100) * 1.2;
         osc.start(now);
         noteStop(osc, now + dec);
 
         showToast(`🎛️ AMSYNTH Dual VCO : ${detunedFreq.toFixed(1)} Hz`);
       } else if (p.activeEngine === "amy_engine") {
         const partials = Math.min(16, p.amyPartialCount);
+        const dur = 0.8;
+
+        // amyFeedback : boucle de retour sur la somme des partiels.
+        const loop = buildFeedbackLoop(ctx, 0.011, p.amyFeedback, 6000);
+        loop.output.connect(masterGain);
+
         for (let i = 1; i <= partials; i++) {
           const osc = trk(ctx.createOscillator());
           const gain = ctx.createGain();
@@ -948,39 +1299,145 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
           gain.gain.setValueAtTime((0.3 / Math.pow(i, p.amySlope / 50)), now);
 
           osc.connect(gain);
-          gain.connect(masterGain);
+          gain.connect(loop.input);
           osc.start(now);
-          noteStop(osc, now + 0.8);
+          noteStop(osc, now + dur);
         }
 
-        showToast(`🎛️ AMY Additive C/JS : ${detunedFreq.toFixed(1)} Hz`);
+        // amyNoise : composante bruitee, le grain "chiptune" du module.
+        if (p.amyNoise > 0) {
+          const len = Math.max(1, Math.floor(ctx.sampleRate * dur));
+          const nb = ctx.createBuffer(1, len, ctx.sampleRate);
+          const nd = nb.getChannelData(0);
+          for (let i = 0; i < len; i++) nd[i] = Math.random() * 2 - 1;
+
+          const noise = trk(ctx.createBufferSource());
+          noise.buffer = nb;
+          const nGain = ctx.createGain();
+          nGain.gain.setValueAtTime((p.amyNoise / 100) * 0.18, now);
+          // Bruit filtre autour de la fondamentale, sinon il masque le spectre.
+          const nFilter = ctx.createBiquadFilter();
+          nFilter.type = "bandpass";
+          nFilter.frequency.setValueAtTime(detunedFreq * 2, now);
+          nFilter.Q.setValueAtTime(1.2, now);
+
+          noise.connect(nFilter);
+          nFilter.connect(nGain);
+          nGain.connect(loop.input);
+          noise.start(now);
+          noteStop(noise, now + dur);
+        }
+
+        showToast(
+          `🎛️ AMY ${partials} partiels · fb ${p.amyFeedback}% · bruit ${p.amyNoise}%`
+        );
       } else if (p.activeEngine === "pl_synth") {
+        // Moteur chiptune complet. Avant : une onde carrée nue, ses cinq
+        // contrôles n'avaient aucun effet.
         const osc = trk(ctx.createOscillator());
-        osc.type = "square";
-        osc.frequency.setValueAtTime(detunedFreq, now);
 
-        osc.connect(masterGain);
+        // plDutyCycle : rapport cyclique variable via onde de Fourier.
+        // Un OscillatorNode "square" est figé à 50 %.
+        osc.setPeriodicWave(buildPulseWave(ctx, p.plDutyCycle));
+
+        // plArpSpeed : arpège montant sur l'accord parfait majeur.
+        // 0 = note tenue.
+        const dur = 0.6;
+        if (p.plArpSpeed > 0) {
+          const stepSec = 1 / Math.max(1, p.plArpSpeed);
+          const ratios = [1, 1.25, 1.5, 2]; // fondamentale, tierce, quinte, octave
+          let t = now;
+          let i = 0;
+          while (t < now + dur) {
+            osc.frequency.setValueAtTime(detunedFreq * ratios[i % ratios.length], t);
+            t += stepSec;
+            i++;
+          }
+        } else {
+          osc.frequency.setValueAtTime(detunedFreq, now);
+        }
+
+        // plBitcrush : quantification. 16 bits ≈ transparent, 1-2 bits détruit.
+        const crusher = ctx.createWaveShaper();
+        crusher.curve = buildBitcrushCurve(p.plBitcrush);
+        crusher.oversample = "none";
+
+        // plSampleRateDiv : la décimation exacte demanderait un
+        // AudioWorklet. Approchée ici par un passe-bas au repliement
+        // équivalent — même assombrissement, sans le coût d'un worklet.
+        const decimate = ctx.createBiquadFilter();
+        decimate.type = "lowpass";
+        const div = Math.max(1, p.plSampleRateDiv);
+        decimate.frequency.setValueAtTime(
+          Math.min(ctx.sampleRate / 2, 18000 / div),
+          now
+        );
+        decimate.Q.setValueAtTime(0.7, now);
+
+        // plGlitch : sauts de hauteur aléatoires, façon puce qui décroche.
+        if (p.plGlitch > 0) {
+          const count = Math.floor((p.plGlitch / 100) * 12);
+          for (let g = 0; g < count; g++) {
+            const at = now + Math.random() * dur;
+            const jump = 1 + (Math.random() - 0.5) * (p.plGlitch / 60);
+            osc.frequency.setValueAtTime(detunedFreq * jump, at);
+          }
+        }
+
+        osc.connect(crusher);
+        crusher.connect(decimate);
+        decimate.connect(masterGain);
+
         osc.start(now);
-        noteStop(osc, now + 0.6);
+        noteStop(osc, now + dur);
 
-        showToast(`🕹️ PL_SYNTH 8-Bit Chiptune : ${detunedFreq.toFixed(1)} Hz`);
+        showToast(
+          `🕹️ PL_SYNTH ${p.plBitcrush}bit /${div} · duty ${p.plDutyCycle}% : ${detunedFreq.toFixed(1)} Hz`
+        );
       } else if (p.activeEngine === "faust_dsp") {
+        // Le module annonçait "Wavefolder" mais ne repliait rien : dent de
+        // scie dans un passe-bas, quatre contrôles sur cinq inertes.
         const osc = trk(ctx.createOscillator());
         const filter = ctx.createBiquadFilter();
+        const dur = 0.8;
 
         osc.type = "sawtooth";
         osc.frequency.setValueAtTime(detunedFreq, now);
 
+        // faustFreqMod : modulation de fréquence par LFO audio.
+        const fmLfo = trk(
+          attachLfo(ctx, osc.frequency, detunedFreq * 0.5, (p.faustFreqMod / 100) * detunedFreq * 0.6, now)
+        );
+        noteStop(fmLfo, now + dur);
+
+        // faustDrive : repliement d'onde. L'amplitude qui dépasse ne
+        // sature pas, elle se replie et génère des harmoniques.
+        const folder = ctx.createWaveShaper();
+        folder.curve = buildSaturationCurve(p.faustDrive, "fold");
+        folder.oversample = "4x";
+
         filter.type = "lowpass";
         filter.frequency.setValueAtTime(p.faustFilter, now);
 
-        osc.connect(filter);
-        filter.connect(masterGain);
+        // faustFeedback : boucle de retour amortie après le repliement.
+        const loop = buildFeedbackLoop(ctx, 0.018, p.faustFeedback, 4200);
+
+        // faustGain : niveau de sortie du module.
+        const outGain = ctx.createGain();
+        outGain.gain.setValueAtTime(0.25 + (p.faustGain / 100) * 0.9, now);
+
+        osc.connect(folder);
+        folder.connect(filter);
+        filter.connect(loop.input);
+        loop.output.connect(outGain);
+        outGain.connect(masterGain);
 
         osc.start(now);
-        noteStop(osc, now + 0.8);
+        noteStop(osc, now + dur);
 
-        showToast(`🎛️ FAUST DSP Wavefolder : ${detunedFreq.toFixed(1)} Hz`);
+        showToast(
+          `🎛️ FAUST fold ${p.faustDrive}% · fb ${p.faustFeedback}% : ${detunedFreq.toFixed(1)} Hz`
+        );
       }
 
       // Sortie vers le bus persistant (et donc l'analyseur), plus vers
