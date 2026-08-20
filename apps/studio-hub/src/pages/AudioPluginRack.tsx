@@ -512,7 +512,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     env: GainNode;
     release: number;
     sources: AudioScheduledSourceNode[];
-    naturalEnd: number; // instant d'arrêt prévu par le moteur
+    naturalEnd: number; // dernier arrêt de source
   };
   const voicesRef = useRef<Map<string, Voice>>(new Map());
 
@@ -796,10 +796,21 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         sources.push(node);
         return node;
       };
-      // Instant d'arrêt le plus tardif programmé par le moteur.
+      // Deux horizons distincts, à ne pas confondre :
+      //  - naturalEnd : dernier arrêt de source.
+      //  - audibleEnd : fin du son perçu.
+      // Ils diffèrent dès qu'un moteur continue de sonner après l'extinction
+      // de sa source — résonateur de Rings excité par 20 ms de bruit, boucles
+      // de retour de clouds/faust/amy. Caler l'enveloppe sur naturalEnd
+      // étranglait ces moteurs avant qu'ils ne sonnent.
       let naturalEnd = now;
+      let audibleEnd = now + 0.3; // plancher
+      const holdUntil = (t: number) => {
+        audibleEnd = Math.max(audibleEnd, t);
+      };
       const noteStop = (node: AudioScheduledSourceNode, when: number) => {
         naturalEnd = Math.max(naturalEnd, when);
+        holdUntil(when);
         node.stop(when);
       };
 
@@ -827,6 +838,9 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
       // Envoi vers la réverbération partagée. `amount` en 0-100.
       const sendToReverb = (source: AudioNode, amount: number) => {
         if (!reverbRef.current || amount <= 0) return;
+        // La réverbération prolonge le son : sans ça l'enveloppe coupe la
+        // queue au moment où la source s'arrête.
+        holdUntil(now + 1.2 + (amount / 100) * 1.4);
         const send = ctx.createGain();
         send.gain.setValueAtTime((amount / 100) * 0.5, now);
         source.connect(send);
@@ -953,6 +967,10 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         voiceMix.connect(masterGain);
 
+        // Le résonateur sonne longtemps après l'impulsion de 20 ms : la durée
+        // dépend de l'amortissement, qui fixe le gain de rebouclage.
+        holdUntil(now + 0.6 + (1 - p.ringsDamping / 100) * 2.6);
+
         noise.start(now);
         noteStop(noise, now + 0.02);
 
@@ -971,6 +989,8 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         // cloudsFeedback : boucle de retour, la queue diffuse du module.
         const loop = buildFeedbackLoop(ctx, 0.09, p.cloudsFeedback, 3600);
+        // La boucle prolonge le son bien après le dernier grain.
+        holdUntil(now + dur + (p.cloudsFeedback / 100) * 2.2);
         filter.connect(loop.input);
         loop.output.connect(masterGain);
 
@@ -1302,6 +1322,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         // amyFeedback : boucle de retour sur la somme des partiels.
         const loop = buildFeedbackLoop(ctx, 0.011, p.amyFeedback, 6000);
+        holdUntil(now + dur + (p.amyFeedback / 100) * 1.1);
         loop.output.connect(masterGain);
 
         for (let i = 1; i <= partials; i++) {
@@ -1434,6 +1455,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
         // faustFeedback : boucle de retour amortie après le repliement.
         const loop = buildFeedbackLoop(ctx, 0.018, p.faustFeedback, 4200);
+        holdUntil(now + dur + (p.faustFeedback / 100) * 1.4);
 
         // faustGain : niveau de sortie du module.
         const outGain = ctx.createGain();
@@ -1461,18 +1483,18 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
         // relâchement, qui programmera la rampe de release.
         voicesRef.current.set(voiceId, { env, release: RELEASE, sources, naturalEnd });
       } else {
-        // Note ponctuelle : release programmé pour se terminer avant l'arrêt
-        // des sources, sinon la coupure brutale réintroduit un clic.
-        const at = Math.max(now + ATTACK + 0.01, naturalEnd - RELEASE);
+        // Note ponctuelle : release calé sur la fin du son perçu, pas sur
+        // l'arrêt des sources.
+        const at = Math.max(now + ATTACK + DECAY + 0.01, audibleEnd - RELEASE);
         env.gain.setValueAtTime(SUSTAIN, at);
-        env.gain.exponentialRampToValueAtTime(0.0001, naturalEnd);
+        env.gain.exponentialRampToValueAtTime(0.0001, at + RELEASE);
         window.setTimeout(() => {
           try {
             env.disconnect();
           } catch {
             /* déjà détachée */
           }
-        }, (naturalEnd - now + 0.4) * 1000);
+        }, (audibleEnd - now + 0.6) * 1000);
       }
     } catch (e) {
       log.error("Audio error:", e);
