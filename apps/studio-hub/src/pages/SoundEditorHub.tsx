@@ -600,12 +600,11 @@ export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE" }: { pro
         type="button"
         className={`drawer-trigger-tab tab-right-op1 ${isOp1DrawerOpen ? "drawer-tab-active" : ""}`}
         onClick={() => {
-          setIsOp1DrawerOpen(!isOp1DrawerOpen);
-          if (isEp133DrawerOpen) setIsEp133DrawerOpen(false);
+          (window as any).navigateMaquette("backup-lab");
         }}
-        title="Ouvrir le panneau Sauvegarde & Transfert OP-1"
+        title="Ouvrir la page centrale de sauvegarde OP-1 et EP-133"
       >
-        <span>🎹 SAUVEGARDE & TRANSFERT OP-1</span>
+        <span>🎹 BACKUP LAB OP-1 / EP-133</span>
       </button>
 
       {/* MAIN CONTAINER */}
