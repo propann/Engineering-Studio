@@ -44,6 +44,8 @@ export default function CharacterPage() {
   const [bio, setBio] = useState("Inventeur de machines musicales et explorateur de fréquences.");
   const [avatar, setAvatar] = useState<(typeof avatarNames)[number]>("engineer");
   const [workspace, setWorkspace] = useState("");
+  const [workspaceDirHandle, setWorkspaceDirHandle] = useState<any>(null); // File System Access API handle
+  const [workspaceFiles, setWorkspaceFiles] = useState<string[]>([]); // Files in workspace
   const [language, setLanguage] = useState("FR");
   const [keyboard, setKeyboard] = useState("AZERTY");
   const [theme, setTheme] = useState("PIXEL");
@@ -60,6 +62,23 @@ export default function CharacterPage() {
     { id: 102, name: "CLÉ USB BACKUP OP-1", type: "usb_drive", capacityGb: 32, mountPath: "/Volumes/OP1_BACKUP", status: "mounted", active: true },
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
+
+  // Scan workspace folder for files
+  const scanWorkspaceFolder = async (dirHandle: any) => {
+    try {
+      const files: string[] = [];
+      for await (const entry of dirHandle.entries()) {
+        const [name, handle] = entry;
+        if (handle.kind === "file") {
+          files.push(name);
+        }
+      }
+      log.info("✅ Workspace scanned", { files: files.length });
+      setWorkspaceFiles(files);
+    } catch (error) {
+      log.warn("Failed to scan workspace folder", error);
+    }
+  };
 
   // Workspace picker - Primary: File System Access API, Fallback: webkitdirectory
   const pickWorkspaceFolder = async () => {
@@ -90,7 +109,10 @@ export default function CharacterPage() {
           kind: dirHandle.kind,
           elapsed: `${elapsed.toFixed(2)}ms`,
         });
+
+        // Store the directory handle for file operations
         setWorkspace(name);
+        setWorkspaceDirHandle(dirHandle);
 
         // Create subdirectories
         const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
@@ -107,6 +129,10 @@ export default function CharacterPage() {
             }
           }
         }
+
+        // Scan the folder for existing files
+        await scanWorkspaceFolder(dirHandle);
+
         log.info("Workspace setup complete", { path: name, foldersCreated: createdCount });
         return;
       } catch (error) {
@@ -157,6 +183,14 @@ export default function CharacterPage() {
           filesCount: input.files.length,
         });
         setWorkspace(folderName);
+        setWorkspaceDirHandle(null); // No handle in fallback mode
+
+        // List files
+        const files: string[] = [];
+        for (let i = 0; i < input.files.length; i++) {
+          files.push(input.files[i].name);
+        }
+        setWorkspaceFiles(files);
       }
     });
 
@@ -172,17 +206,32 @@ export default function CharacterPage() {
     else pickWorkspaceFolder();
   };
 
+  // Load existing profile from localStorage or workspace
+  const loadProfile = async (profileData: any) => {
+    try {
+      if (profileData.name) setName(profileData.name);
+      if (profileData.bio) setBio(profileData.bio);
+      if (profileData.avatar && avatarNames.includes(profileData.avatar)) setAvatar(profileData.avatar);
+      if (profileData.workspace?.name) setWorkspace(profileData.workspace.name);
+      if (profileData.drives?.length) setDrives(profileData.drives);
+      if (profileData.machineInventory?.length) setMachines(profileData.machineInventory);
+      log.info("✅ Profile loaded", { name: profileData.name });
+    } catch (error) {
+      log.error("Failed to load profile", error);
+    }
+  };
+
   useEffect(() => {
     try {
+      // First, try to load from localStorage
       const raw = localStorage.getItem("studio-hub-profile");
-      if (!raw) return;
-      const profile = JSON.parse(raw);
-      if (profile.name) setName(profile.name);
-      if (profile.bio) setBio(profile.bio);
-      if (profile.avatar && avatarNames.includes(profile.avatar)) setAvatar(profile.avatar);
-      if (profile.workspace?.name) setWorkspace(profile.workspace.name);
-      if (profile.drives?.length) setDrives(profile.drives);
-    } catch {}
+      if (raw) {
+        const profile = JSON.parse(raw);
+        loadProfile(profile);
+      }
+    } catch (error) {
+      log.warn("Failed to load from localStorage", error);
+    }
   }, []);
 
   const progress = useMemo(
@@ -244,26 +293,52 @@ export default function CharacterPage() {
     setDrives((list) => list.filter((d) => d.id !== id));
   }
 
-  function saveProfile() {
+  async function saveProfile() {
     const active = machines.filter((machine) => machine.active);
     const summary = {
       op1: { enabled: active.some((machine) => machine.kind === "op1"), backups: 0, projects: 0, samples: 0, trainingProgress: 0 },
       ep133: { enabled: active.some((machine) => machine.kind === "ep133"), backups: 0, projects: 0, samples: 0, trainingProgress: 0 },
     };
-    localStorage.setItem(
-      "studio-hub-profile",
-      JSON.stringify({
-        version: 1,
-        name: name.trim(),
-        avatar,
-        bio: bio.trim(),
-        machines: summary,
-        machineInventory: machines,
-        drives,
-        workspace: workspace ? { name: workspace, folders: [] } : undefined,
-        createdAt: new Date().toISOString(),
-      })
-    );
+
+    const profileData = {
+      version: 1,
+      name: name.trim(),
+      avatar,
+      bio: bio.trim(),
+      machines: summary,
+      machineInventory: machines,
+      drives,
+      workspace: workspace ? { name: workspace, folders: workspaceFiles } : undefined,
+      savedAt: new Date().toISOString(),
+    };
+
+    // 1. Save to localStorage (always)
+    localStorage.setItem("studio-hub-profile", JSON.stringify(profileData));
+    log.info("✅ Profile saved to localStorage");
+
+    // 2. Try to save to workspace folder (if available)
+    if (workspaceDirHandle) {
+      try {
+        log.info("Saving profile to workspace folder...");
+        const fileName = `profile_${name.replace(/\s+/g, "_").toUpperCase()}.json`;
+        const fileHandle = await workspaceDirHandle.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify(profileData, null, 2));
+        await writable.close();
+
+        log.info("✅ Profile saved to workspace folder", { fileName });
+        alert(`✅ Fiche enregistrée!\n\nNom: ${name}\nDossier: ${workspace}\nFichier: ${fileName}`);
+
+        // Refresh file list
+        await scanWorkspaceFolder(workspaceDirHandle);
+      } catch (error) {
+        log.error("❌ Failed to save profile to workspace", error);
+        alert(`⚠️ Profil sauvegardé en local, mais pas dans le dossier.\n\nErreur: ${(error as any)?.message}`);
+      }
+    } else {
+      log.info("No workspace handle available, profile saved to localStorage only");
+      alert(`✅ Fiche enregistrée en local!\n\nNom: ${name}\n\nℹ️ Choisir un dossier de sauvegarde pour enregistrer dans le système de fichiers.`);
+    }
   }
 
   return (
@@ -464,6 +539,25 @@ export default function CharacterPage() {
                 </div>
                 <button onClick={toggleWorkspace}>{workspace ? "CHANGER DOSSIER" : "CHOISIR UN DOSSIER"}</button>
               </div>
+
+              {/* Show files in workspace */}
+              {workspace && workspaceFiles.length > 0 && (
+                <div className="workspace-files-list">
+                  <small>FICHIERS SAUVEGARDÉS ({workspaceFiles.length})</small>
+                  <ul>
+                    {workspaceFiles.map((file, idx) => (
+                      <li key={idx}>
+                        📄 {file}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {workspace && workspaceFiles.length === 0 && (
+                <div className="workspace-empty">
+                  <small>DOSSIER VIDE · AUCUNE SAUVEGARDE</small>
+                </div>
+              )}
             </div>
           </section>
 
