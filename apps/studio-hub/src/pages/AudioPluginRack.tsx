@@ -299,6 +299,7 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
   const [midiConnected, setMidiConnected] = useState<boolean>(false);
+  const [midiDeviceName, setMidiDeviceName] = useState<string>("");
   const [activeKeyNote, setActiveKeyNote] = useState<string | null>(null);
 
   // USER CUSTOM SAVED PATCHES PERSISTED IN LOCALSTORAGE
@@ -617,19 +618,13 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     for (const id of Array.from(voicesRef.current.keys())) releaseVoice(id);
   };
 
-  // AUDITION / SOUND PREVIEW TRIGGER (PLAY SHORT NOTE ON ADJUSTMENT)
-  const triggerAuditionNote = (freq: number = 261.63) => {
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
-      playPluginNote(freq);
-    }, 60);
-  };
-
   // HELPER TO UPDATE A PARAMETER SYNCHRONOUSLY IN BOTH REF AND STATE + TRIGGER AUDITION
+  // Réglage d'un paramètre. Volontairement silencieux : déclencher une note
+  // à chaque mouvement de curseur rendait le réglage impraticable.
+  // Pour écouter, on joue une touche.
   const updateParam = (key: string, val: any, setter: (v: any) => void) => {
     (paramsRef.current as any)[key] = val;
     setter(val);
-    triggerAuditionNote(261.63);
   };
 
   // SAVE CUSTOM USER PATCH TO LOCALSTORAGE
@@ -657,7 +652,6 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     setShowSaveModal(false);
     setSelectedPatchId(newPatch.id);
     showToast(`💾 NOUVEAU PATCH ENREGISTRÉ : ${newPatch.name.toUpperCase()}`);
-    triggerAuditionNote(261.63);
   };
 
   // APPLY PATCH PRESET WITH SYNCHRONOUS REF UPDATE & SOUND AUDITION
@@ -773,8 +767,6 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
     }
 
     showToast(`🎵 PATCH CHARGÉ : ${patch.name.toUpperCase()}`);
-    // TRIGGER LIVE SOUND AUDITION IMMEDIATELY ON PATCH SELECTION
-    triggerAuditionNote(261.63);
   };
 
   // REAL-TIME DSP SYNTHESIS FOR ALL 15 ENGINES
@@ -1503,27 +1495,58 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
   // WEB MIDI & PC KEYBOARD EVENT LISTENERS
   useEffect(() => {
-    // 1. Web MIDI Setup
-    if (navigator.requestMIDIAccess) {
-      navigator.requestMIDIAccess().then((midi) => {
-        setMidiConnected(midi.inputs.size > 0);
-        const inputs = midi.inputs.values();
-        for (const input of inputs) {
-          input.onmidimessage = (msg: any) => {
-            const [command, note, velocity] = msg.data;
-            const kind = command & 0xf0; // ignore le canal MIDI
-            const voiceId = `midi:${note}`;
-            if (kind === 0x90 && velocity > 0) {
-              const freq = 440 * Math.pow(2, (note - 69) / 12);
-              playPluginNote(freq, voiceId);
-            } else if (kind === 0x80 || (kind === 0x90 && velocity === 0)) {
-              // 0x80 = note-off ; 0x90 vélocité 0 = note-off déguisé,
-              // que beaucoup de claviers envoient à la place.
-              releaseVoice(voiceId);
-            }
-          };
+    // 1. Web MIDI
+    //
+    // requestMIDIAccess ne liste que les appareils présents à l'instant T.
+    // Sans onstatechange, brancher l'OP-1 après le chargement de la page
+    // n'aurait aucun effet.
+    let midiAccess: any = null;
+
+    const bindInput = (input: any) => {
+      input.onmidimessage = (msg: any) => {
+        const [command, note, velocity] = msg.data;
+        const kind = command & 0xf0; // ignore le canal MIDI
+        const voiceId = `midi:${note}`;
+        if (kind === 0x90 && velocity > 0) {
+          const freq = 440 * Math.pow(2, (note - 69) / 12);
+          playPluginNote(freq, voiceId);
+        } else if (kind === 0x80 || (kind === 0x90 && velocity === 0)) {
+          // 0x80 = note-off ; 0x90 vélocité 0 = note-off déguisé, que
+          // beaucoup de claviers envoient à la place.
+          releaseVoice(voiceId);
         }
-      }).catch(() => {});
+      };
+    };
+
+    const refreshInputs = () => {
+      if (!midiAccess) return;
+      const names: string[] = [];
+      midiAccess.inputs.forEach((input: any) => {
+        bindInput(input);
+        if (input.name) names.push(input.name);
+      });
+      setMidiConnected(names.length > 0);
+      setMidiDeviceName(names.join(" · "));
+      log.info("MIDI inputs", { count: names.length, names });
+    };
+
+    if (navigator.requestMIDIAccess) {
+      navigator
+        .requestMIDIAccess()
+        .then((access) => {
+          midiAccess = access;
+          refreshInputs();
+          // Branchement / débranchement à chaud.
+          (access as any).onstatechange = (e: any) => {
+            log.info("MIDI state change", { port: e?.port?.name, state: e?.port?.state });
+            refreshInputs();
+          };
+        })
+        .catch((error) => {
+          log.warn("requestMIDIAccess refusé", error);
+        });
+    } else {
+      log.warn("Web MIDI indisponible sur ce navigateur");
     }
 
     // 2. PC Computer Keyboard Fallback (A, W, S, E, D, F, T, G, Y, H, U, J, K)
@@ -1782,7 +1805,6 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
                     onClick={() => {
                       setActiveEngine(e.id);
                       if (allPatchesForEngine.length > 0) applyPatch(allPatchesForEngine[0]);
-                      else triggerAuditionNote(261.63);
                     }}
                   >
                     <span className="engine-dot" />
@@ -1835,7 +1857,6 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
                     onClick={() => {
                       setActiveEngine(e.id);
                       if (allPatchesForEngine.length > 0) applyPatch(allPatchesForEngine[0]);
-                      else triggerAuditionNote(261.63);
                     }}
                   >
                     <span className="engine-dot" />
@@ -1896,9 +1917,13 @@ export default function AudioPluginRack({ profileName = "AZOTH", onClose }: { pr
 
               <div className="input-source-badge">
                 {midiConnected ? (
-                  <span className="badge-connected">🎹 MIDI / OP-1 / EP-133 CONNECTÉ</span>
+                  <span className="badge-connected">
+                    🎹 {midiDeviceName || "MIDI"} CONNECTÉ · CLAVIER PC ACTIF
+                  </span>
                 ) : (
-                  <span className="badge-keyboard">⌨️ CLAVIER PC (A, S, D, F...) & MIDI ACTIF</span>
+                  <span className="badge-keyboard">
+                    ⌨️ CLAVIER PC (A W S E D F T G Y H U J K) · AUCUN MIDI DÉTECTÉ
+                  </span>
                 )}
               </div>
 
