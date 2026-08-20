@@ -50,6 +50,7 @@ export function StudioTapeScreen({
   looping,
   loopIn = 0,
   loopOut = 360,
+  tempo = 90,
 }: {
   clips: Record<number, TapeClip | undefined>;
   position: number;
@@ -58,10 +59,34 @@ export function StudioTapeScreen({
   looping: boolean;
   loopIn?: number;
   loopOut?: number;
+  tempo?: number;
 }) {
   // Rotation des bobines : ~1 tour toutes les 8 secondes
   const reelAngle = (position * 360) / 8;
   const playX = secToX(position);
+
+  // Repères de mesure dynamiques calés sur le tempo
+  const beatSec = 60 / Math.max(30, tempo);
+  const visibleMeasures = (() => {
+    const list: Array<{ x: number; isBar: boolean; barNumber: number }> = [];
+    const stepRatio = (beatSec / TAPE_DURATION) * TAPE_SPAN;
+    let stride = 1;
+    if (stepRatio < 3) stride = 4;
+    if (stepRatio < 0.75) stride = 16;
+    if (stepRatio < 0.2) stride = 32;
+
+    const totalBeats = Math.floor(TAPE_DURATION / beatSec);
+    for (let b = 0; b <= totalBeats; b += stride) {
+      const sec = b * beatSec;
+      if (sec > TAPE_DURATION) break;
+      list.push({
+        x: secToX(sec),
+        isBar: b % 4 === 0,
+        barNumber: Math.floor(b / 4) + 1,
+      });
+    }
+    return list;
+  })();
 
   return (
     <div className="studio-tape-screen" aria-label="Écran Tape OP-1">
@@ -124,15 +149,52 @@ export function StudioTapeScreen({
         </g>
         <line x1="243.062" y1="94.096" x2="254.666" y2="59.17" stroke="#656579" strokeWidth="1.5" />
 
-        {/* ── Ligne de boucle (verte) ───────────────────────────────────── */}
-        <line x1="0" y1="122.969" x2="320" y2="122.969" stroke="#656579" strokeWidth="1.5" strokeLinecap="square" />
-        {looping ? (
-          <line x1={secToX(loopIn)} y1="122.969" x2={secToX(loopOut)} y2="122.969" stroke="#00ED95" strokeWidth="2" />
-        ) : (
-          <line x1="0" y1="122.969" x2="320" y2="122.969" stroke="#00ED95" strokeWidth="2" />
+        {/* ── Repères de mesure dynamiques calés sur le tempo ────────── */}
+        <g opacity="0.45">
+          {visibleMeasures.map((m, idx) => (
+            <g key={idx}>
+              <line
+                x1={m.x}
+                y1={m.isBar ? "118" : "120.5"}
+                x2={m.x}
+                y2={m.isBar ? "125.5" : "123.5"}
+                stroke={m.isBar ? "#00ED95" : "#656579"}
+                strokeWidth={m.isBar ? "1.2" : "0.8"}
+              />
+              {m.isBar && m.barNumber % 2 === 1 && (
+                <text
+                  x={m.x}
+                  y="116"
+                  textAnchor="middle"
+                  fill="#00ED95"
+                  fontSize="4"
+                  fontFamily="monospace"
+                  opacity="0.8"
+                >
+                  {m.barNumber}
+                </text>
+              )}
+            </g>
+          ))}
+        </g>
+
+        {/* ── Ligne de boucle (verte) & Région active ───────────────────── */}
+        <line x1="0" y1="122.969" x2="320" y2="122.969" stroke="#2a353d" strokeWidth="2" strokeLinecap="square" />
+        {looping && (
+          <>
+            <rect
+              x={Math.min(secToX(loopIn), secToX(loopOut))}
+              y="121.5"
+              width={Math.max(1, Math.abs(secToX(loopOut) - secToX(loopIn)))}
+              height="3"
+              fill="#00ED95"
+              opacity="0.35"
+            />
+            <line x1={secToX(loopIn)} y1="122.969" x2={secToX(loopOut)} y2="122.969" stroke="#00ED95" strokeWidth="2.5" />
+          </>
         )}
-        <circle cx={looping ? secToX(loopIn) : 160} cy="122.969" r="2.5" fill="#00ED95" />
-        <circle cx={looping ? secToX(loopOut) : 160} cy="122.969" r="2.5" fill="#00ED95" />
+        <circle cx={secToX(loopIn)} cy="122.969" r="2.5" fill="#00ED95" stroke="#fff" strokeWidth="0.5" />
+        <circle cx={secToX(loopOut)} cy="122.969" r="2.5" fill="#00ED95" stroke="#fff" strokeWidth="0.5" />
 
         {/* ── Graduations de la bande ───────────────────────────────────── */}
         {([17.062, 72.425, 127.788, 183.15, 238.514, 293.877] as const).map((x) => (

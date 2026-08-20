@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode } from "react";
+import { TrackContextMenu } from "./TrackContextMenu";
 
-type TrackIcon = (props: { name: "check" | "download" | "wave"; size?: number }) => ReactNode;
+type TrackIcon = (props: { name: "check" | "download" | "wave" | "settings"; size?: number }) => ReactNode;
 
 // Couleurs TE réelles par piste (même ordre que StudioTapeScreen)
 const TRACK_COLORS = ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"] as const;
@@ -94,6 +95,9 @@ export function StudioTrackList({
   onTrackEnd,
   onOffsetChange,
   onSelectTrack,
+  onExportTrack,
+  onClearTrack,
+  onEditTrim,
 }: {
   Icon: TrackIcon;
   tracks: string[];
@@ -117,9 +121,39 @@ export function StudioTrackList({
   onTrackEnd: () => void;
   onOffsetChange: (index: number, offset: number) => void;
   onSelectTrack: (index: number) => void;
+  onExportTrack?: (index: number) => void;
+  onClearTrack?: (index: number) => void;
+  onEditTrim?: (index: number) => void;
 }) {
+  const [contextMenu, setContextMenu] = useState<{
+    trackIndex: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const fileInputsRef = useRef<Record<number, HTMLInputElement | null>>({});
+
   return (
-    <div className="tape-track-list">
+    <div className="tape-track-list" style={{ position: "relative" }}>
+      {/* Hidden file inputs triggerable only via explicit import action */}
+      <div style={{ display: "none" }}>
+        {tracks.map((_, i) => (
+          <input
+            key={i}
+            ref={(el) => {
+              fileInputsRef.current[i] = el;
+            }}
+            type="file"
+            accept="audio/*,.wav,.aif,.aiff,.mp3"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onFileLoad(i, file);
+              event.currentTarget.value = "";
+            }}
+          />
+        ))}
+      </div>
+
       {tracks.map((track, index) => {
         const isMuted = muted[index] === true || (solo !== null && solo !== index);
         const isSelected = selectedTrack === index;
@@ -159,9 +193,35 @@ export function StudioTrackList({
             onTrackEnd={onTrackEnd}
             onOffsetChange={(o) => onOffsetChange(index, o)}
             onSelect={() => onSelectTrack(index)}
+            onOpenMenu={(x, y) => setContextMenu({ trackIndex: index, x, y })}
           />
         );
       })}
+
+      {/* Menu contextuel Piste sur clic central / clic droit / bouton ⋮ */}
+      {contextMenu !== null && (
+        <TrackContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          trackIndex={contextMenu.trackIndex}
+          trackLabel={tracks[contextMenu.trackIndex]}
+          color={TRACK_COLORS[contextMenu.trackIndex]}
+          hasFile={Boolean(files[contextMenu.trackIndex])}
+          fileName={files[contextMenu.trackIndex]}
+          duration={durations[contextMenu.trackIndex]}
+          onImport={() => {
+            fileInputsRef.current[contextMenu.trackIndex]?.click();
+          }}
+          onExport={() => {
+            onExportTrack?.(contextMenu.trackIndex);
+          }}
+          onEditTrim={onEditTrim ? () => onEditTrim(contextMenu.trackIndex) : undefined}
+          onClear={() => {
+            onClearTrack?.(contextMenu.trackIndex);
+          }}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -193,6 +253,7 @@ function TrackLane({
   onTrackEnd,
   onOffsetChange,
   onSelect,
+  onOpenMenu,
 }: {
   label: string;
   index: number;
@@ -220,6 +281,7 @@ function TrackLane({
   onTrackEnd: () => void;
   onOffsetChange: (offset: number) => void;
   onSelect: () => void;
+  onOpenMenu: (x: number, y: number) => void;
 }) {
   const laneRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startX: number; startOffset: number } | null>(null);
@@ -227,6 +289,7 @@ function TrackLane({
 
   // Drag du clip pour repositionner l'offset
   function handleClipPointerDown(event: React.PointerEvent) {
+    if (event.button !== 0) return; // Ne drag que sur clic gauche
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { startX: event.clientX, startOffset: offset };
@@ -255,7 +318,25 @@ function TrackLane({
     event.preventDefault();
     setIsDragOver(false);
     const file = event.dataTransfer.files[0];
-    if (file && file.type.startsWith("audio/")) onFileLoad(file);
+    if (file && (file.type.startsWith("audio/") || file.name.match(/\.(wav|aif|aiff|mp3)$/i))) {
+      onFileLoad(file);
+    }
+  }
+
+  // Intercepte clic central (bouton 1) ou clic droit (contextmenu) pour ouvrir le menu
+  function handleMouseDown(e: React.MouseEvent) {
+    if (e.button === 1) {
+      // Clic bouton central
+      e.preventDefault();
+      e.stopPropagation();
+      onOpenMenu(e.clientX, e.clientY);
+    }
+  }
+
+  function handleContextMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    onOpenMenu(e.clientX, e.clientY);
   }
 
   // Position et largeur du clip en % de la piste
@@ -266,14 +347,31 @@ function TrackLane({
     <div
       className={`tape-track-lane${isSelected ? " is-selected" : ""}${isMuted ? " is-muted" : ""}${isDragOver ? " is-drag-over" : ""}`}
       style={{ "--track-color": color } as React.CSSProperties}
-      onClick={onSelect}
+      onClick={(e) => {
+        // Clic gauche : uniquement sélectionner la piste
+        if (e.button === 0) onSelect();
+      }}
+      onMouseDown={handleMouseDown}
+      onContextMenu={handleContextMenu}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Étiquette gauche */}
-      <div className="track-lane-label">
-        <span className="track-lane-index" style={{ background: color, color: index === 2 ? "#111" : "#fff" }}>
+      <div
+        className="track-lane-label"
+        style={{ cursor: "pointer" }}
+        title="Clic gauche : Sélectionner piste · Clic central / droit : Menu Import/Export"
+      >
+        <span
+          className="track-lane-index"
+          style={{ background: color, color: index === 2 ? "#111" : "#fff", cursor: "pointer" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
+          title="Sélectionner la piste"
+        >
           {index + 1}
         </span>
         <div className="track-lane-info">
@@ -326,29 +424,34 @@ function TrackLane({
           </div>
         )}
 
-        {/* Zone de drop vide */}
+        {/* Indicateur visuel discret quand piste vide (sans ouvrir de sélecteur sur clic gauche) */}
         {!hasFile && (
-          <label className="track-lane-drop">
-            <Icon name="download" size={13} />
-            <span>Déposer un fichier audio ou cliquer</span>
-            <input
-              type="file"
-              accept="audio/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) onFileLoad(file);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              color: "#3e4f4c",
+              fontSize: "9px",
+              fontFamily: "monospace",
+              pointerEvents: "none",
+            }}
+          >
+            <Icon name="wave" size={12} />
+            <span>Glisser-déposer un fichier audio ou clic central / menu ⋮</span>
+          </div>
         )}
       </div>
 
       {/* Contrôles droite */}
-      <div className="track-lane-controls">
+      <div className="track-lane-controls" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
         <button
           className={`icon-action${isPlaying ? " is-active" : ""}`}
           aria-label={isPlaying ? "Arrêter" : `Lire ${label}`}
+          title={isPlaying ? "Arrêter la lecture" : "Lire cette piste"}
           onClick={(event) => { event.stopPropagation(); onTogglePlay(); }}
         >
           <Icon name={isPlaying ? "check" : "wave"} size={14} />
@@ -356,28 +459,36 @@ function TrackLane({
         <button
           className={`track-state${isSolo ? " is-active" : ""}`}
           aria-label={`Solo ${label}`}
+          title="Solo (isoler cette piste)"
           onClick={(event) => { event.stopPropagation(); onSoloChange(); }}
         >S</button>
         <button
           className={`track-state${isMutedDirect ? " is-active" : ""}`}
           aria-label={`Mute ${label}`}
+          title="Mute (rendre cette piste muette)"
           onClick={(event) => { event.stopPropagation(); onMuteChange(); }}
         >M</button>
-        {/* Bouton charger fichier (si piste déjà occupée) */}
-        {hasFile && (
-          <label className="track-lane-reload" title="Remplacer le fichier audio">
-            <Icon name="download" size={12} />
-            <input
-              type="file"
-              accept="audio/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) onFileLoad(file);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-        )}
+
+        {/* Bouton de menu Piste (⋮) pour ouvrir le menu contextuel au clic */}
+        <button
+          type="button"
+          className="icon-action"
+          title="Options de piste (Importer, Exporter, Vider, Trim)..."
+          aria-label={`Menu Piste ${index + 1}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            const rect = event.currentTarget.getBoundingClientRect();
+            onOpenMenu(rect.left - 180, rect.bottom + 6);
+          }}
+          style={{
+            fontWeight: "bold",
+            fontSize: "14px",
+            lineHeight: 1,
+            color: "#94a3b8",
+          }}
+        >
+          ⋮
+        </button>
       </div>
 
       {/* Élément audio caché */}

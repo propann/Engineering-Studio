@@ -5,7 +5,8 @@ import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
 import { prepareNativeLocalPlan, readDisplayLibrary } from "./lib/nativeStorage";
-import { encodeAiffPcm16 } from "./lib/audioConvert";
+import { encodeAiffPcm16, encodeWavPcm16 } from "./lib/audioConvert";
+import { op1AudioEngine } from "./lib/op1SynthEngine";
 import { HomeHub } from "./components/HomeHub";
 // import { DocumentationPanel } from "./components/DocumentationPanel"; // Moved to Hub
 import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
@@ -393,10 +394,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [playing, setPlaying] = useState<number | null>(null);
   const [tempo, setTempo] = useState(90);
   const [recording, setRecording] = useState(false);
+  const [recordingStartPos, setRecordingStartPos] = useState(0);
+  const recordingRef = useRef(false);
+  const recordStartPosRef = useRef(0);
+  useEffect(() => { recordStartPosRef.current = recordingStartPos; }, [recordingStartPos]);
+  const selectedTrackRef = useRef(selectedTrack);
+  useEffect(() => { selectedTrackRef.current = selectedTrack; }, [selectedTrack]);
   const [looping, setLooping] = useState(false);
+  const [loopIn, setLoopIn] = useState(0);
+  const [loopOut, setLoopOut] = useState(16);
   const [reversed, setReversed] = useState(false);
   const [screenFolded, setScreenFolded] = useState(false);
   const [keyboardFolded, setKeyboardFolded] = useState(false);
+  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState<string>("FM");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
   const [transportTime, setTransportTime] = useState(0);
@@ -427,15 +438,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     void onConnectMidi({ silent: true });
   }, [onConnectMidi]);
 
-  // L'OP-1 expose deux ports MIDI sous Windows. Le retour visuel du clone
-  // doit rester actif même quand aucune capture n'est en cours.
+  // Synchronisation du moteur audio OP-1 actif
+  useEffect(() => {
+    op1AudioEngine.setEngine(selectedEngine);
+  }, [selectedEngine]);
+
+  // L'OP-1 expose deux ports MIDI sous Windows. Le retour visuel et sonore du clone
+  // reste actif même quand aucune capture n'est en cours.
   useEffect(() => {
     if (recording) return;
-    // `.bind(navigator)` est nécessaire : une fonction native extraite de son
-    // objet perd son `this` à l'appel et `requestMIDIAccess()` lève alors
-    // silencieusement « Illegal invocation » (rejet de promesse, avalé par le
-    // .catch ci-dessous) — repéré le 14 août 2026, journal MIDI toujours à 0
-    // malgré des messages MIDI bruts reçus par ailleurs dans le même onglet.
     const request = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
     if (!request) return;
     let disposed = false;
@@ -445,8 +456,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       const message = decodeMidiNote(event.data);
       if (!message) return;
       if (message.type === "note_on") {
+        op1AudioEngine.triggerNoteOn(message.note, message.velocity || 100);
         setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
       } else {
+        op1AudioEngine.triggerNoteOff(message.note);
         setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
       }
     };
@@ -504,36 +517,53 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
   }
 
-  async function toggleMidiRecording() {
-    if (recording) {
+  const finalizeAudioRecording = useCallback(() => {
+    if (!recordingRef.current) return;
+    recordingRef.current = false;
+    setRecording(false);
+
+    // Stop direct engine recording
+    const recResult = op1AudioEngine.stopTapeRecording();
+
+    // Stop MIDI recording listeners if active
+    if (midiInputsRef.current.length > 0) {
       midiInputsRef.current.forEach((input) => { input.onmidimessage = null; });
       midiHandler.current = null;
       midiInputRef.current = null;
       midiInputsRef.current = [];
-      setRecording(false);
-      onNotice(`Capture MIDI terminée : ${midiNotes} note${midiNotes === 1 ? "" : "s"} reçue${midiNotes === 1 ? "" : "s"}.`);
-      return;
     }
-    if (!await onConnectMidi()) return;
-    const request = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
-    if (!request) return;
-    const access = await request();
-    const inputs = [...access.inputs.values()];
-    const input = inputs[0];
-    if (!input) return;
-    setMidiNotes(0);
-    setMidiEvents([]);
-    midiStartRef.current = performance.now();
-    const handler = (event: MIDIMessageEvent) => { const message = decodeMidiNote(event.data); if (!message) return; if (message.type === "note_on") { setMidiNotes((count) => count + 1); setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]); } else setPressedMidiNotes((current) => current.filter((note) => note !== message.note)); setMidiEvents((current) => [...current, { ...message, time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]); };
-    midiHandler.current = handler;
-    midiInputRef.current = input;
-    midiInputsRef.current = inputs;
-    inputs.forEach((port) => { port.onmidimessage = handler; });
-    setRecording(true);
-    onNotice("Capture MIDI active : les notes de l’OP-1 sont comptées dans le projet local.");
-  }
+
+    const targetTrack = selectedTrackRef.current;
+    const startPos = recordStartPosRef.current;
+    const duration = recResult.duration;
+
+    if (duration > 0.05 && recResult.samples.length > 0) {
+      // Encode en WAV PCM 16 bits 44.1 kHz OP-1 standard
+      const wavBytes = encodeWavPcm16(recResult.samples, 1, 44100);
+      const blob = new Blob([wavBytes], { type: "audio/wav" });
+      const blobUrl = URL.createObjectURL(blob);
+      const fileName = `OP1_${selectedEngine}_Trk${targetTrack + 1}_${Math.round(duration)}s.wav`;
+
+      setFiles((prev) => ({ ...prev, [targetTrack]: fileName }));
+      setSources((prev) => ({ ...prev, [targetTrack]: blobUrl }));
+      setSourceRefs((prev) => ({ ...prev, [targetTrack]: { path: fileName, status: "linked" } }));
+      setDurations((prev) => ({ ...prev, [targetTrack]: duration }));
+      setClipEnds((prev) => ({ ...prev, [targetTrack]: duration }));
+      setClipOffsets((prev) => ({ ...prev, [targetTrack]: startPos }));
+      setWaveformPeaks((prev) => ({ ...prev, [targetTrack]: recResult.peaks }));
+
+      onNotice(`Enregistrement OP-1 (${selectedEngine}) imprimé sur la Piste ${targetTrack + 1} (${duration.toFixed(1)}s, 44.1 kHz 16 bits PCM).`);
+    } else {
+      onNotice("Enregistrement OP-1 arrêté : aucune note ou percussion n'a été jouée.");
+    }
+  }, [onNotice, selectedEngine]);
+
   const [masterVolume, setMasterVolume] = useState(0.85);
   const audioRefs = useRef<Record<number, HTMLAudioElement | null>>({});
+
+  useEffect(() => {
+    op1AudioEngine.setMasterVolume(masterVolume);
+  }, [masterVolume]);
 
   useEffect(() => {
     Object.entries(audioRefs.current).forEach(([index, audio]) => { if (audio) audio.volume = (gains[Number(index)] ?? 1) * masterVolume; });
@@ -547,13 +577,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
         if (!audio) return;
         const index = Number(rawIndex);
         const rawEnd = clipEnds[index] ?? durations[index];
-        const end = (rawEnd && rawEnd > 0) ? rawEnd : 360;
+        const clipEnd = (rawEnd && rawEnd > 0) ? rawEnd : 360;
+        const end = looping ? Math.min(clipEnd, loopOut) : clipEnd;
+        const start = looping ? loopIn : 0;
         const fadeIn = fadeIns[index] ?? 0;
         const fadeOut = fadeOuts[index] ?? 0;
 
         if (audio.currentTime >= end) {
           if (looping) {
-            audio.currentTime = 0;
+            audio.currentTime = start;
             audio.play().catch(() => {});
           } else {
             try { audio.pause(); } catch {}
@@ -569,7 +601,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     };
     frame = window.requestAnimationFrame(process);
     return () => window.cancelAnimationFrame(frame);
-  }, [clipEnds, durations, fadeIns, fadeOuts, gains, looping, masterVolume, transportPlaying]);
+  }, [clipEnds, durations, fadeIns, fadeOuts, gains, looping, loopIn, loopOut, masterVolume, transportPlaying]);
 
   useEffect(() => {
     if (!transportPlaying) return;
@@ -581,38 +613,66 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       const deltaSec = (now - lastTime) / 1000;
       lastTime = now;
 
-      const activeAudio = Object.values(audioRefs.current).find(
-        (audio): audio is HTMLAudioElement => Boolean(audio && !audio.paused && audio.currentTime > 0)
-      );
-
-      if (activeAudio) {
-        setTransportTime(Math.min(360, activeAudio.currentTime));
-      } else {
-        setTransportTime((current) => {
-          const next = current + deltaSec;
-          if (next >= 360) {
-            if (looping) {
-              Object.values(audioRefs.current).forEach((audio) => {
-                if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
-              });
-              return 0;
-            } else {
-              setTransportPlaying(false);
-              return 360;
-            }
+      setTransportTime((current) => {
+        const next = current + deltaSec;
+        const limit = looping ? loopOut : 360;
+        if (next >= limit) {
+          if (looping) {
+            Object.entries(audioRefs.current).forEach(([rawIdx, audio]) => {
+              if (audio) {
+                const idx = Number(rawIdx);
+                const offset = clipOffsets[idx] ?? 0;
+                const relTime = loopIn - offset;
+                if (relTime >= 0 && relTime < (durations[idx] || 360)) {
+                  audio.currentTime = relTime;
+                  audio.play().catch(() => {});
+                } else {
+                  try { audio.pause(); } catch {}
+                }
+              }
+            });
+            return loopIn;
+          } else {
+            setTransportPlaying(false);
+            return 360;
           }
-          return next;
+        }
+
+        // Alignement doux des éléments audio sur le transport maître
+        Object.entries(audioRefs.current).forEach(([rawIdx, audio]) => {
+          if (!audio) return;
+          const idx = Number(rawIdx);
+          const offset = clipOffsets[idx] ?? 0;
+          const rawEnd = clipEnds[idx] ?? durations[idx] ?? 360;
+          const relTime = next - offset;
+
+          if (relTime >= 0 && relTime < rawEnd) {
+            if (audio.paused) {
+              audio.currentTime = relTime;
+              audio.play().catch(() => {});
+            } else if (Math.abs(audio.currentTime - relTime) > 0.08) {
+              audio.currentTime = relTime;
+            }
+          } else if (!audio.paused) {
+            try { audio.pause(); } catch {}
+          }
         });
-      }
+
+        return next;
+      });
+
       frame = window.requestAnimationFrame(sync);
     };
 
     frame = window.requestAnimationFrame(sync);
     return () => window.cancelAnimationFrame(frame);
-  }, [looping, transportPlaying]);
+  }, [clipEnds, clipOffsets, durations, looping, loopIn, loopOut, transportPlaying]);
 
   const toggleGlobalPlayback = useCallback(() => {
     if (transportPlaying) {
+      if (recordingRef.current) {
+        finalizeAudioRecording();
+      }
       Object.values(audioRefs.current).forEach((audio) => {
         if (audio) {
           try { audio.pause(); } catch {}
@@ -625,11 +685,21 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       setTransportPlaying(false);
       return;
     }
-    const loaded = Object.values(audioRefs.current).filter((audio): audio is HTMLAudioElement => Boolean(audio));
-    // Le transport avance aussi avec des pistes vides pour tester le workflow Tape.
-    loaded.forEach((audio) => {
-      audio.currentTime = transportTime < audio.duration ? transportTime : 0;
-      audio.play().catch(() => {});
+    // Démarrage ou positionnement des pistes audio en tenant compte de leurs offsets
+    Object.entries(audioRefs.current).forEach(([rawIdx, audio]) => {
+      if (audio) {
+        const idx = Number(rawIdx);
+        const offset = clipOffsets[idx] ?? 0;
+        const rawEnd = clipEnds[idx] ?? durations[idx] ?? 360;
+        const relTime = transportTime - offset;
+
+        if (relTime >= 0 && relTime < rawEnd) {
+          audio.currentTime = relTime;
+          audio.play().catch(() => {});
+        } else {
+          try { audio.pause(); } catch {}
+        }
+      }
     });
     midiEvents.forEach((event) => {
       const delay = Math.max(0, (event.time - transportTime) * 1000);
@@ -643,7 +713,67 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       midiTimersRef.current.push(timer);
     });
     setTransportPlaying(true);
-  }, [midiEvents, onSendMidi, transportPlaying, transportTime]);
+  }, [clipEnds, clipOffsets, durations, finalizeAudioRecording, midiEvents, onSendMidi, transportPlaying, transportTime]);
+
+  const toggleTapeRecording = useCallback(async () => {
+    if (recordingRef.current) {
+      finalizeAudioRecording();
+      return;
+    }
+
+    const startPos = transportTime;
+    recordStartPosRef.current = startPos;
+    setRecordingStartPos(startPos);
+
+    try {
+      // Démarre l'enregistrement direct des moteurs d'instruments sur le bus Tape
+      op1AudioEngine.startTapeRecording();
+
+      // Si MIDI disponible, capturer les événements et déclencher les moteurs
+      try {
+        const reqMidi = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
+        if (reqMidi) {
+          const access = await reqMidi();
+          const inputs = [...access.inputs.values()];
+          if (inputs.length > 0) {
+            setMidiNotes(0);
+            setMidiEvents([]);
+            midiStartRef.current = performance.now();
+            const handler = (event: MIDIMessageEvent) => {
+              const message = decodeMidiNote(event.data);
+              if (!message) return;
+              if (message.type === "note_on") {
+                setMidiNotes((count) => count + 1);
+                op1AudioEngine.triggerNoteOn(message.note, message.velocity || 100);
+                setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
+              } else {
+                op1AudioEngine.triggerNoteOff(message.note);
+                setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
+              }
+              setMidiEvents((current) => [...current, { ...message, time: Number(((performance.now() - midiStartRef.current) / 1000).toFixed(4)) }]);
+            };
+            midiHandler.current = handler;
+            midiInputRef.current = inputs[0];
+            midiInputsRef.current = inputs;
+            inputs.forEach((port) => { port.onmidimessage = handler; });
+          }
+        }
+      } catch {}
+
+      recordingRef.current = true;
+      setRecording(true);
+
+      // Démarre la lecture globale si non active pour faire défiler la bande
+      if (!transportPlaying) {
+        toggleGlobalPlayback();
+      }
+
+      onNotice(`Enregistrement OP-1 en cours sur la Piste ${selectedTrackRef.current + 1} à ${startPos.toFixed(1)}s (Moteur ${selectedEngine} & Sons MIDI)...`);
+    } catch (err: unknown) {
+      console.warn("Recording error:", err);
+      onNotice("Impossible de démarrer l'enregistrement de l'OP-1.");
+    }
+  }, [finalizeAudioRecording, onNotice, selectedEngine, toggleGlobalPlayback, transportPlaying, transportTime]);
 
   // Raccourci barre d'espace pour lancer / mettre en pause la lecture
   useEffect(() => {
@@ -676,8 +806,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const onHubNote = (event: Event) => {
       const message = (event as CustomEvent<HubNoteMessage>).detail;
       if (message.action === "note-on") {
+        op1AudioEngine.triggerNoteOn(message.note, message.velocity || 100);
         setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
       } else {
+        op1AudioEngine.triggerNoteOff(message.note);
         setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
       }
     };
@@ -733,6 +865,87 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     } catch { onNotice("L'export Tape a échoué. Vérifiez les fichiers audio locaux."); }
   }
 
+  async function exportSingleTrack(index: number) {
+    const source = sources[index];
+    if (!source) {
+      onNotice(`La Piste ${index + 1} est vide, aucun fichier audio à exporter.`);
+      return;
+    }
+    try {
+      const sampleRate = 44100;
+      const context = new AudioContext();
+      const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer());
+      await context.close();
+
+      const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration);
+      const fadeIn = Math.min(end, fadeIns[index] ?? 0);
+      const fadeOut = Math.min(end, fadeOuts[index] ?? 0);
+      const offline = new OfflineAudioContext(1, Math.ceil(end * sampleRate), sampleRate);
+      const sourceNode = offline.createBufferSource();
+      const gainNode = offline.createGain();
+      sourceNode.buffer = buffer;
+      const level = gains[index] ?? 1;
+      gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0);
+      if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn);
+      if (fadeOut) {
+        gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut));
+        gainNode.gain.linearRampToValueAtTime(0, end);
+      }
+      sourceNode.connect(gainNode).connect(offline.destination);
+      sourceNode.start(0);
+      sourceNode.stop(end);
+
+      const rendered = await offline.startRendering();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(audioBufferToAiffMono(rendered));
+      link.download = `track_${index + 1}.aif`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      onNotice(`Piste ${index + 1} exportée : track_${index + 1}.aif (AIFF mono 44.1 kHz).`);
+    } catch {
+      onNotice(`Échec de l'export de la Piste ${index + 1}.`);
+    }
+  }
+
+  function clearTrack(index: number) {
+    setFiles((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setSources((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setSourceRefs((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setDurations((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setClipEnds((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setClipOffsets((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    setWaveformPeaks((prev) => {
+      const next = { ...prev };
+      delete next[index];
+      return next;
+    });
+    onNotice(`Piste ${index + 1} réinitialisée et vidée.`);
+  }
+
   async function exportAlbumFaces() {
     const entries = Object.entries(sources).filter(([, source]) => Boolean(source));
     if (!entries.length) { onNotice("Chargez au moins une piste avant l'export Album."); return; }
@@ -747,6 +960,72 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   function seekTransport(time: number) {
     setTransportTime(time);
     Object.values(audioRefs.current).forEach((audio) => { if (audio) audio.currentTime = time; });
+  }
+
+  const barSec = (60 / Math.max(30, tempo)) * 4;
+  const beatSec = barSec / 4;
+
+  function snapToGrid(sec: number): number {
+    return Math.max(0, Math.min(360, Math.round(sec / beatSec) * beatSec));
+  }
+
+  function setLoopInAtHead() {
+    const snapped = snapToGrid(transportTime);
+    const newOut = Math.max(snapped + beatSec, loopOut);
+    setLoopIn(snapped);
+    setLoopOut(newOut);
+    onNotice(`Point IN fixé à ${snapped.toFixed(1)}s (calé tempo).`);
+  }
+
+  function setLoopOutAtHead() {
+    const snapped = snapToGrid(transportTime);
+    const newIn = Math.min(loopIn, Math.max(0, snapped - beatSec));
+    setLoopIn(newIn);
+    setLoopOut(snapped);
+    onNotice(`Point OUT fixé à ${snapped.toFixed(1)}s (calé tempo).`);
+  }
+
+  const loopClipboardRef = useRef<{
+    length: number;
+    tracks: Record<number, { clipEnd: number; offsetRelative: number; hasFile: boolean }>;
+  } | null>(null);
+
+  function copyLoop() {
+    const lIn = Math.min(loopIn, loopOut);
+    const lOut = Math.max(loopIn, loopOut);
+    const length = lOut - lIn;
+    const tData: Record<number, { clipEnd: number; offsetRelative: number; hasFile: boolean }> = {};
+    for (let i = 0; i < 4; i++) {
+      const offset = clipOffsets[i] ?? 0;
+      const end = clipEnds[i] ?? durations[i] ?? 0;
+      tData[i] = {
+        clipEnd: end,
+        offsetRelative: offset - lIn,
+        hasFile: Boolean(files[i]),
+      };
+    }
+    loopClipboardRef.current = { length, tracks: tData };
+    onNotice(`Boucle copiée (${lIn.toFixed(1)}s ➜ ${lOut.toFixed(1)}s, ${length.toFixed(1)}s / ${(length / barSec).toFixed(1)} bar).`);
+  }
+
+  function pasteLoop() {
+    if (!loopClipboardRef.current) {
+      onNotice("Aucune boucle dans le presse-papier OP-1 (utilisez d'abord Copier Boucle).");
+      return;
+    }
+    const { length } = loopClipboardRef.current;
+    const targetStart = snapToGrid(transportTime);
+    for (let i = 0; i < 4; i++) {
+      if (files[i]) {
+        setClipOffsets((current) => ({
+          ...current,
+          [i]: Math.max(0, Math.min(360 - (clipEnds[i] ?? 0), targetStart)),
+        }));
+      }
+    }
+    setLoopIn(targetStart);
+    setLoopOut(Math.min(360, targetStart + length));
+    onNotice(`Boucle collée à ${targetStart.toFixed(1)}s calée sur les mesures.`);
   }
 
   function togglePlay(index: number) {
@@ -769,27 +1048,242 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     }
   }
 
-  return (
-    <div className="tool-body tape-editor">
+  const loadedTracksCount = Object.keys(files).filter((k) => Boolean(files[Number(k)])).length;
 
-      {/* ── Transport strip (toujours visible) ── */}
-      <div className="studio-top-strip">
-        <StudioModeHeader Icon={Icon} mode={studioMode} onModeChange={setStudioMode} onConnectMidi={onConnectMidi} />
-        <StudioTransportPanel Icon={Icon} tempo={tempo} recording={recording} looping={looping} reversed={reversed} mode={studioMode} midiNotes={midiNotes} onPlay={toggleGlobalPlayback} onRecord={toggleMidiRecording} onQuantize={quantizeMidi} onLoopChange={setLooping} onTempoChange={setTempo} onConnectMidi={onConnectMidi} onReversedChange={setReversed} />
+  return (
+    <div className="tool-body tape-editor" onClick={() => { if (activeDropdown) setActiveDropdown(null); }}>
+
+      {/* ── BARRE DE MENU PRO STUDIO (Menus déroulants & tiroirs d'action) ── */}
+      <div className="op1-pro-bar">
+        <div className="op1-pro-bar-left">
+          <div className="op1-pro-bar-brand">
+            <strong>OP-1 STUDIO</strong>
+            <span>PRO</span>
+          </div>
+
+          {/* Menu 1 : Tiroir Multi-Pistes */}
+          <button
+            type="button"
+            className={`op1-pro-menu-btn ${activeModal === "tracks" ? "is-active" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveModal(activeModal === "tracks" ? null : "tracks");
+              setActiveDropdown(null);
+            }}
+            title="Ouvrir le mixeur et l'éditeur multi-pistes 1 à 4"
+          >
+            <Icon name="tape" size={14} />
+            <span>Mixer & Pistes (1-4)</span>
+            <span className="badge">{loadedTracksCount}/4</span>
+          </button>
+
+          {/* Menu 2 : Moteurs Sonores & Presets */}
+          <button
+            type="button"
+            className={`op1-pro-menu-btn ${activeModal === "engines" ? "is-active" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveModal(activeModal === "engines" ? null : "engines");
+              setActiveDropdown(null);
+            }}
+            title="Sélectionner un moteur sonore ou un patch"
+          >
+            <Icon name="wave" size={14} />
+            <span>Moteurs & Sons</span>
+            <span className="badge">{selectedEngine}</span>
+          </button>
+
+          {/* Menu 3 : Projet & Exports (Dropdown) */}
+          <div className="op1-pro-menu-group">
+            <button
+              type="button"
+              className={`op1-pro-menu-btn ${activeDropdown === "project" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(activeDropdown === "project" ? null : "project");
+              }}
+            >
+              <Icon name="archive" size={14} />
+              <span>Projet & Exports</span>
+              <span style={{ fontSize: "9px" }}>▼</span>
+            </button>
+
+            {activeDropdown === "project" && (
+              <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                <div style={{ padding: "4px 6px", borderBottom: "1px solid #232b33", marginBottom: "4px" }}>
+                  <label style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase", display: "block", marginBottom: "3px" }}>Nom du projet</label>
+                  <input
+                    type="text"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    style={{ width: "100%", padding: "4px 8px", background: "#0f1215", border: "1px solid #334155", borderRadius: "4px", color: "#f8fafc", fontSize: "11px" }}
+                  />
+                </div>
+                <button className="op1-pro-dropdown-item" onClick={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); setActiveDropdown(null); }}>
+                  <span>📄 Nouveau projet</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { projectInputRef.current?.click(); setActiveDropdown(null); }}>
+                  <span>📂 Ouvrir projet (.json)</span>
+                </button>
+                <input ref={projectInputRef} type="file" accept=".json,.op1studio.json" style={{ display: "none" }} onChange={(e) => { const file = e.target.files?.[0]; if (file) loadProject(file); }} />
+                <button className="op1-pro-dropdown-item" onClick={() => { saveProject(); setActiveDropdown(null); }}>
+                  <span>💾 Enregistrer projet</span>
+                </button>
+                <div style={{ height: "1px", background: "#232b33", margin: "4px 0" }} />
+                <button className="op1-pro-dropdown-item" onClick={() => { renderOffline(); setActiveDropdown(null); }}>
+                  <span style={{ color: "#29be87", fontWeight: "bold" }}>🌊 Rendu WAV Mix</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { exportTapeStems(); setActiveDropdown(null); }}>
+                  <span>📼 Exporter Stems AIFF (4 pistes)</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { exportAlbumFaces(); setActiveDropdown(null); }}>
+                  <span>💽 Exporter Album (Face A/B)</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Menu 4 : MIDI & Connectivité (Dropdown) */}
+          <div className="op1-pro-menu-group">
+            <button
+              type="button"
+              className={`op1-pro-menu-btn ${activeDropdown === "midi" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(activeDropdown === "midi" ? null : "midi");
+              }}
+            >
+              <Icon name="plug" size={14} />
+              <span>MIDI & Sync</span>
+              <span style={{ fontSize: "9px" }}>▼</span>
+            </button>
+
+            {activeDropdown === "midi" && (
+              <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                <button className="op1-pro-dropdown-item" onClick={() => { onConnectMidi(); setActiveDropdown(null); }}>
+                  <span>🔌 Connecter OP-1 physique</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { quantizeMidi(); setActiveDropdown(null); }}>
+                  <span>📐 Quantifier MIDI (1/16)</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { setPressedMidiNotes([]); onNotice("Notes MIDI relâchées (Panic)."); setActiveDropdown(null); }}>
+                  <span>🛑 MIDI Panic (Reset Notes)</span>
+                </button>
+                <div style={{ padding: "6px 8px", fontSize: "10px", color: "#64748b", borderTop: "1px solid #232b33", marginTop: "4px" }}>
+                  Notes capturées : <strong style={{ color: "#29be87" }}>{midiNotes}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Menu 5 : Disposition / Vue (Dropdown) */}
+          <div className="op1-pro-menu-group">
+            <button
+              type="button"
+              className={`op1-pro-menu-btn ${activeDropdown === "view" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveDropdown(activeDropdown === "view" ? null : "view");
+              }}
+            >
+              <Icon name="settings" size={14} />
+              <span>Affichage</span>
+              <span style={{ fontSize: "9px" }}>▼</span>
+            </button>
+
+            {activeDropdown === "view" && (
+              <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
+                <button className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
+                  <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
+                  <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
+                </button>
+                <button className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
+                  <span>{reversed ? "🔄 Sens Normal Bande" : "🔄 Inverser Bande (Tape Invert)"}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Côté droit de la barre : Statut du Projet */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "11px", color: "#94a3b8" }}>
+          <span>Tempo : <strong style={{ color: "#38bdf8" }}>{tempo} BPM</strong></span>
+          <span>Projet : <strong style={{ color: "#f1f5f9" }}>{projectName}</strong></span>
+        </div>
       </div>
 
-      {/* ── Panneau Écran (escamotable) ── */}
-      <div className={`studio-slide-panel studio-screen-panel${screenFolded ? " is-folded" : ""}`}>
-        <button
-          className="slide-panel-toggle"
-          onClick={() => setScreenFolded(!screenFolded)}
-          title={screenFolded ? "Déplier l’écran" : "Replier l’écran"}
-        >
-          <span>{screenFolded ? "▶ Écran" : "◀ Replier écran"}</span>
+      {/* ── Transport strip (toujours visible, synchro et réactif) ── */}
+      <div className="studio-top-strip">
+        <StudioModeHeader Icon={Icon} mode={studioMode} onModeChange={setStudioMode} onConnectMidi={onConnectMidi} />
+        <StudioTransportPanel Icon={Icon} tempo={tempo} recording={recording} looping={looping} reversed={reversed} mode={studioMode} midiNotes={midiNotes} onPlay={toggleGlobalPlayback} onRecord={toggleTapeRecording} onQuantize={quantizeMidi} onLoopChange={setLooping} onTempoChange={setTempo} onConnectMidi={onConnectMidi} onReversedChange={setReversed} />
+      </div>
+
+      {/* ── Bande de raccourcis rapides (Quick Actions & Boucles) ── */}
+      <div className="op1-quick-chips-bar">
+        <span style={{ fontSize: "10px", color: "#64748b", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em" }}>Accès direct :</span>
+        <button className={`op1-quick-chip ${activeModal === "tracks" ? "is-active" : ""}`} onClick={() => setActiveModal("tracks")}>
+          <Icon name="tape" size={12} />
+          <span>Éditeur Multipiste ({loadedTracksCount}/4)</span>
+        </button>
+        <button className={`op1-quick-chip ${activeModal === "engines" ? "is-active" : ""}`} onClick={() => setActiveModal("engines")}>
+          <Icon name="wave" size={12} />
+          <span>Moteur : {selectedEngine}</span>
         </button>
 
-        {/* Contenu quand déplié : SVG tape editor (Écran OLED seulement) */}
-        {!screenFolded && (
+        <div style={{ width: "1px", height: "16px", background: "#334155", margin: "0 2px" }} />
+
+        {/* Boutons de boucle tempo au menu supérieur */}
+        <button
+          className="op1-quick-chip"
+          onClick={setLoopInAtHead}
+          title="Définir le début de la boucle calé sur la mesure actuelle"
+          style={{ color: "#00ED95", borderColor: "#00ED9544" }}
+        >
+          <span>📍 Début boucle [IN] : {loopIn.toFixed(1)}s</span>
+        </button>
+        <button
+          className="op1-quick-chip"
+          onClick={setLoopOutAtHead}
+          title="Définir la fin de la boucle calée sur la mesure actuelle"
+          style={{ color: "#00ED95", borderColor: "#00ED9544" }}
+        >
+          <span>🏁 Fin boucle [OUT] : {loopOut.toFixed(1)}s</span>
+        </button>
+        <button
+          className="op1-quick-chip"
+          onClick={copyLoop}
+          title="Copier les clips des pistes 1-4 situés dans la région de la boucle"
+          style={{ color: "#38bdf8", borderColor: "#38bdf844" }}
+        >
+          <span>✂️ Copier Boucle</span>
+        </button>
+        <button
+          className="op1-quick-chip"
+          onClick={pasteLoop}
+          title="Coller la boucle à la position actuelle (calée sur les mesures)"
+          style={{ color: "#d8b4fe", borderColor: "#a855f744" }}
+        >
+          <span>📋 Coller Boucle</span>
+        </button>
+
+        <div style={{ width: "1px", height: "16px", background: "#334155", margin: "0 2px" }} />
+
+        <button className="op1-quick-chip" onClick={renderOffline}>
+          <span>🌊 Rendu WAV</span>
+        </button>
+        <button className="op1-quick-chip" onClick={exportTapeStems}>
+          <span>📼 Stems AIFF</span>
+        </button>
+        <button className="op1-quick-chip" onClick={() => setKeyboardFolded(!keyboardFolded)}>
+          <span>🎹 Clavier : {keyboardFolded ? "Masqué" : "Visible"}</span>
+        </button>
+      </div>
+
+      {/* ── Panneau Écran OLED Clone (Centré & Immersif) ── */}
+      {!screenFolded && (
+        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "12px" }}>
           <StudioTapeEditor
             tracks={tracks}
             files={files}
@@ -805,7 +1299,19 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             selectedTrack={selectedTrack}
             position={transportTime}
             transportPlaying={transportPlaying}
+            recording={recording}
+            recordingStartPos={recordingStartPos}
+            onRecord={toggleTapeRecording}
+            onToggleGlobalPlayback={toggleGlobalPlayback}
             looping={looping}
+            loopIn={loopIn}
+            loopOut={loopOut}
+            onLoopChange={setLooping}
+            onLoopRangeChange={(inSec, outSec) => {
+              setLoopIn(inSec);
+              setLoopOut(outSec);
+            }}
+            tempo={tempo}
             volume={masterVolume}
             onVolumeChange={setMasterVolume}
             audioRefs={audioRefs}
@@ -823,96 +1329,27 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))}
             onTrackEnd={() => { if (transportPlaying) setTransportPlaying(false); setPlaying(null); }}
             onOffsetChange={(index, offset) => setClipOffsets((current) => ({ ...current, [index]: offset }))}
-            onSelectTrack={setSelectedTrack}
+            onSelectTrack={(index) => {
+              setSelectedTrack(index);
+              setTrimTrack(index);
+            }}
             onSeek={seekTransport}
+            onNotice={onNotice}
             reversed={reversed}
+            onExportTrack={exportSingleTrack}
+            onClearTrack={clearTrack}
+            onEditTrim={(index) => {
+              setSelectedTrack(index);
+              setTrimTrack(index);
+              setActiveModal("tracks");
+            }}
           />
-        )}
+        </div>
+      )}
 
-        {/* Contenu quand replié : réglages affichage & gestion de fichiers */}
-        {screenFolded && (
-          <div className="panel-settings display-settings" style={{ padding: "16px", background: "#f5f6f4", borderRadius: "8px", border: "1px solid #dcdfdc" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", borderBottom: "1px solid #e0e3e0", paddingBottom: "10px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontSize: "13px", fontWeight: "bold", color: "#202326" }}>ÉCRAN OP-1 REPLIÉ · GESTION DU STUDIO & FICHIERS</span>
-              </div>
-              <button
-                className="primary-action"
-                style={{
-                  fontSize: "12px",
-                  padding: "8px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "#267c65",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
-                onClick={() => setScreenFolded(false)}
-              >
-                ▲ Remettre / Déplier l'écran OLED
-              </button>
-            </div>
-
-            {trimTrack !== null && (
-              <TrackEditControls
-                tracks={tracks}
-                durations={durations}
-                clipEnds={clipEnds}
-                fadeIns={fadeIns}
-                fadeOuts={fadeOuts}
-                trimTrack={trimTrack}
-                onTrimTrack={setTrimTrack}
-                onChange={(kind, index, value) => {
-                  if (kind === "end") setClipEnds((c) => ({ ...c, [index]: value }));
-                  else if (kind === "fadeIn") setFadeIns((c) => ({ ...c, [index]: value }));
-                  else setFadeOuts((c) => ({ ...c, [index]: value }));
-                }}
-              />
-            )}
-
-            <StudioProjectToolbar
-              Icon={Icon}
-              projectName={projectName}
-              inputRef={projectInputRef}
-              onProjectNameChange={setProjectName}
-              onNew={() => { setProjectName("Nouveau projet OP-1"); setFiles({}); setSources({}); setSourceRefs({}); onNotice("Nouveau projet Studio créé."); }}
-              onOpen={() => projectInputRef.current?.click()}
-              onSave={saveProject}
-              onLoad={loadProject}
-              onImport={() => onNotice("Import préparé : les 4 pistes seront rangées dans le dossier tape après confirmation.")}
-            />
-
-            <div className="studio-render-actions" style={{ marginTop: "12px" }}>
-              <div className="studio-render-action"><button className="primary-action" onClick={renderOffline}><Icon name="wave" size={15} />Rendu WAV</button><small>Mixe les pistes.</small></div>
-              <div className="studio-render-action"><button className="secondary-action" onClick={exportTapeStems}><Icon name="tape" size={15} />Stems</button><small>Un AIFF mono par piste.</small></div>
-              <div className="studio-render-action"><button className="secondary-action" onClick={exportAlbumFaces}><Icon name="archive" size={15} />Album</button><small>Deux faces AIFF + manifeste.</small></div>
-            </div>
-
-            <div className="tape-import-note" style={{ marginTop: "10px" }}>
-              <Icon name="shield" size={14} />
-              <span><small>Le clone prépare les pistes dans tape/. Copie vers OP-1 après sauvegarde et éjection.</small></span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Panneau Clavier (escamotable & déroulant) ── */}
-      <div className="studio-slide-panel studio-keyboard-panel">
-        <button
-          className="slide-panel-toggle"
-          type="button"
-          onClick={() => setKeyboardFolded(!keyboardFolded)}
-          title={keyboardFolded ? "Déplier le clavier" : "Replier le clavier"}
-        >
-          <span>{keyboardFolded ? "▶ Déplier Clavier Studio" : "▼ Replier Clavier Studio"}</span>
-        </button>
-
-        {/* Contenu quand déplié : clone clavier */}
-        {!keyboardFolded && (
+      {/* ── Panneau Clavier OP-1 (Châssis matériel & encodeurs) ── */}
+      {!keyboardFolded && (
+        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "12px" }}>
           <StudioMachinePanel
             pressedNotes={pressedMidiNotes}
             mode={studioMode}
@@ -923,160 +1360,241 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />
-        )}
-
-        {/* ── CONTROLES MULTI-PISTES ET SELECTION DES SONS SOUS LE CLAVIER ── */}
-        <div style={{ marginTop: "16px", padding: "16px", background: "linear-gradient(145deg, #f3f4f1, #e8eae6)", borderRadius: "10px", border: "1px solid #c9ccc7" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", padding: "0 4px" }}>
-            <span style={{ fontSize: "12px", fontWeight: "bold", letterSpacing: "0.05em", color: "#1f6250" }}>ÉDITEUR MULTI-PISTES & FICHIERS AUDIO (PISTES 1 À 4)</span>
-            <span style={{ fontSize: "10px", color: "#546e64" }}>Glisser-déposer les fichiers audio ou faire glisser les clips pour éditer</span>
-          </div>
-          <StudioTrackList
-            Icon={Icon}
-            tracks={tracks}
-            files={files}
-            sources={sources}
-            sourceRefs={sourceRefs}
-            waveformPeaks={waveformPeaks}
-            clipOffsets={clipOffsets}
-            clipEnds={clipEnds}
-            durations={durations}
-            muted={muted}
-            solo={solo}
-            playing={playing}
-            selectedTrack={selectedTrack}
-            audioRefs={audioRefs}
-            onFileLoad={(index, file) => {
-              setFiles({ ...files, [index]: file.name });
-              setSourceRefs({ ...sourceRefs, [index]: { path: file.name, status: "linked" } });
-              setSources({ ...sources, [index]: URL.createObjectURL(file) });
-              setDurations({ ...durations, [index]: 0 });
-              setSelectedTrack(index);
-              onNotice(`${tracks[index]} chargée localement.`);
-            }}
-            onTogglePlay={togglePlay}
-            onSoloChange={(index) => setSolo(solo === index ? null : index)}
-            onMuteChange={(index) => setMuted({ ...muted, [index]: !muted[index] })}
-            onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))}
-            onTrackEnd={() => { setPlaying(null); }}
-            onOffsetChange={(index, offset) => setClipOffsets((current) => ({ ...current, [index]: offset }))}
-            onSelectTrack={setSelectedTrack}
-          />
         </div>
+      )}
 
-        {/* Sélection des sons, moteurs sonores & samples sous le clavier */}
-        <div className="studio-sound-selection-area" style={{ marginTop: "16px", padding: "16px", background: "linear-gradient(145deg, #1d2126, #14171a)", borderRadius: "10px", color: "#e2e8f0", border: "1px solid #333a42" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid #2d343c", paddingBottom: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Icon name="wave" size={18} />
-              <span style={{ fontWeight: "bold", fontSize: "14px", letterSpacing: "0.05em", color: "#29be87" }}>
-                SÉLECTION DES SONS & MOTEURS SONORES OP-1
-              </span>
-            </div>
-            <span style={{ fontSize: "11px", opacity: 0.7 }}>Moteurs & banque de patchs intégrés</span>
-          </div>
-
-          {/* Sélection du Moteur Sonore */}
-          <div style={{ marginBottom: "14px" }}>
-            <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.6, display: "block", marginBottom: "6px" }}>
-              Moteurs Sonores (Synth & Drum Engines)
-            </label>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              {["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"].map((engine) => (
-                <button
-                  key={engine}
-                  onClick={() => {
-                    setSelectedEngine(engine);
-                    onNotice(`Moteur sonore sélectionné : ${engine}`);
-                  }}
-                  style={{
-                    padding: "5px 12px",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    borderRadius: "5px",
-                    border: selectedEngine === engine ? "1px solid #29be87" : "1px solid #2b3138",
-                    background: selectedEngine === engine ? "#29be87" : "#1a1e23",
-                    color: selectedEngine === engine ? "#0f1215" : "#cbd5e1",
-                    cursor: "pointer",
-                    transition: "all 0.15s ease"
-                  }}
-                >
-                  {engine}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Catégories de Sons & Presets */}
-          <div style={{ marginBottom: "14px" }}>
-            <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", opacity: 0.6, display: "block", marginBottom: "6px" }}>
-              Catégorie de Patch
-            </label>
-            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-              {["Synth", "Drum", "Bass", "Lead", "Pad", "Keys", "FX"].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedSoundCategory(cat)}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "11px",
-                    borderRadius: "4px",
-                    border: selectedSoundCategory === cat ? "1px solid #4cace1" : "1px solid #2b3138",
-                    background: selectedSoundCategory === cat ? "rgba(76, 172, 225, 0.2)" : "#181c20",
-                    color: selectedSoundCategory === cat ? "#4cace1" : "#94a3b8",
-                    cursor: "pointer"
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Liste des Presets du Moteur Sélectionné */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "8px" }}>
-            {[
-              { name: `${selectedEngine} Classic 01`, category: selectedSoundCategory },
-              { name: `${selectedEngine} Deep Sub`, category: "Bass" },
-              { name: `${selectedEngine} Soft Ambient`, category: "Pad" },
-              { name: `${selectedEngine} Punchy Lead`, category: "Lead" },
-            ].map((preset, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: "8px 10px",
-                  background: "#181b1f",
-                  border: "1px solid #2b3036",
-                  borderRadius: "6px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center"
-                }}
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL DRAWER : ÉDITEUR MULTI-PISTES ET FICHIERS (PISTES 1 À 4)
+          S'affiche uniquement à la demande via les menus ou boutons d'accès
+         ══════════════════════════════════════════════════════════════════════ */}
+      {activeModal === "tracks" && (
+        <div className="op1-pro-modal-backdrop" onClick={() => setActiveModal(null)}>
+          <div className="op1-pro-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="op1-pro-modal-header">
+              <strong>
+                <Icon name="tape" size={18} />
+                Éditeur Multi-Pistes & Fichiers Audio (Pistes 1 à 4 · Format AIFF Mono 44.1 kHz)
+              </strong>
+              <button
+                type="button"
+                className="op1-pro-modal-close"
+                onClick={() => setActiveModal(null)}
+                title="Fermer (Échap)"
               >
-                <div>
-                  <strong style={{ display: "block", fontSize: "12px", color: "#f1f5f9" }}>{preset.name}</strong>
-                  <small style={{ fontSize: "10px", color: "#64748b" }}>{selectedEngine} · {preset.category}</small>
+                ✕
+              </button>
+            </div>
+
+            <div className="op1-pro-modal-body">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", paddingBottom: "10px", borderBottom: "1px solid #232c34" }}>
+                <span style={{ fontSize: "12px", color: "#94a3b8" }}>
+                  Chargez ou déposez vos fichiers audio (WAV / AIFF / MP3) pour chaque piste de la bande. Ajustez les décalages (offsets), gains, mutes et solos.
+                </span>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button className="op1-quick-chip" onClick={exportTapeStems}>
+                    <Icon name="download" size={12} />
+                    <span>Exporter Stems</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => onNotice(`Patch "${preset.name}" chargé sur l'OP-1 !`)}
-                  style={{
-                    padding: "3px 8px",
-                    fontSize: "10px",
-                    fontWeight: "bold",
-                    background: "#29be87",
-                    color: "#0f1215",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer"
-                  }}
-                >
-                  LOAD
-                </button>
               </div>
-            ))}
+
+              {/* Contrôles de trim & fades si une piste est sélectionnée */}
+              {trimTrack !== null && (
+                <div style={{ marginBottom: "16px", padding: "12px", background: "#1c2229", borderRadius: "8px", border: "1px solid #2d3844" }}>
+                  <TrackEditControls
+                    tracks={tracks}
+                    durations={durations}
+                    clipEnds={clipEnds}
+                    fadeIns={fadeIns}
+                    fadeOuts={fadeOuts}
+                    trimTrack={trimTrack}
+                    onTrimTrack={setTrimTrack}
+                    onChange={(kind, index, value) => {
+                      if (kind === "end") setClipEnds((c) => ({ ...c, [index]: value }));
+                      else if (kind === "fadeIn") setFadeIns((c) => ({ ...c, [index]: value }));
+                      else setFadeOuts((c) => ({ ...c, [index]: value }));
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Liste des 4 pistes larges */}
+              <StudioTrackList
+                Icon={Icon}
+                tracks={tracks}
+                files={files}
+                sources={sources}
+                sourceRefs={sourceRefs}
+                waveformPeaks={waveformPeaks}
+                clipOffsets={clipOffsets}
+                clipEnds={clipEnds}
+                durations={durations}
+                muted={muted}
+                solo={solo}
+                playing={playing}
+                selectedTrack={selectedTrack}
+                audioRefs={audioRefs}
+                onFileLoad={(index, file) => {
+                  setFiles({ ...files, [index]: file.name });
+                  setSourceRefs({ ...sourceRefs, [index]: { path: file.name, status: "linked" } });
+                  setSources({ ...sources, [index]: URL.createObjectURL(file) });
+                  setDurations({ ...durations, [index]: 0 });
+                  setSelectedTrack(index);
+                  onNotice(`${tracks[index]} chargée localement.`);
+                }}
+                onTogglePlay={togglePlay}
+                onSoloChange={(index) => setSolo(solo === index ? null : index)}
+                onMuteChange={(index) => setMuted({ ...muted, [index]: !muted[index] })}
+                onDurationChange={(index, duration) => setDurations((current) => ({ ...current, [index]: duration }))}
+                onTrackEnd={() => { setPlaying(null); }}
+                onOffsetChange={(index, offset) => setClipOffsets((current) => ({ ...current, [index]: offset }))}
+                onSelectTrack={(index) => {
+                  setSelectedTrack(index);
+                  setTrimTrack(index);
+                }}
+                onExportTrack={exportSingleTrack}
+                onClearTrack={clearTrack}
+                onEditTrim={(index) => {
+                  setSelectedTrack(index);
+                  setTrimTrack(index);
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MODAL DRAWER : MOTEURS DE SYNTHÈSE ET SONS OP-1
+          S'affiche à la demande via les menus ou boutons d'accès
+         ══════════════════════════════════════════════════════════════════════ */}
+      {activeModal === "engines" && (
+        <div className="op1-pro-modal-backdrop" onClick={() => setActiveModal(null)}>
+          <div className="op1-pro-modal-content" style={{ maxWidth: "780px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="op1-pro-modal-header">
+              <strong>
+                <Icon name="wave" size={18} />
+                Moteurs Sonores & Banque de Patchs OP-1
+              </strong>
+              <button
+                type="button"
+                className="op1-pro-modal-close"
+                onClick={() => setActiveModal(null)}
+                title="Fermer (Échap)"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="op1-pro-modal-body">
+              {/* Choix du Moteur */}
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+                  Sélection du moteur actif (Synth & Drum)
+                </label>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"].map((engine) => (
+                    <button
+                      key={engine}
+                      onClick={() => {
+                        setSelectedEngine(engine);
+                        onNotice(`Moteur sonore sélectionné : ${engine}`);
+                      }}
+                      style={{
+                        padding: "6px 14px",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        borderRadius: "6px",
+                        border: selectedEngine === engine ? "1px solid #29be87" : "1px solid #28333e",
+                        background: selectedEngine === engine ? "#29be87" : "#1a2128",
+                        color: selectedEngine === engine ? "#0f1215" : "#cbd5e1",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      {engine}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Catégories de patchs */}
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", display: "block", marginBottom: "8px", fontWeight: "bold" }}>
+                  Catégorie de son
+                </label>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                  {["Synth", "Drum", "Bass", "Lead", "Pad", "Keys", "FX"].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedSoundCategory(cat)}
+                      style={{
+                        padding: "5px 12px",
+                        fontSize: "11px",
+                        borderRadius: "5px",
+                        border: selectedSoundCategory === cat ? "1px solid #4cace1" : "1px solid #28333e",
+                        background: selectedSoundCategory === cat ? "rgba(76, 172, 225, 0.2)" : "#181f26",
+                        color: selectedSoundCategory === cat ? "#4cace1" : "#94a3b8",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Liste des Presets */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px" }}>
+                {[
+                  { name: `${selectedEngine} Classic 01`, category: selectedSoundCategory },
+                  { name: `${selectedEngine} Deep Sub`, category: "Bass" },
+                  { name: `${selectedEngine} Soft Ambient`, category: "Pad" },
+                  { name: `${selectedEngine} Punchy Lead`, category: "Lead" },
+                  { name: `${selectedEngine} Metallic Bell`, category: "Keys" },
+                  { name: `${selectedEngine} Cosmic Warp`, category: "FX" },
+                ].map((preset, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      padding: "10px 12px",
+                      background: "#181e24",
+                      border: "1px solid #2a3540",
+                      borderRadius: "6px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center"
+                    }}
+                  >
+                    <div>
+                      <strong style={{ display: "block", fontSize: "12px", color: "#f1f5f9" }}>{preset.name}</strong>
+                      <small style={{ fontSize: "10px", color: "#64748b" }}>{selectedEngine} · {preset.category}</small>
+                    </div>
+                    <button
+                      onClick={() => {
+                        onNotice(`Patch "${preset.name}" chargé sur l'OP-1 !`);
+                        setActiveModal(null);
+                      }}
+                      style={{
+                        padding: "4px 10px",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        background: "#29be87",
+                        color: "#0f1215",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer"
+                      }}
+                    >
+                      LOAD
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

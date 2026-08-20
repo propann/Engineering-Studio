@@ -20,6 +20,7 @@ import {
   KEYBOARD_WHITE_NOTES as WHITE_NOTES, KEYBOARD_BLACK_NOTES as BLACK_NOTES,
   type KeyboardBlock as Block,
 } from "../lib/keyboardLayout";
+import { op1AudioEngine } from "../lib/op1SynthEngine";
 
 function midiNoteName(note: number) {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -512,11 +513,13 @@ export function StudioMachinePanel({
   function noteOn(note: number) {
     setPressed(s => new Set(s).add(note));
     setLastPlayed(`jouée : ${midiNoteName(note)}`);
+    op1AudioEngine.triggerNoteOn(note, 100);
     if (mode === "midi") sendMidi([0x90, Math.max(0, Math.min(127, note)), 100], `note ${midiNoteName(note)}`);
   }
 
   function noteOff(note: number) {
     setPressed(s => { const ns = new Set(s); ns.delete(note); return ns; });
+    op1AudioEngine.triggerNoteOff(note);
     if (mode === "midi") sendMidi([0x80, Math.max(0, Math.min(127, note)), 0], `note ${midiNoteName(note)} off`);
   }
 
