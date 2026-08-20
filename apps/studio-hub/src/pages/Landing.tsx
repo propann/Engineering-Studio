@@ -23,6 +23,16 @@ export default function Home() {
     <main className="landing-rich-page">
       <TopBar activePage="landing" profileName={profileName} />
 
+      {/* Avertissement : le site est publiquement accessible alors que le
+          développement est en cours. */}
+      <aside className="wip-banner" role="alert">
+        <strong>Site en cours de développement</strong>
+        <span>
+          Rien n’est stable ici : certaines fonctions restent en intégration.
+          Les données utilisateur restent locales au navigateur.
+        </span>
+      </aside>
+
       {/* Hero Section */}
       <section className="rich-hero" id="top">
         <div className="hero-badge-strip">
