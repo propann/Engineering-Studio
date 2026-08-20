@@ -4,6 +4,8 @@ const log = createLogger("AudioRack");
 
 import { useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
+import { RackDiagnostic, type DiagnosticHandle } from "../components/RackDiagnostic";
+import { RackToast, type ToastHandle } from "../components/RackToast";
 import "./audio-plugin-rack.css";
 import {
   attachLfo,
@@ -174,10 +176,11 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   const [midiConnected, setMidiConnected] = useState<boolean>(false);
   const [midiDeviceName, setMidiDeviceName] = useState<string>("");
   // Diagnostic visible : on debuggait a l'aveugle via la console.
-  const [midiStatus, setMidiStatus] = useState<string>("initialisation…");
-  const [lastMidi, setLastMidi] = useState<string>("—");
-  const [lastNote, setLastNote] = useState<string>("—");
-  const [audioState, setAudioState] = useState<string>("non demarre");
+  // Le bandeau de diagnostic porte son propre etat et s'actualise par
+  // reference. Ces quatre valeurs vivaient ici : chaque note jouee et chaque
+  // message MIDI recu declenchait alors un rendu des 1160 lignes de JSX du
+  // rack — sur le fil qui programme aussi les evenements Web Audio.
+  const diagRef = useRef<DiagnosticHandle>(null);
   const [activeKeyNote, setActiveKeyNote] = useState<string | null>(null);
 
   // USER CUSTOM SAVED PATCHES PERSISTED IN LOCALSTORAGE
@@ -396,12 +399,12 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   const voicesRef = useRef<Map<string, Voice>>(new Map());
 
   // Toast Overlay
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Meme motif que le bandeau : les quinze moteurs appellent showToast a
+  // chaque note, ce qui provoquait deux rendus complets du rack — un a
+  // l'affichage, un a l'extinction.
+  const toastRef = useRef<ToastHandle>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2000);
-  };
+  const showToast = (msg: string) => toastRef.current?.afficher(msg);
 
   // Crée le contexte au premier appel et garantit que le bus existe.
   // resume() exige un geste utilisateur : tous les appelants viennent d'un
@@ -655,8 +658,8 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       const ctx = getAudioContext();
       const now = ctx.currentTime;
       const p = paramsRef.current;
-      setAudioState(ctx.state);
-      setLastNote(`${p.activeEngine} @ ${freq.toFixed(1)} Hz${voiceId ? ` (${voiceId})` : ""}`);
+      diagRef.current?.setAudio(ctx.state);
+      diagRef.current?.setDerniereNote(`${p.activeEngine} @ ${freq.toFixed(1)} Hz${voiceId ? ` (${voiceId})` : ""}`);
 
       // Une note déjà tenue sur cet identifiant est relâchée d'abord
       // (évite d'empiler des voix sur l'auto-repeat clavier).
@@ -1420,7 +1423,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       // ete diagnostiquees a l'aveugle a cause de ca. Elle est desormais
       // affichee dans le bandeau de diagnostic.
       log.error("Audio error:", e);
-      setLastNote(`ERREUR : ${(e as any)?.message ?? String(e)}`);
+      diagRef.current?.setDerniereNote(`ERREUR : ${(e as any)?.message ?? String(e)}`);
     }
   };
 
@@ -1443,7 +1446,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       }
       input.onmidimessage = (msg: any) => {
         const [command, note, velocity] = msg.data;
-        setLastMidi(
+        diagRef.current?.setDernierMessage(
           `[${Array.from(msg.data as Uint8Array).map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] ${input.name ?? ""}`
         );
         const kind = command & 0xf0; // ignore le canal MIDI
@@ -1468,10 +1471,11 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       });
       setMidiConnected(names.length > 0);
       setMidiDeviceName(names.join(" · "));
-      setMidiStatus(
+      diagRef.current?.setMidi(
+        names.length > 0,
         names.length > 0
-          ? `${names.length} entree(s) : ${names.join(" · ")}`
-          : "acces accorde, aucune entree detectee"
+          ? `${names.length} entrée(s) : ${names.join(" · ")}`
+          : "accès accordé, aucune entrée détectée"
       );
       log.info("MIDI inputs", { count: names.length, names });
     };
@@ -1489,11 +1493,11 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
           };
         })
         .catch((error) => {
-          setMidiStatus(`acces refuse : ${(error as any)?.message ?? error}`);
+          diagRef.current?.setMidi(false, `accès refusé : ${(error as any)?.message ?? error}`);
           log.warn("requestMIDIAccess refuse", error);
         });
     } else {
-      setMidiStatus("Web MIDI indisponible (navigateur ou contexte non securise)");
+      diagRef.current?.setMidi(false, "Web MIDI indisponible (navigateur ou contexte non sécurisé)");
       log.warn("Web MIDI indisponible sur ce navigateur");
     }
 
@@ -1876,30 +1880,8 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
 
               {/* Bandeau de diagnostic : etat reel du moteur audio et du MIDI.
                   Ajoute apres deux pannes de son diagnostiquees a l'aveugle. */}
-              <div className="rack-diagnostic">
-                <div className="diag-row">
-                  <span className="diag-label">AUDIO</span>
-                  <span className={`diag-value ${audioState === "running" ? "diag-ok" : "diag-warn"}`}>
-                    {audioState}
-                  </span>
-                </div>
-                <div className="diag-row">
-                  <span className="diag-label">MIDI</span>
-                  <span className={`diag-value ${midiConnected ? "diag-ok" : "diag-warn"}`}>
-                    {midiStatus}
-                  </span>
-                </div>
-                <div className="diag-row">
-                  <span className="diag-label">DERNIER MSG</span>
-                  <span className="diag-value diag-mono">{lastMidi}</span>
-                </div>
-                <div className="diag-row">
-                  <span className="diag-label">DERNIERE NOTE</span>
-                  <span className={`diag-value diag-mono ${lastNote.startsWith("ERREUR") ? "diag-err" : ""}`}>
-                    {lastNote}
-                  </span>
-                </div>
-              </div>
+              <RackDiagnostic ref={diagRef} />
+
 
               <div className="input-source-badge">
                 {midiConnected ? (
@@ -2886,11 +2868,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         </div>
       )}
 
-      {toastMessage && (
-        <div className="plugin-toast-overlay">
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <RackToast ref={toastRef} />
     </main>
   );
 }

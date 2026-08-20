@@ -203,7 +203,13 @@ appeared on the roadmap.
 ### Phase 4.4: Performance Optimization (⏳ PLANNED)
 - [ ] MIDI latency profiling (< 20ms target)
 - [ ] Audio synthesis optimization
-- [ ] React component memoization
+- [x] React component memoization — AudioPluginRack holds 99 useState and 1160 lines of
+      JSX. Four diagnostic values and the toast lived in that state, so every note and
+      every incoming MIDI message re-rendered the whole tree: six full renders per note.
+      Extracted into RackDiagnostic and RackToast, which hold their own state and are
+      driven by imperative refs. Down to two, both justified (key pressed / released).
+      This matters more than usual here: the rendering thread also schedules Web Audio
+      events, and a long render delays note queueing.
 - [x] Bundle size analysis & optimization — the 24 route pages were all statically
       imported, so the landing page shipped the whole application, including two full
       DAWs (ep133-studio 8800 lines, op1-studio 9500) a visitor might never open.
