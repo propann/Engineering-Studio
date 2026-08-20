@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [20.x]
 
     steps:
       - uses: actions/checkout@v3
@@ -33,20 +33,18 @@ jobs:
         run: npm ci
 
       - name: Run type check
-        run: npm run type-check
+        run: npm run typecheck
 
-      - name: Run linting
-        run: npm run lint
+      - name: Verify production build
+        run: npm run build
 
-      - name: Run tests
-        run: npm run test -- --run --coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/coverage-final.json
-          flags: unittests
-          name: codecov-umbrella
+      # NOTE: pas d'étape de tests — aucun runner n'est installé à la racine
+      # (ni vitest ni jest dans devDependencies, pas de script `test`).
+      # Réactiver ce bloc une fois vitest ajouté :
+      #   - name: Run tests
+      #     run: npm run test -- --run --coverage
+      #   - name: Upload coverage
+      #     uses: codecov/codecov-action@v3
 
   build:
     name: Build Docker Image

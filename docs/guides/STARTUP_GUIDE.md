@@ -17,7 +17,7 @@ npm ci
 # 3. Lancer
 npm run dev
 
-# ✅ Ouvrir: http://localhost:3000/
+# ✅ Ouvrir: https://localhost:3000/
 ```
 
 **C'est tout !** Le rack audio démarre en ~200ms.
@@ -108,20 +108,20 @@ npm run dev
 ```
   VITE v8.2.1  ready in 208 ms
 
-  ➜  Local:   http://localhost:3000/
-  ➜  Network: http://192.168.2.59:3000/
+  ➜  Local:   https://localhost:3000/
+  ➜  Network: https://192.168.2.59:3000/
 ```
 
 ### Étape 5: Ouvrir dans le navigateur
 
 **Local**:
 ```
-http://localhost:3000/
+https://localhost:3000/
 ```
 
 **Réseau** (depuis un autre ordinateur):
 ```
-http://192.168.2.59:3000/
+https://192.168.2.59:3000/
 ```
 
 ---
@@ -165,7 +165,7 @@ npm run dev
 
 ### Test 2: Réponse HTTP
 ```bash
-curl http://localhost:3000/
+curl https://localhost:3000/
 # Doit retourner du HTML avec <title>Studio Hub</title>
 ```
 
@@ -352,14 +352,14 @@ Engineering-Studio/
 
 ### Local (Machine actuelle)
 ```
-http://localhost:3000/
+https://localhost:3000/
 http://127.0.0.1:3000/
 ```
 
 ### Réseau (Autres machines)
 ```
 http://<your-local-ip>:3000/
-# Exemple: http://192.168.2.59:3000/
+# Exemple: https://192.168.2.59:3000/
 ```
 
 ### Trouver votre IP locale
@@ -440,7 +440,7 @@ tail -f /tmp/studio-hub.log
 - [ ] Repository cloné
 - [ ] `npm ci` réussi
 - [ ] `npm run dev` démarre sans erreur
-- [ ] http://localhost:3000/ répond
+- [ ] https://localhost:3000/ répond
 - [ ] Audio Plugin Rack s'affiche
 - [ ] Un preset se charge sans erreur
 - [ ] Console navigateur: aucune erreur rouge

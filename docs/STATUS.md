@@ -25,7 +25,7 @@
 │  Audio Plugin Rack (studio-hub)      │
 │  React 19.2.8 + Vite 8.2.1           │
 │  Port: 3000 (dev) / 3000 (prod)      │
-│  http://localhost:3000/              │
+│  https://localhost:3000/              │
 └──────────────────────────────────────┘
                     ↓
 ┌──────────────────────────────────────┐
@@ -117,12 +117,12 @@ npm ci
 ```bash
 npm run dev
 # VITE v8.2.1 ready in 208 ms
-# http://localhost:3000/
+# https://localhost:3000/
 ```
 
 ### Vérification
 ```bash
-curl http://localhost:3000/
+curl https://localhost:3000/
 # Doit retourner: <title>Studio Hub</title>
 ```
 
@@ -165,7 +165,7 @@ Git:                Synchronized with origin
 ### Studio Hub (Main Service)
 ```
 Status:             ✅ RUNNING
-URL:                http://localhost:3000/
+URL:                https://localhost:3000/
 Process:            Node.js + Vite dev server
 Port:               3000 (configurable)
 Memory:             ~150 MB
@@ -322,7 +322,7 @@ Panic Protocol:     All Notes Off
 npm run dev 2>&1 | tee studio-hub.log
 
 # Check network
-curl -v http://localhost:3000/
+curl -v https://localhost:3000/
 
 # Monitor processes
 lsof -i :3000

@@ -9,7 +9,7 @@ Complete guide for deploying Studio Hub using Coolify and Docker.
 - **Docker** >= 20.10
 - **Docker Compose** >= 2.0
 - **Coolify** instance (self-hosted or cloud)
-- **Node.js** >= 18 (for local builds)
+- **Node.js** >= 20 (requis : Vite 8 utilise `node:util#styleText`, absent en Node 18)
 - **2GB RAM minimum** for container
 - **1GB disk space minimum**
 
@@ -84,16 +84,16 @@ docker run -d \
 
 ```bash
 # Start
-docker-compose up -d
+docker compose up -d
 
 # Logs
-docker-compose logs -f studio-hub
+docker compose logs -f studio-hub
 
 # Stop
-docker-compose down
+docker compose down
 
 # Remove volumes (full cleanup)
-docker-compose down -v
+docker compose down -v
 ```
 
 ---
@@ -276,8 +276,8 @@ docker inspect studio-hub | grep -i error
 docker restart studio-hub
 
 # Full rebuild
-docker-compose down
-docker-compose up --build
+docker compose down
+docker compose up --build
 ```
 
 ### High CPU Usage
@@ -451,8 +451,8 @@ SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
 ```bash
 # On server
 git pull origin deploy/coolify-production
-docker-compose build --no-cache
-docker-compose up -d
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Automatic Updates (Coolify)

@@ -35,46 +35,39 @@
 
 ## 📁 Project Structure
 
+Légende : ✅ existe · 🚧 répertoire créé, vide · ⬜ prévu, pas encore créé
+
 ```
 apps/studio-hub/
 ├── src/
 │   ├── core/
-│   │   ├── types/audio.ts           # All TypeScript interfaces
-│   │   ├── store/audioRackStore.ts  # Zustand state management
-│   │   └── logger.ts                # Logging utilities
+│   │   ├── types/audio.ts           ✅ Interfaces TypeScript (40+)
+│   │   └── store/audioRackStore.ts  ✅ État Zustand + persistance
 │   │
-│   ├── modules/                      # 12 Audio Rack modules
+│   ├── modules/
 │   │   ├── audio-rack-01-patch-search/
-│   │   │   ├── PatchSearchEngine.ts
-│   │   │   ├── PatchSearchModule.tsx
-│   │   │   └── types.ts
-│   │   ├── audio-rack-02-delay/
-│   │   ├── audio-rack-03-eq/
-│   │   ├── audio-rack-04-adsr/
-│   │   ├── audio-rack-05-arpeggiator/
-│   │   ├── audio-rack-06-step-sequencer/
-│   │   ├── audio-rack-07-lfo/
-│   │   ├── audio-rack-08-distortion/
-│   │   ├── audio-rack-09-modulation-fx/
-│   │   ├── audio-rack-10-export/
-│   │   ├── audio-rack-11-sample-pack/
-│   │   └── audio-rack-12-patch-io/
+│   │   │   ├── PatchSearchEngine.ts  ✅
+│   │   │   └── PatchSearchModule.tsx ✅
+│   │   ├── audio-rack-02-delay/      🚧
+│   │   ├── audio-rack-03-eq/         🚧
+│   │   ├── audio-rack-04-adsr/       🚧
+│   │   ├── audio-rack-05-arpeggiator/🚧
+│   │   └── audio-rack-06..12/        ⬜ non créés
 │   │
 │   ├── pages/
-│   │   └── AudioPluginRack.tsx      # Main UI component
+│   │   ├── AudioPluginRack.tsx      ✅ Composant principal (1500+ lignes)
+│   │   └── ProfileCreator.tsx       ✅ Fiche personnage + sélecteur de dossier
 │   │
 │   └── docs/
-│       └── MODULE_DEVELOPMENT_GUIDE.md
+│       └── MODULE_DEVELOPMENT_GUIDE.md ✅
 │
-├── docs/
-│   ├── AUDIO_RACK_ARCHITECTURE.md
-│   ├── TESTING_STRATEGY.md
-│   └── PERFORMANCE_OPTIMIZATION.md
-│
-└── tests/
-    ├── audio-rack.test.ts
-    └── modules/**/*.test.ts
+└── tests/                            ⬜ aucune infra de test installée
 ```
+
+> **Note d'alignement** — le logger n'est pas dans `core/` : il vient de
+> `@studio-hub/audio-bridge` (`createLogger`). Les documents
+> `AUDIO_RACK_ARCHITECTURE.md`, `TESTING_STRATEGY.md` et
+> `PERFORMANCE_OPTIMIZATION.md` sont **prévus mais pas encore écrits**.
 
 ---
 
@@ -83,25 +76,30 @@ apps/studio-hub/
 ### Installation
 ```bash
 cd /home/azoth/Engineering-Studio
-npm install
-npm install zustand  # State management
+npm install          # zustand est déjà dans les dependencies
 ```
 
-### Development
+### Scripts npm réellement disponibles
 ```bash
-# Start dev server
-npm run dev
-
-# Run tests
-npm run test
-
-# Build for production
-npm run build
+npm run dev        # Serveur de dev Vite (HTTPS)
+npm run build      # Build de production -> dist/
+npm run preview    # Sert le build sur le port 3000 (HTTP)
+npm run typecheck  # tsc --noEmit
+npm run lint       # identique à typecheck (tsc --noEmit)
 ```
 
-### Access
-- Local: http://localhost:3000/
-- Network: http://192.168.2.59:3000/
+> Il n'y a **pas** de script `test` : aucun runner (vitest/jest) n'est installé.
+
+### Accès
+Le serveur de dev tourne en **HTTPS** (plugin `@vitejs/plugin-basic-ssl`), requis
+par l'API File System Access utilisée par le sélecteur de dossier :
+
+- Local : `https://localhost:3000/`
+- Réseau : `https://192.168.2.59:3000/`
+
+Chrome affichera un avertissement de certificat auto-signé au premier accès :
+*Paramètres avancés → Continuer*. En production le conteneur sert en HTTP et
+c'est Coolify qui termine le TLS.
 
 ---
 
@@ -212,13 +210,18 @@ Speaker Output
 
 ## 🧪 Testing Strategy
 
-### Unit Tests
+> ⚠️ **Aucune infrastructure de test n'est installée à ce jour.** Pas de vitest,
+> pas de script `test`, pas de répertoire `tests/`. Tout ce qui suit décrit la
+> cible visée, pas l'état actuel. Première étape pour y arriver :
+> `npm i -D vitest @vitest/coverage-v8` puis ajouter `"test": "vitest"` aux scripts.
+
+### Unit Tests (cible)
 ```bash
-npm run test -- --coverage
+npm run test -- --coverage   # ⬜ pas encore disponible
 # Target: 90%+ coverage
 ```
 
-### Integration Tests
+### Integration Tests (cible)
 - Module interconnection tests
 - Audio graph validation
 - Patch save/load cycle
@@ -285,9 +288,13 @@ npm run test -- --coverage
 - **FFLate 0.8.3** - Compression
 
 ### Development
-- **Vitest 0.34+** - Unit testing
-- **Storybook 7+** - Component library
-- **Tailwind CSS 3+** - Styling
+- **@vitejs/plugin-react 6.0.5** - Fast Refresh React
+- **@vitejs/plugin-basic-ssl 2.3.0** - Certificat auto-signé (HTTPS dev)
+- **vite-plugin-pwa 1.3.0** - Service worker / manifest
+
+> ⬜ **Non installés** (mentionnés dans la roadmap uniquement) : Vitest,
+> Storybook, Tailwind CSS. Le style est écrit en CSS natif
+> (`audio-plugin-rack.css` + `<style>` inline dans les composants).
 
 ---
 

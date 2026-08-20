@@ -36,7 +36,7 @@ git push origin deploy/coolify-production
 
 # Option B: Manual (via Coolify)
 cd /path/to/repository
-docker-compose up -d
+docker compose up -d
 
 # Option C: Using script
 ./scripts/deploy.sh production latest
@@ -165,10 +165,10 @@ git clone -b deploy/coolify-production https://github.com/username/engineering-s
 cd engineering-studio
 
 # Start services
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f studio-hub
+docker compose logs -f studio-hub
 
 # Verify health
 curl http://localhost:3000
@@ -318,7 +318,7 @@ docker run ... studio-hub:previous-tag
 GitHub repo → Actions → Failed workflow → View logs
 
 # Common issues:
-- Tests failing: Check npm run test
+- Build failing: Check `npm run build` (pas de tests configurés à ce jour)
 - Build failing: Check Dockerfile syntax
 - Push failing: Check registry credentials
 ```
@@ -432,9 +432,9 @@ docker build -t studio-hub:latest .
 docker run -d -p 3000:3000 studio-hub:latest
 
 # Compose
-docker-compose up -d
-docker-compose logs -f
-docker-compose down
+docker compose up -d
+docker compose logs -f
+docker compose down
 
 # Debug
 docker exec -it studio-hub sh

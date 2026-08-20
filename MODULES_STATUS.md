@@ -4,6 +4,20 @@
 **Total Modules**: 12  
 **Status**: Setup Complete ✅ | Development Ready
 
+## État vérifié du dépôt (source de vérité)
+
+| Contrôle | Résultat |
+|---|---|
+| `npm run typecheck` | ✅ 0 erreur |
+| `npm run build` | ✅ passe (~640 ms) |
+| Build Docker | ✅ passe (Node 20 Alpine) |
+| Infra de test | ❌ aucune (pas de vitest, pas de script `test`) |
+| Couverture de test | ❌ 0 % — aucun test écrit |
+| Serveur de dev | HTTPS via `@vitejs/plugin-basic-ssl` |
+
+> ⚠️ Les colonnes « Tests » ci-dessous décrivent la **cible**, pas l'existant.
+> Aucun fichier `*.test.ts` n'a été écrit à ce jour.
+
 ---
 
 ## Phase 1: Core Features (Week 1) 🚀

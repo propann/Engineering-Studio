@@ -4,7 +4,7 @@
 # ============================================================================
 # Stage 1: Builder
 # ============================================================================
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /build
 
@@ -21,12 +21,10 @@ RUN npm run build
 # ============================================================================
 # Stage 2: Runtime
 # ============================================================================
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
 
 # Copy only necessary files from builder
 COPY --from=builder /build/dist ./dist
@@ -47,8 +45,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["/sbin/dumb-init", "--"]
 
 # Start the application
 CMD ["npm", "run", "preview"]

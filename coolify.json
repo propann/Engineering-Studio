@@ -7,7 +7,7 @@
 
   "build": {
     "pack": "nodejs-npm",
-    "base": "node:18-alpine",
+    "base": "node:20-alpine",
     "cmd": "npm run build",
     "distFolder": "dist"
   },
@@ -88,7 +88,7 @@
   ],
 
   "dependencies": {
-    "nodejs": ">=18.0.0",
+    "nodejs": ">=20.0.0",
     "npm": ">=9.0.0"
   },
 

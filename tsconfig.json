@@ -25,7 +25,8 @@
     "baseUrl": ".",
     "paths": {
       "@studio-hub/midi-bridge": ["./packages/midi-bridge/index.ts"],
-      "@studio-hub/audio-bridge": ["./packages/audio-bridge/index.ts"]
+      "@studio-hub/audio-bridge": ["./packages/audio-bridge/index.ts"],
+      "@studio-hub/core/*": ["./apps/studio-hub/src/core/*"]
     }
   },
   "include": ["apps/studio-hub/src/**/*", "packages/**/*"],

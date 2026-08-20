@@ -10,24 +10,23 @@
 ### 1. Verify Environment
 ```bash
 cd /home/azoth/Engineering-Studio
-node --version    # Should be 18+
+node --version    # Doit être 20+ (Vite 8 casse en Node 18)
 npm --version     # Should be 9+
 ```
 
 ### 2. Install Dependencies
 ```bash
-npm install
-npm install zustand  # State management
+npm install       # zustand est déjà dans les dependencies
 ```
 
 ### 3. Start Dev Server
 ```bash
 npm run dev
-# Opens http://localhost:3000/
+# Opens https://localhost:3000/
 ```
 
 ### 4. Verify Installation
-- Audio Rack loads at http://localhost:3000/
+- Audio Rack loads at https://localhost:3000/
 - Console shows no errors
 - Sound produces when clicking piano keys
 
@@ -84,20 +83,24 @@ npm run dev
 ### Core Infrastructure (Already Created)
 ```
 src/core/
-├── types/audio.ts              # ALL interfaces
-├── store/audioRackStore.ts     # State management
-└── logger.ts                   # Logging
+├── types/audio.ts              # ✅ Toutes les interfaces (40+)
+└── store/audioRackStore.ts     # ✅ État Zustand
+
+# Le logger n'est pas ici : `createLogger` vient de @studio-hub/audio-bridge
 ```
+
+Alias TypeScript/Vite : `@studio-hub/core/*` → `apps/studio-hub/src/core/*`
+(déclaré dans `tsconfig.json` et `vite.config.ts` — sans ça le typecheck casse).
 
 ### Modules Structure
 ```
 src/modules/audio-rack-01-patch-search/
 ├── PatchSearchEngine.ts        # ✅ DONE
 ├── PatchSearchModule.tsx       # ✅ DONE
-├── patch-search.test.ts        # ❌ TODO
-└── types.ts                    # ✅ DONE
+├── types.ts                    # ❌ TODO (les types sont dans core/types/audio.ts)
+└── patch-search.test.ts        # ❌ TODO (nécessite vitest, non installé)
 
-src/modules/audio-rack-02-delay/
+src/modules/audio-rack-02-delay/   # répertoire vide
 ├── MultiTapDelayProcessor.ts   # ❌ TODO
 ├── MultiTapDelayModule.tsx     # ❌ TODO
 ├── multi-tap-delay.test.ts     # ❌ TODO
@@ -131,7 +134,8 @@ Follow MODULE_DEVELOPMENT_GUIDE.md template:
 
 ### 3. Test Locally
 ```bash
-npm run test -- patch-search.test.ts
+# ⬜ Nécessite vitest (non installé) :
+# npm run test -- patch-search.test.ts
 npm run dev  # See it working
 ```
 
@@ -156,19 +160,17 @@ Repeat for Modules 2-5
 
 ```bash
 # Development
-npm run dev              # Start dev server
-npm run build            # Production build
-npm run preview          # Preview build
-
-# Testing
-npm run test             # Run all tests
-npm run test -- --ui     # UI for tests
-npm run test -- --coverage # Coverage report
+npm run dev              # Serveur de dev Vite (HTTPS, port 3000)
+npm run build            # Build de production -> dist/
+npm run preview          # Sert le build (HTTP, port 3000)
 
 # Code Quality
-npm run lint             # Check linting
-npm run type-check       # TypeScript check
-npm run format           # Format code
+npm run typecheck        # tsc --noEmit
+npm run lint             # identique à typecheck
+
+# ⬜ PAS DISPONIBLE à la racine : `npm run test`, `npm run format`.
+# Aucun runner de test ni formateur n'est installé sur studio-hub.
+# (L'app apps/ep133-studio a, elle, son propre vitest.)
 
 # Git
 git status               # Check changes

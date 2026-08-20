@@ -1,7 +1,6 @@
 # Docker Compose for Studio Hub - Audio Plugin Rack
 # Production-ready setup with Coolify support
 
-version: '3.8'
 
 services:
   studio-hub:

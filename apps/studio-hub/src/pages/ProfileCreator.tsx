@@ -44,6 +44,8 @@ export default function CharacterPage() {
   const [bio, setBio] = useState("Inventeur de machines musicales et explorateur de fréquences.");
   const [avatar, setAvatar] = useState<(typeof avatarNames)[number]>("engineer");
   const [workspace, setWorkspace] = useState("");
+  // Handle du dossier choisi : permet d'écrire des fichiers dedans par la suite.
+  const [workspaceHandle, setWorkspaceHandle] = useState<any>(null);
   const [language, setLanguage] = useState("FR");
   const [keyboard, setKeyboard] = useState("AZERTY");
   const [theme, setTheme] = useState("PIXEL");
@@ -61,70 +63,107 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - try modern API, fallback to manual input
+  // Sous-dossiers créés automatiquement dans le dossier choisi
+  const WORKSPACE_FOLDERS = [
+    "shared/sounds",
+    "op1/backups",
+    "op1/projects",
+    "ep133/projects",
+    "ep133/samples",
+    "drives/cloud",
+  ];
+
+  // Ouvre le vrai sélecteur de dossier de l'OS (File System Access API).
+  // Nécessite un contexte sécurisé : https:// ou http://localhost.
   const pickWorkspaceFolder = async () => {
-    log.info("Workspace picker triggered");
+    log.info("Workspace picker triggered", {
+      isSecureContext: window.isSecureContext,
+      origin: window.location.origin,
+    });
 
-    // Method 1: Try File System Access API (modern browsers)
-    if ("showDirectoryPicker" in window) {
-      try {
-        log.info("Using File System Access API");
-        const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-        const name = dirHandle.name;
-        log.info("Directory selected via API", { name });
-        setWorkspace(name);
+    if (!("showDirectoryPicker" in window)) {
+      const port = window.location.port || "3000";
+      const raison = !window.isSecureContext
+        ? `Cause : origine non sécurisée.\n\n` +
+          `➜ Ouvre https://localhost:${port}\n` +
+          `   ou https://${window.location.hostname}:${port}\n\n` +
+          `(Chrome affichera un avertissement de certificat auto-signé :\n` +
+          ` clique "Paramètres avancés" puis "Continuer".)`
+        : `Cause : navigateur sans API File System Access.\n\n` +
+          `➜ Utilise Chrome, Edge ou Opera\n` +
+          `   (Firefox et Safari ne l'implémentent pas).`;
 
-        // Create subdirectories
-        const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
-        for (const folder of folders) {
-          const parts = folder.split("/");
-          let current = dirHandle;
-          for (const part of parts) {
-            try {
-              current = await current.getDirectoryHandle(part, { create: true });
-            } catch (error) {
-              log.warn(`Failed to create folder ${part}`, error);
-            }
-          }
-        }
-        log.info("Workspace setup complete via API", { path: name });
+      log.warn("showDirectoryPicker unavailable", {
+        isSecureContext: window.isSecureContext,
+        origin: window.location.origin,
+      });
+      alert(
+        `📁 Impossible d'ouvrir le sélecteur de dossier.\n\n` +
+          `Origine : ${window.location.origin}\n` +
+          `Contexte sécurisé : ${window.isSecureContext ? "oui" : "NON"}\n\n` +
+          raison
+      );
+      return;
+    }
+
+    let dirHandle: any;
+    try {
+      dirHandle = await (window as any).showDirectoryPicker({
+        id: "studio-hub-workspace",
+        mode: "readwrite",
+        startIn: "documents",
+      });
+    } catch (error) {
+      const errorName = (error as any)?.name;
+      if (errorName === "AbortError") {
+        log.info("User cancelled directory picker");
         return;
-      } catch (error) {
-        const errorName = (error as any)?.name;
-        if (errorName === "NotAllowedError") {
-          alert("❌ Permission refusée. Vous devez autoriser l'accès aux fichiers.");
-          return;
-        } else if (errorName === "AbortError") {
-          log.info("User cancelled directory picker");
-          return;
+      }
+      if (errorName === "NotAllowedError" || errorName === "SecurityError") {
+        alert("❌ Permission refusée. Autorise l'accès au dossier pour continuer.");
+        return;
+      }
+      log.error("showDirectoryPicker failed", error);
+      alert(`❌ Erreur lors de l'ouverture du dossier : ${(error as any)?.message ?? error}`);
+      return;
+    }
+
+    log.info("Directory selected", { name: dirHandle.name });
+    setWorkspaceHandle(dirHandle);
+    setWorkspace(dirHandle.name);
+
+    // Création des sous-dossiers (non bloquant : on signale ce qui échoue)
+    const failed: string[] = [];
+    for (const folder of WORKSPACE_FOLDERS) {
+      let current = dirHandle;
+      try {
+        for (const part of folder.split("/")) {
+          current = await current.getDirectoryHandle(part, { create: true });
         }
-        log.warn("File System Access API failed, trying fallback", error);
+      } catch (error) {
+        log.warn(`Failed to create folder ${folder}`, error);
+        failed.push(folder);
       }
     }
 
-    // Method 2: Fallback - ask user to type folder path manually
-    log.info("Using manual folder path input fallback");
-    const folderPath = prompt(
-      "📁 Entrez le chemin de votre dossier de travail:\n\n" +
-      "Exemples:\n" +
-      "- /Users/ton-nom/Studio-Hub\n" +
-      "- C:\\Users\\ton-nom\\Studio-Hub\n" +
-      "- ~/Documents/Studio-Hub\n\n" +
-      "Les sous-dossiers seront créés automatiquement."
-    );
-
-    if (folderPath && folderPath.trim()) {
-      const folderName = folderPath.trim().split("/").pop() || folderPath.trim();
-      log.info("Workspace configured via manual input", { path: folderPath, name: folderName });
-      setWorkspace(folderName);
+    if (failed.length) {
+      log.warn("Workspace setup partial", { name: dirHandle.name, failed });
+      alert(
+        `📁 Dossier "${dirHandle.name}" connecté.\n\n` +
+          `⚠️ Sous-dossiers non créés : ${failed.join(", ")}`
+      );
     } else {
-      log.info("User cancelled workspace folder selection");
+      log.info("Workspace setup complete", { name: dirHandle.name });
     }
   };
 
   const toggleWorkspace = () => {
-    if (workspace) setWorkspace("");
-    else pickWorkspaceFolder();
+    if (workspace) {
+      setWorkspace("");
+      setWorkspaceHandle(null);
+    } else {
+      pickWorkspaceFolder();
+    }
   };
 
   useEffect(() => {
