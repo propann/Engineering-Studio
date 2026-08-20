@@ -107,7 +107,16 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
 - [ ] Report overwritten, skipped, incompatible and unchanged files
 - [ ] Add Simple / Workshop density modes
 - [ ] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
-- [ ] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
+      - Test infrastructure is now in place: vitest configured for studio-hub, `test`
+        and `test:watch` scripts, test step wired into CI, verified inside the
+        `oven/bun` container the workflow uses. 114 tests currently pass.
+- [~] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
+      - [x] OP-1 Disk Mode read path validated on real hardware (2026-08-20): device mounted
+            read-only, 66 files / 270 MB copied and compared byte-for-byte with `cmp`,
+            zero divergence. Categories present: tape, album, drum, synth.
+      - [ ] OP-1 restore path — not attempted; no return point exists yet (see below)
+      - [ ] EP-133 — no mass-storage mode; its sounds are reachable only through SysEx
+            (`listMachineSounds`), so validation requires the browser with SysEx granted
 
 #### Product rule
 The interface must never imply that a machine was read or written when the application only inspected or copied a local folder. Every operation must state its source, destination, risk and verification result.
@@ -118,7 +127,54 @@ The interface must never imply that a machine was read or written when the appli
 
 ---
 
-### Phase 4.3: Performance Optimization (⏳ PLANNED)
+### Phase 4.3b: Audio Engine & Test Foundations (✅ DONE — 2026-08-20)
+
+Delivered alongside the Backup Lab study, recorded here because none of it
+appeared on the roadmap.
+
+#### Audio engine
+- [x] Every one of the 83 rack parameters now reaches the sound. An audit found
+      33 controls that moved without changing anything: `pl_synth` was a bare
+      square wave despite advertising bitcrush, sample-rate division, arpeggio,
+      duty cycle and glitch; `faust_dsp` advertised a wavefolder and folded
+      nothing; `mi_clouds` had no grains at all.
+- [x] Six shared DSP building blocks extracted to `core/audio/dsp.ts`: impulse
+      response, bitcrush curve, saturation and wavefolding curves, pulse wave,
+      LFO attachment, damped feedback loop. One block serves several engines.
+- [x] ADSR envelope on a native `GainNode`, replacing a constant gain cut short
+      — that discontinuity clicked on every note.
+- [x] Note-off, polyphony and key-repeat suppression. MIDI channel mask fixed:
+      only channel 1 was recognised. Velocity-zero note-off now handled, which
+      is what the EP-133 actually sends.
+- [x] Oscilloscope reads a real `AnalyserNode`. It previously drew hardcoded
+      sine formulas bearing no relation to the sound.
+
+#### Tests
+- [x] vitest configured for studio-hub, scoped so ep133-studio keeps its own
+      suites. CI runs it; verified inside the `oven/bun` container.
+- [x] 114 tests: DSP blocks, profile persistence, patch search, keyboard
+      layout, MIDI control mapping, and a structural guard on the rack.
+- [x] Every group verified by sabotage — each deliberate break fails its own
+      test and no other. A test that cannot fail proves nothing.
+- [x] The structural guard exists because the rack file was once pushed
+      truncated, 478 lines short, with tool output pasted into line 1 and the
+      DSP gone. Typecheck passed, build passed, the app launched. It also
+      caught three parameters an earlier manual audit had missed: `dxAlgorithm`,
+      `surgeWavetable` and `fluidPreset` were read only to fill a toast string.
+
+#### Infrastructure
+- [x] Coolify deploy steps removed from CI. They called three secrets that were
+      never set, and duplicated what Coolify already does by watching the repo.
+- [x] Single lockfile. `package-lock.json` removed and gitignored; Dockerfile
+      and CI both read `bun.lock`.
+- [x] Self-signed HTTPS dropped from the dev server. Chrome blocks powerful
+      features on a certificate-error origin, which made Web MIDI report no
+      devices at all — with no error. `http://localhost` is a secure context
+      without a certificate.
+
+---
+
+### Phase 4.4: Performance Optimization (⏳ PLANNED)
 - [ ] MIDI latency profiling (< 20ms target)
 - [ ] Audio synthesis optimization
 - [ ] React component memoization
@@ -128,7 +184,7 @@ The interface must never imply that a machine was read or written when the appli
 **Est. Start**: 2026-08-23  
 **Est. Completion**: 2026-09-01
 
-### Phase 4.4: Health Monitoring Dashboard (⏳ PLANNED)
+### Phase 4.5: Health Monitoring Dashboard (⏳ PLANNED)
 - [ ] Service health status UI
 - [ ] MIDI Clock visualization
 - [ ] Dissonance detection alerts
@@ -143,7 +199,11 @@ The interface must never imply that a machine was read or written when the appli
 ## 🚀 Future Phases: Phase 5+
 
 ### Phase 5: Advanced Features (🔮 PLANNED)
-- [ ] MIDI mapping customization UI
+- [x] MIDI mapping customization UI — delivered 2026-08-20, reachable from
+      Settings. OP-1 uses `StudioMachinePanel` in config mode; EP-133 uses
+      `MachineTestPage`. Both learn by listening: pick a control, actuate it on
+      the machine, the incoming message becomes its signature. Assignments
+      persist per machine.
 - [ ] Advanced patch management system
 - [ ] Cloud synchronization (optional)
 - [ ] Extended plugin ecosystem
