@@ -19,7 +19,12 @@ La fiche est enregistrée sous :
 localStorage[\"studio-hub-profile\"]
 ~~~
 
-Le serveur Coolify ne fournit actuellement aucune donnée de profil. Les
+La lecture et l’écriture passent par
+apps/studio-hub/src/core/profile.ts. Le module migre les anciennes fiches vers
+la version 2 et expose aussi la suppression propre du profil.
+
+Le serveur Coolify ne fournit actuellement aucune donnée de profil. Le module
+profil ne fait aucun appel réseau. Les
 profils ne traversent donc pas les navigateurs et ne sont pas partagés entre
 visiteurs.
 
@@ -44,4 +49,3 @@ constitue pas une authentification. Si Engineering Studio devient un service
 multi-utilisateur, il faudra ajouter une identité serveur, des sessions, une
 base de données et une politique d’accès avant de stocker des profils côté
 serveur.
-

@@ -4,6 +4,7 @@ const log = createLogger("ImageEditor");
 
 import { useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
+import { readProfileName } from "../core/profile";
 
 // OP-1 Native Screen Specs: 320 x 160 Pixels
 const OP1_WIDTH = 320;
@@ -254,13 +255,7 @@ export default function ImageEditorOP1() {
 
   // Hydrate profile name
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("studio-hub-profile");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.name) setProfileName(parsed.name);
-      }
-    } catch {}
+    setProfileName(readProfileName());
   }, []);
 
   // Initialize Canvas with Main Theme (tape.svg / Tape 4-Track par défaut)

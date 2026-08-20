@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { TopBar } from "../components/TopBar";
+import { readProfileName } from "../core/profile";
 import SoundEditorHub from "./SoundEditorHub";
 import "./outils.css";
 
@@ -57,7 +58,7 @@ export default function ToolsHub(){
  const [showEP133Studio,setShowEP133Studio]=useState(false);
  const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
- useEffect(()=>{try{const raw=localStorage.getItem("studio-hub-profile");if(raw){const profile=JSON.parse(raw) as {name?:string};if(profile.name?.trim())setProfileName(profile.name.trim())}}catch{}},[]);
+ useEffect(()=>{ setProfileName(readProfileName()); },[]);
 
  const docTools = tools.filter(t => t.category === "DOCUMENTATION");
  const trainingTools = tools.filter(t => t.category === "TRAINING LAB");

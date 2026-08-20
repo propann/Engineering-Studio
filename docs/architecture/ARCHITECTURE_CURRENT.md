@@ -54,15 +54,22 @@ Serveur             → sert la SPA, ne stocke pas les profils actuellement
 - Une nouvelle session navigateur commence sans profil, mais un autre profil
   du même navigateur peut rester présent jusqu’à suppression manuelle.
 
-## Direction recommandée
+## Module profil
 
-Créer un petit module partagé, par exemple src/core/profile, avec :
+Le stockage du profil passe par `apps/studio-hub/src/core/profile.ts`.
+Ce module centralise la clé `studio-hub-profile`, la valeur neutre
+`NOUVEAU MEMBRE`, `readProfile()`, `writeProfile()`, `migrateProfile()` vers
+la version 2, `clearProfile()` et `readProfileName()`.
 
-- le type StudioProfile ;
-- readProfile() et writeProfile() validés ;
-- clearProfile() ;
-- une valeur d’onboarding neutre ;
-- une migration de version explicite.
+Il utilise uniquement le `localStorage` de l’origine courante. Il ne fait
+aucun appel réseau et ne connaît pas Coolify. Le dossier choisi par
+l’utilisateur reste une sauvegarde séparée, gérée par la fiche via File System
+Access API.
 
-Cela évitera que chaque page invente son propre profil par défaut.
+## Règle pour les prochains modules
 
+La centralisation est maintenant en place pour le Hub, la Landing, la fiche
+profil, la barre supérieure et l’éditeur d’image. Les prochaines pages doivent
+importer ce module au lieu de lire directement `localStorage`. Les autres clés
+locales de thèmes, dessins et patches restent des stockages de modules ; elles
+ne doivent pas être confondues avec l’identité du profil.

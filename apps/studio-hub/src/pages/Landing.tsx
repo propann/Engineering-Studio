@@ -1,20 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { TopBar } from "../components/TopBar";
+import { readProfileName } from "../core/profile";
 
 export default function Home() {
   const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("studio-hub-profile");
-      if (raw) {
-        const profile = JSON.parse(raw) as { name?: string };
-        if (profile.name?.trim()) setProfileName(profile.name.trim());
-      }
-    } catch {
-      /* profil local */
-    }
+    setProfileName(readProfileName());
   }, []);
 
   const openTool = (toolId: string) => {
@@ -31,13 +24,12 @@ export default function Home() {
       <TopBar activePage="landing" profileName={profileName} />
 
       {/* Avertissement : le site est publiquement accessible alors que le
-          developpement est en cours. Mieux vaut le dire d'entree que laisser
-          quelqu'un buter sur des fonctions inachevees. */}
+          développement est en cours. */}
       <aside className="wip-banner" role="alert">
         <strong>Site en cours de développement</strong>
         <span>
-          Rien n'est stable ici : la plupart des fonctions sont incomplètes ou
-          ne marchent pas encore. Ça travaille, revenez plus tard.
+          Rien n’est stable ici : certaines fonctions restent en intégration.
+          Les données utilisateur restent locales au navigateur.
         </span>
       </aside>
 
