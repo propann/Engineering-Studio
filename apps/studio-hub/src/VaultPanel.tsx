@@ -91,6 +91,79 @@ async function sha256(buffer: ArrayBuffer) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+/**
+ * Un fichier existe-t-il deja dans la cible ?
+ *
+ * Sert au prevol : sans lui, la restauration ecrase sans qu'on sache combien
+ * de fichiers seront remplaces ni lesquels.
+ */
+export async function fichierExistant(
+  root: DirectoryHandle,
+  relativePath: string
+): Promise<FileSystemFileHandle | null> {
+  const parts = relativePath.split("/");
+  const name = parts.pop();
+  if (!name) return null;
+  try {
+    const dir = await childDirectory(root, parts.join("/"));
+    return await dir.getFileHandle(name);
+  } catch {
+    return null; // dossier ou fichier absent : ce sera une creation
+  }
+}
+
+export type PrevolRestauration = {
+  aCreer: string[];
+  aRemplacer: { path: string; octets: number }[];
+};
+
+/**
+ * Inventorie ce que la restauration va faire, avant d'ecrire quoi que ce soit.
+ */
+export async function prevolRestauration(
+  fichiers: BackupFile[],
+  cible: DirectoryHandle
+): Promise<PrevolRestauration> {
+  const aCreer: string[] = [];
+  const aRemplacer: { path: string; octets: number }[] = [];
+  for (const f of fichiers) {
+    const existant = await fichierExistant(cible, f.path);
+    if (existant) aRemplacer.push({ path: f.path, octets: (await existant.getFile()).size });
+    else aCreer.push(f.path);
+  }
+  return { aCreer, aRemplacer };
+}
+
+/**
+ * Point de retour : copie les fichiers qui vont etre remplaces dans un dossier
+ * horodate de la cible, avant la premiere ecriture.
+ *
+ * Sans lui, une mauvaise cible ou une simple erreur de selection ecrase des
+ * fichiers sans aucun recours — la restauration s'arrete d'ailleurs au premier
+ * defaut d'integrite, laissant la cible a moitie ecrasee.
+ *
+ * Rend le nom du dossier cree, ou null si rien n'etait a remplacer.
+ */
+export async function creerPointDeRetour(
+  aRemplacer: { path: string }[],
+  cible: DirectoryHandle,
+  onProgress?: (fait: number, total: number) => void
+): Promise<string | null> {
+  if (!aRemplacer.length) return null;
+
+  const nom = `_point-de-retour/${new Date().toISOString().replace(/[:.]/g, "-")}`;
+  const dossier = await childDirectory(cible, nom, true);
+
+  let fait = 0;
+  for (const { path } of aRemplacer) {
+    const source = await fichierExistant(cible, path);
+    if (!source) continue; // disparu entre le prevol et maintenant
+    await copyFile(source, dossier, path);
+    onProgress?.((fait += 1), aRemplacer.length);
+  }
+  return nom;
+}
+
 async function copyFile(source: FileSystemFileHandle, destinationRoot: DirectoryHandle, relativePath: string) {
   const parts = relativePath.split("/");
   const name = parts.pop();
@@ -376,7 +449,6 @@ async function createBackup() {
     if (!selectedSnapshot) { setError("Choisis une sauvegarde à restaurer."); return; }
     if (!restoreTarget) { setError("Choisis le disque ou le dossier cible."); return; }
     if (!restoreCategories.length) { setError("Sélectionne au moins une catégorie à restaurer."); return; }
-    if (!window.confirm(`Restaurer ${restoreCategories.map((item) => categoryInfo[item].label).join(", ")} vers ${restoreTargetName} ? Les fichiers portant le même nom seront remplacés.`)) return;
     setBusy(true);
     let restored = 0;
     let total = 0;
@@ -387,6 +459,47 @@ async function createBackup() {
       if (!files.length) throw new Error("La sauvegarde ne contient aucun fichier dans les catégories sélectionnées.");
       total = files.length;
       const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+
+      // Prevol : on inventorie avant d'ecrire. La confirmation precedente
+      // annoncait « les fichiers portant le même nom seront remplacés » sans
+      // dire ni combien ni lesquels.
+      setStatus("Comparaison avec la cible…");
+      setProgress({ current: 0, total, bytes: 0, totalBytes, label: "Analyse de la cible…" });
+      const prevol = await prevolRestauration(files, restoreTarget);
+
+      const detail = [
+        `${prevol.aCreer.length} fichier(s) créé(s)`,
+        `${prevol.aRemplacer.length} remplacé(s)`,
+      ].join(" · ");
+      const apercu = prevol.aRemplacer
+        .slice(0, 8)
+        .map((f) => `  • ${f.path} (${formatBytes(f.octets)})`)
+        .join("\n");
+      const reste = prevol.aRemplacer.length > 8 ? `\n  … et ${prevol.aRemplacer.length - 8} autre(s)` : "";
+
+      if (
+        !window.confirm(
+          `Restaurer vers ${restoreTargetName}\n\n${detail}\n\n` +
+            (prevol.aRemplacer.length
+              ? `Fichiers qui seront remplacés :\n${apercu}${reste}\n\n` +
+                `Une copie de ces fichiers sera d'abord placée dans _point-de-retour/ ` +
+                `à l'intérieur de la cible.\n\nContinuer ?`
+              : `Aucun fichier existant ne sera écrasé.\n\nContinuer ?`)
+        )
+      ) {
+        setStatus("Restauration annulée avant toute écriture.");
+        return;
+      }
+
+      // Point de retour avant la premiere ecriture.
+      let pointDeRetour: string | null = null;
+      if (prevol.aRemplacer.length) {
+        setStatus("Création du point de retour…");
+        pointDeRetour = await creerPointDeRetour(prevol.aRemplacer, restoreTarget, (fait, tot) =>
+          setProgress({ current: fait, total: tot, bytes: 0, totalBytes: 0, label: `Point de retour : ${fait}/${tot}` })
+        );
+      }
+
       setStatus("Restauration des catégories sélectionnées…");
       setProgress({ current: 0, total, bytes: 0, totalBytes, label: `Préparation : ${total} fichiers (${formatBytes(totalBytes)})` });
       let restoredBytes = 0;
@@ -404,10 +517,18 @@ async function createBackup() {
       }
       const report: VaultReport = { operation: "restore", machine, snapshotId: selectedSnapshot.id, sourceOrTarget: restoreTargetName || machine, createdAt: new Date().toISOString(), categories: restoreCategories, fileCount: restored, totalBytes: restoredBytes, files };
       setLastReport(report);
-      setStatus(`Restauration terminée : ${restored} fichiers vers ${restoreTargetName}.`);
+      setStatus(
+        `Restauration terminée : ${prevol.aCreer.length} créé(s), ${prevol.aRemplacer.length} remplacé(s) vers ${restoreTargetName}.` +
+          (pointDeRetour ? ` Point de retour : ${pointDeRetour}` : "")
+      );
     } catch (err) {
       const reason = err instanceof Error ? err.message : "La restauration a échoué.";
-      setError(`${reason}${total ? ` (${restored}/${total} fichiers restaurés).` : ""}`);
+      // Sans indiquer le point de retour, une restauration interrompue laisse
+      // la cible a moitie ecrasee sans que personne sache ou est l'original.
+      setError(
+        `${reason}${total ? ` (${restored}/${total} fichiers restaurés).` : ""}` +
+          ` Les fichiers d'origine remplacés sont dans _point-de-retour/ à la racine de la cible.`
+      );
     }
     finally { setBusy(false); setProgress(null); }
   }

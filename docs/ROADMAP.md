@@ -102,9 +102,16 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
 - [ ] Rename and separate the states “scan local folder” and “read machine” in the interface
 - [ ] Show detected categories, file counts and estimated size before backup
 - [ ] Add clear backup states: prepared, running, complete, verified, partial and failed
-- [ ] Add a restore preparation screen with comparison before writing
-- [ ] Create an automatic return point before overwriting files during restore
-- [ ] Report overwritten, skipped, incompatible and unchanged files
+- [x] Add a restore preparation screen with comparison before writing — preflight lists
+      what will be created and what will be replaced, with sizes, before the first write.
+      Cancelling at that point leaves the target untouched.
+- [x] Create an automatic return point before overwriting files during restore — files
+      about to be replaced are copied into `_point-de-retour/<timestamp>/` inside the
+      target, preserving their original tree, before anything is written. The path is
+      reported on success and on failure — a restore that stops midway previously left
+      the target half-overwritten with no indication of where the originals went.
+- [~] Report overwritten, skipped, incompatible and unchanged files — created and
+      replaced counts are reported; skipped and incompatible are not yet distinguished.
 - [ ] Add Simple / Workshop density modes
 - [ ] Add tests for empty workspace, permission loss, partial scan, interrupted copy and restore safety
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
