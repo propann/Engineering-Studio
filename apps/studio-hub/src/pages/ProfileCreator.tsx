@@ -61,110 +61,65 @@ export default function CharacterPage() {
     { id: 103, name: "SD CARD EP-133 SAMPLES", type: "sd_card", capacityGb: 64, mountPath: "/Volumes/KO_SAMPLES", status: "mounted", active: true },
   ]);
 
-  // Workspace picker - Primary: File System Access API, Fallback: webkitdirectory
+  // Workspace picker - try modern API, fallback to manual input
   const pickWorkspaceFolder = async () => {
-    log.info("=== WORKSPACE PICKER DEBUG ===");
-    log.info("Browser info", {
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-      protocol: window.location.protocol,
-    });
+    log.info("Workspace picker triggered");
 
-    // Check if API is available
-    const hasAPI = "showDirectoryPicker" in window;
-    log.info(`File System Access API available: ${hasAPI}`);
-
-    // Try primary method: File System Access API
-    if (hasAPI) {
+    // Method 1: Try File System Access API (modern browsers)
+    if ("showDirectoryPicker" in window) {
       try {
-        log.info("Calling showDirectoryPicker()...");
-        const startTime = performance.now();
-
+        log.info("Using File System Access API");
         const dirHandle = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-
-        const elapsed = performance.now() - startTime;
         const name = dirHandle.name;
-
-        log.info("✅ Directory selected!", {
-          name,
-          kind: dirHandle.kind,
-          elapsed: `${elapsed.toFixed(2)}ms`,
-        });
+        log.info("Directory selected via API", { name });
         setWorkspace(name);
 
         // Create subdirectories
         const folders = ["shared/sounds", "op1/backups", "op1/projects", "ep133/projects", "ep133/samples", "drives/cloud"];
-        let createdCount = 0;
         for (const folder of folders) {
           const parts = folder.split("/");
           let current = dirHandle;
           for (const part of parts) {
             try {
               current = await current.getDirectoryHandle(part, { create: true });
-              createdCount++;
             } catch (error) {
               log.warn(`Failed to create folder ${part}`, error);
             }
           }
         }
-        log.info("Workspace setup complete", { path: name, foldersCreated: createdCount });
+        log.info("Workspace setup complete via API", { path: name });
         return;
       } catch (error) {
         const errorName = (error as any)?.name;
-        const errorMsg = (error as any)?.message;
-        const errorCode = (error as any)?.code;
-
-        log.error("❌ ERROR in showDirectoryPicker", {
-          name: errorName,
-          message: errorMsg,
-          code: errorCode,
-          full: String(error),
-        });
-
         if (errorName === "NotAllowedError") {
-          alert("❌ PERMISSION DENIED\n\nYou must grant file access permission when the browser asks.\n\nClick 'OK' and try again, then ALLOW when prompted.");
+          alert("❌ Permission refusée. Vous devez autoriser l'accès aux fichiers.");
           return;
         } else if (errorName === "AbortError") {
           log.info("User cancelled directory picker");
           return;
-        } else if (errorName === "SecurityError") {
-          alert("❌ SECURITY ERROR\n\nFile System Access API requires HTTPS.\n\nCheck that your URL starts with 'https://'");
-          // Don't fall back, HTTPS is required
-          return;
         }
-        // For other errors, try fallback
+        log.warn("File System Access API failed, trying fallback", error);
       }
     }
 
-    // Fallback: Use webkitdirectory input (works in Chrome, Edge, Opera)
-    log.info("Attempting fallback: webkitdirectory input");
-    const input = document.createElement("input") as any;
-    input.type = "file";
-    input.webkitdirectory = true;
-    input.mozdirectory = true; // Firefox support
-    input.multiple = false;
-    input.style.display = "none";
+    // Method 2: Fallback - ask user to type folder path manually
+    log.info("Using manual folder path input fallback");
+    const folderPath = prompt(
+      "📁 Entrez le chemin de votre dossier de travail:\n\n" +
+      "Exemples:\n" +
+      "- /Users/ton-nom/Studio-Hub\n" +
+      "- C:\\Users\\ton-nom\\Studio-Hub\n" +
+      "- ~/Documents/Studio-Hub\n\n" +
+      "Les sous-dossiers seront créés automatiquement."
+    );
 
-    input.addEventListener("change", () => {
-      if (input.files && input.files.length > 0) {
-        // Extract folder name from file path
-        const firstFile = input.files[0];
-        const pathParts = firstFile.webkitRelativePath?.split("/") || [];
-        const folderName = pathParts[0] || "WORKSPACE";
-
-        log.info("✅ Directory selected (fallback)", {
-          folderName,
-          filesCount: input.files.length,
-        });
-        setWorkspace(folderName);
-      }
-    });
-
-    input.addEventListener("cancel", () => {
-      log.info("User cancelled directory picker (fallback)");
-    });
-
-    input.click();
+    if (folderPath && folderPath.trim()) {
+      const folderName = folderPath.trim().split("/").pop() || folderPath.trim();
+      log.info("Workspace configured via manual input", { path: folderPath, name: folderName });
+      setWorkspace(folderName);
+    } else {
+      log.info("User cancelled workspace folder selection");
+    }
   };
 
   const toggleWorkspace = () => {
@@ -250,20 +205,28 @@ export default function CharacterPage() {
       op1: { enabled: active.some((machine) => machine.kind === "op1"), backups: 0, projects: 0, samples: 0, trainingProgress: 0 },
       ep133: { enabled: active.some((machine) => machine.kind === "ep133"), backups: 0, projects: 0, samples: 0, trainingProgress: 0 },
     };
-    localStorage.setItem(
-      "studio-hub-profile",
-      JSON.stringify({
-        version: 1,
-        name: name.trim(),
-        avatar,
-        bio: bio.trim(),
-        machines: summary,
-        machineInventory: machines,
-        drives,
-        workspace: workspace ? { name: workspace, folders: [] } : undefined,
-        createdAt: new Date().toISOString(),
-      })
-    );
+    const profileData = {
+      version: 1,
+      name: name.trim(),
+      avatar,
+      bio: bio.trim(),
+      machines: summary,
+      machineInventory: machines,
+      drives,
+      workspace: workspace ? { name: workspace, folders: [] } : undefined,
+      createdAt: new Date().toISOString(),
+    };
+
+    localStorage.setItem("studio-hub-profile", JSON.stringify(profileData));
+
+    log.info("✅ Profile saved to localStorage", {
+      name: profileData.name,
+      avatar: profileData.avatar,
+      machines: profileData.machineInventory.length,
+      drives: profileData.drives.length,
+      workspace: profileData.workspace?.name || "NONE",
+      timestamp: profileData.createdAt,
+    });
   }
 
   return (
@@ -462,7 +425,7 @@ export default function CharacterPage() {
                   <strong>{workspace || "AUCUN DOSSIER CONNECTÉ"}</strong>
                   <p>Sons, thèmes et projets sauvegardés en local.</p>
                 </div>
-                <button onClick={toggleWorkspace}>{workspace ? "CHANGER DOSSIER" : "CHOISIR UN DOSSIER"}</button>
+                <button onClick={pickWorkspaceFolder}>CHOISIR UN DOSSIER</button>
               </div>
             </div>
           </section>
