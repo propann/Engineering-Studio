@@ -37,6 +37,18 @@ export type VaultReport = {
    * de ce qui est reellement sur le disque, avec chemin, taille et empreinte.
    */
   files: BackupFile[];
+  /**
+   * Ventilation d'une restauration. Reprend le contrat
+   * `restorePlan(target) -> creations, remplacements, conflits` de
+   * docs/backup/BACKUP_LAB_AUDIT_2026-08-20.md plutot que d'inventer
+   * d'autres categories.
+   */
+  ventilation?: {
+    crees: number;
+    remplaces: number;
+    /** Sautes car leur empreinte correspondait deja au manifeste. */
+    inchanges: number;
+  };
   /** Present des que la phase n'est pas `verified`. */
   echec?: {
     raison: string;
@@ -402,6 +414,8 @@ export async function fichierExistant(
 export type PrevolRestauration = {
   aCreer: string[];
   aRemplacer: { path: string; octets: number }[];
+  /** Empreinte deja conforme au manifeste : ni reecrits, ni sauvegardes. */
+  inchanges: string[];
 };
 
 /**
@@ -413,12 +427,37 @@ export async function prevolRestauration(
 ): Promise<PrevolRestauration> {
   const aCreer: string[] = [];
   const aRemplacer: { path: string; octets: number }[] = [];
+  const inchanges: string[] = [];
+
   for (const f of fichiers) {
     const existant = await fichierExistant(cible, f.path);
-    if (existant) aRemplacer.push({ path: f.path, octets: (await existant.getFile()).size });
-    else aCreer.push(f.path);
+    if (!existant) {
+      aCreer.push(f.path);
+      continue;
+    }
+
+    const fichier = await existant.getFile();
+
+    // Empreinte identique : reecrire ne changerait rien, et copier au point
+    // de retour gonflerait celui-ci de doublons. Sur les 270 Mo d'un OP-1,
+    // restaurer une seule categorie recopiait sinon tout le reste.
+    if (f.sha256) {
+      try {
+        if ((await sha256(await fichier.arrayBuffer())) === f.sha256) {
+          inchanges.push(f.path);
+          continue;
+        }
+      } catch {
+        // Lecture impossible : on retombe sur « a remplacer ».
+      }
+    }
+
+    // Sans empreinte au manifeste, ou en cas d'echec de lecture, on remplace.
+    // On ne saute jamais une ecriture sur une supposition.
+    aRemplacer.push({ path: f.path, octets: fichier.size });
   }
-  return { aCreer, aRemplacer };
+
+  return { aCreer, aRemplacer, inchanges };
 }
 
 /**
@@ -816,7 +855,8 @@ async function createBackup() {
       const detail = [
         `${prevol.aCreer.length} fichier(s) créé(s)`,
         `${prevol.aRemplacer.length} remplacé(s)`,
-      ].join(" · ");
+        prevol.inchanges.length ? `${prevol.inchanges.length} déjà identique(s), ignoré(s)` : "",
+      ].filter(Boolean).join(" · ");
       const apercu = prevol.aRemplacer
         .slice(0, 8)
         .map((f) => `  • ${f.path} (${formatBytes(f.octets)})`)
@@ -848,7 +888,11 @@ async function createBackup() {
       setStatus("Restauration des catégories sélectionnées…");
       setProgress({ current: 0, total, bytes: 0, totalBytes, label: `Préparation : ${total} fichiers (${formatBytes(totalBytes)})` });
       let restoredBytes = 0;
+      const aIgnorer = new Set(prevol.inchanges);
       for (const file of files) {
+        // Deja conforme au manifeste : la reecriture serait un travail inutile
+        // sur un fichier identique, avec le risque d'une ecriture ratee.
+        if (aIgnorer.has(file.path)) continue;
         const parts = file.path.split("/");
         const name = parts.pop();
         if (!name) continue;
@@ -860,10 +904,31 @@ async function createBackup() {
         restoredBytes += copied.size;
         setProgress({ current: restored, total, bytes: restoredBytes, totalBytes, label: `Restauré : ${file.path}` });
       }
-      const report: VaultReport = { operation: "restore", machine, snapshotId: selectedSnapshot.id, sourceOrTarget: restoreTargetName || machine, createdAt: new Date().toISOString(), categories: restoreCategories, fileCount: restored, totalBytes: restoredBytes, files };
+      const report: VaultReport = {
+        operation: "restore",
+        phase: "verified",
+        machine,
+        snapshotId: selectedSnapshot.id,
+        sourceOrTarget: restoreTargetName || machine,
+        createdAt: new Date().toISOString(),
+        categories: restoreCategories,
+        fileCount: restored,
+        totalBytes: restoredBytes,
+        // Uniquement ce qui a ete reellement ecrit : les inchanges en sont
+        // exclus, sinon le rapport surestimerait le travail accompli.
+        files: files.filter((f) => !aIgnorer.has(f.path)),
+        ventilation: {
+          crees: prevol.aCreer.length,
+          remplaces: prevol.aRemplacer.length,
+          inchanges: prevol.inchanges.length,
+        },
+      };
       setLastReport(report);
       setStatus(
-        `Restauration terminée : ${prevol.aCreer.length} créé(s), ${prevol.aRemplacer.length} remplacé(s) vers ${restoreTargetName}.` +
+        `Restauration terminée vers ${restoreTargetName} : ${prevol.aCreer.length} créé(s), ` +
+          `${prevol.aRemplacer.length} remplacé(s)` +
+          (prevol.inchanges.length ? `, ${prevol.inchanges.length} déjà identique(s) ignoré(s)` : "") +
+          "." +
           (pointDeRetour ? ` Point de retour : ${pointDeRetour}` : "")
       );
     } catch (err) {

@@ -72,6 +72,16 @@ function fauxDossier(contenu: Record<string, any> = {}) {
 
 const fichier = (path: string, size = 10) => ({ path, size }) as any;
 
+/**
+ * Empreinte SHA-256 d'une chaine, calculee comme le fait le module — sans
+ * quoi les tests d'« inchange » compareraient des valeurs inventees.
+ */
+async function empreinte(contenu: string): Promise<string> {
+  const octets = new TextEncoder().encode(contenu);
+  const digest = await crypto.subtle.digest("SHA-256", octets);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 // --- tests ----------------------------------------------------------------
 
 describe("fichierExistant", () => {
@@ -186,5 +196,70 @@ describe("creerPointDeRetour", () => {
     await new Promise((r) => setTimeout(r, 5));
     const deux = await creerPointDeRetour([{ path: "a.aif" }], cible);
     expect(un).not.toBe(deux);
+  });
+});
+
+describe("fichiers deja identiques", () => {
+  it("classe en inchange un fichier dont l'empreinte correspond", async () => {
+    // Le gain concret : restaurer une seule categorie d'un OP-1 ne doit pas
+    // recopier les 270 Mo entiers.
+    const h = await empreinte("abc");
+    const cible = fauxDossier({ "a.aif": "abc" });
+    const p = await prevolRestauration([{ path: "a.aif", size: 3, sha256: h } as any], cible);
+    expect(p.inchanges).toEqual(["a.aif"]);
+    expect(p.aRemplacer).toEqual([]);
+    expect(p.aCreer).toEqual([]);
+  });
+
+  it("classe a remplacer un fichier dont l'empreinte differe", async () => {
+    const h = await empreinte("autre chose");
+    const cible = fauxDossier({ "a.aif": "abc" });
+    const p = await prevolRestauration([{ path: "a.aif", size: 3, sha256: h } as any], cible);
+    expect(p.aRemplacer.map((f) => f.path)).toEqual(["a.aif"]);
+    expect(p.inchanges).toEqual([]);
+  });
+
+  it("remplace par prudence quand le manifeste n'a pas d'empreinte", async () => {
+    // Les manifestes herites ne portent pas toujours de sha256. On ne saute
+    // jamais une ecriture sur une supposition.
+    const cible = fauxDossier({ "a.aif": "abc" });
+    const p = await prevolRestauration([fichier("a.aif")], cible);
+    expect(p.aRemplacer.map((f) => f.path)).toEqual(["a.aif"]);
+    expect(p.inchanges).toEqual([]);
+  });
+
+  it("n'inclut jamais un fichier absent parmi les inchanges", async () => {
+    const h = await empreinte("abc");
+    const p = await prevolRestauration([{ path: "b.aif", size: 3, sha256: h } as any], fauxDossier({}));
+    expect(p.aCreer).toEqual(["b.aif"]);
+    expect(p.inchanges).toEqual([]);
+  });
+
+  it("separe correctement les trois groupes", async () => {
+    const hA = await empreinte("aaa");
+    const hB = await empreinte("different");
+    const cible = fauxDossier({ "a.aif": "aaa", "b.aif": "bbb" });
+    const p = await prevolRestauration(
+      [
+        { path: "a.aif", size: 3, sha256: hA } as any,
+        { path: "b.aif", size: 3, sha256: hB } as any,
+        fichier("c.aif"),
+      ],
+      cible
+    );
+    expect(p.inchanges).toEqual(["a.aif"]);
+    expect(p.aRemplacer.map((f) => f.path)).toEqual(["b.aif"]);
+    expect(p.aCreer).toEqual(["c.aif"]);
+  });
+
+  it("exclut les inchanges du point de retour", async () => {
+    // Copier au point de retour un fichier qu'on ne va pas ecraser
+    // gonflerait celui-ci de doublons inutiles.
+    const cible = fauxDossier({ "a.aif": "abc", "b.aif": "def" });
+    await creerPointDeRetour([{ path: "b.aif" }], cible);
+    const pdr = cible.__enfants.get("_point-de-retour");
+    const horodate = [...pdr.__enfants.values()][0];
+    expect(horodate.__enfants.has("b.aif")).toBe(true);
+    expect(horodate.__enfants.has("a.aif")).toBe(false);
   });
 });
