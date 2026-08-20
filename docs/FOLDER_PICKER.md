@@ -50,11 +50,38 @@ fichier par fichier.
 
 ---
 
+## Attention : HTTPS auto-signé casse Web MIDI
+
+Le serveur de dev a servi en HTTPS pendant un temps, via
+`@vitejs/plugin-basic-ssl`. **Cette configuration bloque Web MIDI.**
+
+Chrome accorde bien `isSecureContext` sur une origine dont le certificat est
+en erreur, une fois l'avertissement accepté — mais il refuse les
+*fonctionnalités puissantes* sur cette origine. `requestMIDIAccess` ne
+renvoie alors aucune entrée, sans message d'erreur. Diagnostiqué à l'aide du
+bandeau du rack, après avoir vérifié qu'ALSA voyait bien les deux appareils
+et qu'ils émettaient (capture `amidi`).
+
+`http://localhost` est un contexte sécurisé **par exception du navigateur**,
+sans certificat donc sans blocage. Les deux API y fonctionnent.
+
+Le HTTPS reste disponible pour l'accès depuis un autre appareil du réseau,
+où l'exception localhost ne s'applique pas :
+
+```bash
+VITE_HTTPS=1 npm run dev
+```
+
+Web MIDI sera indisponible dans ce mode. C'est un compromis à assumer selon
+ce qu'on teste.
+
+---
+
 ## La solution retenue
 
 Le serveur de dev Vite sert en **HTTPS** via `@vitejs/plugin-basic-ssl`
-(`vite.config.ts`), ce qui rend `https://localhost:3000` **et**
-`https://192.168.2.59:3000` tous les deux sécurisés.
+(`vite.config.ts`), ce qui rend `http://localhost:3000` **et**
+`http://192.168.2.59:3000` tous les deux sécurisés.
 
 ```ts
 // vite.config.ts

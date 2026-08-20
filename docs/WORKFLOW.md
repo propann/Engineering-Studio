@@ -46,8 +46,8 @@ Le serveur écoute en **HTTPS** :
 
 | | URL |
 |---|---|
-| Local | `https://localhost:3000/` |
-| Réseau | `https://192.168.2.59:3000/` |
+| Local | `http://localhost:3000/` |
+| Réseau | `http://192.168.2.59:3000/` |
 
 Le HTTPS n'est pas cosmétique : l'API File System Access (sélecteur de dossier
 de la fiche personnage) n'existe pas hors contexte sécurisé. Voir

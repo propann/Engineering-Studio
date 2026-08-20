@@ -25,7 +25,7 @@ cd apps/studio-hub
 npm run dev
 
 # ✅ Le rack est prêt !
-# → https://localhost:3000/
+# → http://localhost:3000/
 ```
 
 **C'est tout !** Le service démarre en ~200ms. Une seule application, un seul port, zéro configuration.
@@ -178,7 +178,7 @@ npm run dev
 ```
 
 ### Accéder à l'interface
-- **Local**: https://localhost:3000/
+- **Local**: http://localhost:3000/
 - **Réseau**: http://<your-ip>:3000/
 
 ### Interface Utiliselle
@@ -240,13 +240,13 @@ npm run dev
 ```
   VITE v8.2.1  ready in 208 ms
 
-  ➜  Local:   https://localhost:3000/
-  ➜  Network: https://192.168.2.59:3000/
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.2.59:3000/
 ```
 
 ### 5. Ouvrir dans le navigateur
 ```
-https://localhost:3000/
+http://localhost:3000/
 ```
 
 **C'est prêt !** Aucune autre configuration nécessaire.

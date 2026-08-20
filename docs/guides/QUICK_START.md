@@ -14,7 +14,7 @@ npm ci
 npm run dev
 
 # 3. Ouvrir
-# → https://localhost:3000/
+# → http://localhost:3000/
 ```
 
 **C'est tout !** ✅

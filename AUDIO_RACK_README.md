@@ -94,8 +94,8 @@ npm run lint       # identique à typecheck (tsc --noEmit)
 Le serveur de dev tourne en **HTTPS** (plugin `@vitejs/plugin-basic-ssl`), requis
 par l'API File System Access utilisée par le sélecteur de dossier :
 
-- Local : `https://localhost:3000/`
-- Réseau : `https://192.168.2.59:3000/`
+- Local : `http://localhost:3000/`
+- Réseau : `http://192.168.2.59:3000/`
 
 Chrome affichera un avertissement de certificat auto-signé au premier accès :
 *Paramètres avancés → Continuer*. En production le conteneur sert en HTTP et

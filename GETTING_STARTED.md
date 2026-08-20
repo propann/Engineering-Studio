@@ -22,11 +22,11 @@ npm install       # zustand est déjà dans les dependencies
 ### 3. Start Dev Server
 ```bash
 npm run dev
-# Opens https://localhost:3000/
+# Opens http://localhost:3000/
 ```
 
 ### 4. Verify Installation
-- Audio Rack loads at https://localhost:3000/
+- Audio Rack loads at http://localhost:3000/
 - Console shows no errors
 - Sound produces when clicking piano keys
 
