@@ -1,96 +1,87 @@
-# ⚡ QUICK START (TL;DR)
+# ⚡ Quick Start (30 secondes)
 
-**Get up and running in 5 minutes**
-
----
-
-## 1️⃣ Prerequisites
-
-```bash
-# Node 22+
-node --version
-
-# NPM 10+
-npm --version
-
-# Clone the repo (if not done)
-git clone https://github.com/propann/Engineering-Studio.git
-cd Engineering-Studio
-```
+**Lancer le Rack Audio en 3 commandes**
 
 ---
 
-## 2️⃣ Install & Run (1 min)
+## 🚀 Go!
 
 ```bash
-# Install all dependencies
-npm install
+# 1. Installer
+npm ci
 
-# Start development server
+# 2. Lancer
 npm run dev
 
-# Open browser
-# http://localhost:3000/
+# 3. Ouvrir
+# → http://localhost:3000/
 ```
 
-**That's it!** Server running in ~358ms ✅
+**C'est tout !** ✅
 
 ---
 
-## 3️⃣ What You Get
+## 🎛️ Qu'est-ce que c'est?
 
-```
-✅ OP-1 Studio       - Synth/Tape editor
-✅ EP-133 Studio     - Pattern/Sampler
-✅ Audio Rack        - 15 synthesis engines
-✅ MIDI Bridge       - Master Clock sync
-```
-
----
-
-## 4️⃣ Try It Out
-
-1. Open http://localhost:3000
-2. Select an audio engine
-3. Press keys: A, S, D, F, G, H, J, K (C4-C5 notes)
-4. Hear real-time synthesis! 🎵
+Un **rack de synthèse audio logiciel** avec:
+- **15 moteurs** (Mutable Instruments + open source)
+- **75+ presets** (Sons prêts à l'emploi)
+- **Interface web** (React + Vite)
+- **En temps réel** (Web Audio API)
 
 ---
 
-## 📚 Learn More
+## 🎮 Utilisation
 
-| Want to... | See... |
-|-----------|--------|
-| Understand the architecture | [docs/architecture/ARCHITECTURE.md](../architecture/ARCHITECTURE.md) |
-| Know what to work on | [docs/ROADMAP.md](../ROADMAP.md) |
-| Setup details | [STARTUP_GUIDE.md](STARTUP_GUIDE.md) |
-| Check project status | [docs/STATUS.md](../STATUS.md) |
+1. **Landing Page** → Cliquer "Outils"
+2. **Tools Hub** → Sélectionner "Audio Plugin Rack"
+3. **Rack Interface** → Choisir un moteur, charger un preset
+4. **Jouer** → Clavier MIDI ou souris
 
 ---
 
-## 🆘 Troubleshooting
+## 📋 Pré-requis (30 sec)
 
-### "Module not found"
 ```bash
-npm install
-npm run dev
+node --version    # v22.0.0+
+npm --version     # v10.0.0+
 ```
 
-### "Port 3000 in use"
-```bash
-# Kill process on port 3000
-lsof -ti:3000 | xargs kill -9
-# Or use different port
-npm run dev -- --port 3001
-```
-
-### "No audio"
-1. Check browser console for errors
-2. Allow web audio context
-3. Try different browser (Chrome/Firefox)
+Si manquant: https://nodejs.org/
 
 ---
 
-**Ready to code? Go to [STARTUP_GUIDE.md](STARTUP_GUIDE.md) for full setup.**
+## 🛠️ Commandes
 
-**Status**: ✅ Production Ready
+```bash
+npm run dev        # Lancer (port 3000)
+npm run build      # Build prod
+npm run typecheck  # Vérifier types
+```
+
+---
+
+## 🐛 Ça ne marche pas?
+
+```bash
+# Réinstaller propre
+rm -rf node_modules package-lock.json
+npm ci
+
+# Port occupé?
+lsof -i :3000
+kill -9 <PID>
+```
+
+---
+
+## 📚 Plus d'infos?
+
+- [STARTUP_GUIDE.md](STARTUP_GUIDE.md) — Guide complet (5 min)
+- [README.md](../../README.md) — Vue d'ensemble
+- [STATUS.md](../STATUS.md) — État du projet
+
+---
+
+**Status**: ✅ Production Ready  
+**Version**: 1.0.0

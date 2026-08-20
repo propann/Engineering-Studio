@@ -96,10 +96,14 @@ Les contrôles produit actuellement validés sont :
 
 ### Option 1: Quick Start (5 minutes)
 ```bash
-cd /home/azoth/studio-hub
+cd /home/azoth/Engineering-Studio
 npm install
-npm run dev:both
+./start-dev.sh
 ```
+Access:
+- 🎹 Studio Hub: `http://localhost:5179`
+- 🎛️ OP-1 Studio: `http://localhost:5175`
+- 🥁 EP-133 Studio: `http://localhost:5177`
 
 ### Option 2: Documentation First (30 minutes)
 1. Read `/studio-hub/INDEX.md` (find what you need)
@@ -119,23 +123,19 @@ npm run dev:both
 
 ### For Development
 ```bash
-npm run dev:op1          # Start OP-1 dev server
-npm run dev:ep133        # Start EP-133 dev server
-npm run dev:both         # Start both servers
+./start-dev.sh           # Start all 3 studios simultaneously
+npm run dev              # Start Studio Hub only (port 5179)
 ```
 
 ### For Building
 ```bash
-npm run build:all        # Build all workspaces
-npm run build -w apps/op1-studio
-npm run build -w apps/ep133-studio
+npm run build            # Build Studio Hub
 ```
 
-### For Testing
+### For Verification
 ```bash
-npm run test:all         # Test all workspaces
-npm run test -w apps/ep133-studio
-npm run typecheck        # Check TypeScript
+npm run typecheck        # Check TypeScript types
+npm run lint             # Lint code
 ```
 
 ---
@@ -165,7 +165,8 @@ npm run typecheck        # Check TypeScript
 ### Developer
 - **Read**: `README.md` (quick start)
 - **Then**: `STATUS.md` (architecture)
-- **Commands**: `npm run dev:both`
+- **Commands**: `./start-dev.sh` (launches all 3 studios)
+- **Access**: http://localhost:5179 (Hub), :5175 (OP-1), :5177 (EP-133)
 - **Reference**: INDEX.md when needed
 
 ### DevOps / CI-CD

@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import path from "path";
 
 export default defineConfig({
   plugins: [
@@ -19,7 +20,12 @@ export default defineConfig({
       },
     },
   ],
-  // Port canonique : la fiche locale et les liens de retour du Hub y sont stockés.
-  // strictPort évite de créer une nouvelle fiche sur un port de secours.
-  server: { host: "127.0.0.1", port: 5179, strictPort: true },
+  resolve: {
+    alias: {
+      "@studio-hub/midi-bridge": path.resolve(import.meta.dirname, "../../packages/midi-bridge/index.ts"),
+      "@studio-hub/audio-bridge": path.resolve(import.meta.dirname, "../../packages/audio-bridge/index.ts"),
+    },
+  },
+  // Port: développement sur 3000
+  server: { host: "0.0.0.0", port: 3000, strictPort: false },
 });

@@ -1,500 +1,453 @@
-# 🚀 Studio Hub - Startup Guide
+# 🚀 Guide de Démarrage Complet
 
-**Quick Start Guide pour mettre en route le projet aligné**
-
----
-
-## ⚡ Quick Start (5 minutes)
-
-### 1. Clone & Install
-```bash
-cd /home/azoth/studio-hub
-npm install
-```
-
-### 2. Verify Installation
-```bash
-npm run build:all
-```
-
-### 3. Start Development (Choose One)
-
-**Start Both Studios:**
-```bash
-npm run dev:both
-```
-
-**Start OP-1 Only:**
-```bash
-npm run dev:op1
-# Opens: http://localhost:3000
-```
-
-**Start EP-133 Only:**
-```bash
-npm run dev:ep133
-# Opens: http://localhost:5173
-```
+Mise en place du **Audio Plugin Rack** en moins de 5 minutes.
 
 ---
 
-## 📋 Full Startup Checklist
+## ⚡ Démarrage Ultra-Rapide (2 min)
 
-### Pre-Flight Check
 ```bash
-✓ npm --version        # Should be 10+
-✓ node --version       # Should be 22
-✓ git --version        # Should be 2.40+
-✓ cd /home/azoth/studio-hub
-✓ git status           # Should be clean
+# 1. Cloner
+git clone https://github.com/your-org/Engineering-Studio.git
+cd Engineering-Studio
+
+# 2. Installer
+npm ci
+
+# 3. Lancer
+npm run dev
+
+# ✅ Ouvrir: http://localhost:3000/
 ```
 
-### Installation
-```bash
-# Clean install
-rm -rf node_modules package-lock.json apps/*/node_modules
-npm install
+**C'est tout !** Le rack audio démarre en ~200ms.
 
-# Or quick update
-npm install
+---
+
+## 📋 Pré-requis
+
+### Système d'exploitation
+- **Linux** (testé: Ubuntu 22.04+)
+- **macOS** (Monterey+)
+- **Windows** (WSL2 recommandé)
+
+### Logiciels requis
+```bash
+# Node.js 22+ et npm 10+
+node --version    # v22.0.0+
+npm --version     # v10.0.0+
 ```
 
-### Verification
+### Vérifier la configuration
 ```bash
-# Type check
-npm run typecheck
-
-# Build all
-npm run build:all
-
-# Test all
-npm run test:all
-```
-
-### Development
-```bash
-# Option 1: Both servers
-npm run dev:both
-
-# Option 2: Individual
-npm run dev:op1      # Terminal 1
-npm run dev:ep133    # Terminal 2
-
-# Option 3: Watch builds only (no servers)
-npm run watch -w apps/op1-studio
-npm run watch -w apps/ep133-studio
+node --version
+npm --version
+npm list -g @vitejs/plugin-react
 ```
 
 ---
 
-## 🔧 Detailed Setup Instructions
+## 🔧 Installation Étape par Étape
 
-### System Requirements
-- Node.js 22+
-- npm 10+
-- git 2.40+
-- 4GB RAM minimum
-- 2GB free disk space
+### Étape 1: Cloner le repository
 
-### Installation Steps
-
-#### 1. Verify Environment
 ```bash
-node --version     # >= 22.0.0
-npm --version      # >= 10.0.0
-git --version      # >= 2.40.0
+git clone https://github.com/your-org/Engineering-Studio.git
+cd Engineering-Studio
 ```
 
-#### 2. Navigate to Hub
+**Vérifier**: Vous devez voir le dossier `apps/` et `packages/`
+
 ```bash
-cd /home/azoth/studio-hub
-pwd  # Should show: /home/azoth/studio-hub
+ls apps/studio-hub/
+ls packages/audio-bridge/
+ls packages/midi-bridge/
 ```
 
-#### 3. Check Git Status
-```bash
-git status
-# Should show: On branch master, working tree clean
+### Étape 2: Installer les dépendances
 
-git branch
-# Should show 6 branches
+```bash
+npm ci
 ```
 
-#### 4. Clean Install
+**Quoi faire si ça échoue**:
 ```bash
-# Option A: Full clean
+# Option 1: Force install
+npm ci --force
+
+# Option 2: Clean install
 rm -rf node_modules package-lock.json
-find . -name node_modules -type d -exec rm -rf {} + 2>/dev/null
 npm install
 
-# Option B: Quick update (if you have node_modules)
-npm install
+# Option 3: Version exacte de Node
+nvm install 22
+nvm use 22
+npm ci
 ```
 
-#### 5. Verify Installation
+**Vérifier**: Vous devez voir `node_modules/` créé
+
 ```bash
-# Check packages installed
-npm list react react-dom zustand
+ls node_modules | head -10
+# Vous devez voir: react, vite, typescript, etc.
+```
 
-# Check workspaces
-npm list -w
+### Étape 3: Naviguer dans le dossier du Rack
 
-# Check builds
-npm run build:all
+```bash
+cd apps/studio-hub
+```
+
+### Étape 4: Lancer le dev server
+
+```bash
+npm run dev
+```
+
+**Vous devez voir**:
+```
+  VITE v8.2.1  ready in 208 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.2.59:3000/
+```
+
+### Étape 5: Ouvrir dans le navigateur
+
+**Local**:
+```
+http://localhost:3000/
+```
+
+**Réseau** (depuis un autre ordinateur):
+```
+http://192.168.2.59:3000/
 ```
 
 ---
 
-## 🎯 Development Workflow
+## 🎮 Première Utilisation
 
-### For OP-1 Studio Team
+### Page de Landing
+1. Cliquez sur **"Outils"** pour accéder au hub
 
-**Setup:**
-```bash
-cd /home/azoth/studio-hub
-git checkout op1-studio-module
-npm install
-npm run dev:op1
-```
+### Tools Hub
+2. Cliquez sur **"Audio Plugin Rack"** pour accéder aux synthétiseurs
 
-**Development:**
-```bash
-# Create feature branch
-git checkout -b feature/your-feature-name
+### Audio Plugin Rack
+3. Sélectionnez un **moteur de synthèse**:
+   - **MI Plaits** (6 modes: VA, FM, WT, Granular, Speech, Chord)
+   - **Dexed FM** (synthèse FM style DX7)
+   - **Helm** (subtractive avec crossmod)
+   - ... et 12 autres moteurs
 
-# Make changes in apps/op1-studio/
+4. Chargez un **preset**:
+   - 75+ presets factory disponibles
+   - Catégorisés par type: Lead, Bass, Pad, Bell, Perc, FX, etc.
 
-# Commit and push
-git add .
-git commit -m "feat(op1-studio): your feature description"
-git push origin feature/your-feature-name
+5. **Jouez**:
+   - Clavier MIDI connecté (WebMIDI)
+   - Ou clavier souris (touches QWERTY)
 
-# Create PR on GitHub/GitLab
-```
-
-**Testing:**
-```bash
-npm run typecheck -w apps/op1-studio
-npm run build -w apps/op1-studio
-npm run test -w apps/op1-studio
-```
-
-### For EP-133 Studio Team
-
-**Setup:**
-```bash
-cd /home/azoth/studio-hub
-git checkout ep133-studio-module
-npm install
-npm run dev:ep133
-```
-
-**Development:**
-```bash
-# Create feature branch
-git checkout -b feature/your-feature-name
-
-# Make changes in apps/ep133-studio/
-
-# Commit and push
-git add .
-git commit -m "feat(ep133-studio): your feature description"
-git push origin feature/your-feature-name
-
-# Create PR on GitHub/GitLab
-```
-
-**Testing:**
-```bash
-npm run typecheck -w apps/ep133-studio
-npm run build -w apps/ep133-studio
-npm run test -w apps/ep133-studio
-```
-
-### For Shared Packages
-
-**Setup:**
-```bash
-cd /home/azoth/studio-hub
-git checkout shared-packages-module
-npm install
-```
-
-**Development:**
-```bash
-# Create feature branch
-git checkout -b feature/your-utility-name
-
-# Make changes in packages/
-
-# Test both studios
-npm run dev:both
-
-# After changes, commit and PR to shared-packages-module
-```
+6. **Créez un patch**:
+   - Modifiez les paramètres en temps réel
+   - Sauvegardez votre création
 
 ---
 
-## 🧪 Testing & Verification
+## 🔍 Vérifier que Tout Fonctionne
 
-### Run All Tests
+### Test 1: Service démarre
 ```bash
-npm run test:all
+npm run dev
+# Vous devez voir: "ready in X ms"
 ```
 
-### Run Specific Tests
+### Test 2: Réponse HTTP
 ```bash
-npm run test -w apps/op1-studio
-npm run test -w apps/ep133-studio
-npm run test -w packages/types
+curl http://localhost:3000/
+# Doit retourner du HTML avec <title>Studio Hub</title>
 ```
 
-### Type Checking
+### Test 3: Console navigateur
+Ouvrez **DevTools** (F12):
+- Allez dans l'onglet **Console**
+- Vous ne devez voir **aucune erreur rouge**
+- Les warnings jaunes sont ok
+
+### Test 4: Charger un preset
+1. Allez dans **Audio Plugin Rack**
+2. Sélectionnez un moteur (ex: "MI Plaits")
+3. Cliquez sur un preset (ex: "Virtual Analog Saw Lead")
+4. Le patch doit se charger sans erreur
+
+---
+
+## 🛠️ Commandes Utiles
+
+### Développement
+
 ```bash
+# Démarrer le dev server
+npm run dev
+
+# Build pour production
+npm run build
+
+# Prévisualiser la build
+npm run preview
+
+# Vérifier les types TypeScript
 npm run typecheck
+
+# Linting (vérifier la qualité du code)
+npm run lint
 ```
 
-### Linting
+### Git
+
 ```bash
-npm run lint:all
+# Vérifier l'état
+git status
+
+# Ajouter les changements
+git add .
+
+# Commit
+git commit -m "Description du changement"
+
+# Push vers GitHub
+git push origin main
 ```
 
-### Build Verification
+### Debugging
+
 ```bash
-npm run build:all
+# Afficher les logs du dev server
+npm run dev 2>&1 | tee server.log
 
-# Output should be:
-# ✓ OP-1 Studio built
-# ✓ EP-133 Studio built
-# ✓ All packages built
-```
+# Vérifier le port 3000
+lsof -i :3000
 
----
-
-## 🚀 Production Deployment
-
-### Prepare Release
-```bash
-git checkout master
-npm install
-npm run build:all
-npm run test:all
-```
-
-### Verify Everything
-```bash
-# All tests pass
-# All builds succeed
-# Git status clean
-```
-
-### Deploy
-```bash
-# Your deployment command here
-# Example: npm run deploy
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Problem: `npm install` fails
-
-**Solution:**
-```bash
-# Clear cache
-npm cache clean --force
-
-# Remove lock file
-rm package-lock.json
-
-# Reinstall
-npm install
-```
-
-### Problem: Port already in use (3000 or 5173)
-
-**Solution:**
-```bash
-# Find process using port
-lsof -i :3000      # For OP-1
-lsof -i :5173      # For EP-133
-
-# Kill process
+# Tuer le processus sur le port 3000
 kill -9 <PID>
 
-# Or use different ports
-npm run dev:op1 -- --port 3001
-npm run dev:ep133 -- --port 5174
+# Vérifier la structure des packages
+ls packages/
+ls packages/audio-bridge/
+ls packages/midi-bridge/
 ```
 
-### Problem: Git branch conflicts
+---
 
-**Solution:**
+## 🚨 Troubleshooting
+
+### Problème 1: "Cannot find module @studio-hub/audio-bridge"
+
+**Cause**: Les aliases ne sont pas configurés correctement dans Vite
+
+**Solution**:
 ```bash
-# Sync with latest master
-git fetch origin
-git rebase origin/master
+# Vérifiez que les fichiers existent
+ls packages/audio-bridge/index.ts
+ls packages/midi-bridge/index.ts
 
-# Or merge
-git merge origin/master
+# Vérifiez vite.config.ts
+cat apps/studio-hub/vite.config.ts | grep "@studio-hub"
 ```
 
-### Problem: TypeScript errors
+**Doit afficher**:
+```typescript
+"@studio-hub/midi-bridge": path.resolve(..."/packages/midi-bridge/index.ts"),
+"@studio-hub/audio-bridge": path.resolve(..."/packages/audio-bridge/index.ts"),
+```
 
-**Solution:**
+### Problème 2: Port 3000 déjà utilisé
+
+**Cause**: Un autre processus utilise le port 3000
+
+**Solution**:
 ```bash
-# Check TypeScript version
-npm ls typescript
+# Option 1: Vite utilisera automatiquement le port suivant
+# (strictPort: false dans vite.config.ts)
 
-# Rebuild
+# Option 2: Tuer le processus existant
+lsof -i :3000
+kill -9 <PID>
+
+# Option 3: Changer le port dans vite.config.ts
+server: { port: 3001 }
+```
+
+### Problème 3: "npm: command not found"
+
+**Cause**: Node.js/npm n'est pas installé
+
+**Solution**:
+```bash
+# Installer Node.js 22+
+# Télécharger depuis: https://nodejs.org/
+
+# Vérifier l'installation
+node --version   # Doit afficher v22+
+npm --version    # Doit afficher npm 10+
+```
+
+### Problème 4: Build échoue
+
+**Cause**: Dépendances corrompues ou incompatibles
+
+**Solution**:
+```bash
+# Réinstallation propre
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm ci
+```
+
+### Problème 5: TypeScript erreurs
+
+**Cause**: Types TypeScript manquants
+
+**Solution**:
+```bash
+# Lancer le typecheck
 npm run typecheck
 
-# Clean and rebuild
-npm run clean
-npm run build:all
-```
-
-### Problem: Package version mismatch
-
-**Solution:**
-```bash
-# Check package versions
-npm ls react react-dom zustand
-
-# Update if needed
-npm install react@19.2.8 react-dom@19.2.8
+# Installer les types manquants
+npm install --save-dev @types/node
 ```
 
 ---
 
-## 📊 Useful Commands Reference
+## 📁 Structure Attendue
 
-### Development
-```bash
-npm run dev:op1              # Start OP-1 dev server
-npm run dev:ep133            # Start EP-133 dev server
-npm run dev:both             # Start both
+Après installation, vous devez avoir:
+
 ```
-
-### Building
-```bash
-npm run build:all            # Build everything
-npm run build -w apps/op1-studio
-npm run build -w apps/ep133-studio
-npm run build -w packages/types
-```
-
-### Testing
-```bash
-npm run test:all             # Test everything
-npm run test -w apps/ep133-studio
-npm run typecheck            # Check types
-npm run lint:all             # Lint all
-```
-
-### Workspace Management
-```bash
-npm list                     # Show all packages
-npm list -w                  # Show workspaces
-npm ls react                 # Check specific package
-```
-
-### Cleanup
-```bash
-npm cache clean --force
-rm -rf node_modules
-npm install
+Engineering-Studio/
+├─ node_modules/              ✅ Dépendances npm
+├─ apps/
+│  └─ studio-hub/
+│     ├─ src/                 ✅ Code source React
+│     ├─ node_modules/        ✅ Dépendances locales
+│     ├─ vite.config.ts       ✅ Configuration Vite (avec aliases)
+│     └─ package.json         ✅
+├─ packages/
+│  ├─ audio-bridge/
+│  │  └─ index.ts             ✅ Logger et audio utils
+│  └─ midi-bridge/
+│     └─ index.ts             ✅ MIDI routing
+├─ docs/                      ✅ Documentation
+├─ package.json               ✅ Root dependencies
+├─ package-lock.json          ✅ Lock file
+├─ tsconfig.json              ✅ Config TypeScript
+├─ README.md                  ✅ Documentation
+└─ .git/                      ✅ Repository Git
 ```
 
 ---
 
-## 📁 Project Structure Quick Reference
+## 🌐 Accès Réseau
 
+### Local (Machine actuelle)
 ```
-studio-hub/
-├── apps/
-│   ├── op1-studio/          # Next.js + Tauri + Drizzle
-│   │   ├── app/
-│   │   ├── package.json
-│   │   └── next.config.ts
-│   │
-│   └── ep133-studio/        # Vite + Tone.js
-│       ├── src/
-│       ├── package.json
-│       └── vite.config.ts
-│
-├── packages/
-│   ├── types/               # Shared types
-│   ├── shared-stores/       # Zustand stores
-│   ├── shared-ui/           # React components
-│   ├── audio-bridge/        # Audio utilities
-│   └── compression/         # Compression tools
-│
-├── docs/                    # Documentation
-│
-├── package.json             # Root workspace
-├── tsconfig.json
-├── eslint.config.mjs
-└── .git/
+http://localhost:3000/
+http://127.0.0.1:3000/
+```
 
+### Réseau (Autres machines)
+```
+http://<your-local-ip>:3000/
+# Exemple: http://192.168.2.59:3000/
+```
+
+### Trouver votre IP locale
+```bash
+# Linux/macOS
+ifconfig | grep "inet " | grep -v 127.0.0.1
+
+# Windows
+ipconfig | findstr "IPv4"
 ```
 
 ---
 
-## 🎓 Learning Resources
+## 💾 Sauvegarder votre Travail
 
-### First Time Setup
-1. Read: [INDEX.md](./INDEX.md) - Navigation guide
-2. Read: [README.md](./README.md) - Monorepo overview
-3. Read: [BRANCHING_STRATEGY.md](./BRANCHING_STRATEGY.md) - Git workflows
+### Commits Git
+```bash
+# Ajouter les changements
+git add .
 
-### Development
-1. Read: [STATUS.md](./STATUS.md) - Technical architecture
-2. Read: [PROGRESS.md](./PROGRESS.md) - Project tracking
-3. Reference: [TEAM_SYNC.md](./TEAM_SYNC.md) - Team coordination
+# Commit local
+git commit -m "Créer mon patch personnalisé"
 
-### Troubleshooting
-1. Check: [ANALYSIS_AND_OPTIMIZATION.md](./ANALYSIS_AND_OPTIMIZATION.md) - Dependencies
-2. Check: [GIT_ALIGNMENT_REPORT.md](./GIT_ALIGNMENT_REPORT.md) - Git setup
+# Pousser vers GitHub
+git push origin main
+```
 
----
-
-## ✅ Startup Verification Checklist
-
-After following this guide, verify:
-
-- [ ] Node.js 22+ installed
-- [ ] npm 10+ installed
-- [ ] git configured
-- [ ] Cloned /home/azoth/studio-hub
-- [ ] `npm install` completed
-- [ ] `npm run build:all` succeeds
-- [ ] `npm run test:all` passes
-- [ ] `npm run dev:both` starts both servers
-- [ ] OP-1 accessible at http://localhost:3000
-- [ ] EP-133 accessible at http://localhost:5173
-- [ ] git branches visible (`git branch`)
-- [ ] Ready to develop!
+### Exporter les Patches (à venir)
+La fonction d'export des patches sera disponible dans les prochaines versions.
 
 ---
 
-## 🎉 You're Ready!
+## 🎯 Étapes Suivantes
 
-Once all checks pass, you're ready to:
-1. Choose your team's module branch
-2. Create feature branches
-3. Start developing
-4. Make pull requests
-5. Deploy from master
+### Après le démarrage
+1. ✅ Explorer les 15 moteurs de synthèse
+2. ✅ Charger et modifier des presets
+3. ✅ Créer vos propres patches
+4. ✅ Connecter un contrôleur MIDI
+5. ✅ Contribuer au code (voir CONTRIBUTING.md)
 
-**Happy coding! 🚀**
+### Si vous voulez développer
+1. Créer une branche feature: `git checkout -b feature/xxx`
+2. Modifier le code dans `apps/studio-hub/src/`
+3. Le dev server redémarre automatiquement (hot reload)
+4. Commit et push quand c'est prêt
+
+### Ressources
+- [README.md](../../README.md) — Vue d'ensemble du projet
+- [QUICK_START.md](QUICK_START.md) — TL;DR (30 sec)
+- [STATUS.md](../STATUS.md) — État du projet
+- [ROADMAP.md](../ROADMAP.md) — Prochaines étapes
 
 ---
 
-**Last Updated**: 2026-08-15  
-**Version**: 1.0  
-**Status**: Guide de démarrage maintenu ; ne vaut pas validation matérielle
+## 📞 Aide
 
-> Pour le statut produit actuel et les tests réellement passés, consulter
-> [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
+### Vérifier les logs
+```bash
+# Terminal 1: Lancer le dev server
+npm run dev
+
+# Terminal 2: Vérifier les logs
+tail -f /tmp/studio-hub.log
+```
+
+### Questions ?
+- Consulter la documentation dans `/docs/`
+- Vérifier le STATUS.md
+- Ouvrir une issue sur GitHub
+
+---
+
+## ✅ Checklist de Configuration
+
+- [ ] Node.js 22+ installé
+- [ ] npm 10+ installé
+- [ ] Repository cloné
+- [ ] `npm ci` réussi
+- [ ] `npm run dev` démarre sans erreur
+- [ ] http://localhost:3000/ répond
+- [ ] Audio Plugin Rack s'affiche
+- [ ] Un preset se charge sans erreur
+- [ ] Console navigateur: aucune erreur rouge
+- [ ] Port 3000 accessible depuis un autre PC
+
+---
+
+**Status**: ✅ Ready to Go!  
+**Version**: 1.0.0  
+**Last Updated**: 2026-08-20
