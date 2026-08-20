@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Test Web MIDI — brut</title>
+<style>
+  body { margin:0; background:#0a0c10; color:#e8ecf3; font:14px/1.6 ui-monospace,Menlo,monospace; padding:20px; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  .sub { color:#6d7789; margin:0 0 18px; }
+  .box { border:1px solid #23272f; border-radius:5px; padding:12px 14px; margin-bottom:14px; background:#12151b; }
+  .box h2 { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#6d7789; margin:0 0 8px; }
+  .ok { color:#21d07a; } .warn { color:#f0b429; } .err { color:#ff5a72; }
+  #log { height:280px; overflow-y:auto; }
+  .line { display:grid; grid-template-columns:76px 34px 130px 1fr; gap:10px; white-space:nowrap; }
+  .in { color:#4aa7ff; } .dir { font-weight:700; }
+  kbd { background:#23272f; padding:1px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+<h1>Test Web MIDI — sans application</h1>
+<p class="sub">
+  Cette page n'utilise ni React, ni composant du hub. Elle appelle
+  <code>navigator.requestMIDIAccess()</code> et affiche tel quel ce que Chrome
+  répond. Si rien n'apparaît ici, le problème est entre Chrome et le système —
+  pas dans le code du hub.
+</p>
+
+<div class="box">
+  <h2>Contexte</h2>
+  <div id="ctx"></div>
+</div>
+
+<div class="box">
+  <h2>Accès MIDI</h2>
+  <div id="access">demande en cours…</div>
+</div>
+
+<div class="box">
+  <h2>Ports détectés</h2>
+  <div id="ports">—</div>
+</div>
+
+<div class="box">
+  <h2>Messages reçus — appuyez sur une touche de l'OP-1 ou de l'EP-133</h2>
+  <div id="log"><span class="warn">aucun message</span></div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+$('ctx').innerHTML = [
+  ['origine', location.origin],
+  ['contexte sécurisé', window.isSecureContext ? '<span class="ok">oui</span>' : '<span class="err">NON</span>'],
+  ['requestMIDIAccess', navigator.requestMIDIAccess ? '<span class="ok">présent</span>' : '<span class="err">ABSENT</span>'],
+  ['navigateur', esc(navigator.userAgent.slice(0, 90))],
+].map(([k, v]) => `${k.padEnd(20)} ${v}`).join('<br>');
+
+let count = 0;
+function logMsg(portName, data) {
+  if (count === 0) $('log').innerHTML = '';
+  count++;
+  const hex = [...data].map(b => b.toString(16).padStart(2, '0')).join(' ');
+  const row = document.createElement('div');
+  row.className = 'line in';
+  row.innerHTML = `<span>${new Date().toLocaleTimeString('fr-FR', {hour12:false})}</span>`
+    + `<span class="dir">IN</span><span>${hex}</span><span>${esc(portName)}</span>`;
+  $('log').appendChild(row);
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+if (!navigator.requestMIDIAccess) {
+  $('access').innerHTML = '<span class="err">Web MIDI indisponible : API absente de ce navigateur.</span>';
+} else {
+  // sysex:false d'abord — c'est le cas le moins exigeant en permission.
+  navigator.requestMIDIAccess({ sysex: false }).then(access => {
+    $('access').innerHTML = '<span class="ok">accordé (sysex: false)</span>';
+
+    const refresh = () => {
+      const rows = [];
+      access.inputs.forEach(inp => {
+        try { inp.open && inp.open(); } catch (e) {}
+        inp.onmidimessage = (m) => logMsg(inp.name || '?', m.data);
+        rows.push(`<span class="ok">IN </span> ${esc(inp.name)} — état: ${inp.state}, connexion: ${inp.connection}`);
+      });
+      access.outputs.forEach(out => {
+        rows.push(`<span class="warn">OUT</span> ${esc(out.name)} — état: ${out.state}`);
+      });
+      $('ports').innerHTML = rows.length ? rows.join('<br>')
+        : '<span class="err">aucun port — Chrome ne voit aucun appareil MIDI</span>';
+    };
+
+    refresh();
+    access.onstatechange = refresh;
+  }).catch(err => {
+    $('access').innerHTML = `<span class="err">refusé : ${esc(err && err.message || err)}</span>`;
+  });
+}
+</script>
+</body>
+</html>
