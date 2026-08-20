@@ -1,8 +1,8 @@
 # Git — stratégie actuelle
 
-**Dépôt :** `propann/OP-1-Studio`  
+**Dépôt :** `propann/Engineering-Studio`
 **Branche canonique :** `main`  
-**Dernière consolidation :** PR #1, fusionnée le 17 août 2026
+**Dernière vérification :** 20 août 2026
 
 ## Règle simple
 
@@ -25,10 +25,9 @@ conservées comme archives Git.
 ## Branches actuellement connues
 
 - `main` : branche de production et de référence.
-- `integration/studio-hub` : consolidation déjà fusionnée dans `main`, à
-  conserver seulement tant qu’un nettoyage des références n’est pas décidé.
-- `phase4/adaptive-framework` : historique de travail et prototypes.
-- `agent/op1-studio-workspace` : ancien espace de travail OP‑1.
+- `deploy/coolify-production` : ancienne branche de déploiement, à comparer
+  avant toute suppression.
+- Les autres branches historiques doivent être inspectées avant suppression.
 
 Les branches historiques ne doivent recevoir aucun nouveau commit produit.
 Leur contenu utile est déjà représenté dans `main` ou dans `archive/`.
@@ -51,10 +50,8 @@ Choisir un nom qui décrit une seule intention :
 ## Avant la PR
 
 ```bash
-npm run typecheck:all
-npm run build:all
-npm run test:all
-npm run lint:all
+bun run typecheck
+bun run build
 git diff --check
 git status --short
 ```

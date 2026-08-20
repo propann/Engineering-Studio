@@ -9,12 +9,12 @@ import "./sound-patch-creator.css";
 type MachineTarget = "op1" | "ep133";
 type Op1EngineType = "fm" | "dna" | "cluster" | "string" | "phase" | "digital" | "pulse";
 
-export default function SoundPatchCreator({ profileName = "AZOTH", onClose }: { profileName?: string; onClose?: () => void }) {
+export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onClose }: { profileName?: string; onClose?: () => void }) {
   const [targetMachine, setTargetMachine] = useState<MachineTarget>("op1");
 
   // OP-1 SYNTH PATCH ENGINE PARAMETERS
   const [op1Engine, setOp1Engine] = useState<Op1EngineType>("fm");
-  const [patchName, setPatchName] = useState<string>("AZOTH_POLY_SYNTH_01");
+  const [patchName, setPatchName] = useState<string>("MON_PATCH_01");
   const [knob1Val, setKnob1Val] = useState<number>(64); // Blue Encoder
   const [knob2Val, setKnob2Val] = useState<number>(85); // Green Encoder
   const [knob3Val, setKnob3Val] = useState<number>(42); // White Encoder

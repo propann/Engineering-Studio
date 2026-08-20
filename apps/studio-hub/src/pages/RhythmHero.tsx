@@ -3,7 +3,7 @@ import { useState } from "react";
 import { TopBar } from "../components/TopBar";
 
 export default function RhythmHero() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("NOUVEAU MEMBRE");
 
   return (
     <main className="game-page" style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>

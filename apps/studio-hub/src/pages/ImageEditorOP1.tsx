@@ -187,7 +187,7 @@ export type ToolType =
   | "picker";
 
 export default function ImageEditorOP1() {
-  const [profileName, setProfileName] = useState("AZOTH");
+  const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
   const [notice, setNotice] = useState<string>("");
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement>(null);

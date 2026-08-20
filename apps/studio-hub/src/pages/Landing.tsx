@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { TopBar } from "../components/TopBar";
 
 export default function Home() {
-  const [profileName, setProfileName] = useState("AZOTH");
+  const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
 
   useEffect(() => {
     try {

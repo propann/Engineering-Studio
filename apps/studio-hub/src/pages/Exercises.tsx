@@ -3,7 +3,7 @@ import { useState } from "react";
 import { TopBar } from "../components/TopBar";
 
 export default function Exercises() {
-  const [profileName] = useState("AZOTH");
+  const [profileName] = useState("NOUVEAU MEMBRE");
   const [activeMode, setActiveMode] = useState<"drumkit" | "melodie" | "accord">("accord");
 
   const exercises = {
