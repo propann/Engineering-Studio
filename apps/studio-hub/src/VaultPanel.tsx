@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 export type MachineId = "op1" | "ep133";
-type BackupCategory = "tape" | "album" | "drum" | "synth" | "projects" | "samples";
+export type BackupCategory = "tape" | "album" | "drum" | "synth" | "projects" | "samples";
 type DirectoryHandle = FileSystemDirectoryHandle & {
   entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
   removeEntry?: (name: string, options?: { recursive?: boolean }) => Promise<void>;
