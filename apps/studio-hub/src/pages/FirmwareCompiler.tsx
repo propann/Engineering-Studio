@@ -30,7 +30,7 @@ type CompilationReport = {
 };
 
 export default function FirmwareCompiler() {
-  const [profileName] = useState("INVITÉ");
+  const [profileName] = useState("NOUVEAU MEMBRE");
   const [notice, setNotice] = useState("🔄 Prêt à compiler");
 
   // Compiler state

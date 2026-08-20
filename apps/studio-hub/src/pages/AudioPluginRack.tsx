@@ -295,7 +295,7 @@ function buildFeedbackLoop(
 }
 
 
-export default function AudioPluginRack({ profileName = "INVITÉ", onClose }: { profileName?: string; onClose?: () => void }) {
+export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClose }: { profileName?: string; onClose?: () => void }) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
   const [midiConnected, setMidiConnected] = useState<boolean>(false);

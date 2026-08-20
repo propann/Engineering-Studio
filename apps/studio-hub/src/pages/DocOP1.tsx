@@ -3,7 +3,7 @@ import { useState } from "react";
 import { TopBar } from "../components/TopBar";
 
 export default function DocOP1() {
-  const [profileName] = useState("INVITÉ");
+  const [profileName] = useState("NOUVEAU MEMBRE");
   const [activeTab, setActiveTab] = useState<"overview" | "firmware" | "editor" | "procedures">("overview");
 
   return (

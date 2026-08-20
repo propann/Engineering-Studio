@@ -64,12 +64,12 @@ const OFFICIAL_OP1_SOUNDS: SoundItem[] = [
 
 // SAMPLE DATA - OP-1 CLIENT LOCAL LIBRARY
 const CLIENT_OP1_SOUNDS: SoundItem[] = [
-  { id: "op1-c01", name: "Patch Perso Synth 01", machine: "op1", owner: "client", category: "synth", format: "AIF + OP-1 JSON", sizeKb: 1100, durationSec: 3.2, tags: ["INVITÉ", "OP1", "Custom"], seedWave: [0.6, 0.85, 0.7, 0.9, 0.5] },
-  { id: "op1-c02", name: "Export Tape Track 01 Session", machine: "op1", owner: "client", category: "loop", format: "Mono AIF", sizeKb: 4200, durationSec: 15.0, tags: ["INVITÉ", "Tape", "Track1"], seedWave: [0.4, 0.5, 0.6, 0.55, 0.45, 0.35] },
-  { id: "op1-c03", name: "Drum Kit Custom Vinyl", machine: "op1", owner: "client", category: "perc", format: "AIF + OP-1 JSON", sizeKb: 2150, durationSec: 12.0, tags: ["INVITÉ", "Vinyl", "Drums"], seedWave: [0.9, 0.3, 0.75, 0.2, 0.8, 0.1] },
+  { id: "op1-c01", name: "Patch Perso Synth 01", machine: "op1", owner: "client", category: "synth", format: "AIF + OP-1 JSON", sizeKb: 1100, durationSec: 3.2, tags: ["NOUVEAU MEMBRE", "OP1", "Custom"], seedWave: [0.6, 0.85, 0.7, 0.9, 0.5] },
+  { id: "op1-c02", name: "Export Tape Track 01 Session", machine: "op1", owner: "client", category: "loop", format: "Mono AIF", sizeKb: 4200, durationSec: 15.0, tags: ["NOUVEAU MEMBRE", "Tape", "Track1"], seedWave: [0.4, 0.5, 0.6, 0.55, 0.45, 0.35] },
+  { id: "op1-c03", name: "Drum Kit Custom Vinyl", machine: "op1", owner: "client", category: "perc", format: "AIF + OP-1 JSON", sizeKb: 2150, durationSec: 12.0, tags: ["NOUVEAU MEMBRE", "Vinyl", "Drums"], seedWave: [0.9, 0.3, 0.75, 0.2, 0.8, 0.1] },
 ];
 
-export default function SoundEditorHub({ profileName = "INVITÉ" }: { profileName?: string; onClose?: () => void }) {
+export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE" }: { profileName?: string; onClose?: () => void }) {
   // Studio View Mode (Space Saver): 4 Quadrants vs EP-133 Focus vs OP-1 Focus
   const [viewMode, setViewMode] = useState<StudioViewMode>("grid4");
 

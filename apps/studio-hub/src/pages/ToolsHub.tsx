@@ -55,7 +55,7 @@ export default function ToolsHub(){
  const [showSoundEditor,setShowSoundEditor]=useState(false);
  const [showOP1Studio,setShowOP1Studio]=useState(false);
  const [showEP133Studio,setShowEP133Studio]=useState(false);
- const [profileName,setProfileName]=useState("INVITÉ");
+ const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
  useEffect(()=>{try{const raw=localStorage.getItem("studio-hub-profile");if(raw){const profile=JSON.parse(raw) as {name?:string};if(profile.name?.trim())setProfileName(profile.name.trim())}}catch{}},[]);
 

@@ -9,7 +9,7 @@ import "./sound-patch-creator.css";
 type MachineTarget = "op1" | "ep133";
 type Op1EngineType = "fm" | "dna" | "cluster" | "string" | "phase" | "digital" | "pulse";
 
-export default function SoundPatchCreator({ profileName = "INVITÉ", onClose }: { profileName?: string; onClose?: () => void }) {
+export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onClose }: { profileName?: string; onClose?: () => void }) {
   const [targetMachine, setTargetMachine] = useState<MachineTarget>("op1");
 
   // OP-1 SYNTH PATCH ENGINE PARAMETERS
