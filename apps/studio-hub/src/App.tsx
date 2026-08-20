@@ -22,6 +22,7 @@ import OP1StudioPage from "./pages/OP1StudioPage";
 import MidiSettings from "./pages/MidiSettings";
 import OP1Settings from "./pages/OP1Settings";
 import BackupLab from "./pages/BackupLab";
+import OrphanPages from "./pages/OrphanPages";
 
 type Page = 
   | "landing" 
@@ -46,7 +47,8 @@ type Page =
   | "audio-plugin-rack"
   | "midi-settings"
   | "op1-settings"
-  | "backup-lab";
+  | "backup-lab"
+  | "orphan-pages";
 
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>("landing");
@@ -93,6 +95,8 @@ export function App() {
       return <OP1Settings />;
     case "backup-lab":
       return <BackupLab />;
+    case "orphan-pages":
+      return <OrphanPages />;
     case "audio-plugin-rack":
       return <AudioPluginRack onClose={() => setCurrentPage("outils")} />;
     case "landing":

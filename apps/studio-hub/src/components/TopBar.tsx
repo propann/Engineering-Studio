@@ -37,6 +37,7 @@ export function TopBar({
     { id: "studio-ep133", label: "EP-133 Studio", icon: "🥁", badge: "K.O. II" },
     { id: "sound-editor", label: "Sons", icon: "🎵" },
     { id: "outils", label: "Hub Outils", icon: "🔗" },
+    { id: "orphan-pages", label: "Pages", icon: "🗂️" },
   ];
 
   return (
