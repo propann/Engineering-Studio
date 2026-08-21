@@ -145,7 +145,7 @@ git checkout main
 ```
 
 Prérequis, à faire une seule fois : configurer l'application Coolify et les
-secrets GitHub → [../DEPLOY_SECRETS.md](../DEPLOY_SECRETS.md).
+secrets GitHub → [../DEPLOIEMENT.md](../DEPLOIEMENT.md).
 
 ---
 

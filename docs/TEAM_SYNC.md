@@ -5,7 +5,7 @@
 **Subject**: Parcours Hub hors machine validés — documentation recalée
 
 > La consolidation de phase 3 décrite plus bas est historique. La source de
-> vérité est [`docs/ROADMAP_ACTIVE_2026-08-16.md`](docs/ROADMAP_ACTIVE_2026-08-16.md).
+> vérité est [`docs/ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP.md).
 
 ---
 
@@ -35,12 +35,12 @@ Les contrôles produit actuellement validés sont :
    - Role-specific reading paths
    - Find info by topic or need
 
-2. **[README.md](./README.md)**
+2. **[README.md](../README.md)**
    - Monorepo structure overview
    - Quick start commands
    - Package descriptions
 
-3. **[PROGRESS.md](./PROGRESS.md)**
+3. **[PROGRESS.md](archived/PROGRESS.md)**
    - Complete project tracking
    - All phases documented
    - Work log and timeline
@@ -54,7 +54,7 @@ Les contrôles produit actuellement validés sont :
    - Known issues and notes
    - Optimization opportunities
 
-5. **[PHASE3_COMPLETION.md](./PHASE3_COMPLETION.md)**
+5. **[PHASE3_COMPLETION.md](archived/PHASE3_COMPLETION.md)**
    - Phase completion report
    - Work summary
    - Architectural decisions
@@ -436,10 +436,10 @@ For questions:
 ## 🔗 Quick Links
 
 - **[Start Here](./INDEX.md)** - Navigation guide
-- **[Quick Start](./README.md)** - Overview & commands
-- **[Full Context](./PROGRESS.md)** - Complete tracking
+- **[Quick Start](../README.md)** - Overview & commands
+- **[Full Context](archived/PROGRESS.md)** - Complete tracking
 - **[Technical Details](./STATUS.md)** - Architecture
-- **[Phase Complete](./PHASE3_COMPLETION.md)** - Completion report
+- **[Phase Complete](archived/PHASE3_COMPLETION.md)** - Completion report
 
 ---
 

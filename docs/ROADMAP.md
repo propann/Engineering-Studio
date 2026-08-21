@@ -8,7 +8,7 @@
 
 - **Current Status**: See [STATUS.md](#current-status)
 - **Architecture**: See [docs/architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)
-- **Getting Started**: See [STARTUP_GUIDE.md](../STARTUP_GUIDE.md)
+- **Getting Started**: See [STARTUP_GUIDE.md](guides/STARTUP_GUIDE.md)
 
 ---
 
@@ -79,10 +79,11 @@ A unified suite for Teenage Engineering instruments (OP-1, EP-133) integrated wi
 - [ ] Create consolidated STATUS.md
 - [ ] Organize guides in /docs/guides/
 - [x] Clean up root directory — 9 .md files remain at root (README, INDEX,
-      GETTING_STARTED, DEPLOYMENT, DEPLOY_README, DEPLOY_SECRETS, MODULES_STATUS,
-      AUDIO_RACK_README, AUDIO_RACK_ROADMAP). Target was ~8; close enough that the
-      remaining work is consolidating the three deployment documents (1550 lines
-      between them), not deleting files.
+      GETTING_STARTED, DEPLOIEMENT, MODULES_STATUS, AUDIO_RACK_README,
+      AUDIO_RACK_ROADMAP) — 7, under the ~8 target. The four deployment documents
+      (1618 lines across DEPLOYMENT, DEPLOY_README, DEPLOY_SECRETS and
+      docs/guides/COOLIFY_DEPLOYMENT) were merged into a single DEPLOIEMENT.md on
+      2026-08-21, dropping what described machinery this project does not have.
 
 **Est. Completion**: 2026-08-22
 
@@ -488,9 +489,9 @@ The project applies orchestration principles to service architecture:
 ## 🔗 Related Documents
 
 - [ARCHITECTURE.md](architecture/ARCHITECTURE.md) - Technical architecture
-- [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](../RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) - Musical concept
+- [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) - Musical concept
 - [STATUS.md](#current-status) - Current detailed status
-- [STARTUP_GUIDE.md](../STARTUP_GUIDE.md) - Getting started
+- [STARTUP_GUIDE.md](guides/STARTUP_GUIDE.md) - Getting started
 
 ---
 

@@ -6,8 +6,8 @@
 
 ## 📚 Quick Navigation
 
-- **Quick Start**: See [STARTUP_GUIDE.md](../../STARTUP_GUIDE.md)
-- **Rack Orchestration**: See [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](../../RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md)
+- **Quick Start**: See [STARTUP_GUIDE.md](../guides/STARTUP_GUIDE.md)
+- **Rack Orchestration**: See [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md)
 - **Implementation Details**: See below
 
 ---
@@ -197,7 +197,7 @@ Beat Start (0ms)
 
 ## 🎼 Orchestration Concept
 
-See [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](../../RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) for detailed explanation of:
+See [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) for detailed explanation of:
 
 - **Musical Orchestration** applied to services
 - **Harmony Detection** (health monitoring)
@@ -307,8 +307,8 @@ detectAudioDuplicatesSha256()
 
 ## 📚 Related Documentation
 
-- [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](../../RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) - Musical orchestration concept
-- [STARTUP_GUIDE.md](../../STARTUP_GUIDE.md) - Quick start instructions
+- [RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) - Musical orchestration concept
+- [STARTUP_GUIDE.md](../guides/STARTUP_GUIDE.md) - Quick start instructions
 - [README.md](../../README.md) - Project overview
 - [packages/midi-bridge/index.ts](../../packages/midi-bridge/index.ts) - Source code
 

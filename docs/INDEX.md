@@ -7,7 +7,7 @@ Ce dossier décrit l’état réel du dépôt propann/Engineering-Studio.
 1. [Vue d’ensemble du projet](PROJECT_AUDIT_2026-08-20.md)
 2. [Architecture actuelle](architecture/ARCHITECTURE_CURRENT.md)
 3. [Démarrage local](guides/QUICK_START.md)
-4. [Déploiement Coolify](guides/COOLIFY_DEPLOYMENT.md)
+4. [Déploiement Coolify](../DEPLOIEMENT.md)
 5. [Données d’un nouvel utilisateur](guides/NEW_USER_DATA_MODEL.md)
 6. [État et prochaines étapes](STATUS.md)
 7. [Recherche moteurs audio et intégration du Rack](architecture/AUDIO_ENGINE_RESEARCH_AND_RACK_INTEGRATION_2026-08-20.md)

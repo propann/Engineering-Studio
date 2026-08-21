@@ -78,7 +78,7 @@ Build   : bun run build
 Start   : bun run preview --host 0.0.0.0 --port 3000
 ~~~
 
-Voir [docs/guides/COOLIFY_DEPLOYMENT.md](docs/guides/COOLIFY_DEPLOYMENT.md)
+Voir [DEPLOIEMENT.md](DEPLOIEMENT.md)
 pour le health check et les erreurs déjà rencontrées.
 
 ## Données utilisateur
