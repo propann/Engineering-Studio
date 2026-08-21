@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { readProfile, DEFAULT_PROFILE_NAME, type StudioProfile } from "../core/profile";
-import { loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
+import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { VaultPanel, type MachineId } from "../VaultPanel";
 import "./backup-lab.css";
 
@@ -26,11 +26,26 @@ export default function BackupLab() {
   const machineSummary = profile?.machines as Record<MachineId, { enabled?: boolean }> | undefined;
 
   useEffect(() => {
-    void loadDirectoryHandle(WORKSPACE_HANDLE_KEY).then((handle) => {
+    void (async () => {
+      const handle = await loadDirectoryHandle(WORKSPACE_HANDLE_KEY);
       if (!handle) return;
+
+      // On ne l'adopte que si la permission tient encore.
+      //
+      // Le handle revient d'IndexedDB, mais pas le droit de lire : le
+      // navigateur le revoque a la fermeture de l'onglet, sauf choix explicite
+      // de l'utilisateur. Adopter sans verifier affichait « espace connecte »
+      // par-dessus un bandeau rouge « L'acces au dossier a ete refuse », avec
+      // une liste de sauvegardes vide — l'effet de lecture appelait
+      // requestPermission hors de tout clic, la ou il ne peut pas aboutir.
+      //
+      // Interrogation silencieuse : elle n'ouvre aucune fenetre, ce qui la
+      // rend sure ici. La redemande, elle, se fait au clic sur « Connecter ».
+      if (!(await hasStoredPermission(handle, "readwrite"))) return;
+
       setWorkspaceHandle(handle);
       setWorkspaceName(handle.name);
-    });
+    })();
   }, []);
 
   return (

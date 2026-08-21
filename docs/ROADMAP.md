@@ -188,6 +188,29 @@ appeared on the roadmap.
       caught three parameters an earlier manual audit had missed: `dxAlgorithm`,
       `surgeWavetable` and `fluidPreset` were read only to fill a toast string.
 
+#### Workspace folder survives a reload (2026-08-21)
+- [x] Permission checked before adopting a restored folder handle. IndexedDB gives the
+      handle back across visits, but never the permission: the browser revokes access
+      when the tab closes unless the user explicitly allowed every visit.
+      BackupLab.tsx adopted the restored handle unconditionally, so after a reload the
+      UI announced "ESPACE MAÎTRE: <folder>" while the read effect called
+      requestPermission from inside a useEffect — with no transient user activation,
+      where the browser resolves "prompt" without showing anything. Result on screen:
+      a connected workspace, a red "L'accès au dossier a été refusé" banner, and an
+      empty snapshot list. The only way out was to re-pick the same folder by hand.
+      Added `hasStoredPermission` (silent query, safe at page load) and
+      `requestStoredPermission` (needs a click) — the same split apps/ep133-studio had
+      already established. BackupLab now only adopts a handle whose permission still
+      holds; "Connecter" reclaims the remembered folder inside the click gesture
+      instead of reopening the picker.
+      Guard worth naming: the reclaim only fires when nothing is connected. That button
+      reads "Changer" once a workspace is active, and without the guard it would have
+      silently re-adopted the folder already stored — i.e. refused to change.
+      Verified by sabotage, three guards, each failing only its own test.
+      Note: the permission helpers now exist in both apps. ep133-studio sits outside
+      the tsconfig include, so its copy is not typechecked; sharing them through
+      packages/ is the clean follow-up.
+
 #### Patch search wired to the rack (2026-08-21)
 - [x] Patch search connected — the rack holds 91 factory patches across 15 engines
       plus the user's own, and had no way to search them: you scrolled. Meanwhile

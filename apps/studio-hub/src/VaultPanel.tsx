@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { saveDirectoryHandle, WORKSPACE_HANDLE_KEY } from "./core/storage/directoryHandleStore";
+import { loadDirectoryHandle, requestStoredPermission, saveDirectoryHandle, WORKSPACE_HANDLE_KEY } from "./core/storage/directoryHandleStore";
 
 export type MachineId = "op1" | "ep133";
 export type BackupCategory = "tape" | "album" | "drum" | "synth" | "projects" | "samples";
@@ -653,6 +653,24 @@ export function VaultPanel({
 
   async function chooseWorkspace() {
     clearMessage();
+
+    // Nous sommes dans un gestionnaire de clic : c'est le seul moment ou le
+    // navigateur accepte de redemander une permission. Si un dossier a deja
+    // ete choisi lors d'une visite precedente, on tente de le reprendre tel
+    // quel — inutile de faire re-designer a l'utilisateur un dossier que
+    // l'application connait deja.
+    //
+    // Uniquement quand rien n'est connecte : ce bouton porte « Changer » des
+    // qu'un espace est actif, et changer doit ouvrir le selecteur. Sans cette
+    // garde, il aurait repris en silence le dossier deja memorise — c'est-a-dire
+    // refuse de changer.
+    const memorise = !workspaceHandle ? await loadDirectoryHandle(WORKSPACE_HANDLE_KEY) : null;
+    if (memorise && (await requestStoredPermission(memorise, "readwrite"))) {
+      onWorkspaceSelected(memorise, memorise.name);
+      setStatus(`Espace ${memorise.name} reconnecté.`);
+      return;
+    }
+
     const picker = directoryPicker();
     if (!picker) { setError("Ce navigateur ne permet pas de choisir un dossier local."); return; }
     try {
