@@ -16,7 +16,7 @@ npm --version     # Should be 9+
 
 ### 2. Install Dependencies
 ```bash
-npm install       # zustand est déjà dans les dependencies
+bun install       # le dépôt est sous bun.lock (le CI aussi)
 ```
 
 ### 3. Start Dev Server
@@ -75,7 +75,9 @@ Fait le 2026-08-20 :
 - [x] `npm run build` : passe
 - [x] Déploiement Docker/Coolify : `Dockerfile`, `docker-compose.yml`, `coolify.json`, workflow CI
 - [x] Build Docker vérifié en local
-- [x] Correctif du sélecteur de dossier (ProfileCreator) + HTTPS sur le serveur de dev
+- [x] Correctif du sélecteur de dossier (ProfileCreator)
+- [x] HTTPS auto-signé **retiré** du serveur de dev — il cassait Web MIDI
+      (Chrome refuse les fonctionnalités puissantes sur un certificat en erreur)
 - [x] Documentation réalignée sur l'état réel du dépôt
 
 Reste à faire :
@@ -174,7 +176,7 @@ Repeat for Modules 2-5
 
 ```bash
 # Development
-npm run dev              # Serveur de dev Vite (HTTPS, port 3000)
+npm run dev              # Serveur de dev Vite (HTTP, port 3000)
 npm run build            # Build de production -> dist/
 npm run preview          # Sert le build (HTTP, port 3000)
 

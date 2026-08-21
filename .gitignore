@@ -47,5 +47,10 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 apps/*/package-lock.json
+# Racine : le depot est sous bun.lock. npm regenere celui-ci des qu'on lance
+# `npm test` ou `npm run build`, et un `git add -A` le ramene alors dans le
+# depot sans qu'on le remarque. C'est exactement ce qui s'est produit dans le
+# commit 29e89d7, cense justement supprimer ce doublon.
+/package-lock.json
 tools/vendor/**/__pycache__/
 tools/runtime/

@@ -11,30 +11,56 @@
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run build` | ✅ passe (~640 ms) |
 | Build Docker | ✅ passe (Node 20 Alpine) |
-| Infra de test | ❌ aucune (pas de vitest, pas de script `test`) |
-| Couverture de test | ❌ 0 % — aucun test écrit |
-| Serveur de dev | HTTPS via `@vitejs/plugin-basic-ssl` |
+| Infra de test | ✅ vitest, `npm test` |
+| Couverture de test | ✅ 238 tests, 16 fichiers |
+| Serveur de dev | **HTTP simple** — voir ci-dessous |
 
 > ⚠️ Les colonnes « Tests » ci-dessous décrivent la **cible**, pas l'existant.
-> Aucun fichier `*.test.ts` n'a été écrit à ce jour.
+> Les tests écrits portent sur les fonctions pures et sur la structure du
+> source ; il n'y a aucun test de rendu React.
+
+### Le serveur de dev est en HTTP, délibérément
+
+Ce document a longtemps annoncé un serveur HTTPS via
+`@vitejs/plugin-basic-ssl`. **Ce plugin a été retiré, et il ne faut pas le
+remettre.**
+
+Chrome accorde bien `isSecureContext` sur une origine dont le certificat est en
+erreur, mais il refuse les *fonctionnalités puissantes* dessus :
+`requestMIDIAccess` ne renvoyait alors aucun appareil, sans message d'erreur.
+Le diagnostic a coûté une session entière.
+
+`http://localhost:3000` est un contexte sécurisé **sans certificat** — c'est
+l'exception localhost. Le sélecteur de dossier et Web MIDI y fonctionnent tous
+les deux.
+
+En revanche `http://192.168.2.59:3000` n'est pas un contexte sécurisé : ni le
+sélecteur ni Web MIDI n'y sont disponibles, quoi qu'on écrive dans le code.
+Voir `docs/FOLDER_PICKER.md`.
 
 ---
 
 ## Phase 1: Core Features (Week 1) 🚀
 
 ### Module 1: Patch Search & Tagging ⏱️ 2-3h
-**Status**: 🟡 IN PROGRESS (~40 %) — **écrit mais pas branché**  
+**Status**: ✅ BRANCHÉ (2026-08-21)  
 **Files**:
-- ✅ `PatchSearchEngine.ts` - Complete
-- ✅ `PatchSearchModule.tsx` - Complete
-- ❌ `patch-search.test.ts` - TODO (vitest non installé)
-- ❌ Integration in AudioPluginRack.tsx - TODO
+- ✅ `PatchSearchEngine.ts` — branché dans le rack via `filtrerPatches`
+- ✅ `PatchSearchEngine.test.ts` — 159 lignes
+- ✅ `PatchSearchWiring.test.ts` — verrouille le câblage
+- ⚠️ `PatchSearchModule.tsx` — **doublon sans consommateur**, voir ci-dessous
 
-> ⚠️ Vérifié le 2026-08-20 : ni `PatchSearchModule` ni `PatchSearchEngine` ne
-> sont importés hors de leur propre répertoire. Le store `audioRackStore` non
-> plus. `AudioPluginRack.tsx` conserve ses ~50 `useState` et ses types locaux.
-> **En l'état, tout ce code est mort** — il compile mais ne s'exécute jamais.
-> Le brancher est le prochain jalon utile.
+> Le moteur cherchait dans `audioRackStore`, un store Zustand persisté sous
+> « studio-hub-audio-rack », alors que le rack garde ses patches utilisateur
+> sous « studio_hub_user_patches ». Clef différente, store jamais alimenté :
+> une recherche testée qui ne pouvait rien trouver, à côté de 91 patches
+> d'usine qu'on ne pouvait que faire défiler.
+>
+> `PatchSearchEngine` est maintenant appelé directement par
+> `AudioPluginRack.tsx` sur les listes réelles. **Restent en doublon sans
+> consommateur** : `PatchSearchModule.tsx` (429 lignes) et
+> `audioRackStore.ts` (470 lignes) — à trancher, l'interface relevant de
+> l'autre terrain (cf. `docs/backup/CONTRAT_INTEGRATION.md`).
 
 **Description**: Search and filter patches by name, tag, engine, category. Favorite/recent features.
 
@@ -238,10 +264,10 @@ Week 2:
 ## 🧪 Testing Requirements
 
 For each module:
-Aucun de ces points n'est atteint. Préalable à tous : installer un runner
-(`npm i -D vitest @vitest/coverage-v8` + script `test`).
+Le runner est installé (`npm test` → vitest). Les points ci-dessous décrivent
+ce qui reste à couvrir module par module.
 
-- [ ] Unit tests (Vitest) — runner non installé
+- [x] Unit tests (Vitest) — 238 tests sur les fonctions pures et la structure
 - [ ] Integration tests
 - [ ] Audio quality tests
 - [ ] Performance benchmarks
@@ -254,7 +280,7 @@ Aucun de ces points n'est atteint. Préalable à tous : installer un runner
 ## 🚀 Deployment Checklist
 
 - [ ] All modules complete — 0/12 branchés (module 1 écrit mais pas importé)
-- [ ] 90%+ test coverage — 0 %, aucun test
+- [ ] 90%+ test coverage — 238 tests écrits ; couverture non mesurée
 - [ ] Performance profiling (<10% CPU) — jamais mesuré
 - [x] Documentation alignée sur l'état réel du dépôt (2026-08-20)
 - [ ] Mobile testing passed

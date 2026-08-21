@@ -78,7 +78,11 @@ A unified suite for Teenage Engineering instruments (OP-1, EP-133) integrated wi
 - [x] Create consolidated ROADMAP.md (this file)
 - [ ] Create consolidated STATUS.md
 - [ ] Organize guides in /docs/guides/
-- [ ] Clean up root directory (remove 46 .md files → ~8)
+- [x] Clean up root directory — 9 .md files remain at root (README, INDEX,
+      GETTING_STARTED, DEPLOYMENT, DEPLOY_README, DEPLOY_SECRETS, MODULES_STATUS,
+      AUDIO_RACK_README, AUDIO_RACK_ROADMAP). Target was ~8; close enough that the
+      remaining work is consolidating the three deployment documents (1550 lines
+      between them), not deleting files.
 
 **Est. Completion**: 2026-08-22
 
@@ -134,13 +138,23 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
             length fails exactly the corrupted-same-size case.
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
         and `test:watch` scripts, test step wired into CI, verified inside the
-        `oven/bun` container the workflow uses. 114 tests currently pass.
+        `oven/bun` container the workflow uses. 238 tests currently pass.
 - [~] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
       - [x] OP-1 Disk Mode read path validated on real hardware (2026-08-20): device mounted
             read-only, 66 files / 270 MB copied and compared byte-for-byte with `cmp`,
             zero divergence. Categories present: tape, album, drum, synth.
-      - [ ] OP-1 restore path — still not attempted on hardware. The return point now
-            exists; the disk is deliberately mounted read-only during testing.
+      - [x] OP-1 write path validated on real hardware (2026-08-21): a full verified
+            backup first (66 files, byte-compared, zero divergence), then a different
+            version of `synth/user/8.aif` written to the device — same size, different
+            content, the case a size comparison would miss. Unmounted and remounted
+            before re-reading, so the check reads the device and not the kernel cache;
+            that step is the one that gets skipped, and skipping it makes the whole
+            verification meaningless. Original restored afterwards, 66 files re-checked,
+            zero divergence. The OP-1 re-scans its volume on each disconnect and reports
+            normally after these writes, so writing from Linux does not confuse it.
+      - [ ] OP-1 restore path *through the application* — the mechanism is proven, its
+            orchestration (prevolRestauration, return point, restoreBackup loop) is not.
+            Fixtures are ready in `_essai-coffre/`, built on 7 genuinely divergent files.
       - [ ] EP-133 — no mass-storage mode; its sounds are reachable only through SysEx
             (`listMachineSounds`), so validation requires the browser with SysEx granted
 
@@ -178,7 +192,7 @@ appeared on the roadmap.
 #### Tests
 - [x] vitest configured for studio-hub, scoped so ep133-studio keeps its own
       suites. CI runs it; verified inside the `oven/bun` container.
-- [x] 114 tests: DSP blocks, profile persistence, patch search, keyboard
+- [x] 238 tests: DSP blocks, profile persistence, patch search, keyboard
       layout, MIDI control mapping, and a structural guard on the rack.
 - [x] Every group verified by sabotage — each deliberate break fails its own
       test and no other. A test that cannot fail proves nothing.
@@ -257,8 +271,16 @@ appeared on the roadmap.
 #### Infrastructure
 - [x] Coolify deploy steps removed from CI. They called three secrets that were
       never set, and duplicated what Coolify already does by watching the repo.
-- [x] Single lockfile. `package-lock.json` removed and gitignored; Dockerfile
+- [x] Single lockfile. `package-lock.json` untracked and gitignored; Dockerfile
       and CI both read `bun.lock`.
+      **This line was false for a day and is worth keeping as a warning.** The
+      commit that claimed to fix this (29e89d7, "Règle les trois dettes
+      d'infrastructure") in fact *added* 6078 lines of package-lock.json. The
+      mechanism: npm regenerates the file the moment you run `npm test` or
+      `npm run build`, and a subsequent `git add -A` sweeps it straight back in.
+      Deleting it is not enough — only the `.gitignore` entry makes the fix hold.
+      Caught 2026-08-21 while aligning the docs against the actual repo, which is
+      the only reason it surfaced: nothing in the build or the tests complains.
 - [x] Self-signed HTTPS dropped from the dev server. Chrome blocks powerful
       features on a certificate-error origin, which made Web MIDI report no
       devices at all — with no error. `http://localhost` is a secure context

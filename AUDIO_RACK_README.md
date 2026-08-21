@@ -42,7 +42,7 @@ apps/studio-hub/
 ├── src/
 │   ├── core/
 │   │   ├── types/audio.ts           ✅ Interfaces TypeScript (40+)
-│   │   └── store/audioRackStore.ts  ✅ État Zustand + persistance
+│   │   └── store/audioRackStore.ts  ⚠️ doublon mort, sans consommateur
 │   │
 │   ├── modules/
 │   │   ├── audio-rack-01-patch-search/
@@ -55,13 +55,13 @@ apps/studio-hub/
 │   │   └── audio-rack-06..12/        ⬜ non créés
 │   │
 │   ├── pages/
-│   │   ├── AudioPluginRack.tsx      ✅ Composant principal (1500+ lignes)
+│   │   ├── AudioPluginRack.tsx      ✅ Composant principal (~2990 lignes)
 │   │   └── ProfileCreator.tsx       ✅ Fiche personnage + sélecteur de dossier
 │   │
 │   └── docs/
 │       └── MODULE_DEVELOPMENT_GUIDE.md ✅
 │
-└── tests/                            ⬜ aucune infra de test installée
+(les tests vivent a cote du code teste : *.test.ts)  ✅ 238 tests, 16 fichiers
 ```
 
 > **Note d'alignement** — le logger n'est pas dans `core/` : il vient de
@@ -76,30 +76,44 @@ apps/studio-hub/
 ### Installation
 ```bash
 cd /home/azoth/Engineering-Studio
-npm install          # zustand est déjà dans les dependencies
+bun install          # le dépôt est sous bun.lock (le CI aussi)
 ```
 
 ### Scripts npm réellement disponibles
 ```bash
-npm run dev        # Serveur de dev Vite (HTTPS)
+npm run dev        # Serveur de dev Vite (HTTP — voir « Accès » plus bas)
 npm run build      # Build de production -> dist/
 npm run preview    # Sert le build sur le port 3000 (HTTP)
 npm run typecheck  # tsc --noEmit
 npm run lint       # identique à typecheck (tsc --noEmit)
 ```
 
-> Il n'y a **pas** de script `test` : aucun runner (vitest/jest) n'est installé.
+```bash
+npm test           # vitest run — 238 tests, 16 fichiers
+```
 
 ### Accès
-Le serveur de dev tourne en **HTTPS** (plugin `@vitejs/plugin-basic-ssl`), requis
-par l'API File System Access utilisée par le sélecteur de dossier :
 
-- Local : `http://localhost:3000/`
-- Réseau : `http://192.168.2.59:3000/`
+Le serveur de dev tourne en **HTTP simple**, et c'est voulu.
 
-Chrome affichera un avertissement de certificat auto-signé au premier accès :
-*Paramètres avancés → Continuer*. En production le conteneur sert en HTTP et
-c'est Coolify qui termine le TLS.
+| Origine | Sélecteur de dossier | Web MIDI |
+|---|---|---|
+| `http://localhost:3000/` | ✅ | ✅ |
+| `http://192.168.2.59:3000/` | ❌ | ❌ |
+
+`localhost` est un contexte sécurisé **sans certificat** — l'exception prévue
+par la spécification. Sur l'IP réseau, `showDirectoryPicker` n'est pas
+seulement bloquée : elle est **absente de `window`**, et `requestMIDIAccess` ne
+renvoie aucun appareil. Aucun code n'y changera quoi que ce soit.
+
+> ⚠️ **Ne pas remettre `@vitejs/plugin-basic-ssl`.** Ce document a longtemps
+> recommandé de servir en HTTPS auto-signé. Chrome accorde `isSecureContext`
+> sur une origine dont le certificat est en erreur, mais refuse les
+> *fonctionnalités puissantes* dessus : Web MIDI y était muet, sans message
+> d'erreur. Le plugin a été retiré pour cette raison.
+
+En production le conteneur sert en HTTP et c'est Coolify qui termine le TLS —
+d'où un `https://` côté navigateur, donc les deux API disponibles.
 
 ---
 
@@ -210,10 +224,15 @@ Speaker Output
 
 ## 🧪 Testing Strategy
 
-> ⚠️ **Aucune infrastructure de test n'est installée à ce jour.** Pas de vitest,
-> pas de script `test`, pas de répertoire `tests/`. Tout ce qui suit décrit la
-> cible visée, pas l'état actuel. Première étape pour y arriver :
-> `npm i -D vitest @vitest/coverage-v8` puis ajouter `"test": "vitest"` aux scripts.
+> **238 tests, 16 fichiers**, lancés par `npm test` (vitest). Ils portent sur
+> les fonctions pures exportées et sur la structure du source. Il n'y a aucun
+> test de rendu React, et ce n'est pas un oubli : les sections « cible »
+> ci-dessous décrivent ce qui reste à couvrir.
+>
+> La règle qui tient dans ce dépôt : **un test qui ne peut pas échouer ne
+> prouve rien.** Chaque garde-fou ajouté a été vérifié par sabotage — on casse
+> volontairement le code, on vérifie que le test concerné tombe, et qu'aucun
+> autre ne tombe avec lui.
 
 ### Unit Tests (cible)
 ```bash
@@ -289,7 +308,6 @@ npm run test -- --coverage   # ⬜ pas encore disponible
 
 ### Development
 - **@vitejs/plugin-react 6.0.5** - Fast Refresh React
-- **@vitejs/plugin-basic-ssl 2.3.0** - Certificat auto-signé (HTTPS dev)
 - **vite-plugin-pwa 1.3.0** - Service worker / manifest
 
 > ⬜ **Non installés** (mentionnés dans la roadmap uniquement) : Vitest,
