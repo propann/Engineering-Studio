@@ -43,14 +43,29 @@ Le CI ne se déclenchait que sur `deploy/coolify-production`, une branche que
 en production n'était jamais testé, et ce qui était testé n'était déployé nulle
 part. `main` avait 9 commits d'avance au moment du constat.
 
-Un filtre `paths` aggravait le tout en excluant `vite.config.ts`,
+L'activation sur `main` a immédiatement révélé que **le CI était rouge depuis
+toujours**, sur trois défauts qu'aucune branche ne montrait :
+
+| Défaut | Effet |
+|---|---|
+| Nom d'image en majuscules | `repository name must be lowercase` — l'image n'avait **jamais** été publiée |
+| `codeql-action/upload-sarif@v2` | dépréciée depuis janvier 2025, en échec |
+| `security-events: write` absente | `Resource not accessible by integration`, après une analyse pourtant réussie |
+
+Les deux derniers faisaient échouer le job de sécurité *après* que Trivy avait
+terminé : le rapport semblait signaler un problème de sécurité alors qu'il
+manquait seulement un droit.
+
+Un filtre `paths` aggravait l'ensemble en excluant `vite.config.ts`,
 `package.json`, `bun.lock` et `tsconfig.json` — précisément les fichiers dont
-une modification casse la construction sans toucher au code. Il a été retiré :
-la suite complète prend moins de deux secondes.
+une modification casse la construction sans toucher au code. Retiré : la suite
+complète prend moins de deux secondes.
 
 La branche `deploy/coolify-production` a été supprimée. Elle portait un nom qui
 mentait — rien de « production » ne s'y trouvait — et n'avait aucun commit que
 `main` n'ait déjà.
+
+**Les trois étapes passent depuis le 2026-08-21.**
 
 ---
 
