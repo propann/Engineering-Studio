@@ -19,7 +19,7 @@ import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSe
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
-import type { HubTransportMessage } from "@studio-hub/midi-bridge";
+import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
   ajouterEtiquette,
   basculerFavori,
@@ -2230,6 +2230,33 @@ export default function AudioPluginRack({
       seDesabonnerEtat();
     };
   }, [clavierActif]);
+
+  // Notes venues du rack MIDI du hub.
+  //
+  // Le rack de moteurs etait sourd : seuls les deux studios ecoutaient
+  // `hub:midi-note`. L'arpegiateur du rack MIDI atteignait donc l'OP-1 et
+  // l'EP-133, mais pas le rack — qui est pourtant le seul instrument dont le
+  // hub dispose sans materiel branche.
+  //
+  // Prefixe de voix distinct de `midi:` : une note jouee au clavier physique
+  // ET arpegee ne doit pas se couper elle-meme. Meme note, deux sources, deux
+  // voix.
+  useEffect(() => {
+    const surNote = (evt: Event) => {
+      const msg = (evt as CustomEvent<HubNoteMessage>).detail;
+      if (!msg || typeof msg.note !== "number" || !Number.isFinite(msg.note)) return;
+      const voiceId = `hub:${msg.note}`;
+      if (msg.action === "note-on" && msg.velocity > 0) {
+        playPluginNote(440 * Math.pow(2, (msg.note - 69) / 12), voiceId);
+      } else {
+        // velocite 0 comprise : beaucoup d'emetteurs s'en servent comme
+        // note-off, et le notre passe par la meme porte.
+        releaseVoice(voiceId);
+      }
+    };
+    window.addEventListener("hub:midi-note", surNote);
+    return () => window.removeEventListener("hub:midi-note", surNote);
+  }, []);
 
   // Ferme l'AudioContext au demontage.
   //

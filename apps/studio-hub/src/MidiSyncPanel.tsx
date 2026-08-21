@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
 import { sAbonner } from "@studio-hub/midi-dispatch";
+import {
+  NOMS_GAMMES, NOMS_MOTIFS, ORDRE_GAMMES, ORDRE_MOTIFS,
+  pasArpege, quantifier, type Gamme, type Motif,
+} from "./core/midi/musique";
+import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "./core/audio/tempo";
+
+/** Noms des douze classes, index = demi-tons depuis do. */
+const NOMS_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 import { createLogger } from "@studio-hub/audio-bridge";
 
 const log = createLogger("Hub.MidiSync");
@@ -54,6 +62,34 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const sequenceRunningRef = useRef(false);
   const sequenceActiveNoteRef = useRef<number | null>(null);
   const [sequencePlaying, setSequencePlaying] = useState(false);
+  // ── Arpégiateur ────────────────────────────────────────────────────────
+  //
+  // Il vit ici et pas dans le rack de moteurs : posé là-bas il n'arpégerait
+  // que lui. D'ici il atteint tout ce qui écoute — le rack, l'OP-1,
+  // l'EP-133, et n'importe quelle machine branchée. C'est la séparation des
+  // métiers : ce rack produit les notes, le rack de moteurs en fait du son.
+  const [arpEnabled, setArpEnabled] = useState(false);
+  const [arpMotif, setArpMotif] = useState<Motif>("haut");
+  const [arpGamme, setArpGamme] = useState<Gamme>("chromatique");
+  const [arpTonique, setArpTonique] = useState(60);
+  const [arpOctaves, setArpOctaves] = useState(1);
+  const [arpDivision, setArpDivision] = useState<Division>("1/8");
+  const [arpNotes, setArpNotes] = useState<number[]>([]);
+  const arpNotesRef = useRef<Set<number>>(new Set());
+  const arpTimerRef = useRef<number | undefined>(undefined);
+  const arpStepRef = useRef(0);
+  const arpRunningRef = useRef(false);
+  // Ce qui sonne à cet instant, pour pouvoir le couper. Sans ce relevé, tout
+  // arrêt laisse des notes suspendues sur la machine — le défaut classique
+  // de l'arpégiateur, et celui qui oblige à débrancher pour s'en sortir.
+  const arpSoundingRef = useRef<number[]>([]);
+  const arpEnabledRef = useRef(false);
+  // Les réglages lus DANS la minuterie. Une minuterie capture la portée de
+  // son tour de rendu : sans ce relevé, changer le tempo ou le motif ne
+  // prendrait effet qu'au prochain re-rendu déclenché par autre chose.
+  const arpParamsRef = useRef({ motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm });
+  arpParamsRef.current = { motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm };
+  arpEnabledRef.current = arpEnabled;
 
   useEffect(() => {
     const refreshTargets = () => setStudioCount(getTransportTargets?.().length ?? 0);
@@ -108,6 +144,17 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   }
 
   function relayControllerNote(action: "note-on" | "note-off", note: number, velocity: number, channel: number) {
+    // Arpégiateur actif : le contrôleur ne joue plus, il CHOISIT. Les notes
+    // alimentent le réservoir tenu et c'est l'arpège qui les envoie. Relayer
+    // en plus ferait sonner deux fois la même touche.
+    if (arpEnabledRef.current) {
+      const tenues = arpNotesRef.current;
+      if (action === "note-on" && velocity > 0) tenues.add(note);
+      else tenues.delete(note);
+      setArpNotes(Array.from(tenues).sort((x, y) => x - y));
+      return;
+    }
+
     const targets = getTransportTargets?.() ?? [];
     const destinations = outputsRef.current.filter(({ name }) => /EP[- ]?133|K[.]O[.]?[- ]?II/i.test(name));
     if (!destinations.length && !targets.length) {
@@ -210,7 +257,102 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     scheduleSequenceStep();
   }
 
+  // Coupe tout ce que l'arpégiateur fait sonner. Appelé avant chaque pas et à
+  // tout arrêt : c'est la seule chose qui empêche les notes suspendues.
+  // Démontage : couper la minuterie et relâcher. Sans cela, quitter la page
+  // arpégiateur en marche laisse la machine tenir ses dernières notes — il
+  // faut la débrancher pour les faire taire.
+  useEffect(() => {
+    return () => {
+      arpRunningRef.current = false;
+      if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
+      arpTimerRef.current = undefined;
+      for (const note of arpSoundingRef.current) {
+        outputsRef.current.forEach(({ output }) => {
+          try { output.send([0x80, note, 0]); } catch { /* la machine peut avoir disparu */ }
+        });
+      }
+      arpSoundingRef.current = [];
+    };
+  }, []);
+  
+  function arpRelacherSonnantes() {
+    for (const note of arpSoundingRef.current) broadcastNote("note-off", note, 0);
+    arpSoundingRef.current = [];
+  }
+  
+  function arpPas() {
+    if (!arpRunningRef.current) return;
+    const p = arpParamsRef.current;
+    const attente = dureeDivisionMs(p.bpm, p.division);
+  
+    // La note du pas précédent est coupée ICI, au début du suivant : les pas
+    // sont donc joués liés, sans deuxième minuterie pour la durée de note.
+    arpRelacherSonnantes();
+  
+    const tenues = Array.from(arpNotesRef.current);
+    // Rien de tenu : la minuterie continue de tourner à vide plutôt que de
+    // s'arrêter. Sinon relâcher toutes les notes tuerait l'arpège, et le
+    // reprendre demanderait de le rallumer à la main.
+    const notes = tenues.length
+      ? pasArpege(tenues, p.motif, arpStepRef.current, p.octaves).map((n) => quantifier(n, p.tonique, p.gamme))
+      : [];
+    if (tenues.length) arpStepRef.current += 1;
+  
+    for (const note of notes) broadcastNote("note-on", note);
+    arpSoundingRef.current = notes;
+  
+    arpTimerRef.current = window.setTimeout(arpPas, attente);
+  }
+  
+  function arpArreter() {
+    arpRunningRef.current = false;
+    if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
+    arpTimerRef.current = undefined;
+    arpRelacherSonnantes();
+  }
+  
+  function arpBasculer() {
+    if (arpEnabled) {
+      setArpEnabled(false);
+      arpArreter();
+      setStatus("Arpégiateur arrêté.");
+      return;
+    }
+    if (!hasDestination()) {
+      noDestinationStatus();
+      return;
+    }
+    setArpEnabled(true);
+    arpRunningRef.current = true;
+    arpStepRef.current = 0;
+    setStatus("Arpégiateur actif : choisis des notes, elles partent vers tout ce qui écoute.");
+    arpPas();
+  }
+  
+  // Une note cliquée reste tenue jusqu'au prochain clic. Un arpégiateur sans
+  // maintien demanderait de garder trois doigts sur l'écran.
+  function arpBasculerNote(note: number) {
+    const tenues = arpNotesRef.current;
+    if (tenues.has(note)) tenues.delete(note);
+    else tenues.add(note);
+    setArpNotes(Array.from(tenues).sort((a, b) => a - b));
+  }
+  
+  function arpToutRelacher() {
+    arpNotesRef.current.clear();
+    setArpNotes([]);
+    arpRelacherSonnantes();
+  }
+  
   function panic() {
+    // L'arpégiateur d'abord : un PANIC qui laisse la minuterie tourner
+    // renverrait des notes juste après avoir tout coupé.
+    arpRunningRef.current = false;
+    if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
+    arpTimerRef.current = undefined;
+    arpSoundingRef.current = [];
+    setArpEnabled(false);
     if (!hasDestination()) {
       noDestinationStatus();
       return;
@@ -377,6 +519,70 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
               <button className="midi-note-button" disabled={!hasDestination()} onClick={() => testNote(40)}>E2</button>
               <button className="secondary-button" disabled={!hasDestination() || sequencePlaying} onClick={startSequence}>{sequencePlaying ? "SÉQUENCE EN COURS" : "SÉQUENCE TEST"}</button>
               <button className="panic-button" disabled={!hasDestination()} onClick={panic}>PANIC</button>
+            </div>
+          </div>
+          <div className="arp-panneau">
+            <div className="arp-tete">
+              <strong>Arpégiateur</strong>
+              <button
+                type="button"
+                className={`arp-bouton ${arpEnabled ? "actif" : ""}`}
+                disabled={!hasDestination() && !arpEnabled}
+                onClick={arpBasculer}
+              >
+                {arpEnabled ? "■ Arrêter" : "▶ Démarrer"}
+              </button>
+            </div>
+            <span className="arp-aide">
+              Les notes choisies partent vers <strong>tout ce qui écoute</strong> — le rack
+              de moteurs, l’OP‑1, l’EP‑133, et les machines branchées. En mode contrôleur,
+              l’OP‑1 choisit les notes au lieu de les jouer.
+            </span>
+            <div className="arp-reglages">
+              <label>Motif
+                <select value={arpMotif} onChange={(e) => setArpMotif(e.target.value as Motif)}>
+                  {ORDRE_MOTIFS.map((m) => <option key={m} value={m}>{NOMS_MOTIFS[m]}</option>)}
+                </select>
+              </label>
+              <label>Gamme
+                <select value={arpGamme} onChange={(e) => setArpGamme(e.target.value as Gamme)}>
+                  {ORDRE_GAMMES.map((g) => <option key={g} value={g}>{NOMS_GAMMES[g]}</option>)}
+                </select>
+              </label>
+              <label>Tonique
+                <select value={arpTonique} onChange={(e) => setArpTonique(Number(e.target.value))}>
+                  {NOMS_NOTES.map((nom, d) => <option key={nom} value={60 + d}>{nom}</option>)}
+                </select>
+              </label>
+              <label>Vitesse
+                <select value={arpDivision} onChange={(e) => setArpDivision(e.target.value as Division)}>
+                  {ORDRE_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </label>
+              <label>Octaves
+                <select value={arpOctaves} onChange={(e) => setArpOctaves(Number(e.target.value))}>
+                  {[1, 2, 3, 4].map((o) => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className="arp-clavier">
+              {Array.from({ length: 24 }, (_, d) => 48 + d).map((note) => (
+                <button
+                  key={note}
+                  type="button"
+                  className={`arp-touche ${NOMS_NOTES[note % 12].includes("#") ? "noire" : ""} ${arpNotes.includes(note) ? "tenue" : ""}`}
+                  onClick={() => arpBasculerNote(note)}
+                  title={`${NOMS_NOTES[note % 12]}${Math.floor(note / 12) - 1}`}
+                >
+                  {NOMS_NOTES[note % 12]}
+                </button>
+              ))}
+            </div>
+            <div className="arp-pied">
+              <span>{arpNotes.length ? `${arpNotes.length} note(s) tenue(s)` : "Aucune note tenue"}</span>
+              <button type="button" className="secondary-button" onClick={arpToutRelacher} disabled={!arpNotes.length}>
+                Tout relâcher
+              </button>
             </div>
           </div>
         </div>
