@@ -84,6 +84,37 @@ navigateur et l'application.
 
 ---
 
+## Transport, mesuré sur la vraie machine
+
+Le plancher ci-dessus passe par Midi Through, donc sans matériel. Voici la
+même question posée à l'EP‑133 elle-même, 2026-08-21 : 30 s de capture pendant
+que quelqu'un joue réellement sur les pads.
+
+Récolte : **166 messages, 83 note-on / 83 note-off, 60 frappes distinctes** sur
+25,8 s, notes 36 à 47 — la plage de pads — intervalle médian entre frappes de
+259 ms.
+
+```
+délai entre deux messages consécutifs (hors pauses de jeu, 38 échantillons)
+  médiane            7,0 µs
+  95e centile       58,0 µs
+  maximum         3271,0 µs
+
+salve de 19 notes quasi simultanées
+  19 messages en     0,301 ms       soit 16,7 µs par message
+```
+
+**Le transport n'est pas le sujet.** Dix-neuf notes simultanées tiennent dans
+0,3 ms, soit 1,5 % du budget. Chercher à optimiser ce segment serait du temps
+perdu ; tout ce qui coûte se trouve après, dans le navigateur et l'application.
+
+> Lire la moyenne plutôt que la médiane induit en erreur ici : elle vaut
+> 94 µs, tirée par un unique écart de 3,3 ms qui correspond à une frappe
+> séparée, pas à un retard de livraison. La médiane et le 95e centile décrivent
+> le comportement réel.
+
+---
+
 ## Segment application — à faire
 
 Il faut le navigateur et quelqu'un qui joue. Deux horloges à relever dans

@@ -256,10 +256,16 @@ appeared on the roadmap.
       consecutive note-ons are 106 ticks (110.42 ms) apart, not 96 (100 ms). Comparing
       against 100 ms shows a phantom 10 ms drift — that is the measurement being read
       wrong, not latency.
+      Transport measured on the real device too — 30 s of someone actually playing the
+      EP-133: 166 messages, 60 distinct strikes, notes 36-47.
+        inter-message delay   7.0 us median, 58 us at the 95th percentile
+        19-note burst         delivered in 0.301 ms, 16.7 us per message
+      Nineteen simultaneous notes fit in 1.5% of the budget. Transport is not the
+      subject; everything that costs sits after it, in the browser and the app.
+      (Read the median, not the mean: the mean is 94 us, dragged by a single 3.3 ms gap
+      that is a separate strike, not a delivery delay.)
       Still missing: the end-to-end figure, from key press to audible note, which needs
-      the browser and someone playing. The EP-133 was confirmed transmitting real pad
-      notes (42, 45, 46, 47) during this session, so the capture path works; a 30 s
-      window simply caught nobody playing.
+      the browser instrumented while someone plays.
       Reproduce: see docs/MESURE_LATENCE_MIDI.md.
 - [x] Audio synthesis optimization — investigated and closed with nothing to change.
       Three hypotheses were measured rather than assumed:
