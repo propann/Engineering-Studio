@@ -74,6 +74,15 @@ function parametres(): string[] {
     // par construction. Son propre cablage est verrouille ailleurs, par
     // modules/audio-rack-01-patch-search/PatchSearchWiring.test.ts.
     "patchQuery",
+    // Synchronisation du delay sur le tempo du studio hote. Ces trois-la ne
+    // sont lus par aucun moteur, et c'est correct : ils ne font que calculer
+    // `fxDelayTime`, qui lui EST cable. Les inscrire ici plutot que de les
+    // faire lire par le moteur evite d'ajouter un chemin mort dans les 741
+    // lignes de construireVoix. Leur cablage est verrouille par
+    // pages/SyncTempo.test.ts.
+    "bpmHote",
+    "delaySync",
+    "delayDivision",
     // Panneau de fabrication d'echantillons : cible, duree, dossier, etat du
     // rendu. Etat d'interface, sans effet sur le son PRODUIT — la cible decide
     // du format du fichier, pas du timbre. Leur propre cablage est verrouille

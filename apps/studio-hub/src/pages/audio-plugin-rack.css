@@ -973,3 +973,20 @@
 .fx-groupe-nom { min-width: 78px; color: #94a3b8; font-size: .62rem; font-weight: 700; letter-spacing: .06em; }
 .fx-groupe label { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 110px; color: #cbd5e1; font-size: .62rem; font-variant-numeric: tabular-nums; }
 .fx-groupe input[type="range"] { width: 100%; accent-color: #00ed95; }
+
+/* ── Delay synchronise au tempo de l'hote ───────────────────────────────── */
+.fx-sync { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.fx-sync-btn {
+  flex: 1; padding: 3px 8px; font: 600 9px ui-monospace, monospace;
+  letter-spacing: .06em; cursor: pointer; border-radius: 3px;
+  background: #16201f; border: 1px solid #24322f; color: #6b8a84;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.fx-sync-btn:hover { color: #9fc4bc; border-color: #354a45; }
+.fx-sync-btn.actif { background: #1d3b34; border-color: #2f6b5c; color: #7fe3c4; }
+.fx-sync-div {
+  width: 62px; padding: 3px 4px; font: 600 9px ui-monospace, monospace;
+  background: #16201f; border: 1px solid #24322f; color: #6b8a84;
+  border-radius: 3px; cursor: pointer;
+}
+.fx-sync-div:disabled { opacity: .4; cursor: not-allowed; }

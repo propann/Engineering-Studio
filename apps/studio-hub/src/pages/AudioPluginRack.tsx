@@ -18,6 +18,8 @@ import {
 import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
+import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
+import type { HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
   ajouterEtiquette,
   basculerFavori,
@@ -326,6 +328,35 @@ export default function AudioPluginRack({
   // a une voix. Ils traversent le rendu hors ligne comme le jeu : un sample
   // fabrique porte les memes effets que ce qu'on entend.
   const [fxDelayMix, setFxDelayMix] = useState<number>(0);
+  // Tempo de l'hote, recu par `hub:transport`. Le rack n'a pas de transport a
+  // lui — rien a demarrer ni a arreter — mais son delay gagne a retomber juste.
+  // 120 tant qu'aucun studio n'a parle.
+  const [bpmHote, setBpmHote] = useState<number>(120);
+  const [delaySync, setDelaySync] = useState<boolean>(false);
+  const [delayDivision, setDelayDivision] = useState<Division>("1/8");
+
+  // Le studio hote rediffuse le transport du hub sur `window` : embarque, le
+  // rack vit dans le meme document, il lui suffit d'ecouter. Page autonome,
+  // l'evenement n'arrive jamais et le rack garde ses 120 — pas de cas special.
+  useEffect(() => {
+    const surTransport = (evt: Event) => {
+      const msg = (evt as CustomEvent<HubTransportMessage>).detail;
+      if (msg && typeof msg.bpm === "number" && Number.isFinite(msg.bpm)) {
+        setBpmHote(msg.bpm);
+      }
+    };
+    window.addEventListener("hub:transport", surTransport);
+    return () => window.removeEventListener("hub:transport", surTransport);
+  }, []);
+
+  // Recale le temps de delay des que le tempo ou la division changent. Passe
+  // par `updateParam` et non `setFxDelayTime` : c'est lui qui reporte la
+  // valeur dans le patch courant, sans quoi un sample rendu apres coup
+  // reprendrait l'ancien temps.
+  useEffect(() => {
+    if (!delaySync) return;
+    updateParam("fxDelayTime", dureeDivisionMs(bpmHote, delayDivision), setFxDelayTime);
+  }, [delaySync, bpmHote, delayDivision]);
   const [fxDelayTime, setFxDelayTime] = useState<number>(280);
   const [fxDelayFeedback, setFxDelayFeedback] = useState<number>(35);
   const [fxEqLow, setFxEqLow] = useState<number>(0);
@@ -2894,9 +2925,30 @@ export default function AudioPluginRack({
                     onChange={(e) => updateParam("fxDelayMix", Number(e.target.value), setFxDelayMix)} />
                 </label>
                 <label>TEMPS {fxDelayTime} ms
-                  <input type="range" min={20} max={1200} step={10} value={fxDelayTime}
+                  <input type="range" min={20} max={1200} step={10} value={fxDelayTime} disabled={delaySync}
                     onChange={(e) => updateParam("fxDelayTime", Number(e.target.value), setFxDelayTime)} />
                 </label>
+                <div className="fx-sync">
+                  <button
+                    type="button"
+                    className={`fx-sync-btn ${delaySync ? "actif" : ""}`}
+                    onClick={() => setDelaySync(!delaySync)}
+                    title={`Cale le delay sur le tempo du studio (${bpmHote} BPM)`}
+                  >
+                    SYNC {delaySync ? `· ${bpmHote} BPM` : ""}
+                  </button>
+                  <select
+                    className="fx-sync-div"
+                    value={delayDivision}
+                    disabled={!delaySync}
+                    onChange={(e) => setDelayDivision(e.target.value as Division)}
+                    title="Division musicale"
+                  >
+                    {ORDRE_DIVISIONS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
                 <label>RETOUR {fxDelayFeedback}%
                   <input type="range" min={0} max={100} value={fxDelayFeedback}
                     onChange={(e) => updateParam("fxDelayFeedback", Number(e.target.value), setFxDelayFeedback)} />
