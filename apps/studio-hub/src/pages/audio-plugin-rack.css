@@ -233,6 +233,27 @@
   cursor: pointer;
 }
 
+.export-pack {
+  padding: 5px;
+  background-color: rgba(184, 115, 255, 0.12);
+  border: 1px solid rgba(184, 115, 255, 0.6);
+  border-radius: 3px;
+  color: #b873ff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.export-pack:hover:not(:disabled) {
+  background-color: rgba(184, 115, 255, 0.25);
+}
+
+.export-pack:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .export-lancer:hover:not(:disabled) {
   background-color: rgba(0, 237, 149, 0.28);
 }

@@ -216,6 +216,36 @@ describe("fabrique d'echantillons", () => {
     expect(corps).toMatch(/Vérification impossible après écriture/);
   });
 
+  it("range le pack dans un sous-dossier par patch", () => {
+    // 49 fichiers a plat rendraient l'espace de travail inutilisable des le
+    // deuxieme pack.
+    const pack = SOURCE.slice(SOURCE.indexOf("const exporterPack"));
+    expect(pack).toMatch(/getDirectoryHandle\(nomDossier, \{ create: true \}\)/);
+  });
+
+  it("verifie chaque fichier du pack, pas seulement le dernier", () => {
+    // Un lot interrompu doit s'arreter au fautif. Sans relecture dans la
+    // boucle, 49 ecritures ratees passeraient pour un succes.
+    // Borner sur la DECLARATION, pas sur le nom : un commentaire du rack cite
+    // `const playPluginNote` bien avant, et un indexOf naif rendait une tranche
+    // vide — donc un test vert qui ne lisait rien du tout.
+    const pack = SOURCE.slice(
+      SOURCE.indexOf("const exporterPack"),
+      SOURCE.indexOf("const playPluginNote = (")
+    );
+    expect(pack.length, "tranche du pack vide").toBeGreaterThan(500);
+    const boucle = pack.slice(pack.indexOf("for (let note"));
+    expect(boucle).toContain("fichier.getFile()");
+    expect(boucle).toMatch(/Vérification impossible après écriture/);
+  });
+
+  it("dit combien de fichiers etaient deja ecrits quand un lot echoue", () => {
+    // « ca a plante » sur 49 fichiers ne dit pas s'il faut tout refaire ou
+    // completer. Le compte le dit.
+    const pack = SOURCE.slice(SOURCE.indexOf("const exporterPack"));
+    expect(pack).toMatch(/\$\{ecrits\} déjà écrits/);
+  });
+
   it("borne la duree par les specs de la machine", () => {
     expect(SOURCE).toContain("dureeAdmise(");
   });

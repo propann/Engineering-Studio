@@ -1667,6 +1667,76 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     }
   };
 
+  /**
+   * Fabrique un ensemble chromatique et l'ecrit dans un sous-dossier.
+   *
+   * Destine aux DAW et aux studios, PAS a l'OP-1 directement : son
+   * echantillonneur synthe prend un seul fichier qu'il transpose, et un kit
+   * drum prend un fichier unique portant 24 marqueurs. Un ensemble de 49
+   * fichiers ne s'y charge pas — c'est un format de bibliotheque, pas de
+   * machine.
+   *
+   * Le rendu hors ligne est ce qui rend l'operation supportable : en temps
+   * reel, 49 notes de 2 secondes demanderaient plus d'une minute et demie
+   * d'attente silencieuse.
+   */
+  const exporterPack = async (cible: CibleMachine, noteDebut: number, noteFin: number, secondes: number) => {
+    const racine = espaceRef.current;
+    if (!racine) {
+      toastRef.current?.afficher("Choisis d'abord un dossier de travail");
+      return;
+    }
+
+    const spec = SPECS_CIBLES[cible];
+    const p = paramsRef.current;
+    const duree = dureeAdmise(cible, secondes);
+    if (!duree) {
+      toastRef.current?.afficher("Durée invalide");
+      return;
+    }
+
+    const patch = [...(FACTORY_PATCHES[p.activeEngine] ?? []), ...userPatches]
+      .find((x) => x.id === selectedPatchId)?.name ?? p.activeEngine;
+    const nomDossier = nomEchantillon(patch, "");
+
+    try {
+      // Un sous-dossier par patch : 49 fichiers a plat rendraient l'espace de
+      // travail inutilisable des le deuxieme pack.
+      const dossier = await racine.getDirectoryHandle(nomDossier, { create: true });
+      const total = noteFin - noteDebut + 1;
+      let ecrits = 0;
+
+      for (let note = noteDebut; note <= noteFin; note++) {
+        toastRef.current?.afficher(`${nomDossier} — ${nomDeNote(note)} (${ecrits + 1}/${total})`);
+        const echantillons = await rendreEchantillon(p, frequenceDeNote(note), duree, spec.frequence);
+        const octets =
+          spec.format === "aiff"
+            ? encodeAiffPcm16(echantillons, spec.canaux, spec.frequence)
+            : encodeWavPcm16(echantillons, spec.canaux, spec.frequence);
+
+        const nom = `${nomEchantillon(patch, nomDeNote(note))}.${spec.format === "aiff" ? "aif" : "wav"}`;
+        const fichier = await dossier.getFileHandle(nom, { create: true });
+        const flux = await fichier.createWritable();
+        await flux.write(octets);
+        await flux.close();
+
+        // Meme relecture que pour un fichier seul : un lot interrompu doit
+        // s'arreter au fautif, pas continuer sur une ecriture ratee.
+        const relu = await (await fichier.getFile()).arrayBuffer();
+        if (relu.byteLength !== octets.byteLength) {
+          throw new Error(`Vérification impossible après écriture : ${nom} (${ecrits} déjà écrits)`);
+        }
+        ecrits += 1;
+      }
+
+      toastRef.current?.afficher(`✅ ${nomDossier} — ${ecrits} notes`);
+      log.info("Pack exporté", { nomDossier, ecrits, cible });
+    } catch (e) {
+      log.error("Pack échoué", e);
+      toastRef.current?.afficher(`❌ ${(e as any)?.message ?? String(e)}`);
+    }
+  };
+
   const playPluginNote = (freq: number = 261.63, voiceId?: string) => {
     try {
       const ctx = getAudioContext();
@@ -2132,6 +2202,21 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                         >
                           {exportEnCours ? "⏳ Rendu…" : "💾 FABRIQUER UN SAMPLE"}
                         </button>
+                        <button
+                          type="button"
+                          className="export-pack"
+                          disabled={exportEnCours || !espaceNom}
+                          title="49 notes chromatiques, pour les DAW — pas pour l'OP-1, qui attend un fichier unique"
+                          onClick={() => {
+                            setExportEnCours(true);
+                            // 48 = C3, 96 = C7. Quatre octaves : de quoi couvrir
+                            // un instrument sans transposition audible.
+                            void exporterPack(cibleExport, 48, 96, dureeExport)
+                              .finally(() => setExportEnCours(false));
+                          }}
+                        >
+                          🎹 PACK C3–C7 (49 notes)
+                        </button>
                       </div>
 
                       <input
@@ -2254,6 +2339,21 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                           }}
                         >
                           {exportEnCours ? "⏳ Rendu…" : "💾 FABRIQUER UN SAMPLE"}
+                        </button>
+                        <button
+                          type="button"
+                          className="export-pack"
+                          disabled={exportEnCours || !espaceNom}
+                          title="49 notes chromatiques, pour les DAW — pas pour l'OP-1, qui attend un fichier unique"
+                          onClick={() => {
+                            setExportEnCours(true);
+                            // 48 = C3, 96 = C7. Quatre octaves : de quoi couvrir
+                            // un instrument sans transposition audible.
+                            void exporterPack(cibleExport, 48, 96, dureeExport)
+                              .finally(() => setExportEnCours(false));
+                          }}
+                        >
+                          🎹 PACK C3–C7 (49 notes)
                         </button>
                       </div>
 

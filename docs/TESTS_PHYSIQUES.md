@@ -79,6 +79,20 @@ FABRIQUER UN SAMPLE.
       horizons sonores très différents, ce sont eux qui éprouvent le calcul de
       durée
 
+### Un pack chromatique est utilisable dans un DAW
+Bouton « PACK C3–C7 » : 49 notes rendues d'affilée dans un sous-dossier au nom
+du patch.
+
+- [ ] les 49 fichiers sont là, correctement nommés
+- [ ] chargés dans un échantillonneur de DAW, la gamme est juste d'un bout à
+      l'autre — une erreur de fréquence ne s'entend que sur les extrêmes
+- [ ] le rendu ne prend pas un temps déraisonnable
+
+> ⚠️ **Ce pack ne va PAS sur l'OP-1.** Son échantillonneur synthé prend un
+> fichier unique qu'il transpose, et un kit drum un fichier unique portant 24
+> marqueurs. Un ensemble de 49 fichiers ne s'y charge pas : c'est un format de
+> bibliothèque, pas de machine.
+
 ### Un sample fabriqué se charge sur l'OP-1
 Le copier dans `synth/user/`, débrancher proprement, charger le patch sur la
 machine et **l'écouter**.
