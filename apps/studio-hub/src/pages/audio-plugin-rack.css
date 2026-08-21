@@ -11,6 +11,34 @@
   overflow: hidden;
 }
 
+/* Variante embarquee : le rack cesse de revendiquer la fenetre.
+   Les deux regles vont ensemble — le `calc(100vh - 60px)` du conteneur
+   soustrait la hauteur de la TopBar, absente en tiroir. Corriger l'une sans
+   l'autre laisserait 60 pixels de vide. */
+.audio-plugin-rack-page.en-tiroir { height: 100%; width: 100%; }
+.audio-plugin-rack-page.en-tiroir .plugin-rack-container { height: 100%; }
+
+/* Les deux overlays sont en `position: fixed` et s'echapperaient d'un panneau
+   pour flotter au-dessus de tout le studio. Confines a leur conteneur. */
+.audio-plugin-rack-page.en-tiroir { position: relative; }
+.audio-plugin-rack-page.en-tiroir .patch-modal-overlay,
+.audio-plugin-rack-page.en-tiroir .plugin-toast-overlay { position: absolute; }
+
+.rack-fermer-tiroir {
+  align-self: flex-end;
+  margin: 6px 8px 0;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid rgba(0, 237, 149, .3);
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: .7rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.rack-fermer-tiroir:hover { color: #00ed95; border-color: #00ed95; }
+
 .plugin-rack-container {
   display: flex;
   flex: 1;

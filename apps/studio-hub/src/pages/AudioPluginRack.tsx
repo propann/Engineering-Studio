@@ -205,7 +205,28 @@ const VIRTUAL_PIANO_KEYS = [
   { note: "B4", name: "Si", freq: 493.88, isBlack: false, keyChar: "J" },
   { note: "C5", name: "Do", freq: 523.25, isBlack: false, keyChar: "K" },
 ];
-export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClose }: { profileName?: string; onClose?: () => void }) {
+/**
+ * Rack audio.
+ *
+ * `enTiroir` le rend embarquable dans un studio : il perd sa TopBar — qui
+ * appelle `window.navigateMaquette` et demonterait donc l'hote au moindre clic —
+ * et cesse de revendiquer la fenetre entiere.
+ *
+ * `clavierActif` commande les ecouteurs clavier. Ils sont poses sur `window` :
+ * un tiroir ferme jouerait des notes sous les doigts de quelqu'un qui travaille
+ * dans le studio.
+ */
+export default function AudioPluginRack({
+  profileName = "NOUVEAU MEMBRE",
+  onClose,
+  enTiroir = false,
+  clavierActif = true,
+}: {
+  profileName?: string;
+  onClose?: () => void;
+  enTiroir?: boolean;
+  clavierActif?: boolean;
+}) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
   // Filtre de la liste de patches. 91 patches d'usine repartis sur 15 moteurs,
@@ -2063,7 +2084,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       //    coupait le MIDI de la page qui restait.
       //
       // Le repartiteur rend un desabonnement qui ne retire que cet auditeur.
-      const seDesabonner = sAbonner(({ donnees, port }) => {
+      const seDesabonner = sAbonner(({ donnees, port, horodatage }) => {
         const tEntree = performance.now();
         const [command, note, velocity] = donnees;
         diagRef.current?.setDernierMessage(
@@ -2074,7 +2095,9 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         if (kind === 0x90 && velocity > 0) {
           const freq = 440 * Math.pow(2, (note - 69) / 12);
           playPluginNote(freq, voiceId);
-          mesurerLatence(tEntree, undefined);
+          // L'horodatage du navigateur, transmis par le repartiteur : c'est
+          // lui qui donne le segment « file d'attente » de la mesure.
+          mesurerLatence(tEntree, horodatage);
         } else if (kind === 0x80 || (kind === 0x90 && velocity === 0)) {
           // 0x80 = note-off ; 0x90 velocite 0 = note-off deguise, que beaucoup
           // de claviers envoient a la place.
@@ -2116,10 +2139,18 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     const isTypingTarget = (t: EventTarget | null) =>
       t instanceof HTMLInputElement ||
       t instanceof HTMLSelectElement ||
-      t instanceof HTMLTextAreaElement;
+      t instanceof HTMLTextAreaElement ||
+      // Un champ riche n'est aucun des trois : sans ce test, taper dans une
+      // zone editable joue des notes. OP-1 le verifie deja de son cote.
+      (t instanceof HTMLElement && t.isContentEditable);
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isTypingTarget(e.target)) return;
+      // Une touche modifiee est un RACCOURCI, pas une note. L'EP-133 utilise
+      // Ctrl+D pour dupliquer et Ctrl+Q pour quantifier, or `d` et `q` sont
+      // dans le mapping piano : sans ce test, Ctrl+D duplique la selection
+      // ET joue un mi.
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       // e.repeat : l'auto-repeat du système déclenchait une avalanche de
       // notes tant que la touche restait enfoncée.
       if (e.repeat) return;
@@ -2143,9 +2174,13 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       setActiveKeyNote(null);
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("blur", handleBlur);
+    // Poses sur `window` : un tiroir ferme jouerait des notes sous les
+    // doigts de quelqu'un qui travaille dans le studio. L'hote commande.
+    if (clavierActif) {
+      window.addEventListener("keydown", handleKeyDown);
+      window.addEventListener("keyup", handleKeyUp);
+      window.addEventListener("blur", handleBlur);
+    }
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -2163,7 +2198,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       seDesabonner();
       seDesabonnerEtat();
     };
-  }, []);
+  }, [clavierActif]);
 
   // ANIMATED OSCILLOSCOPE WAVEFORM
   useEffect(() => {
@@ -2361,8 +2396,16 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   ];
 
   return (
-    <main className="audio-plugin-rack-page">
-      <TopBar activePage="outils" profileName={profileName} />
+    <main className={`audio-plugin-rack-page ${enTiroir ? "en-tiroir" : ""}`}>
+      {/* La TopBar appelle window.navigateMaquette : dans un studio, un clic
+          dedans demonterait l'hote. Et on aurait deux barres empilees, dont
+          une proposant de quitter le studio ou l'on travaille. */}
+      {!enTiroir && <TopBar activePage="outils" profileName={profileName} />}
+      {enTiroir && onClose && (
+        <button type="button" className="rack-fermer-tiroir" onClick={onClose}>
+          ✕ Fermer le rack
+        </button>
+      )}
 
       {/* COMPACT SINGLE-VIEWPORT WORKSPACE FRAME */}
       <div className="plugin-rack-container">

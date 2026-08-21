@@ -256,6 +256,57 @@ describe("ondes des couches", () => {
   });
 });
 
+describe("rack embarquable dans un studio", () => {
+  /**
+   * Le rack est une page qui revendique la fenetre entiere. Chacun des points
+   * ci-dessous casserait le studio hote d'une facon qui ne se voit pas en
+   * developpement, puisque le rack seul continuerait de fonctionner.
+   */
+  it("masque sa TopBar en tiroir", () => {
+    // Elle appelle window.navigateMaquette : un clic dedans demonterait le
+    // studio. Et on aurait deux barres empilees, dont une proposant de partir.
+    expect(SOURCE).toMatch(/\{!enTiroir && <TopBar/);
+  });
+
+  it("branche onClose, qui ne servait a rien", () => {
+    // Deconstruit depuis toujours, jamais utilise : le rack n'avait aucun
+    // moyen de se fermer, alors que le hub lui passait la fonction.
+    expect(SOURCE).toMatch(/onClick=\{onClose\}/);
+  });
+
+  it("cesse de revendiquer la fenetre", () => {
+    expect(SOURCE).toMatch(/enTiroir \? "en-tiroir" : ""/);
+  });
+
+  it("n'attache le clavier QUE s'il est actif", () => {
+    // Les ecouteurs sont poses sur `window` : un tiroir ferme jouerait des
+    // notes sous les doigts de quelqu'un qui travaille dans le studio.
+    const bloc = SOURCE.slice(SOURCE.indexOf('window.addEventListener("keydown"') - 400);
+    expect(bloc.slice(0, 600)).toContain("if (clavierActif) {");
+  });
+
+  it("ignore les touches modifiees", () => {
+    // L'EP-133 utilise Ctrl+D et Ctrl+Q ; `d` et `q` sont dans le mapping
+    // piano. Sans ce test, Ctrl+D duplique la selection ET joue un mi.
+    expect(SOURCE).toContain("if (e.ctrlKey || e.metaKey || e.altKey) return;");
+  });
+
+  it("ne joue pas pendant qu'on tape dans un champ riche", () => {
+    expect(SOURCE).toContain("t.isContentEditable");
+  });
+
+  it("rejoue l'effet quand le clavier est active ou coupe", () => {
+    // Avec `[]`, ouvrir le tiroir n'attacherait jamais les ecouteurs.
+    expect(SOURCE).toContain("}, [clavierActif]);");
+  });
+
+  it("mesure la latence avec l'horodatage du repartiteur", () => {
+    // Passe `undefined` un temps : le segment « file d'attente » retombait a 0
+    // sans que rien ne le signale, les deux autres restant justes.
+    expect(SOURCE).toContain("mesurerLatence(tEntree, horodatage)");
+  });
+});
+
 describe("effets globaux", () => {
   /**
    * Places APRES les moteurs, donc appliques a la superposition entiere.
