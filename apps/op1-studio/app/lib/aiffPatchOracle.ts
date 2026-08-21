@@ -1,104 +1,19 @@
 /**
- * Oracle AIFF + patch OP-1 (feuille de route M3.1, suite de la Phase C) —
- * complète `audioOracle.ts` (WAV, porté de l'EP-133) avec le format que
- * l'OP-1 utilise réellement pour ses patches et ses pistes : l'AIFF, avec
- * pour les patches synthé/drum un chunk `APPL`/`op-1` en plus, qui porte les
- * marqueurs (`start`/`end` par touche pour un drum patch). Règles et schéma
- * exacts dans `docs/AUDIO_FILE_FORMAT_REFERENCE.md` (§2, §2.5) — code
- * original de ce dépôt, pas porté d'ailleurs.
+ * Patch OP-1 et analyse de forme d'onde.
  *
- * Aucune dépendance : lecture directe des chunks AIFF (big-endian), y
- * compris le flottant étendu 80 bits du champ `sampleRate` de `COMM`, décodé
- * ici à la main (vérifié contre l'exemple `[64,14,172,68,0,0,0,0,0,0]` =
- * 44100 Hz documenté dans `op-patch-util`).
+ * La lecture AIFF de base — `parseAiffFormat`, `readAiffSample` — vit
+ * désormais dans `@studio-hub/audio-formats`, partagée avec l'EP-133 qui en
+ * portait une copie, et avec le rack qui n'y avait pas accès.
+ *
+ * Ce fichier garde ce qui est propre à l'OP-1 : le chunk `APPL`/`op-1` et ses
+ * marqueurs (`start`/`end` par touche pour un drum patch), plus l'analyse de
+ * forme d'onde. Règles et schéma exacts dans
+ * `docs/AUDIO_FILE_FORMAT_REFERENCE.md` (§2, §2.5).
  */
+import { parseAiffFormat, readAiffSample, type ParsedAiffFormat } from "@studio-hub/audio-formats";
 
-interface AiffChunk { id: string; start: number; length: number }
-
-function readChunks(view: DataView, from: number, to: number): AiffChunk[] {
-  const chunks: AiffChunk[] = [];
-  let offset = from;
-  while (offset + 8 <= to) {
-    const id = String.fromCharCode(view.getUint8(offset), view.getUint8(offset + 1), view.getUint8(offset + 2), view.getUint8(offset + 3));
-    const length = view.getUint32(offset + 4, false); // AIFF est big-endian
-    chunks.push({ id, start: offset + 8, length });
-    offset += 8 + length + (length % 2); // chunks alignés sur 2 octets, comme RIFF
-  }
-  return chunks;
-}
-
-/** IEEE 754 80 bits étendu (format historique Motorola/SANE utilisé par `COMM.sampleRate`). */
-function readExtended80(view: DataView, offset: number): number {
-  const sign = view.getUint8(offset) & 0x80 ? -1 : 1;
-  const exponent = ((view.getUint8(offset) & 0x7f) << 8) | view.getUint8(offset + 1);
-  const hiMant = BigInt(view.getUint32(offset + 2, false));
-  const loMant = BigInt(view.getUint32(offset + 6, false));
-  const mantissa = (hiMant << BigInt(32)) | loMant;
-  if (exponent === 0 && mantissa === BigInt(0)) return 0;
-  return sign * Number(mantissa) * Math.pow(2, exponent - 16383 - 63);
-}
-
-export interface ParsedAiffFormat {
-  view: DataView;
-  channels: number;
-  sampleRate: number;
-  bitDepth: number;
-  bytesPerSample: number;
-  bytesPerFrame: number;
-  dataStart: number;
-  frameCount: number;
-  maxCode: number;
-  /** Position (octet) du chunk `APPL` s'il existe, pour `readOp1PatchJson`. */
-  applStart: number | null;
-  applLength: number;
-}
-
-export function parseAiffFormat(bytes: ArrayBuffer): ParsedAiffFormat | null {
-  if (bytes.byteLength < 12) return null;
-  const view = new DataView(bytes);
-  const form = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
-  const aiff = String.fromCharCode(view.getUint8(8), view.getUint8(9), view.getUint8(10), view.getUint8(11));
-  if (form !== "FORM" || (aiff !== "AIFF" && aiff !== "AIFC")) return null;
-
-  const chunks = readChunks(view, 12, bytes.byteLength);
-  const comm = chunks.find((chunk) => chunk.id === "COMM");
-  const ssnd = chunks.find((chunk) => chunk.id === "SSND");
-  const appl = chunks.find((chunk) => chunk.id === "APPL");
-  if (!comm || !ssnd || comm.length < 18) return null;
-
-  const channels = view.getInt16(comm.start, false);
-  const bitDepth = view.getInt16(comm.start + 6, false);
-  const sampleRate = Math.round(readExtended80(view, comm.start + 8));
-  if (!channels || !sampleRate || bitDepth <= 0 || bitDepth > 32) return null;
-
-  const bytesPerSample = Math.ceil(bitDepth / 8);
-  const bytesPerFrame = channels * bytesPerSample;
-  // SSND porte `offset`(4)+`blockSize`(4) avant les échantillons.
-  const dataStart = ssnd.start + 8;
-  const dataLength = Math.min(ssnd.length - 8, bytes.byteLength - dataStart);
-  const frameCount = bytesPerFrame > 0 ? Math.floor(dataLength / bytesPerFrame) : 0;
-  const maxCode = Math.pow(2, bitDepth - 1) - 1;
-
-  return {
-    view, channels, sampleRate, bitDepth, bytesPerSample, bytesPerFrame,
-    dataStart, frameCount, maxCode,
-    applStart: appl ? appl.start : null, applLength: appl ? appl.length : 0,
-  };
-}
-
-/** Échantillon signé normalisé (-1..1) d'un canal donné, AIFF stocke en big-endian, complément à deux. Exportée pour app/lib/audioConvert.ts (extraction des échantillons réels avant conversion). */
-export function readAiffSample(format: ParsedAiffFormat, byteOffset: number): number {
-  const { view, bitDepth, maxCode } = format;
-  if (bitDepth <= 8) return (view.getInt8(byteOffset)) / (maxCode + 1);
-  if (bitDepth <= 16) return view.getInt16(byteOffset, false) / (maxCode + 1);
-  if (bitDepth <= 24) {
-    const b0 = view.getUint8(byteOffset); const b1 = view.getUint8(byteOffset + 1); const b2 = view.getUint8(byteOffset + 2);
-    let raw = (b0 << 16) | (b1 << 8) | b2;
-    if (raw & 0x800000) raw -= 0x1000000;
-    return raw / (maxCode + 1);
-  }
-  return view.getInt32(byteOffset, false) / (maxCode + 1);
-}
+// Ré-exporté : plusieurs composants de l'OP-1 importent ces noms depuis ici.
+export { parseAiffFormat, readAiffSample, type ParsedAiffFormat };
 
 /** Crête normalisée 0-1, tous canaux confondus, d'une seule trame — partagé par `computeAiffWaveformPeaks` et `detectAiffSilenceTrim`. */
 function aiffFrameMagnitude(format: ParsedAiffFormat, frameIndex: number): number {
