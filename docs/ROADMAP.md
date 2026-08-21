@@ -188,6 +188,29 @@ appeared on the roadmap.
       caught three parameters an earlier manual audit had missed: `dxAlgorithm`,
       `surgeWavetable` and `fluidPreset` were read only to fill a toast string.
 
+#### Known issue — ProfileCreator has the same permission bug (2026-08-21)
+- [ ] ProfileCreator.tsx:222 restores the workspace handle and immediately calls
+      `scanWorkspaceFolder(handle)` from inside an effect, with no permission check —
+      the exact defect fixed in BackupLab the same day. Zero occurrences of
+      `hasStoredPermission` or `queryPermission` in the file. The helpers it needs
+      already exist in core/storage/directoryHandleStore.ts and the fix is the same
+      three lines. **Left untouched on the owner's explicit instruction** ("change rien
+      sur la fiche de personnage pour l'instant"); recorded here so it is not lost.
+      Note this is separate from the secure-context problem below — that one is not a
+      code bug at all.
+
+#### Not a bug: folder picker and Web MIDI need a secure context
+- The picker "not working" on the deployed server is the URL, not the code.
+  `showDirectoryPicker` is *undefined* — not merely blocked — outside a secure context,
+  and `http://192.168.2.59:3000` is not one. Already documented at
+  docs/FOLDER_PICKER.md:34; re-confirmed 2026-08-21 (that host answers 200 on http,
+  nothing on https).
+  **Web MIDI has the identical requirement**, so testing MIDI latency on that URL will
+  report no devices, with no error message. Use `http://localhost:3000` on the machine
+  itself, or a deployment with real TLS. Self-signed HTTPS does NOT work either —
+  Chrome grants isSecureContext on a cert-error origin but refuses powerful features
+  there, which cost a whole debugging session once already.
+
 #### Workspace folder survives a reload (2026-08-21)
 - [x] Permission checked before adopting a restored folder handle. IndexedDB gives the
       handle back across visits, but never the permission: the browser revokes access
