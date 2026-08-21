@@ -210,6 +210,56 @@ describe("favoris et etiquettes", () => {
   });
 });
 
+describe("effets globaux", () => {
+  /**
+   * Places APRES les moteurs, donc appliques a la superposition entiere.
+   *
+   * L'invariant qui compte : ils traversent le jeu ET le rendu hors ligne. Si
+   * la chaine n'existait que pour l'ecoute, le fichier fabrique sonnerait
+   * autrement que ce qu'on entend — et rien ne le signalerait, puisque les deux
+   * chemins fonctionneraient parfaitement chacun de leur cote.
+   */
+  it("s'applique au jeu", () => {
+    expect(SOURCE).toMatch(/construireEffets\(ctx, p, now\)/);
+  });
+
+  it("s'applique AUSSI au rendu hors ligne", () => {
+    expect(SOURCE).toMatch(/construireEffets\(offline, p, 0\)/);
+  });
+
+  it("s'intercale entre la voix et la destination", () => {
+    // Branche en derivation plutot qu'en serie, la chaine ne recevrait rien.
+    expect(SOURCE).toContain("env.connect(effets.entree)");
+    expect(SOURCE).toContain("effets.sortie.connect(masterBusRef.current!)");
+    expect(SOURCE).toContain("effets.sortie.connect(offline.destination)");
+  });
+
+  it("borne la reinjection du delai", () => {
+    // Au-dela de 0,85 la boucle diverge et sature indefiniment. Un curseur a
+    // 100 % ne doit pas pouvoir produire un larsen.
+    expect(SOURCE).toMatch(/Math\.min\(0\.85, Math\.max\(0, p\.fxDelayFeedback \/ 100\)\)/);
+  });
+
+  it("amortit la reinjection", () => {
+    // Sans filtre dans la boucle, les aigus s'accumulent a chaque tour et les
+    // repetitions deviennent stridentes.
+    const fx = SOURCE.slice(SOURCE.indexOf("const construireEffets"));
+    expect(fx.slice(0, fx.indexOf("return { entree, sortie }"))).toContain('amorti.type = "lowpass"');
+  });
+
+  it("borne le temps de delai a ce que le noeud accepte", () => {
+    // createDelay(2) fixe un maximum de 2 s : le depasser leve.
+    expect(SOURCE).toMatch(/Math\.min\(2, p\.fxDelayTime \/ 1000\)/);
+  });
+
+  it("laisse passer la voie directe", () => {
+    // Seule la voie retardee est dosee. Sans voie directe, un melange a 0 %
+    // rendrait le silence.
+    const fx = SOURCE.slice(SOURCE.indexOf("const construireEffets"));
+    expect(fx).toContain("aigu.connect(sortie)");
+  });
+});
+
 describe("fabrique d'echantillons", () => {
   /**
    * Le rack fabriquait un son qu'on ne pouvait qu'ecouter. Cette chaine — rendu
@@ -400,11 +450,17 @@ describe("independance du contexte audio", () => {
     // produit aucun acces a l'execution. Un `paramsRef.current` dans le corps,
     // lui, lierait la fonction au composant et casserait le rendu hors ligne.
     //
-    // On compte plutot qu'on ne filtre : la premiere version de ce test
-    // utilisait une regex qui attrapait justement l'annotation de la signature,
-    // et echouait sur du code correct. Compter est ici plus sur que motiver.
-    const occurrences = [...moteurAudio().matchAll(/paramsRef/g)].length;
-    expect(occurrences, "seule l'annotation de type est admise").toBe(1);
+    // On distingue l'ANNOTATION de l'ACCES, plutot que de compter.
+    //
+    // Deux versions precedentes se sont trompees : une regex attrapait
+    // l'annotation de la signature et echouait sur du code correct ; puis un
+    // comptage a 1 a casse des qu'une seconde fonction du meme bloc a recu la
+    // meme annotation, parfaitement legitime.
+    //
+    // Ce qui compte : `typeof paramsRef.current` en annotation ne produit aucun
+    // acces a l'execution. Un `paramsRef.current` nu, si.
+    const corps = moteurAudio().replace(/typeof paramsRef\.current/g, "");
+    expect(corps, "acces a paramsRef dans le moteur").not.toContain("paramsRef");
   });
 
   it("rend l'enveloppe et les horizons a l'appelant", () => {

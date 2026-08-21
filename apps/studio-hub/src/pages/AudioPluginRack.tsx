@@ -280,6 +280,17 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
 
   // MASTER CONTROLS
   const [masterVolume, setMasterVolume] = useState<number>(85);
+  // ===== EFFETS GLOBAUX =====
+  // Places APRES les moteurs, donc appliques a la superposition entiere et non
+  // a une voix. Ils traversent le rendu hors ligne comme le jeu : un sample
+  // fabrique porte les memes effets que ce qu'on entend.
+  const [fxDelayMix, setFxDelayMix] = useState<number>(0);
+  const [fxDelayTime, setFxDelayTime] = useState<number>(280);
+  const [fxDelayFeedback, setFxDelayFeedback] = useState<number>(35);
+  const [fxEqLow, setFxEqLow] = useState<number>(0);
+  const [fxEqMid, setFxEqMid] = useState<number>(0);
+  const [fxEqHigh, setFxEqHigh] = useState<number>(0);
+
   const [masterDetune, setMasterDetune] = useState<number>(0);
 
   // DEXED FM PARAMS
@@ -400,6 +411,8 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     activeEngine,
     masterVolume,
     masterDetune,
+    fxDelayMix, fxDelayTime, fxDelayFeedback,
+    fxEqLow, fxEqMid, fxEqHigh,
     plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
     braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
     ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
@@ -423,6 +436,8 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       activeEngine,
       masterVolume,
       masterDetune,
+      fxDelayMix, fxDelayTime, fxDelayFeedback,
+      fxEqLow, fxEqMid, fxEqHigh,
       plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
       braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
       ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
@@ -1607,6 +1622,86 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
 
     return { env, sources, naturalEnd, audibleEnd, ATTACK, DECAY, SUSTAIN, RELEASE };
   };
+  /**
+   * Chaine d'effets globale, appliquee APRES les moteurs.
+   *
+   * Elle traverse le jeu ET le rendu hors ligne : un sample fabrique porte donc
+   * exactement les memes effets que ce qu'on entend. Si elle n'existait que
+   * pour l'ecoute, le fichier sonnerait autrement, et rien ne le dirait.
+   *
+   * Placee avant la borne FIN DES MOTEURS a dessein : le test structurel
+   * verifie que chaque parametre a un effet sur le son, et ces six-la en ont un.
+   *
+   * Rend `{ entree, sortie }` plutot qu'un noeud unique : l'appelant branche la
+   * voix sur l'entree et la sortie sur sa destination, sans savoir ce qu'il y a
+   * entre les deux.
+   */
+  const construireEffets = (
+    ctx: BaseAudioContext,
+    p: typeof paramsRef.current,
+    now: number
+  ): { entree: AudioNode; sortie: AudioNode } => {
+    const entree = ctx.createGain();
+
+    // Egaliseur trois bandes. Un gain a 0 dB laisse passer sans rien changer :
+    // inutile de conditionner la construction, le cout d'un filtre neutre est
+    // negligeable et le graphe reste le meme dans tous les cas.
+    const grave = ctx.createBiquadFilter();
+    grave.type = "lowshelf";
+    grave.frequency.setValueAtTime(220, now);
+    grave.gain.setValueAtTime(p.fxEqLow, now);
+
+    const medium = ctx.createBiquadFilter();
+    medium.type = "peaking";
+    medium.frequency.setValueAtTime(1200, now);
+    medium.Q.setValueAtTime(0.9, now);
+    medium.gain.setValueAtTime(p.fxEqMid, now);
+
+    const aigu = ctx.createBiquadFilter();
+    aigu.type = "highshelf";
+    aigu.frequency.setValueAtTime(5200, now);
+    aigu.gain.setValueAtTime(p.fxEqHigh, now);
+
+    entree.connect(grave);
+    grave.connect(medium);
+    medium.connect(aigu);
+
+    const sortie = ctx.createGain();
+
+    // Delai avec reinjection. La voie directe passe toujours ; seule la voie
+    // retardee est dosee par le melange.
+    aigu.connect(sortie);
+
+    const melange = Math.max(0, Math.min(100, p.fxDelayMix)) / 100;
+    if (melange > 0) {
+      const retard = ctx.createDelay(2);
+      retard.delayTime.setValueAtTime(Math.max(0.01, Math.min(2, p.fxDelayTime / 1000)), now);
+
+      const reinjection = ctx.createGain();
+      // Borne a 0,85 : au-dela, la boucle diverge et sature indefiniment. Un
+      // curseur a 100 % ne doit pas pouvoir produire un larsen.
+      reinjection.gain.setValueAtTime(Math.min(0.85, Math.max(0, p.fxDelayFeedback / 100)), now);
+
+      // Amortir la reinjection evite l'accumulation d'aigus a chaque tour, qui
+      // rend les repetitions stridentes.
+      const amorti = ctx.createBiquadFilter();
+      amorti.type = "lowpass";
+      amorti.frequency.setValueAtTime(4800, now);
+
+      const dose = ctx.createGain();
+      dose.gain.setValueAtTime(melange, now);
+
+      aigu.connect(retard);
+      retard.connect(amorti);
+      amorti.connect(reinjection);
+      reinjection.connect(retard);
+      retard.connect(dose);
+      dose.connect(sortie);
+    }
+
+    return { entree, sortie };
+  };
+
   // ===== FIN DES MOTEURS =====
   // Borne lue par AudioPluginRack.wiring.test.ts pour delimiter le code moteur.
   // Elle existe parce que le test bornait auparavant sur `const playPluginNote`,
@@ -1697,7 +1792,11 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     // Seconde passe : le vrai rendu, dans un contexte correctement dimensionne.
     const offline = new OfflineAudioContext(1, plan.trames, frequence);
     const voix = construireCouches(offline, p, freq, 0, moteurs);
-    voix.env.connect(offline.destination);
+    // Memes effets qu'au jeu : sans cela le fichier sonnerait autrement que ce
+    // qu'on entend, et rien ne le signalerait.
+    const effets = construireEffets(offline, p, 0);
+    voix.env.connect(effets.entree);
+    effets.sortie.connect(offline.destination);
     voix.env.gain.setValueAtTime(voix.SUSTAIN, plan.debutRelachement);
     voix.env.gain.exponentialRampToValueAtTime(0.0001, plan.debutRelachement + voix.RELEASE);
 
@@ -1857,8 +1956,10 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       const { env, sources, naturalEnd, audibleEnd, ATTACK, DECAY, SUSTAIN, RELEASE } =
         construireCouches(ctx, p, freq, now, moteursEmpiles(p, couchesRef.current));
 
-      // Sortie vers le bus persistant, donc vers l'analyseur.
-      env.connect(masterBusRef.current!);
+      // Sortie vers le bus persistant, en passant par les effets globaux.
+      const effets = construireEffets(ctx, p, now);
+      env.connect(effets.entree);
+      effets.sortie.connect(masterBusRef.current!);
 
       if (voiceId) {
         // Note tenue : la voix reste au niveau de sustain jusqu'au
@@ -2678,6 +2779,43 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
           <div className="unified-waveform-controls-frame">
             
             {/* WAVEFORM / OLED OSCILLOSCOPE */}
+            {/* Effets globaux : appliques APRES les moteurs, donc a la superposition
+                entiere. Ils traversent le rendu hors ligne comme le jeu — un sample
+                fabrique porte exactement les memes effets que ce qu'on entend. */}
+            <div className="fx-globaux">
+              <div className="fx-titre">🎛️ EFFETS GLOBAUX</div>
+              <div className="fx-groupe">
+                <span className="fx-groupe-nom">DELAY</span>
+                <label>MIX {fxDelayMix}%
+                  <input type="range" min={0} max={100} value={fxDelayMix}
+                    onChange={(e) => updateParam("fxDelayMix", Number(e.target.value), setFxDelayMix)} />
+                </label>
+                <label>TEMPS {fxDelayTime} ms
+                  <input type="range" min={20} max={1200} step={10} value={fxDelayTime}
+                    onChange={(e) => updateParam("fxDelayTime", Number(e.target.value), setFxDelayTime)} />
+                </label>
+                <label>RETOUR {fxDelayFeedback}%
+                  <input type="range" min={0} max={100} value={fxDelayFeedback}
+                    onChange={(e) => updateParam("fxDelayFeedback", Number(e.target.value), setFxDelayFeedback)} />
+                </label>
+              </div>
+              <div className="fx-groupe">
+                <span className="fx-groupe-nom">ÉGALISEUR</span>
+                <label>GRAVES {fxEqLow > 0 ? "+" : ""}{fxEqLow} dB
+                  <input type="range" min={-18} max={18} value={fxEqLow}
+                    onChange={(e) => updateParam("fxEqLow", Number(e.target.value), setFxEqLow)} />
+                </label>
+                <label>MÉDIUMS {fxEqMid > 0 ? "+" : ""}{fxEqMid} dB
+                  <input type="range" min={-18} max={18} value={fxEqMid}
+                    onChange={(e) => updateParam("fxEqMid", Number(e.target.value), setFxEqMid)} />
+                </label>
+                <label>AIGUS {fxEqHigh > 0 ? "+" : ""}{fxEqHigh} dB
+                  <input type="range" min={-18} max={18} value={fxEqHigh}
+                    onChange={(e) => updateParam("fxEqHigh", Number(e.target.value), setFxEqHigh)} />
+                </label>
+              </div>
+            </div>
+
             <div className="waveform-display-box">
               <div className="vis-info-bar">
                 <span className="vis-title">📊 OSCILLOSCOPE TEMPS RÉEL (OLED)</span>

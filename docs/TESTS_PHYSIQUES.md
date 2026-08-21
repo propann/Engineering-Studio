@@ -121,6 +121,19 @@ recherche.
 - [ ] les patches d'usine acceptent étoiles et étiquettes comme les patches
       perso — ce sont pourtant des constantes du source, d'où le stockage à part
 
+### Effets globaux — delay et égaliseur
+Panneau au-dessus de l'oscilloscope. Ils s'appliquent **après** les moteurs,
+donc à la superposition entière.
+
+- [ ] le delay s'entend, et le mélange à 0 % le fait disparaître complètement
+- [ ] le retour à 100 % ne part **jamais** en larsen — la réinjection est bornée
+      à 0,85, un curseur au maximum ne doit pas pouvoir faire diverger la boucle
+- [ ] les répétitions du delay ne deviennent pas stridentes : la boucle est
+      amortie
+- [ ] l'égaliseur s'entend sur les trois bandes
+- [ ] **un sample fabriqué porte les mêmes effets que ce qu'on entend** — c'est
+      l'invariant qui compte, jeu et rendu passent par la même chaîne
+
 ### Superposition de moteurs
 Pastille ronde à droite de chaque moteur non actif : elle l'empile **sur** le
 moteur actif sans en changer.
