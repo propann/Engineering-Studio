@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// Le rack du hub, importe tel quel : ce studio portait un SynthEngineDrawer
+// decrivant six moteurs sans en jouer aucun, supprime le 2026-08-21. Le rack,
+// lui, en implemente quinze et les fait sonner.
+import AudioPluginRack from "../../studio-hub/src/pages/AudioPluginRack";
 import {
   useWebMidi,
   type MidiHit,
@@ -194,7 +198,10 @@ export default function App({ embeddedMode = false }: { embeddedMode?: boolean }
   const [editorScenes, setEditorScenes] = useState<SceneDefinition[]>([]);
   const [editorSong, setEditorSong] = useState<number[]>([]);
   const [editorActiveScene, setEditorActiveScene] = useState(1);
-  const [studioView, setStudioView] = useState<'pattern' | 'arrangement'>('pattern');
+  // 'rack' ouvre le rack audio du hub dans l'overlay editeur : 15 moteurs et
+  // 91 patches qui sonnent, la ou ce studio n'avait qu'un catalogue decrivant
+  // des moteurs sans les jouer — supprime le 2026-08-21.
+  const [studioView, setStudioView] = useState<'pattern' | 'arrangement' | 'rack'>('pattern');
   const [editorPlaybackBeat, setEditorPlaybackBeat] = useState(0);
   const [editorSelectedPad, setEditorSelectedPad] = useState(0);
   /** Sélection multiple de pas (Ctrl/Cmd+clic), clés `mesure:pad:pas` — pattern en cours d'édition seulement, jamais les sections commitées. */
@@ -1830,6 +1837,22 @@ export default function App({ embeddedMode = false }: { embeddedMode?: boolean }
         {missingDependencies.map((dep) => `${dep.group}${dep.pad} (slot ${dep.slot})`).join(', ')}
         <button onClick={() => setMissingDependencies([])} aria-label="Masquer l'avertissement">✕</button>
       </p>}
+      {/* Le rack audio du hub, dans l'overlay editeur.
+          `enTiroir` lui retire sa TopBar — elle appelle navigateMaquette et
+          demonterait ce studio au moindre clic — et l'empeche de revendiquer
+          la fenetre entiere.
+          `clavierActif` suit l'onglet : les ecouteurs sont poses sur `window`,
+          un rack en arriere-plan jouerait des notes sous les doigts de
+          quelqu'un qui travaille sur ses patterns. */}
+      {editorMode === 'complete' && studioView === 'rack' && (
+        <div className="studio-rack-panneau">
+          <AudioPluginRack
+            enTiroir
+            clavierActif={studioView === 'rack'}
+            onClose={() => setStudioView('pattern')}
+          />
+        </div>
+      )}
       {editorMode === 'complete' && studioView === 'arrangement' && <SongArranger scenes={editorScenes} song={editorSong} patternBank={currentPatternBank()} onAssignCell={assignSceneGroupPattern} onReorderSong={reorderEditorSong} onDuplicateSongPosition={duplicateSongPosition} onDeleteSongPosition={deleteSongPosition} onAuditionSongPosition={auditionSongPosition} onEditPattern={editArrangedPattern} />}
       {(editorMode !== 'complete' || studioView === 'pattern') && <>
         {editorMode === 'complete' && <PadStrip group={editorGroup} selectedPad={editorSelectedPad} livePad={editorMidiHit?.pad} liveGroup={editorMidiHit?.group} padModes={editorPadModes} padName={devicePadName} padSlot={(pad) => devicePadInfo(pad)?.slot} onSelect={(pad) => { setEditorSelectedPad(pad); setKeyEditorOpen((editorPadModes[`${editorGroup}:${pad}`] || 'ONE') === 'KEYS'); }} onPreview={(pad) => void previewEditorPad(editorGroup, pad)} onModeChange={(pad, mode) => { setEditorPadModes((current) => ({ ...current, [`${editorGroup}:${pad}`]: mode })); setKeyEditorOpen(mode === 'KEYS'); }} onOpenKeys={() => setKeyEditorOpen(true)} />}

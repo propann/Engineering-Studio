@@ -1163,3 +1163,8 @@ button:active { transform:translate(2px,2px); box-shadow:none; }
 }
 .group-control.needs-sysex { opacity: .5; }
 .group-control.needs-sysex button { cursor: not-allowed; }
+
+/* Le rack audio embarque dans l'overlay editeur. Il doit remplir le panneau
+   sans le deborder : c'est `.en-tiroir` qui lui retire ses 100vh/100vw. */
+.studio-rack-panneau { flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.studio-rack-panneau > * { flex: 1; min-width: 0; }

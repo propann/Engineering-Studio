@@ -123,6 +123,21 @@ recherche.
 - [ ] les patches d'usine acceptent étoiles et étiquettes comme les patches
       perso — ce sont pourtant des constantes du source, d'où le stockage à part
 
+### Le rack ouvert depuis le studio EP‑133
+Onglet **RACK** dans la barre de l'éditeur, à côté de PATTERNS et SONG.
+
+- [ ] l'onglet ouvre le rack : moteurs, patches, effets, tout est là
+- [ ] **jouer sur la machine pendant que le rack est ouvert** : les deux
+      reçoivent le MIDI. C'est ce que le répartiteur existe pour garantir
+- [ ] **revenir sur PATTERNS puis rejouer** : le studio reçoit toujours. C'est
+      le nettoyage destructeur qu'on a corrigé — avant, quitter le rack coupait
+      le MIDI de la page restante
+- [ ] `Ctrl+D` dans l'éditeur duplique **sans** jouer de note
+- [ ] taper une lettre en vue PATTERNS ne joue aucune note du rack
+- [ ] aller et venir dix fois entre les onglets : le son marche toujours
+      (le rack ne ferme pas son AudioContext, cette dette est connue)
+- [ ] fabriquer un sample depuis le rack ouvert dans le studio
+
 ### Effets globaux — delay et égaliseur
 Panneau au-dessus de l'oscilloscope. Ils s'appliquent **après** les moteurs,
 donc à la superposition entière.
