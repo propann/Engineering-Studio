@@ -244,9 +244,23 @@ appeared on the roadmap.
 ---
 
 ### Phase 4.4: Performance Optimization (🔶 4/5 — remaining item needs hardware)
-- [ ] MIDI latency profiling (< 20ms target) — blocked: needs a connected machine.
-      Deferred to the next session with hardware on the bench, together with the
-      OP-1 restore validation (see Phase 4.3).
+- [ ] MIDI latency profiling (< 20ms target) — half measured, 2026-08-21.
+      System floor, measured through the ALSA sequencer with a generated 60-note
+      cadence played through Midi Through and timestamped on arrival:
+        mean interval   110.42 ms against a 110.42 ms nominal (0.01 ms off)
+        jitter          0.53 ms std dev, 1.02 ms worst deviation, 1.85 ms spread
+      That is an UPPER bound: the measuring loop spawned a process per event, so its
+      own cost is included. The OS therefore spends roughly 1 ms of the 20 ms budget,
+      leaving ~19 ms for the browser and the app.
+      Careful with the nominal: the generated file interleaves a 10-tick note-off, so
+      consecutive note-ons are 106 ticks (110.42 ms) apart, not 96 (100 ms). Comparing
+      against 100 ms shows a phantom 10 ms drift — that is the measurement being read
+      wrong, not latency.
+      Still missing: the end-to-end figure, from key press to audible note, which needs
+      the browser and someone playing. The EP-133 was confirmed transmitting real pad
+      notes (42, 45, 46, 47) during this session, so the capture path works; a 30 s
+      window simply caught nobody playing.
+      Reproduce: see docs/MESURE_LATENCE_MIDI.md.
 - [x] Audio synthesis optimization — investigated and closed with nothing to change.
       Three hypotheses were measured rather than assumed:
       (1) buildBitcrushCurve and buildSaturationCurve rebuild 4096-element Float32Arrays
