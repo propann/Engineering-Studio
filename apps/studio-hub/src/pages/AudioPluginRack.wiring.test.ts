@@ -21,11 +21,19 @@ import { describe, expect, it } from "vitest";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
 
-/** Corps de playPluginNote : la fonction qui fabrique reellement le son. */
+/**
+ * Corps de construireVoix : la fonction qui fabrique reellement le son.
+ *
+ * Les moteurs vivaient dans playPluginNote jusqu'au 2026-08-21. Ils en ont ete
+ * extraits pour que le meme code serve un contexte vivant et un contexte
+ * hors ligne — c'est ce qui permet de rendre un fichier plus vite que le temps
+ * reel, et de superposer plusieurs moteurs. Ce test avait signale le
+ * deplacement en tombant : c'etait son role.
+ */
 function moteurAudio(): string {
-  const debut = SOURCE.indexOf("const playPluginNote");
-  const fin = SOURCE.indexOf("// WEB MIDI & PC KEYBOARD");
-  expect(debut, "playPluginNote introuvable").toBeGreaterThan(-1);
+  const debut = SOURCE.indexOf("const construireVoix");
+  const fin = SOURCE.indexOf("const playPluginNote");
+  expect(debut, "construireVoix introuvable").toBeGreaterThan(-1);
   expect(fin, "fin du moteur introuvable").toBeGreaterThan(debut);
   return SOURCE.slice(debut, fin);
 }
@@ -131,6 +139,64 @@ describe("briques DSP", () => {
     // cloudsReverb : moins de trois envois signale une regression.
     const envois = [...moteurAudio().matchAll(/sendToReverb\(/g)].length;
     expect(envois).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("independance du contexte audio", () => {
+  /**
+   * `construireVoix` doit rester utilisable avec N'IMPORTE QUEL contexte audio.
+   *
+   * C'est ce qui permet de rendre un fichier avec un OfflineAudioContext, plus
+   * vite que le temps reel — un pack de 60 notes se fabriquerait sinon en
+   * autant de secondes qu'il dure. Et c'est aussi ce qui permettra de
+   * superposer plusieurs moteurs sur une meme note.
+   *
+   * Toute reference au contexte vivant reintroduite ici referme les deux
+   * portes d'un coup, sans que rien d'autre ne le signale : le code
+   * continuerait de jouer correctement en direct.
+   */
+  it("ne va pas chercher le contexte lui-meme", () => {
+    expect(moteurAudio()).not.toContain("getAudioContext()");
+  });
+
+  it("ne connecte rien au bus maitre", () => {
+    // La destination est le choix de l'appelant : le bus pour jouer, la
+    // destination hors ligne pour rendre un fichier.
+    expect(moteurAudio()).not.toContain("masterBusRef");
+  });
+
+  it("ne touche a aucune reference de l'interface", () => {
+    // diagRef et voicesRef n'existent pas pendant un rendu hors ligne.
+    for (const r of ["diagRef", "voicesRef", "toastRef"]) {
+      expect(moteurAudio(), `${r} present dans construireVoix`).not.toContain(r);
+    }
+  });
+
+  it("ne programme aucune minuterie navigateur", () => {
+    // window.setTimeout n'a aucun sens pendant un rendu hors ligne : le rendu
+    // se termine bien avant que la minuterie ne se declenche.
+    expect(moteurAudio()).not.toContain("window.setTimeout");
+  });
+
+  it("lit les parametres par son argument, pas par la reference du composant", () => {
+    // `typeof paramsRef.current` en annotation de type est admis : il ne
+    // produit aucun acces a l'execution. Un `paramsRef.current` dans le corps,
+    // lui, lierait la fonction au composant et casserait le rendu hors ligne.
+    //
+    // On compte plutot qu'on ne filtre : la premiere version de ce test
+    // utilisait une regex qui attrapait justement l'annotation de la signature,
+    // et echouait sur du code correct. Compter est ici plus sur que motiver.
+    const occurrences = [...moteurAudio().matchAll(/paramsRef/g)].length;
+    expect(occurrences, "seule l'annotation de type est admise").toBe(1);
+  });
+
+  it("rend l'enveloppe et les horizons a l'appelant", () => {
+    // Sans ce retour, l'appelant ne peut ni brancher la voix ni programmer son
+    // relachement — la fonction serait extraite sans etre utilisable.
+    const corps = moteurAudio();
+    for (const champ of ["env", "sources", "naturalEnd", "audibleEnd"]) {
+      expect(corps, `${champ} absent du retour`).toContain(champ);
+    }
   });
 });
 
