@@ -55,10 +55,6 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: test
-    # L'image n'est publiee que pour main. Sur `validation` et sur une pull
-    # request, seuls les tests comptent : publier une image pour du travail non
-    # fusionne encombrerait le registre sans que rien ne la consomme.
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     outputs:
       image-tag: ${{ steps.image.outputs.tag }}
 
@@ -86,6 +82,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
@@ -96,7 +93,14 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          push: true
+          # Construire partout, ne PUBLIER que depuis main.
+          #
+          # Sauter le job entier hors de main paraissait economique, mais rendait
+          # impossible de valider une correction touchant a l'image avant de la
+          # fusionner — exactement le cas du nom en majuscules corrige ici.
+          # Construire sans publier coute une minute et attrape les erreurs de
+          # Dockerfile et d'etiquette la ou il faut : avant main.
+          push: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
           tags: |
             ${{ steps.image.outputs.tag }}
             ${{ steps.image.outputs.tag-latest }}
