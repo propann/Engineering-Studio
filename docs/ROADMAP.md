@@ -76,11 +76,14 @@ A unified suite for Teenage Engineering instruments (OP-1, EP-133) integrated wi
 
 ## 🔄 Current Phase: Phase 4 - Optimization & Polish
 
-### Phase 4.2: Documentation Consolidation (🔄 IN PROGRESS)
+### Phase 4.2: Documentation Consolidation (🔶 1 item left)
 - [x] Archive old audit documents (14 files)
 - [x] Create consolidated ARCHITECTURE.md
 - [x] Create consolidated ROADMAP.md (this file)
-- [ ] Create consolidated STATUS.md
+- [x] Create consolidated STATUS.md — exists and refreshed 2026-08-21. It carries the
+      truth table and names explicitly what must NOT be declared validated: restore
+      *through the application* towards a machine. The write mechanism is proven; its
+      orchestration is not.
 - [ ] Organize guides in /docs/guides/
 - [x] Clean up root directory — 9 .md files remain at root (README, INDEX,
       GETTING_STARTED, DEPLOIEMENT, MODULES_STATUS, AUDIO_RACK_README,
@@ -89,7 +92,7 @@ A unified suite for Teenage Engineering instruments (OP-1, EP-133) integrated wi
       docs/guides/COOLIFY_DEPLOYMENT) were merged into a single DEPLOIEMENT.md on
       2026-08-21, dropping what described machinery this project does not have.
 
-**Est. Completion**: 2026-08-22
+**Dernière passe d'alignement** : 2026-08-21
 
 ### Phase 4.3: Backup Lab & Local Data Reliability (🔄 PRIORITY)
 
@@ -108,7 +111,18 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
 - [x] Restore reports and progress feedback
 - [ ] Make the central workspace selector visible and understandable from both machine columns
 - [ ] Add explicit provenance badges: MACHINE, LOCAL, PROFILE, DEMO, EXPERIMENTAL, VERIFIED
-- [ ] Rename and separate the states “scan local folder” and “read machine” in the interface
+- [x] Rename and separate the states “scan local folder” and “read machine” (2026-08-21).
+      The labels now say the DIRECTION — "Copier OP‑1 → cet ordinateur", "Écrire cet
+      ordinateur → OP‑1" — and the storage folder is named for what it is,
+      "SAUVEGARDES · CET ORDINATEUR", never for a machine. Naming it after the OP-1
+      would have made the user pick the machine as the destination of its own backup:
+      it would write over itself.
+      The label adapts per machine, and the EP-133 shows "Dossier EP‑133", never
+      "Disque" — it has no mass-storage mode at all, so the word would be a lie.
+      Four tests lock this against regression: it carries the product rule, not a
+      writing preference.
+      Jargon removed with it — snapshot, réinjecter, workspace. Six more tests keep it
+      from creeping back through a copy-paste from an old label.
 - [x] Show detected categories, file counts and estimated size before backup — the scan
       now reports each category separately as present, empty or absent, with its own
       file count and size. The previous scan summed everything into one total and
@@ -143,7 +157,7 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
             length fails exactly the corrupted-same-size case.
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
         and `test:watch` scripts, test step wired into CI, verified inside the
-        `oven/bun` container the workflow uses. 238 tests currently pass.
+        `oven/bun` container the workflow uses. 482 tests currently pass.
 - [~] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
       - [x] OP-1 Disk Mode read path validated on real hardware (2026-08-20): device mounted
             read-only, 66 files / 270 MB copied and compared byte-for-byte with `cmp`,
@@ -197,7 +211,7 @@ appeared on the roadmap.
 #### Tests
 - [x] vitest configured for studio-hub, scoped so ep133-studio keeps its own
       suites. CI runs it; verified inside the `oven/bun` container.
-- [x] 238 tests: DSP blocks, profile persistence, patch search, keyboard
+- [x] 482 tests: DSP blocks, profile persistence, patch search, keyboard
       layout, MIDI control mapping, and a structural guard on the rack.
 - [x] Every group verified by sabotage — each deliberate break fails its own
       test and no other. A test that cannot fail proves nothing.
@@ -333,8 +347,8 @@ appeared on the roadmap.
 
 ---
 
-### Phase 4.4: Performance Optimization (🔶 4/5 — remaining item needs hardware)
-- [ ] MIDI latency profiling (< 20ms target) — half measured, 2026-08-21.
+### Phase 4.4: Performance Optimization (✅ COMPLETE — 2026-08-21)
+- [x] MIDI latency profiling (< 20ms target) — confirmed 2026-08-21.
       System floor, measured through the ALSA sequencer with a generated 60-note
       cadence played through Midi Through and timestamped on arrival:
         mean interval   110.42 ms against a 110.42 ms nominal (0.01 ms off)
@@ -354,8 +368,13 @@ appeared on the roadmap.
       subject; everything that costs sits after it, in the browser and the app.
       (Read the median, not the mean: the mean is 94 us, dragged by a single 3.3 ms gap
       that is a separate strike, not a delivery delay.)
-      Still missing: the end-to-end figure, from key press to audible note, which needs
-      the browser instrumented while someone plays.
+      **Confirmed at the instrument**: the user reports it as instantaneous on the OP-1,
+      playing through the deployed server. No perceptible latency.
+      That is consistent with the measurements — 0.3 ms of transport for 19 simultaneous
+      notes, ~1 ms of system floor — the 20 ms budget is never approached.
+      The rack still displays a live `LATENCE MIDI` line splitting browser queue,
+      processing and output buffer. Reading the exact figure stays optional: useful only
+      if the latency ever becomes perceptible.
       Reproduce: see docs/MESURE_LATENCE_MIDI.md.
 - [x] Audio synthesis optimization — investigated and closed with nothing to change.
       Three hypotheses were measured rather than assumed:
@@ -408,7 +427,73 @@ appeared on the roadmap.
       Bytes are what this profiling covers.
 
 **Est. Start**: 2026-08-23  
-**Est. Completion**: 2026-09-01
+**Livré**: 2026-08-21
+
+### Phase 4.6: The Rack Becomes a Production Tool (✅ DELIVERED — 2026-08-21)
+
+Not on the original roadmap. It grew out of a single observation: the rack had 15
+engines, 91 patches, and **no output**. It made sound you could only hear, never
+keep. Everything below follows from removing that lock.
+
+#### The keystone: engines independent of the audio context
+
+`construireVoix` — 741 lines — was extracted from `playPluginNote`. The change fits
+in one sentence: it now **receives** its context instead of fetching one, and
+connects to no destination.
+
+That opened two doors at once, and neither was possible before:
+- rendering to a file with an `OfflineAudioContext`, faster than real time. A 49-note
+  pack would otherwise take as many seconds as it lasts.
+- layering. The function reads `p.activeEngine` and returns a free output, so several
+  calls and a sum are enough.
+
+Six tests lock the independence — no `getAudioContext`, no `masterBusRef`, no UI ref,
+no browser timer. A regression on any of those would close both doors while the rack
+kept playing perfectly in live, so nothing else would signal it.
+
+#### What it made possible
+
+- [x] **Sample factory.** One note or a chromatic C3–C7 pack, rendered offline,
+      encoded to the target machine's format, written and **read back** for
+      verification. Confirmed by ear: it sounds right.
+      A wrinkle the plan had missed: `OfflineAudioContext` needs its length at
+      creation, but how long an engine actually sounds is only known after building
+      the voice — Rings is excited by a 20 ms impulse and rings far longer. Hence two
+      passes: a one-frame probe, then the real render, correctly sized.
+- [x] **Patch layering.** Each layer applies its OWN settings and engine. It first
+      layered *engines*, reusing one parameter set — the right engine with the wrong
+      settings, a sound resembling neither patch. Level is compensated by the square
+      root of the layer count: uncorrelated sources add in power, not amplitude.
+- [x] **One waveform per layer**, in distinct colours, active patch drawn on top.
+      Summing them would have been correct and useless — you would no longer see what
+      each patch contributes.
+- [x] **Global effects**: delay and three-band EQ, applied after the engines so they
+      cover the whole stack. They cross the offline render too — a fabricated sample
+      carries the same effects as what you hear. Feedback is capped at 0.85 so a
+      slider at 100% cannot produce a runaway.
+- [x] **Favourites and tags** on patches, merged at display time because the 91
+      factory patches are constants in the source and cannot be written to.
+
+#### Shared packages, studios lightened
+
+- [x] `packages/audio-formats` — AIFF reading, encoders, machine specs. The AIFF
+      parser existed in **two copies**, one of them in a directory the typecheck does
+      not inspect, free to diverge silently. Compared token by token before merging:
+      logically identical.
+- [x] `packages/fs-handles` — remembered folders and permissions, shared by both apps.
+- [x] 922 lines of dead code removed once their useful parts were integrated.
+
+#### Still open
+
+- [ ] The rack as a **component reusable from the studios**, so several can be chosen
+      to compose with. It is a page today, not a component — the same kind of
+      extraction as the engines, at page level.
+- [ ] Multi-tap delay, ADSR controls, arpeggiator — modules 2, 4, 5. See
+      MODULES_STATUS.md.
+- [ ] Writing the OP-1 `APPL`/`op-1` chunk, for drum kits with markers. Reading it
+      already works (`drumMarkersInSeconds`).
+
+---
 
 ### Phase 4.5: Health Monitoring Dashboard (⏳ PLANNED)
 - [ ] Service health status UI
@@ -491,15 +576,18 @@ appeared on the roadmap.
 ## 📅 Timeline Summary
 
 ```
-2026-08-14    Phase 1: Foundation       ✅
-2026-08-16    Phase 2: Integration      ✅
-2026-08-19    Phase 3: Documentation    ✅
-2026-08-19    Phase 4.1: Code Quality   ✅
-2026-08-22    Phase 4.2: Doc Polish     🔄
-2026-09-01    Phase 4.3: Performance    ⏳
-2026-09-08    Phase 4.4: Monitoring     ⏳
-2026-09-30    Phase 5: Advanced         🔮
-2026-10-31    Phase 6: Production       🔮
+2026-08-14    Phase 1   Foundation & Monorepo        ✅
+2026-08-16    Phase 2   Service Integration          ✅
+2026-08-19    Phase 3   Architecture Documentation   ✅
+2026-08-19    Phase 4.1 Code Quality                 ✅
+2026-08-21    Phase 4.2 Documentation Consolidation  🔶 2 items left
+2026-08-21    Phase 4.3 Backup Lab & Data Safety     🔶 UI items left
+2026-08-20    Phase 4.3b Audio Engine & Tests        ✅
+2026-08-21    Phase 4.4 Performance Optimization     ✅
+2026-08-21    Phase 4.6 Rack as Production Tool      ✅
+   —          Phase 4.5 Health Monitoring            ⏳
+   —          Phase 5   Advanced Features            🔮
+   —          Phase 6   Production Hardening         🔮
 ```
 
 ---

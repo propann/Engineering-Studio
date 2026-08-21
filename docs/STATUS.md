@@ -1,31 +1,40 @@
 # État actuel — Engineering Studio
 
-Date de référence : 2026-08-20
+Date de référence : **2026-08-21**
 
 ## Synthèse
 
-Le Hub est déployé sur Coolify et accessible en HTTPS. Le dépôt contient une
-base front-end riche, mais les fonctions matérielles et les tests complets
-restent à valider progressivement.
+Le Hub est déployé sur Coolify en HTTPS, et le rack est passé d'un instrument
+qu'on écoute à un outil qui **produit des fichiers** : samples encodés au format
+de la machine visée, écrits et relus pour vérification.
+
+Sept vérifications matérielles ont été faites, avec date et observation, dans
+[TESTS_PHYSIQUES.md](TESTS_PHYSIQUES.md) — c'est le document qui dit ce que les
+482 tests automatiques ne peuvent pas prouver.
 
 ## Tableau de vérité
 
 | Domaine | État |
 |---|---|
-| Dépôt GitHub | Opérationnel, branche main |
-| Build Vite | Configuré à la racine |
-| Déploiement Coolify | Opérationnel sur le port 3000 |
-| HTTPS | Actif via le proxy Coolify |
-| Nouvel arrivant neutre | Corrigé dans les valeurs par défaut |
-| Profil local | Module partagé, migration v2, lecture/écriture/suppression |
-| Workspace local | Fonctionnel après permission navigateur |
-| Hub de navigation | Fonctionnel, routage React interne |
-| OP-1 Studio | Intégré, validation matérielle à poursuivre |
-| EP-133 Studio | Intégré, validation matérielle à poursuivre |
-| Audio / synthèse | Interface et moteurs présents, audit moteur par moteur à faire |
-| Web MIDI | Code présent, test avec appareils réels à poursuivre |
-| Écritures firmware/machine | Ne pas déclarer validées sans appareil et checkpoint |
-| Tests automatisés | Insuffisants pour une certification globale |
+| Dépôt GitHub | Opérationnel, branche `main` |
+| Intégration continue | ✅ tourne sur `main`, la branche réellement déployée |
+| Déploiement Coolify | Opérationnel, HTTPS via le proxy |
+| Tests automatisés | ✅ 482, dont l'analyse de format binaire et le câblage |
+| Profil local | ✅ récupérable depuis le dossier de travail |
+| Dossier de travail | ✅ mémorisé, permission vérifiée au rechargement |
+| Coffre — sauvegarde | ✅ validée à l'usage, dossiers vides compris |
+| Coffre — restauration | 🔶 mécanisme validé sur l'OP-1, orchestration non |
+| Écriture sur l'OP-1 | ✅ vérifiée octet par octet, machine rendue intacte |
+| Web MIDI | ✅ instantané à l'usage sur l'OP-1 |
+| Rack — synthèse | ✅ 15 moteurs, 91 patches, superposition par patch |
+| Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
+| Rack — effets | 🔶 delay et égaliseur ; ADSR et arpégiateur à faire |
+| Rack dans les studios | ⬜ c'est une page, pas encore un composant |
+| EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
+
+**Ce qu'il ne faut pas déclarer validé** : la restauration *par l'application*
+vers une machine. Le mécanisme d'écriture l'est — écrire, démonter, relire,
+comparer les empreintes — mais pas son orchestration.
 
 ## Derniers travaux
 

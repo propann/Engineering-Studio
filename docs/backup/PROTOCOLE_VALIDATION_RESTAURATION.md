@@ -7,7 +7,7 @@ session avec le matériel sur l'établi.
 
 La restauration est le seul code du dépôt qui **écrit sur le disque de
 l'utilisateur**. Elle a un prévol, un point de retour horodaté et une détection
-des fichiers déjà identiques, et 205 tests la couvrent — mais tous sur des
+des fichiers déjà identiques, et 482 tests la couvrent — mais tous sur des
 systèmes de fichiers factices. Elle n'a jamais touché un vrai fichier.
 
 ## Deux niveaux, à ne pas confondre
@@ -42,7 +42,7 @@ diff -r "$R" "$E/cible" && echo "copie conforme"
 
 ### Manche 1 — sauvegarder
 
-Espace maître → `_essai-coffre/espace`. Source → la référence. Les quatre
+Dossier de sauvegarde → `_essai-coffre/espace`. Source → la référence. Les quatre
 catégories (album 2, drum 19, synth 41, tape 4).
 
 Attendu : 66 fichiers, 270 Mo.

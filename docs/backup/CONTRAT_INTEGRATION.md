@@ -13,7 +13,13 @@ que la logique et l'interface avancent sans se marcher dessus.
 | Terrain | Contenu |
 |---|---|
 | **Logique** | `scannerSource`, `prevolRestauration`, `creerPointDeRetour`, `transition`, `verifierSnapshot`, `categoriesIncompletes` — fonctions pures, exportées, testées |
-| **Interface** | Badges, modes de densité, libellés, mise en page, `BackupLab.tsx` |
+| **Interface** | Badges de provenance, modes de densité, mise en page, `BackupLab.tsx` |
+
+Les **libellés** ont changé de mains le 2026-08-21 : ils sont désormais
+verrouillés par des tests, parce qu'ils portent une règle produit et pas
+seulement une préférence de rédaction. Nommer le dossier de sauvegarde d'après
+une machine, ou parler de « disque » pour l'EP-133 qui n'en a pas, sont des
+erreurs de fond — pas de style.
 
 La logique publie des **types et des fonctions pures**. L'interface les lit et
 décide du rendu. Aucune fonction de logique ne produit de balisage.
@@ -185,7 +191,7 @@ c'est arrivé une fois dans cette session.
 
 ## Tester
 
-205 tests, sur des fonctions pures exportées et sur la structure du source.
+482 tests, sur des fonctions pures exportées et sur la structure du source.
 Aucun test de rendu React.
 
 ```bash
@@ -225,7 +231,13 @@ Un test écrit sans avoir été vu échouer au moins une fois n'a pas été écr
 | Rapport d'échec exploitable | ✅ |
 | Fichiers déjà identiques ignorés | ✅ |
 | Test de copie interrompue | ✅ |
-| Badges, densité, libellés | ⬜ interface |
+| Dossiers vides copiés et restaurés | ✅ 2026-08-21 |
+| Reconnaissance du support machine | ✅ 2026-08-21 |
+| Jauge de remplissage | ✅ 2026-08-21 |
+| N'afficher que les machines déclarées | ✅ 2026-08-21 |
+| Libellés en langage courant, sans jargon | ✅ 2026-08-21 |
+| Le message de succès dit OÙ | ✅ 2026-08-21 |
+| Badges, densité, modes Simple/Atelier | ⬜ interface |
 | Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ 2026-08-21 |
 | L'OP-1 relit son support après écriture externe | ✅ 2026-08-21 |
 | Restauration validée, cible dossier local | ⬜ protocole prêt, non exécuté |

@@ -4,6 +4,34 @@
 **Total Modules**: 12  
 **Status**: Setup Complete ✅ | Development Ready
 
+## Où en sont les douze modules
+
+| | Module | État |
+|---|---|---|
+| 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
+| 2 | Multi-Tap Delay | 🟡 délai simple livré, pas encore multi-prises |
+| 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
+| 4 | ADSR Envelope | 🟡 l'enveloppe existe, les commandes non |
+| 5 | Arpeggiator | 🔴 |
+| 6 | Step Sequencer | 🔴 |
+| 7 | LFO Generator | 🔴 |
+| 8 | Distortion Stack | 🔴 |
+| 9 | Chorus/Flanger/Phaser | 🔴 |
+| 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
+| 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
+| 12 | Patch Import/Export | 🔴 |
+
+**Deux acquis qui ne figuraient dans aucun module** et qui conditionnaient tout
+le reste :
+
+- **Les moteurs sont indépendants du contexte audio.** `construireVoix` reçoit
+  son contexte au lieu d'aller le chercher. C'est ce qui permet le rendu hors
+  ligne — donc l'export — et la superposition.
+- **Les patches se superposent**, chacun avec ses propres réglages et son
+  moteur, et l'oscilloscope trace une onde par couche.
+
+---
+
 ## État vérifié du dépôt (source de vérité)
 
 | Contrôle | Résultat |
@@ -12,7 +40,8 @@
 | `npm run build` | ✅ passe (~640 ms) |
 | Build Docker | ✅ passe (Node 20 Alpine) |
 | Infra de test | ✅ vitest, `npm test` |
-| Couverture de test | ✅ 238 tests, 16 fichiers |
+| Couverture de test | ✅ 482 tests, 23 fichiers |
+| Modules livrés | 4 sur 12 · 2 partiels |
 | Serveur de dev | **HTTP simple** — voir ci-dessous |
 
 > ⚠️ Les colonnes « Tests » ci-dessous décrivent la **cible**, pas l'existant.
@@ -73,7 +102,15 @@ Voir `docs/FOLDER_PICKER.md`.
 ---
 
 ### Module 2: Multi-Tap Delay Effect ⏱️ 3-4h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟡 PARTIEL (2026-08-21) — delai simple, pas multi-tap  
+
+Un delai avec reinjection est livre dans le rack (`construireEffets`) : melange,
+temps, retour, boucle amortie par un passe-bas. La reinjection est bornee a 0,85
+pour qu'un curseur a 100 % ne parte pas en larsen.
+
+**Ce qui manque pour le module complet** : plusieurs prises (2 a 8), leur
+panoramique, et la synchronisation au tempo. Le delai actuel est mono-prise.
+
 **Files**:
 - ❌ `MultiTapDelayProcessor.ts` - TODO
 - ❌ `MultiTapDelayModule.tsx` - TODO
@@ -96,7 +133,15 @@ Voir `docs/FOLDER_PICKER.md`.
 ---
 
 ### Module 3: Parametric EQ ⏱️ 4-5h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE (2026-08-21) — sans le graphe de reponse  
+
+Egaliseur trois bandes dans le rack : lowshelf a 220 Hz, peaking a 1,2 kHz,
+highshelf a 5,2 kHz, ±18 dB chacune. Applique apres les moteurs, donc a la
+superposition entiere, et traverse le rendu hors ligne comme le jeu.
+
+**Ce qui manque** : le visualiseur de reponse en frequence, et les courbes
+predefinies.
+
 **Files**:
 - ❌ `ParametricEQProcessor.ts` - TODO
 - ❌ `FrequencyResponseGraph.tsx` - TODO
@@ -121,7 +166,16 @@ Voir `docs/FOLDER_PICKER.md`.
 ---
 
 ### Module 4: ADSR Envelope Generator ⏱️ 3-4h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟡 PARTIEL — l'enveloppe existe, pas le module  
+
+Une enveloppe ADSR native est en place dans le moteur depuis le 2026-08-20
+(`construireVoix`), avec des rampes exponentielles qui ne passent jamais par
+zero. C'est elle qui supprime les clics, et elle est reutilisee par le rendu
+hors ligne.
+
+**Ce qui manque** : des commandes pour la regler, le visualiseur de courbe, et
+le choix lineaire/exponentiel. Les valeurs sont aujourd'hui fixes.
+
 **Files**:
 - ❌ `ADSREnvelopeProcessor.ts` - TODO
 - ❌ `EnvelopeVisualizerGraph.tsx` - TODO
@@ -208,7 +262,23 @@ Voir `docs/FOLDER_PICKER.md`.
 ## Phase 4: Export & Samples (Week 2)
 
 ### Module 10: Audio Export to WAV ⏱️ 4-5h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: ✅ LIVRE (2026-08-21) — et au-dela du plan  
+
+Le rack fabrique des samples : rendu hors ligne, encodage, ecriture verifiee.
+
+Deux differences avec le plan d'origine, dans le bon sens :
+- **AIFF en plus du WAV**, parce que c'est le format que l'OP-1 lit reellement
+  pour ses patches. Lui ecrire du WAV produirait un fichier qu'elle ignore.
+- **Ecriture RELUE et comparee par empreinte**. Un write() qui rend la main ne
+  garantit pas que les octets sont sur le support.
+
+Le rendu est hors ligne, donc plus rapide que le temps reel — indispensable pour
+un pack. Il reutilise `construireVoix`, le meme code moteur que pour jouer : un
+second chemin audio aurait diverge des la premiere evolution.
+
+**Ce qui manque** : le choix de la profondeur (24 et 32 bits), et les
+metadonnees de titre.
+
 **Priority**: 🔴 HIGH
 
 **Description**: Record and export audio to WAV format.
@@ -222,7 +292,17 @@ Voir `docs/FOLDER_PICKER.md`.
 ---
 
 ### Module 11: Sample Pack Creator ⏱️ 3-4h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: ✅ LIVRE (2026-08-21)  
+
+Bouton « PACK C3–C7 » : 49 notes chromatiques rendues d'affilee dans un
+sous-dossier au nom du patch. Chaque fichier est relu et verifie DANS la boucle,
+et l'erreur dit combien etaient deja ecrits — « ca a plante » sur 49 fichiers ne
+dit pas s'il faut tout refaire ou completer.
+
+**A savoir** : ce pack ne va PAS sur l'OP-1. Son echantillonneur synthe prend un
+fichier UNIQUE qu'il transpose, et un kit drum un fichier unique portant 24
+marqueurs. C'est un format de bibliotheque, pour les DAW et les studios.
+
 **Priority**: 🔴 HIGH
 
 **Description**: Generate chromatic sample sets for use in DAWs.
@@ -267,7 +347,7 @@ For each module:
 Le runner est installé (`npm test` → vitest). Les points ci-dessous décrivent
 ce qui reste à couvrir module par module.
 
-- [x] Unit tests (Vitest) — 238 tests sur les fonctions pures et la structure
+- [x] Unit tests (Vitest) — 482 tests sur les fonctions pures et la structure
 - [ ] Integration tests
 - [ ] Audio quality tests
 - [ ] Performance benchmarks
@@ -280,7 +360,7 @@ ce qui reste à couvrir module par module.
 ## 🚀 Deployment Checklist
 
 - [ ] All modules complete — 0/12 branchés (module 1 écrit mais pas importé)
-- [ ] 90%+ test coverage — 238 tests écrits ; couverture non mesurée
+- [ ] 90%+ test coverage — 482 tests écrits ; couverture non mesurée
 - [ ] Performance profiling (<10% CPU) — jamais mesuré
 - [x] Documentation alignée sur l'état réel du dépôt (2026-08-20)
 - [ ] Mobile testing passed
