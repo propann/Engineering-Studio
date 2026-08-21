@@ -1,5 +1,5 @@
 /**
- * Gammes et motifs d'arpège — la logique du rack MIDI.
+ * Arpèges et quantification — la logique du rack MIDI.
  *
  * Séparation des métiers : le rack MIDI **produit les notes**, le rack de
  * moteurs en fait du son, le rack d'effets le traite. Un arpégiateur posé dans
@@ -9,52 +9,7 @@
  * Tout est pur : aucun accès au MIDI, aucune horloge, aucun état. C'est le
  * panneau qui possède le tempo et l'envoi.
  */
-
-/** Demi-tons depuis la tonique, sur une octave. */
-export const GAMMES = {
-  chromatique: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-  majeure: [0, 2, 4, 5, 7, 9, 11],
-  mineure: [0, 2, 3, 5, 7, 8, 10],
-  pentatonique_majeure: [0, 2, 4, 7, 9],
-  pentatonique_mineure: [0, 3, 5, 7, 10],
-  blues: [0, 3, 5, 6, 7, 10],
-  dorien: [0, 2, 3, 5, 7, 9, 10],
-  phrygien: [0, 1, 3, 5, 7, 8, 10],
-  lydien: [0, 2, 4, 6, 7, 9, 11],
-  mixolydien: [0, 2, 4, 5, 7, 9, 10],
-  japonaise: [0, 1, 5, 7, 8],
-} as const;
-
-export type Gamme = keyof typeof GAMMES;
-
-/** Ordre d'affichage : les plus utiles d'abord, pas l'ordre alphabétique. */
-export const ORDRE_GAMMES: Gamme[] = [
-  "chromatique",
-  "pentatonique_majeure",
-  "pentatonique_mineure",
-  "majeure",
-  "mineure",
-  "blues",
-  "dorien",
-  "phrygien",
-  "lydien",
-  "mixolydien",
-  "japonaise",
-];
-
-export const NOMS_GAMMES: Record<Gamme, string> = {
-  chromatique: "Chromatique",
-  pentatonique_majeure: "Pentatonique majeure",
-  pentatonique_mineure: "Pentatonique mineure",
-  majeure: "Majeure",
-  mineure: "Mineure",
-  blues: "Blues",
-  dorien: "Dorien",
-  phrygien: "Phrygien",
-  lydien: "Lydien",
-  mixolydien: "Mixolydien",
-  japonaise: "Japonaise (in sen)",
-};
+import { GAMMES, type Gamme } from "./gammes";
 
 export const NOTE_MIN = 0;
 export const NOTE_MAX = 127;

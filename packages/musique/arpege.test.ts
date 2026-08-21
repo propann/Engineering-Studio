@@ -2,45 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   GAMMES, NOMS_GAMMES, NOMS_MOTIFS, NOTE_MAX, ORDRE_GAMMES, ORDRE_MOTIFS,
   pasArpege, quantifier, reservoir, type Gamme, type Motif,
-} from "./musique";
+} from "./index";
 
 const DO3 = 60; // do central, tonique de reference dans tous les cas ci-dessous
-
-describe("gammes", () => {
-  it("chaque gamme part de la tonique", () => {
-    // Un degre 0 absent decalerait toute la gamme d'un demi-ton sans que rien
-    // ne le signale.
-    for (const g of ORDRE_GAMMES) expect(GAMMES[g][0]).toBe(0);
-  });
-
-  it("chaque gamme est triee et sans doublon", () => {
-    // `quantifier` parcourt les degres en cherchant le plus proche : un
-    // doublon ne casserait rien, mais un degre hors de [0,12[ ferait sortir
-    // le resultat de l'octave.
-    for (const g of ORDRE_GAMMES) {
-      const d = GAMMES[g];
-      expect([...new Set(d)], `${g} a un doublon`).toHaveLength(d.length);
-      expect([...d].sort((a, b) => a - b), `${g} n'est pas triee`).toEqual([...d]);
-      expect(Math.min(...d)).toBeGreaterThanOrEqual(0);
-      expect(Math.max(...d)).toBeLessThan(12);
-    }
-  });
-
-  it("les pentatoniques ont bien cinq notes", () => {
-    expect(GAMMES.pentatonique_majeure).toHaveLength(5);
-    expect(GAMMES.pentatonique_mineure).toHaveLength(5);
-  });
-
-  it("l'ordre d'affichage couvre toutes les gammes, et les noms aussi", () => {
-    const toutes = Object.keys(GAMMES) as Gamme[];
-    expect([...ORDRE_GAMMES].sort()).toEqual([...toutes].sort());
-    for (const g of toutes) expect(NOMS_GAMMES[g], `${g} sans nom`).toBeTruthy();
-  });
-
-  it("la chromatique vient en premier : c'est « ne rien contraindre »", () => {
-    expect(ORDRE_GAMMES[0]).toBe("chromatique");
-  });
-});
 
 describe("quantifier", () => {
   it("laisse passer une note deja dans la gamme", () => {

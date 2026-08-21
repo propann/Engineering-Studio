@@ -4077,3 +4077,12 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
 .arp-touche:hover { border-color: #6fe3b0; }
 .arp-touche.tenue { color: #0d1a14; background: #6fe3b0; border-color: #3fbf8c; box-shadow: 0 0 0 2px rgba(111, 227, 176, .3); }
 .arp-pied { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #8e9db5; font-size: 11px; }
+
+/* ── Sélecteur de gamme (packages/musique) ──────────────────────────────── */
+.arp-gamme { display: contents; }
+.arp-gamme__champ { display: grid; gap: 4px; color: #8e9db5; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.arp-gamme__gamme, .arp-gamme__tonique { padding: 6px 8px; color: #ecf3ff; background: #16213a; border: 1px solid #3d557f; border-radius: 5px; font-size: 12px; }
+.arp-gamme__gamme { max-width: 230px; }
+.arp-gamme__tonique { width: 68px; }
+.arp-gamme__gamme optgroup { color: #8e9db5; font-style: normal; font-weight: 700; }
+.arp-gamme__gamme option { color: #ecf3ff; font-weight: 400; }

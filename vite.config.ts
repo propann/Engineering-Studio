@@ -27,6 +27,7 @@ export default defineConfig({
       "@studio-hub/fs-handles": path.resolve(__dirname, "packages/fs-handles/index.ts"),
       "@studio-hub/audio-formats": path.resolve(__dirname, "packages/audio-formats/index.ts"),
       "@studio-hub/midi-dispatch": path.resolve(__dirname, "packages/midi-dispatch/index.ts"),
+      "@studio-hub/musique": path.resolve(__dirname, "packages/musique/index.ts"),
       "@studio-hub/core": path.resolve(__dirname, "apps/studio-hub/src/core"),
     },
   },

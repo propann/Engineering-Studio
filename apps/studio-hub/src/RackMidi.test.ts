@@ -75,7 +75,7 @@ describe("le rack de moteurs entend le rack MIDI", () => {
 
 describe("l'arpegiateur vit dans le rack MIDI", () => {
   it("utilise la logique pure, sans la reimplementer", () => {
-    expect(PANNEAU).toContain('from "./core/midi/musique"');
+    expect(PANNEAU).toContain('from "@studio-hub/musique"');
     expect(PANNEAU).toContain("pasArpege(tenues,");
   });
 
@@ -161,8 +161,25 @@ describe("le mode controleur alimente l'arpege", () => {
 });
 
 describe("interface", () => {
-  it("propose toutes les gammes et tous les motifs, sans liste en dur", () => {
-    expect(PANNEAU).toContain("ORDRE_GAMMES.map((g) =>");
+  it("delegue le choix de gamme au composant partage", () => {
+    // Le panneau rendait ses deux menus lui-meme. Avec vingt-neuf gammes il
+    // fallait des familles, et un composant que les studios puissent poser
+    // aussi — il vit donc dans packages/musique, pas ici.
+    expect(PANNEAU).toContain("<SelecteurGamme");
+    expect(PANNEAU).toContain("gamme={arpGamme}");
+    expect(PANNEAU).toContain("onGamme={setArpGamme}");
+    expect(PANNEAU).toContain("tonique={arpTonique}");
+    expect(PANNEAU).toContain("onTonique={setArpTonique}");
+  });
+
+  it("ne reconstruit pas de menu de gammes en parallele", () => {
+    // Le defaut qui suivrait la migration : garder l'ancien menu a cote du
+    // composant, et voir les deux diverger.
+    expect(PANNEAU).not.toContain("ORDRE_GAMMES.map(");
+    expect(PANNEAU).not.toContain("NOMS_GAMMES[");
+  });
+
+  it("propose tous les motifs sans liste en dur", () => {
     expect(PANNEAU).toContain("ORDRE_MOTIFS.map((m) =>");
   });
 

@@ -2,13 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
 import { sAbonner } from "@studio-hub/midi-dispatch";
 import {
-  NOMS_GAMMES, NOMS_MOTIFS, ORDRE_GAMMES, ORDRE_MOTIFS,
+  NOMS_MOTIFS, NOMS_NOTES, ORDRE_MOTIFS, SelecteurGamme,
   pasArpege, quantifier, type Gamme, type Motif,
-} from "./core/midi/musique";
+} from "@studio-hub/musique";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "./core/audio/tempo";
 
-/** Noms des douze classes, index = demi-tons depuis do. */
-const NOMS_NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 import { createLogger } from "@studio-hub/audio-bridge";
 
 const log = createLogger("Hub.MidiSync");
@@ -544,16 +542,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
                   {ORDRE_MOTIFS.map((m) => <option key={m} value={m}>{NOMS_MOTIFS[m]}</option>)}
                 </select>
               </label>
-              <label>Gamme
-                <select value={arpGamme} onChange={(e) => setArpGamme(e.target.value as Gamme)}>
-                  {ORDRE_GAMMES.map((g) => <option key={g} value={g}>{NOMS_GAMMES[g]}</option>)}
-                </select>
-              </label>
-              <label>Tonique
-                <select value={arpTonique} onChange={(e) => setArpTonique(Number(e.target.value))}>
-                  {NOMS_NOTES.map((nom, d) => <option key={nom} value={60 + d}>{nom}</option>)}
-                </select>
-              </label>
+          <SelecteurGamme gamme={arpGamme} onGamme={setArpGamme} tonique={arpTonique} onTonique={setArpTonique} prefixe="arp-gamme" />
               <label>Vitesse
                 <select value={arpDivision} onChange={(e) => setArpDivision(e.target.value as Division)}>
                   {ORDRE_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}

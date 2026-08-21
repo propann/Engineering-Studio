@@ -29,6 +29,7 @@
       "@studio-hub/fs-handles": ["./packages/fs-handles/index.ts"],
       "@studio-hub/audio-formats": ["./packages/audio-formats/index.ts"],
       "@studio-hub/midi-dispatch": ["./packages/midi-dispatch/index.ts"],
+      "@studio-hub/musique": ["./packages/musique/index.ts"],
       "@studio-hub/core/*": ["./apps/studio-hub/src/core/*"]
     }
   },
