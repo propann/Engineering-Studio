@@ -113,6 +113,10 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     needs: build
+    # Trivy analyse l'image PUBLIEE, qu'il recupere depuis le registre. Hors de
+    # main l'image est construite mais pas poussee : il n'y aurait rien a tirer,
+    # et l'etape echouerait pour une raison sans rapport avec la securite.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v3
