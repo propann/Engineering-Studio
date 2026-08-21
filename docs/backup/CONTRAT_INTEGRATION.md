@@ -227,6 +227,7 @@ Un test écrit sans avoir été vu échouer au moins une fois n'a pas été écr
 | Test de copie interrompue | ✅ |
 | Badges, densité, libellés | ⬜ interface |
 | Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ 2026-08-21 |
+| L'OP-1 relit son support après écriture externe | ✅ 2026-08-21 |
 | Restauration validée, cible dossier local | ⬜ protocole prêt, non exécuté |
 | Restauration par l'application, de bout en bout | ⬜ |
 
@@ -236,11 +237,14 @@ Fait le 2026-08-21 sur `synth/user/8.aif`, avec un contenu de taille identique �
 le cas qu'une comparaison de tailles laisserait passer. Machine rendue à son état
 initial ensuite, 66 fichiers contrôlés, 0 divergence.
 
+L'OP-1 fait un rapport à chaque déconnexion : elle réanalyse son support et le
+signale. Après ces écritures, ce rapport passe normalement — écrire depuis Linux
+sur son volume FAT ne la déroute pas.
+
 **Ce qui ne l'est pas** : le chemin de restauration de l'application lui-même,
-qui passe par le navigateur, et la relecture du fichier restauré par la machine.
-Ce dernier point ne se vérifie qu'en chargeant le patch sur l'OP-1 et en
-l'écoutant — c'est la seule preuve qu'on produit un instrument utilisable et pas
-seulement des octets conformes.
+qui passe par le navigateur — `prevolRestauration`, le point de retour, la
+boucle de `restoreBackup`. Ce qui est prouvé ci-dessus, c'est le mécanisme
+qu'elle emploie, pas son orchestration.
 
 Prudence conservée : le disque se monte en lecture seule par défaut, et toute
 écriture est précédée d'une sauvegarde vérifiée.

@@ -123,12 +123,17 @@ ne prouve rien sur ce qui est réellement sur le support.
 | | |
 |---|---|
 | Mécanisme d'écriture vérifiée, au niveau fichier | ✅ 2026-08-21 |
+| L'OP-1 accepte le système de fichiers après écriture externe | ✅ 2026-08-21 |
 | Chemin de restauration de l'application, par le navigateur | ⬜ |
-| L'OP-1 relit-elle correctement un fichier restauré ? | ⬜ |
 
-Le dernier point ne se vérifie pas depuis l'ordinateur : il faut charger le
-patch sur la machine et l'écouter. C'est la seule preuve que restaurer produit
-un instrument utilisable, et non des octets conformes.
+L'OP-1 procède à un rapport à chaque déconnexion : elle réanalyse son support
+et le signale. Après les écritures ci-dessus, ce rapport passe normalement —
+confirmé par l'utilisateur. Écrire depuis Linux sur le volume FAT de la machine
+ne la déroute donc pas et ne corrompt pas son système de fichiers.
+
+C'est ce qui manquait pour que la vérification ait un sens côté instrument :
+des empreintes conformes prouvent que les octets sont là, pas que la machine
+sait encore s'en servir.
 
 Prudence conservée : le disque se monte en lecture seule par défaut pendant
 les essais, et toute écriture est précédée d'une sauvegarde vérifiée.
