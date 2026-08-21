@@ -513,11 +513,37 @@ kept playing perfectly in live, so nothing else would signal it.
       existed; grafting onto it avoided inventing another navigation. Vite keeps
       the rack in its own 91 kB chunk, shared between the hub route and the
       studio.
-- [ ] **OP-1: the same panel**, on the model of the two existing collapsible
-      panels (`page.tsx:1371`, `:1437`).
-- [ ] **The rack never closes its AudioContext.** Opening and closing the drawer
-      repeatedly accumulates them, and Chrome caps around six per document.
-      Known, recorded in TESTS_PHYSIQUES.md, not fixed in passing.
+  - [x] **OP-1: the same panel** (2026-08-22), on the model of the two existing
+        collapsible panels. One deliberate difference: it starts *folded*, unlike
+        the OLED screen and the machine keyboard. The rack mounts an AudioContext
+        and puts its key listeners on `window`; unfolded by default it would play
+        notes under the fingers of someone driving the machine.
+        The CSS rule is not cosmetic: the embedded rack asks for `height: 100%`
+        and the OP-1 page is a scrolling column, so without an explicit height on
+        the parent the panel exists and renders a rack of zero height — invisible
+        to typecheck and build alike.
+  - [x] **The rack closes its AudioContext** (2026-08-22). It created one per
+        mount and never closed it; in a studio drawer each opening added one, and
+        Chrome caps around six per document. At the seventh: no sound, no error.
+        Deliberately a separate effect from the keyboard/MIDI cleanup, which
+        depends on `clavierActif` and re-runs on every drawer toggle — closing the
+        context there would have killed it mid-session, the inverse fault and a
+        worse one. The bus, analyser and reverb refs are nulled alongside the
+        context: React strict mode re-runs the effect on the *same* instance, so
+        with the same refs.
+  - [x] **Delay locked to the host studio's tempo** (2026-08-22). The plan called
+        this "a free win: the rack starts and stops with the studios, at the same
+        BPM". That was wrong, and it is corrected rather than simulated: the rack
+        has no transport. No play, no stop, no playhead. There is nothing to
+        start. What genuinely depends on tempo is the delay time and the arp
+        speed. The delay is wired; the arp waits for module 5, which rebuilds the
+        arpeggiator entirely.
+        `core/audio/tempo.ts` — pure BPM + division → ms, dotted and triplet
+        included, 14 tests. Two of them were instructive by being wrong first: the
+        20 ms floor never fires (at the highest tempo and shortest division we are
+        still at 33 ms, so the `Math.max` is defensive, not functional), and the
+        menu groups by base value the way every sequencer does, not by strictly
+        descending duration.
 
 #### Dead code swept from the studios (2026-08-21)
 

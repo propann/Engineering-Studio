@@ -134,9 +134,49 @@ Onglet **RACK** dans la barre de l'éditeur, à côté de PATTERNS et SONG.
       le MIDI de la page restante
 - [ ] `Ctrl+D` dans l'éditeur duplique **sans** jouer de note
 - [ ] taper une lettre en vue PATTERNS ne joue aucune note du rack
-- [ ] aller et venir dix fois entre les onglets : le son marche toujours
-      (le rack ne ferme pas son AudioContext, cette dette est connue)
+- [ ] **aller et venir dix fois entre les onglets : le son marche toujours.**
+      C'est le test de la fuite d'AudioContext, corrigée le 2026-08-22 : le rack
+      en créait un par ouverture sans jamais le fermer, et Chrome en plafonne six
+      par document. Au septième, plus aucun son et aucune erreur — donc si ça
+      casse, ça casse *silencieusement*. Aucun test automatique ne peut le voir :
+      il faudrait un vrai navigateur et sept montages
 - [ ] fabriquer un sample depuis le rack ouvert dans le studio
+
+### Le rack ouvert depuis le studio OP‑1
+Menu **vue** → « Afficher Rack Audio ». Le panneau part **replié**,
+contrairement à l'écran OLED et au clavier machine.
+
+- [ ] le panneau s'ouvre et le rack est entier : moteurs, patches, effets
+- [ ] **il a une hauteur visible.** Le rack embarqué demande `height: 100%` et la
+      page OP‑1 est une colonne qui défile : sans hauteur sur le parent, le
+      panneau existe mais rend un rack de hauteur nulle. Un test verrouille la
+      règle CSS, il ne peut pas voir le résultat
+- [ ] **replié, le clavier de l'ordinateur ne joue aucune note.** Les écouteurs
+      du rack sont posés sur `window` : ils survivraient au repli
+- [ ] `Espace` pilote toujours la lecture de l'OP‑1, rack ouvert
+- [ ] **jouer sur l'OP‑1 pendant que le rack est ouvert** : les deux reçoivent le
+      MIDI
+- [ ] **refermer puis rejouer sur l'OP‑1** : le studio reçoit toujours
+- [ ] ouvrir et fermer dix fois : le son marche toujours (même fuite que
+      ci‑dessus, même correctif)
+
+### Delay calé sur le tempo du studio
+Bouton **SYNC** sous le curseur TEMPS du delay, avec le choix de division.
+
+- [ ] SYNC affiche le BPM du studio hôte, pas 120. **Si l'affichage reste à 120,
+      c'est que `hub:transport` n'arrive pas** — le rack garde alors sa valeur par
+      défaut sans rien signaler
+- [ ] changer le tempo du studio déplace le temps de delay, à l'oreille
+- [ ] les répétitions retombent **juste** sur le rythme joué. C'est le seul juge :
+      un calcul exact qui sonne décalé signalerait un problème de latence
+      ailleurs, pas de conversion
+- [ ] 1/8 et 1/8T s'entendent différemment, et le triolet swingue
+- [ ] SYNC actif, le curseur TEMPS est **grisé** et ne bouge plus
+- [ ] SYNC éteint, le curseur reprend la main sur la dernière valeur calculée
+- [ ] **un sample fabriqué SYNC actif porte le delay calé** — pas l'ancienne
+      valeur. Le recalage passe par `updateParam` exprès pour ça ; c'est l'écart
+      qu'aucun test structurel ne peut entendre
+
 
 ### Effets globaux — delay et égaliseur
 Panneau au-dessus de l'oscilloscope. Ils s'appliquent **après** les moteurs,

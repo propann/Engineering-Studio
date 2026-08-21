@@ -9,7 +9,7 @@
 | | Module | État |
 |---|---|---|
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
-| 2 | Multi-Tap Delay | 🟡 délai simple livré, pas encore multi-prises |
+| 2 | Multi-Tap Delay | 🟡 délai simple + SYNC au tempo, pas encore multi-prises |
 | 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
 | 4 | ADSR Envelope | 🟡 l'enveloppe existe, les commandes non |
 | 5 | Arpeggiator | 🔴 |
@@ -33,8 +33,12 @@ tout le reste :
   gestionnaire à la fois. Cinq composants l'écrivaient et s'effaçaient
   mutuellement. `packages/midi-dispatch` diffuse à plusieurs auditeurs, et un
   test structurel interdit toute écriture directe.
-- **Le rack s'ouvre dans un studio.** Onglet RACK côté EP‑133 ; l'OP‑1 reste à
-  faire.
+- **Le rack s'ouvre dans les deux studios.** Onglet RACK côté EP‑133, menu vue →
+  « Afficher Rack Audio » côté OP‑1. Le panneau OP‑1 part replié : le rack monte
+  un AudioContext et pose ses écouteurs clavier sur `window`.
+- **Le delay se cale sur le tempo du studio hôte** (bouton SYNC). Le rack n'a pas
+  de transport à lui — rien à démarrer ni à arrêter — donc c'est la seule
+  synchronisation qui ait un sens aujourd'hui.
 
 ---
 

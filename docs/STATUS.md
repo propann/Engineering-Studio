@@ -29,7 +29,7 @@ Sept vérifications matérielles ont été faites, avec date et observation, dan
 | Rack — synthèse | ✅ 15 moteurs, 91 patches, superposition par patch |
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | 🔶 delay et égaliseur ; ADSR et arpégiateur à faire |
-| Rack dans les studios | 🔶 EP‑133 fait, OP‑1 à faire |
+| Rack dans les studios | ✅ EP‑133 et OP‑1 |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
 | EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
 
