@@ -15,7 +15,7 @@ Port     : 3000
 Domaine  : https://engineering-studio.duckdns.org
 ```
 
-**Ce qui a été retiré et pourquoi** : les trois documents décrivaient des
+**Ce qui a été retiré et pourquoi** : les quatre documents décrivaient des
 dispositifs qui n'existent pas ici — Kubernetes, Docker Swarm, Sentry, alertes
 Slack, migrations de base de données, services de surveillance externes. Et
 `DEPLOY_SECRETS.md` détaillait sur 477 lignes la configuration de trois secrets
@@ -24,38 +24,33 @@ renseignés. Suivre ces pages faisait perdre du temps sur des étapes sans objet
 
 ---
 
-## ⚠️ Coolify déploie une branche que le CI ne teste pas
+## Les deux branches
 
-C'est le point le plus important de cette page, et il tient en deux lignes :
-
-| | Branche |
+| Branche | Rôle |
 |---|---|
-| Ce que **Coolify** déploie | `main` |
-| Ce que le **CI** teste | `deploy/coolify-production` |
+| `main` | ce que Coolify déploie. Les tests s'y lancent aussi. |
+| `validation` | pour voir le résultat **avant** de fusionner, sur un changement sensible |
 
-```yaml
-# .github/workflows/deploy.yml
-on:
-  push:
-    branches:
-      - deploy/coolify-production
-```
+Pousser sur `main` reste la voie normale : le CI s'y déclenche, on est prévenu
+si quelque chose casse. Passer par `validation` d'abord donne la réponse avant
+que ça parte en ligne — utile quand on touche à la construction, aux
+dépendances ou au Dockerfile.
 
-Les deux ne se rencontrent jamais. **Ce qui part en production n'est jamais
-passé par le CI**, et ce que le CI vérifie n'est déployé nulle part. Mesuré le
-2026-08-21 : `main` avait 9 commits d'avance sur la branche de déploiement.
+### Ce qui a été corrigé le 2026-08-21
 
-Les tests tournent bien — en local, à la main. Mais rien d'automatique ne
-protège la production. Tant que ce n'est pas résolu, **considérer que le CI ne
-protège rien**.
+Le CI ne se déclenchait que sur `deploy/coolify-production`, une branche que
+**Coolify n'utilise pas**. Les deux ne se rencontraient jamais : ce qui partait
+en production n'était jamais testé, et ce qui était testé n'était déployé nulle
+part. `main` avait 9 commits d'avance au moment du constat.
 
-Deux façons d'en sortir, à trancher explicitement :
+Un filtre `paths` aggravait le tout en excluant `vite.config.ts`,
+`package.json`, `bun.lock` et `tsconfig.json` — précisément les fichiers dont
+une modification casse la construction sans toucher au code. Il a été retiré :
+la suite complète prend moins de deux secondes.
 
-1. **Ajouter `main` aux branches déclencheuses** — le CI valide alors ce qui
-   est réellement déployé. C'est le plus direct, puisque Coolify suit `main`.
-2. **Faire déployer Coolify depuis `deploy/coolify-production`** et n'y
-   fusionner que du vérifié. Plus strict, mais impose une étape à chaque
-   livraison.
+La branche `deploy/coolify-production` a été supprimée. Elle portait un nom qui
+mentait — rien de « production » ne s'y trouvait — et n'avait aucun commit que
+`main` n'ait déjà.
 
 ---
 
@@ -66,7 +61,7 @@ Trois travaux, dans cet ordre :
 | Travail | Étapes |
 |---|---|
 | `test` | Bun · install `--frozen-lockfile` · `typecheck` · `test` · `build` |
-| `build` | Buildx · connexion au registre GitHub · construction et poussée de l'image |
+| `build` | Buildx · registre GitHub · construction et poussée — **`main` seulement** |
 | `security-scan` | Trivy · téléversement du rapport |
 
 **Aucun secret manuel n'est requis.** Le seul référencé est
@@ -292,12 +287,17 @@ toujours le contexte sécurisé. Mesures de référence dans
 ## Mettre à jour
 
 ```bash
-git push origin main                              # Coolify reconstruit et redéploie
-git push origin main:deploy/coolify-production    # déclenche le CI (tests, image, Trivy)
+git push origin main          # tests + image + Coolify déploie
 ```
 
-Les deux sont nécessaires **tant que la divergence signalée en tête de page
-n'est pas résolue** : la première livre, la seconde vérifie.
+Une seule commande : le CI vérifie et Coolify livre. Pour valider avant de
+mettre en ligne :
+
+```bash
+git push origin HEAD:validation     # tests seuls, rien n'est déployé
+# une fois vert :
+git push origin main
+```
 
 Après chaque changement :
 

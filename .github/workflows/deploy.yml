@@ -1,16 +1,31 @@
-name: Deploy to Coolify
+name: CI — tests, image, sécurité
+
+# Coolify déploie `main` tout seul, en surveillant le dépôt. Ce workflow ne
+# déploie rien : il vérifie.
+#
+# Il ne se déclenchait que sur `deploy/coolify-production`, une branche que
+# Coolify n'utilise pas. Les deux ne se rencontraient donc jamais : ce qui
+# partait en production n'était jamais testé, et ce qui était testé n'était
+# jamais déployé. Constaté le 2026-08-21, avec 9 commits d'écart.
+#
+# `validation` sert à voir le résultat AVANT de fusionner dans main, pour les
+# changements sensibles. Pousser directement sur main reste possible — les
+# tests tournent quand même, on est simplement prevenu apres coup.
 
 on:
   push:
     branches:
-      - deploy/coolify-production
-    paths:
-      - 'apps/studio-hub/**'
-      - 'packages/**'
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.github/workflows/deploy.yml'
-  workflow_dispatch:  # Allow manual trigger
+      - main
+      - validation
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Pas de filtre `paths` : il excluait vite.config.ts, package.json, bun.lock et
+# tsconfig.json — exactement les fichiers dont une modification casse la
+# construction sans toucher au code. La suite complete prend moins de deux
+# secondes ; filtrer ne faisait economiser rien et laissait passer l'essentiel.
 
 jobs:
   test:
@@ -40,6 +55,10 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: test
+    # L'image n'est publiee que pour main. Sur `validation` et sur une pull
+    # request, seuls les tests comptent : publier une image pour du travail non
+    # fusionne encombrerait le registre sans que rien ne la consomme.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     outputs:
       image-tag: ${{ steps.image.outputs.tag }}
 
