@@ -7,7 +7,7 @@ session avec le matériel sur l'établi.
 
 La restauration est le seul code du dépôt qui **écrit sur le disque de
 l'utilisateur**. Elle a un prévol, un point de retour horodaté et une détection
-des fichiers déjà identiques, et 482 tests la couvrent — mais tous sur des
+des fichiers déjà identiques, et 515 tests la couvrent — mais tous sur des
 systèmes de fichiers factices. Elle n'a jamais touché un vrai fichier.
 
 ## Deux niveaux, à ne pas confondre

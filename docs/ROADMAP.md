@@ -157,7 +157,7 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
             length fails exactly the corrupted-same-size case.
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
         and `test:watch` scripts, test step wired into CI, verified inside the
-        `oven/bun` container the workflow uses. 482 tests currently pass.
+        `oven/bun` container the workflow uses. 515 tests currently pass.
 - [~] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
       - [x] OP-1 Disk Mode read path validated on real hardware (2026-08-20): device mounted
             read-only, 66 files / 270 MB copied and compared byte-for-byte with `cmp`,
@@ -211,7 +211,7 @@ appeared on the roadmap.
 #### Tests
 - [x] vitest configured for studio-hub, scoped so ep133-studio keeps its own
       suites. CI runs it; verified inside the `oven/bun` container.
-- [x] 482 tests: DSP blocks, profile persistence, patch search, keyboard
+- [x] 515 tests: DSP blocks, profile persistence, patch search, keyboard
       layout, MIDI control mapping, and a structural guard on the rack.
 - [x] Every group verified by sabotage — each deliberate break fails its own
       test and no other. A test that cannot fail proves nothing.
@@ -482,6 +482,42 @@ kept playing perfectly in live, so nothing else would signal it.
       logically identical.
 - [x] `packages/fs-handles` — remembered folders and permissions, shared by both apps.
 - [x] 922 lines of dead code removed once their useful parts were integrated.
+
+#### The rack opens inside the studios (2026-08-21)
+
+- [x] **A shared MIDI dispatcher — `packages/midi-dispatch`.** The blocking
+      obstacle, and a defect that already existed between hub pages.
+      `input.onmidimessage` is a *property*, not an `addEventListener`: last
+      writer wins, silently. **Five** consumers wrote it — the rack, both hub
+      MIDI pages, ep133's `useWebMidi`, op1's page. I first counted three; the
+      two hub pages had escaped me.
+      Worse than the competition, every cleanup did
+      `inputs.forEach(i => i.onmidimessage = null)` — erasing *everyone else's*
+      handlers. Closing one panel cut the MIDI of the page that remained. That
+      is exactly the failure diagnosed this morning between two settings pages.
+      All five migrated. A structural test now forbids any direct write outside
+      the dispatcher: the fault is an *access*, not a type, so nothing catches
+      it at compile time and it only shows in use — when two features each work
+      perfectly on their own.
+- [x] **The rack is embeddable.** `enTiroir` drops the TopBar (it calls
+      `navigateMaquette`, so a click inside would unmount the host) and releases
+      `100vh`/`100vw`. `clavierActif` gates the keyboard listeners, which sit on
+      `window` — a background rack would play notes under the fingers of someone
+      editing patterns.
+      Two real key conflicts closed: modified keys are now ignored (ep133 uses
+      Ctrl+D and Ctrl+Q, while `d` and `q` are piano keys — Ctrl+D duplicated
+      *and* played an E), and `isContentEditable` joined the field guards.
+      `onClose` finally wired: destructured since forever, never used, while the
+      hub passed it.
+- [x] **EP-133: a RACK tab** beside PATTERNS and SONG. The view selector already
+      existed; grafting onto it avoided inventing another navigation. Vite keeps
+      the rack in its own 91 kB chunk, shared between the hub route and the
+      studio.
+- [ ] **OP-1: the same panel**, on the model of the two existing collapsible
+      panels (`page.tsx:1371`, `:1437`).
+- [ ] **The rack never closes its AudioContext.** Opening and closing the drawer
+      repeatedly accumulates them, and Chrome caps around six per document.
+      Known, recorded in TESTS_PHYSIQUES.md, not fixed in passing.
 
 #### Dead code swept from the studios (2026-08-21)
 

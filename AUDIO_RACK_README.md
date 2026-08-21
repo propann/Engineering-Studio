@@ -61,7 +61,7 @@ apps/studio-hub/
 │   └── docs/
 │       └── MODULE_DEVELOPMENT_GUIDE.md ✅
 │
-(les tests vivent a cote du code teste : *.test.ts)  ✅ 482 tests, 23 fichiers
+(les tests vivent a cote du code teste : *.test.ts)  ✅ 515 tests, 26 fichiers
 ```
 
 > **Note d'alignement** — le logger n'est pas dans `core/` : il vient de
@@ -89,7 +89,7 @@ npm run lint       # identique à typecheck (tsc --noEmit)
 ```
 
 ```bash
-npm test           # vitest run — 482 tests, 23 fichiers
+npm test           # vitest run — 515 tests, 26 fichiers
 ```
 
 ### Accès
@@ -224,7 +224,7 @@ Speaker Output
 
 ## 🧪 Testing Strategy
 
-> **482 tests, 23 fichiers**, lancés par `npm test` (vitest). Ils portent sur
+> **515 tests, 26 fichiers**, lancés par `npm test` (vitest). Ils portent sur
 > les fonctions pures exportées et sur la structure du source. Il n'y a aucun
 > test de rendu React, et ce n'est pas un oubli : les sections « cible »
 > ci-dessous décrivent ce qui reste à couvrir.

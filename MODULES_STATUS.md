@@ -21,14 +21,20 @@
 | 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
 | 12 | Patch Import/Export | 🔴 |
 
-**Deux acquis qui ne figuraient dans aucun module** et qui conditionnaient tout
-le reste :
+**Quatre acquis qui ne figuraient dans aucun module** et qui conditionnaient
+tout le reste :
 
 - **Les moteurs sont indépendants du contexte audio.** `construireVoix` reçoit
   son contexte au lieu d'aller le chercher. C'est ce qui permet le rendu hors
   ligne — donc l'export — et la superposition.
 - **Les patches se superposent**, chacun avec ses propres réglages et son
   moteur, et l'oscilloscope trace une onde par couche.
+- **Le MIDI est partagé.** `input.onmidimessage` est une propriété : un seul
+  gestionnaire à la fois. Cinq composants l'écrivaient et s'effaçaient
+  mutuellement. `packages/midi-dispatch` diffuse à plusieurs auditeurs, et un
+  test structurel interdit toute écriture directe.
+- **Le rack s'ouvre dans un studio.** Onglet RACK côté EP‑133 ; l'OP‑1 reste à
+  faire.
 
 ---
 
@@ -40,7 +46,7 @@ le reste :
 | `npm run build` | ✅ passe (~640 ms) |
 | Build Docker | ✅ passe (Node 20 Alpine) |
 | Infra de test | ✅ vitest, `npm test` |
-| Couverture de test | ✅ 482 tests, 23 fichiers |
+| Couverture de test | ✅ 515 tests, 26 fichiers |
 | Modules livrés | 4 sur 12 · 2 partiels |
 | Serveur de dev | **HTTP simple** — voir ci-dessous |
 
@@ -347,7 +353,7 @@ For each module:
 Le runner est installé (`npm test` → vitest). Les points ci-dessous décrivent
 ce qui reste à couvrir module par module.
 
-- [x] Unit tests (Vitest) — 482 tests sur les fonctions pures et la structure
+- [x] Unit tests (Vitest) — 515 tests sur les fonctions pures et la structure
 - [ ] Integration tests
 - [ ] Audio quality tests
 - [ ] Performance benchmarks
@@ -360,7 +366,7 @@ ce qui reste à couvrir module par module.
 ## 🚀 Deployment Checklist
 
 - [ ] All modules complete — 0/12 branchés (module 1 écrit mais pas importé)
-- [ ] 90%+ test coverage — 482 tests écrits ; couverture non mesurée
+- [ ] 90%+ test coverage — 515 tests écrits ; couverture non mesurée
 - [ ] Performance profiling (<10% CPU) — jamais mesuré
 - [x] Documentation alignée sur l'état réel du dépôt (2026-08-20)
 - [ ] Mobile testing passed

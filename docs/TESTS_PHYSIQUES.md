@@ -3,7 +3,7 @@
 Ce que les tests automatiques **ne peuvent pas** prouver : ce qui demande du
 matériel branché, des oreilles, ou les deux.
 
-482 tests tournent à chaque poussée. Aucun ne dit si un sample sonne juste, si
+515 tests tournent à chaque poussée. Aucun ne dit si un sample sonne juste, si
 l'OP-1 accepte un fichier, ou si la latence est perceptible au jeu. C'est le
 rôle de cette liste.
 

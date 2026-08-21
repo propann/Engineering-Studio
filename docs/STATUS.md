@@ -10,7 +10,7 @@ de la machine visée, écrits et relus pour vérification.
 
 Sept vérifications matérielles ont été faites, avec date et observation, dans
 [TESTS_PHYSIQUES.md](TESTS_PHYSIQUES.md) — c'est le document qui dit ce que les
-482 tests automatiques ne peuvent pas prouver.
+515 tests automatiques ne peuvent pas prouver.
 
 ## Tableau de vérité
 
@@ -29,7 +29,8 @@ Sept vérifications matérielles ont été faites, avec date et observation, dan
 | Rack — synthèse | ✅ 15 moteurs, 91 patches, superposition par patch |
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | 🔶 delay et égaliseur ; ADSR et arpégiateur à faire |
-| Rack dans les studios | ⬜ c'est une page, pas encore un composant |
+| Rack dans les studios | 🔶 EP‑133 fait, OP‑1 à faire |
+| MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
 | EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
 
 **Ce qu'il ne faut pas déclarer validé** : la restauration *par l'application*
