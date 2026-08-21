@@ -3,8 +3,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
-import { clearProfile, readProfile, writeProfile } from "../core/profile";
-import { forgetDirectoryHandle, loadDirectoryHandle, saveDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
+import {
+  clearProfile,
+  lireProfilDepuisTexte,
+  profilLePlusRecent,
+  profilsDuDossier,
+  readProfile,
+  writeProfile,
+  type StudioProfile,
+} from "../core/profile";
+import {
+  forgetDirectoryHandle,
+  hasStoredPermission,
+  loadDirectoryHandle,
+  requestStoredPermission,
+  saveDirectoryHandle,
+  WORKSPACE_HANDLE_KEY,
+} from "../core/storage/directoryHandleStore";
 
 const log = createLogger("Hub.ProfileCreator");
 
@@ -67,7 +82,7 @@ export default function CharacterPage() {
   const [drives, setDrives] = useState<DriveModule[]>([]);
 
   // Scan workspace folder for files
-  const scanWorkspaceFolder = async (dirHandle: any) => {
+  const scanWorkspaceFolder = async (dirHandle: any, options?: { relireFiches?: boolean }) => {
     try {
       const files: string[] = [];
       for await (const entry of dirHandle.entries()) {
@@ -78,9 +93,69 @@ export default function CharacterPage() {
       }
       log.info("✅ Workspace scanned", { files: files.length });
       setWorkspaceFiles(files);
+      if (options?.relireFiches) await proposerFichesDuDossier(dirHandle, files);
     } catch (error) {
       log.warn("Failed to scan workspace folder", error);
     }
+  };
+
+  /**
+   * Relit les fiches presentes dans le dossier choisi.
+   *
+   * La fiche etait ecrite en `profile_<NOM>.json` mais jamais relue : vider les
+   * donnees du navigateur l'effacait, et re-choisir le dossier retrouvait le
+   * fichier sans jamais l'ouvrir. Il fallait tout ressaisir alors que la
+   * sauvegarde etait la, a cote.
+   *
+   * Deux comportements, selon ce que la page contient deja :
+   *  - formulaire vide  -> on charge, c'est ce que l'utilisateur vient chercher
+   *  - fiche en cours   -> on demande, ecraser une saisie serait destructif
+   */
+  const proposerFichesDuDossier = async (dirHandle: any, fichiers: string[]) => {
+    const candidats = profilsDuDossier(fichiers);
+    if (!candidats.length) return;
+
+    const fiches: { fichier: string; profil: StudioProfile }[] = [];
+    for (const fichier of candidats) {
+      try {
+        const h = await dirHandle.getFileHandle(fichier);
+        const profil = lireProfilDepuisTexte(await (await h.getFile()).text());
+        // Un fichier illisible est ignore, jamais fatal : les autres fiches du
+        // dossier restent recuperables.
+        if (profil) fiches.push({ fichier, profil });
+        else log.warn("Fiche illisible ignoree", { fichier });
+      } catch (error) {
+        log.warn("Lecture de fiche impossible", { fichier, error });
+      }
+    }
+
+    const retenue = profilLePlusRecent(fiches);
+    if (!retenue) return;
+
+    const saisieEnCours = name.trim().length > 0;
+    if (
+      saisieEnCours &&
+      !window.confirm(
+        `Une fiche enregistrée a été trouvée dans ce dossier :\n` +
+          `  ${retenue.fichier}${retenue.profil.name ? ` — ${retenue.profil.name}` : ""}\n\n` +
+          `La charger remplacera ce qui est actuellement à l'écran.\n\nContinuer ?`
+      )
+    ) {
+      log.info("Chargement de la fiche du dossier refuse par l'utilisateur");
+      return;
+    }
+
+    await loadProfile(retenue.profil);
+    // Recopiee dans le navigateur : sans cela, la fiche rechargee disparait au
+    // rafraichissement suivant, puisque c'est le localStorage que la page relit
+    // au montage. C'est precisement le cycle que ce correctif doit fermer.
+    writeProfile(retenue.profil);
+    log.info("✅ Fiche rechargee depuis le dossier", { fichier: retenue.fichier });
+    alert(
+      `📂 Fiche rechargée depuis le dossier.\n\n` +
+        `Fichier : ${retenue.fichier}\n` +
+        `Nom : ${retenue.profil.name || "(sans nom)"}`
+    );
   };
 
   // Sous-dossiers créés automatiquement dans le dossier choisi
@@ -107,12 +182,16 @@ export default function CharacterPage() {
 
     if (!("showDirectoryPicker" in window)) {
       const port = window.location.port || "3000";
+      // Ne PAS conseiller un HTTPS auto-signe ici : il a ete retire du serveur
+      // de dev parce qu'il rendait Web MIDI muet — Chrome refuse les
+      // fonctionnalites puissantes sur une origine au certificat en erreur.
+      // `http://localhost` est un contexte securise sans certificat.
       const raison = !window.isSecureContext
         ? `Cause : origine non sécurisée.\n\n` +
-          `➜ Ouvre https://localhost:${port}\n` +
-          `   ou https://${window.location.hostname}:${port}\n\n` +
-          `(Chrome affichera un avertissement de certificat auto-signé :\n` +
-          ` clique "Paramètres avancés" puis "Continuer".)`
+          `➜ Ouvre http://localhost:${port}\n\n` +
+          `L'adresse réseau (${window.location.hostname}) ne peut pas marcher :\n` +
+          `le navigateur réserve cette API aux origines sécurisées, et\n` +
+          `localhost en fait partie sans avoir besoin de certificat.`
         : `Cause : navigateur sans API File System Access.\n\n` +
           `➜ Utilise Chrome, Edge ou Opera\n` +
           `   (Firefox et Safari ne l'implémentent pas).`;
@@ -128,6 +207,21 @@ export default function CharacterPage() {
           raison
       );
       return;
+    }
+
+    // Nous sommes dans un gestionnaire de clic : le seul moment ou le navigateur
+    // accepte de redemander une permission. Si un dossier a deja ete choisi lors
+    // d'une visite precedente, on le reprend tel quel plutot que de le faire
+    // re-designer.
+    if (!workspaceDirHandle) {
+      const memorise = await loadDirectoryHandle(WORKSPACE_HANDLE_KEY);
+      if (memorise && (await requestStoredPermission(memorise, "readwrite"))) {
+        log.info("Dossier memorise repris au clic", { name: memorise.name });
+        setWorkspaceDirHandle(memorise);
+        setWorkspace(memorise.name);
+        await scanWorkspaceFolder(memorise, { relireFiches: true });
+        return;
+      }
     }
 
     let dirHandle: any;
@@ -175,7 +269,7 @@ export default function CharacterPage() {
       }
     }
 
-    await scanWorkspaceFolder(dirHandle);
+    await scanWorkspaceFolder(dirHandle, { relireFiches: true });
 
     if (failed.length) {
       log.warn("Workspace setup partial", { name: dirHandle.name, failed });
@@ -218,12 +312,29 @@ export default function CharacterPage() {
 
   useEffect(() => {
     try {
-      void loadProfile(readProfile());
+      const local = readProfile();
+      void loadProfile(local);
+
       void loadDirectoryHandle(WORKSPACE_HANDLE_KEY).then(async (handle) => {
         if (!handle) return;
+
+        // Le handle revient d'IndexedDB, jamais la permission : le navigateur
+        // la revoque a la fermeture de l'onglet, sauf choix explicite de
+        // l'utilisateur. Interroger en silence — `requestPermission` appele
+        // depuis un effet echoue sans rien afficher, faute de geste utilisateur.
+        if (!(await hasStoredPermission(handle, "readwrite"))) {
+          log.info("Dossier memorise sans permission : reconnexion au clic requise");
+          return;
+        }
+
         setWorkspaceDirHandle(handle);
         setWorkspace((current) => current || handle.name);
-        await scanWorkspaceFolder(handle);
+
+        // On ne relit la fiche du dossier QUE si le navigateur n'en a plus.
+        // C'est le scenario de la panne : donnees du navigateur videes, fiche
+        // toujours presente dans le dossier. Quand le localStorage a repondu,
+        // rechercher dans le dossier a chaque chargement serait du bruit.
+        await scanWorkspaceFolder(handle, { relireFiches: !local });
         log.info("✅ Workspace handle restored", { name: handle.name });
       });
     } catch (error) {
@@ -333,7 +444,7 @@ export default function CharacterPage() {
         alert(`✅ Fiche enregistrée!\n\nNom: ${name}\nDossier: ${workspace}\nFichier: ${fileName}`);
 
         // Refresh file list
-        await scanWorkspaceFolder(workspaceDirHandle);
+        await scanWorkspaceFolder(workspaceDirHandle); // liste seule : on vient d'écrire
       } catch (error) {
         log.error("❌ Failed to save profile to workspace", error);
         alert(`⚠️ Profil sauvegardé en local, mais pas dans le dossier.\n\nErreur: ${(error as any)?.message}`);

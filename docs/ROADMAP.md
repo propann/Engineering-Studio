@@ -203,16 +203,32 @@ appeared on the roadmap.
       caught three parameters an earlier manual audit had missed: `dxAlgorithm`,
       `surgeWavetable` and `fluidPreset` were read only to fill a toast string.
 
-#### Known issue — ProfileCreator has the same permission bug (2026-08-21)
-- [ ] ProfileCreator.tsx:222 restores the workspace handle and immediately calls
-      `scanWorkspaceFolder(handle)` from inside an effect, with no permission check —
-      the exact defect fixed in BackupLab the same day. Zero occurrences of
-      `hasStoredPermission` or `queryPermission` in the file. The helpers it needs
-      already exist in core/storage/directoryHandleStore.ts and the fix is the same
-      three lines. **Left untouched on the owner's explicit instruction** ("change rien
-      sur la fiche de personnage pour l'instant"); recorded here so it is not lost.
-      Note this is separate from the secure-context problem below — that one is not a
-      code bug at all.
+#### ProfileCreator — profile now recoverable from the workspace folder (2026-08-21)
+- [x] The profile was written to two places and read back from one. It goes to
+      localStorage *and* to `profile_<NAME>.json` inside the chosen folder — but nothing
+      ever opened that file. Clearing browser data wiped the profile (expected), and
+      re-selecting the folder found the file sitting there without ever reading it, so
+      everything had to be retyped. The "delete local profile" button even promised that
+      "the file already written to the folder stays intact": the intent was always that
+      it serve as a fallback; the read-back function had simply never been written.
+      Added as pure, tested functions in core/profile.ts: `nomFichierProfil`,
+      `estFichierProfil`, `profilsDuDossier`, `lireProfilDepuisTexte`,
+      `profilLePlusRecent`.
+      Two behaviours, deliberately different: an empty form loads straight away (that is
+      what the user came for), a form with data asks first (overwriting typing would be
+      destructive). On mount, the folder is only consulted when localStorage came back
+      empty — otherwise it would prompt on every page load for nothing.
+      `lireProfilDepuisTexte` never touches localStorage, unlike `readProfile`, which
+      *erases* the local profile when it cannot parse it. Applying that to a folder file
+      would destroy the browser copy — the only still-valid one — because of a corrupt
+      file elsewhere. A test locks this.
+- [x] Same permission bug as BackupLab, fixed here too. The handle was restored from
+      IndexedDB and used immediately, with no check; "Choisir un dossier" now reclaims
+      the remembered folder inside the click gesture instead of forcing a re-pick.
+- [x] Stale advice removed from the picker's error message. It told the user to open
+      `https://localhost` and accept a self-signed certificate — the exact configuration
+      that was removed because it made Web MIDI silent. `http://localhost` is a secure
+      context with no certificate at all.
 
 #### Not a bug: folder picker and Web MIDI need a secure context
 - The picker "not working" on the deployed server is the URL, not the code.
