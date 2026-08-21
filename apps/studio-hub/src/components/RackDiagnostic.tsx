@@ -24,6 +24,7 @@ export type DiagnosticHandle = {
   setMidi: (connecte: boolean, statut: string) => void;
   setDernierMessage: (texte: string) => void;
   setDerniereNote: (texte: string) => void;
+  setLatence: (texte: string) => void;
 };
 
 type Etat = {
@@ -32,6 +33,7 @@ type Etat = {
   midiStatut: string;
   dernierMessage: string;
   derniereNote: string;
+  latence: string;
 };
 
 const INITIAL: Etat = {
@@ -40,6 +42,7 @@ const INITIAL: Etat = {
   midiStatut: "initialisation…",
   dernierMessage: "—",
   derniereNote: "—",
+  latence: "—",
 };
 
 export const RackDiagnostic = forwardRef<DiagnosticHandle>(function RackDiagnostic(_props, ref) {
@@ -62,6 +65,7 @@ export const RackDiagnostic = forwardRef<DiagnosticHandle>(function RackDiagnost
         setEtat((e) => (e.dernierMessage === dernierMessage ? e : { ...e, dernierMessage })),
       setDerniereNote: (derniereNote) =>
         setEtat((e) => (e.derniereNote === derniereNote ? e : { ...e, derniereNote })),
+      setLatence: (latence) => setEtat((e) => (e.latence === latence ? e : { ...e, latence })),
     }),
     []
   );
@@ -91,6 +95,10 @@ export const RackDiagnostic = forwardRef<DiagnosticHandle>(function RackDiagnost
         <span className={`diag-value diag-mono ${enErreur ? "diag-err" : ""}`}>
           {etat.derniereNote}
         </span>
+      </div>
+      <div className="diag-row">
+        <span className="diag-label">LATENCE MIDI</span>
+        <span className="diag-value diag-mono">{etat.latence}</span>
       </div>
     </div>
   );

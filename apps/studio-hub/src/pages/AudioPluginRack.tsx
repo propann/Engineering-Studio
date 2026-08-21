@@ -16,6 +16,12 @@ import {
   buildSaturationCurve,
 } from "@studio-hub/core/audio/dsp";
 import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
+import {
+  ajouterEtMedianer,
+  attenteFile,
+  composerLatence,
+  libelleLatence,
+} from "@studio-hub/core/audio/latence";
 
 type EnginePluginType =
   // MUTABLE INSTRUMENTS EURORACK SUITE
@@ -560,6 +566,44 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     const q = patchQuery.trim();
     if (!q) return liste;
     return new PatchSearchEngine(liste).search(q);
+  };
+
+  /**
+   * Latence d'une note MIDI, du message recu jusqu'au son.
+   *
+   * Trois segments distincts, qu'il faut mesurer separement parce qu'on n'agit
+   * pas sur les memes choses :
+   *
+   *   file    — du message recu par le navigateur a l'entree du gestionnaire.
+   *             C'est la file d'attente du fil principal : un rendu long la
+   *             gonfle. C'est le seul segment que le code du rack peut degrader.
+   *   trait.  — le temps passe dans playPluginNote, a construire le graphe et
+   *             a programmer les evenements.
+   *   sortie  — baseLatency + outputLatency : la memoire tampon audio, imposee
+   *             par le navigateur et le peripherique. Irreductible ici.
+   *
+   * Le transport MIDI en amont a ete mesure hors navigateur et vaut 16,7 µs par
+   * message en salve — voir docs/MESURE_LATENCE_MIDI.md. Il est negligeable, ce
+   * qui rend ces trois segments-ci le budget reel.
+   *
+   * On affiche une MEDIANE glissante. Une valeur isolee ne dit rien : le fil
+   * principal fait aussi tourner React et le ramasse-miettes, et un maximum
+   * ponctuel de 30 ms ne signifie pas que le rack est lent.
+   */
+  const latencesRef = useRef<number[]>([]);
+  const mesurerLatence = (tEntree: number, tMessage: number | undefined) => {
+    try {
+      const ctx = getAudioContext();
+      const segments = composerLatence(
+        attenteFile(tEntree, tMessage),
+        performance.now() - tEntree,
+        (ctx.baseLatency ?? 0) + ((ctx as any).outputLatency ?? 0)
+      );
+      const mediane = ajouterEtMedianer(latencesRef.current, segments.total);
+      diagRef.current?.setLatence(libelleLatence(segments, mediane, latencesRef.current.length));
+    } catch {
+      // La mesure ne doit jamais empecher de jouer.
+    }
   };
 
   const applyPatch = (patch: PatchPreset) => {
@@ -1471,6 +1515,8 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         log.warn("input.open a echoue", { name: input.name, error });
       }
       input.onmidimessage = (msg: any) => {
+        // Tout premier geste : figer l'instant d'entree. Ce qui suit compte.
+        const tEntree = performance.now();
         const [command, note, velocity] = msg.data;
         diagRef.current?.setDernierMessage(
           `[${Array.from(msg.data as Uint8Array).map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] ${input.name ?? ""}`
@@ -1480,6 +1526,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         if (kind === 0x90 && velocity > 0) {
           const freq = 440 * Math.pow(2, (note - 69) / 12);
           playPluginNote(freq, voiceId);
+          mesurerLatence(tEntree, msg.timeStamp);
         } else if (kind === 0x80 || (kind === 0x90 && velocity === 0)) {
           // 0x80 = note-off ; 0x90 vélocité 0 = note-off déguisé, que
           // beaucoup de claviers envoient à la place.
