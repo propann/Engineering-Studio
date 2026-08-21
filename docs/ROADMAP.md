@@ -6,6 +6,10 @@
 
 ## 📋 Quick Links
 
+- **Physical tests**: [TESTS_PHYSIQUES.md](TESTS_PHYSIQUES.md) — what the 366
+  automated tests cannot prove. A sample that sounds wrong, a file the OP-1
+  refuses, a latency you can feel: none of those fail a test suite.
+
 - **Current Status**: See [STATUS.md](#current-status)
 - **Architecture**: See [docs/architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)
 - **Getting Started**: See [STARTUP_GUIDE.md](guides/STARTUP_GUIDE.md)
