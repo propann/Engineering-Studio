@@ -12,11 +12,11 @@
 | 2 | Multi-Tap Delay | 🟡 délai simple + SYNC au tempo, pas encore multi-prises |
 | 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
 | 4 | ADSR Envelope | 🟡 l'enveloppe existe, les commandes non |
-| 5 | Arpeggiator | 🔴 |
+| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 11 gammes, 6 motifs |
 | 6 | Step Sequencer | 🔴 |
 | 7 | LFO Generator | 🔴 |
-| 8 | Distortion Stack | 🔴 |
-| 9 | Chorus/Flanger/Phaser | 🔴 |
+| 8 | Distortion Stack | 🟢 saturation douce et par repliement, dans le rack d'effets |
+| 9 | Chorus/Flanger/Phaser | 🟡 chorus livré, flanger et phaser à faire |
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
 | 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
 | 12 | Patch Import/Export | 🔴 |
@@ -36,6 +36,11 @@ tout le reste :
 - **Le rack s'ouvre dans les deux studios.** Onglet RACK côté EP‑133, menu vue →
   « Afficher Rack Audio » côté OP‑1. Le panneau OP‑1 part replié : le rack monte
   un AudioContext et pose ses écouteurs clavier sur `window`.
+- **Trois racks, trois métiers.** Le **rack MIDI** (panneau du hub) produit les
+  notes — arpégiateur, gammes, pentatoniques. Le **rack de moteurs** en fait du
+  son. Le **rack d'effets** (`core/audio/effets.ts`) le traite. C'est ce qui
+  décide de l'emplacement d'une fonction : un arpégiateur posé dans le rack de
+  moteurs n'arpégerait que lui ; d'où il est, il atteint tout ce qui écoute.
 - **Le delay se cale sur le tempo du studio hôte** (bouton SYNC). Le rack n'a pas
   de transport à lui — rien à démarrer ni à arrêter — donc c'est la seule
   synchronisation qui ait un sens aujourd'hui.

@@ -545,6 +545,52 @@ kept playing perfectly in live, so nothing else would signal it.
         menu groups by base value the way every sequencer does, not by strictly
         descending duration.
 
+#### Three racks, three jobs (2026-08-22)
+
+The architecture the user named: a **MIDI rack** that produces notes, an
+**engines rack** that turns them into sound, an **effects rack** that treats it.
+It decides where a feature goes, and the arpeggiator is the case that proves it
+— placed in the engines rack it would only arpeggiate that rack; where it is, it
+reaches everything that listens.
+
+  - [x] **The engines rack was deaf.** Only the two studios listened for
+        `hub:midi-note`. Anything the hub played reached the OP-1 and the EP-133
+        but not the rack — the only instrument the hub has with no hardware
+        plugged in. Fixed, with a distinct voice prefix (`hub:` rather than
+        `midi:`) so a note played on the keyboard *and* arpeggiated does not cut
+        itself off.
+  - [x] **Arpeggiator and scales in the MIDI rack** (module 5). Eleven scales
+        including both pentatonics, six patterns, all pure in
+        `core/midi/musique.ts`. Two details that are audible: the octave wrap
+        (a B in C major pentatonic is 2 semitones from A but only 1 from the C
+        above — ignoring it flattens every leading tone), and up-down running
+        2n-2 steps rather than 2n, so the extremes don't sound twice in a row.
+        A real fault the tests caught, in my own guard: normalising a negative
+        index by adding `Number.MAX_SAFE_INTEGER` before the modulo pushed the
+        sum out of representable range, and index 2 became 1. The protection
+        broke the ordinary case.
+        What matters in the panel is leaving no note hanging: every step
+        releases the previous one, stopping clears the timer *and* releases,
+        PANIC kills the arpeggiator before anything else, and unmount writes
+        note-offs straight to the ports — `broadcastNote` depends on React state
+        that is already gone.
+  - [x] **Effects rack extracted** (`core/audio/effets.ts`), with saturation
+        (module 8) and chorus (module 9). It existed in the UI but not in the
+        code: the chain lived in the middle of the engines rack's 3900 lines, so
+        the separation was a label. The DSP for both new effects was already in
+        `dsp.ts` — `buildSaturationCurve`, `attachLfo` — with nothing calling it.
+        The real gain is in the tests. The invariants used to be checked by
+        *reading* the source: the old test looked for the literal string
+        `Math.min(0.85, Math.max(0, p.fxDelayFeedback / 100))`, so reordering the
+        two bounds (harmless) would fail it while raising the ceiling to 0.95
+        (not harmless) meant editing the test at the same spot — no friction at
+        all. The new one checks what matters: feedback stays strictly below 1
+        for every slider value.
+  - [ ] **Flanger and phaser** — the chorus is in, the other two modulations are
+        not.
+  - [ ] **Multi-tap delay** (module 2) — single tap plus tempo SYNC today.
+  - [ ] **ADSR controls** (module 4) — the envelope exists, the knobs don't.
+
 #### Dead code swept from the studios (2026-08-21)
 
 752 lines removed, verified unreferenced — static imports, dynamic imports and

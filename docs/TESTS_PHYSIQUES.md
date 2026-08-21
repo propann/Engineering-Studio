@@ -191,6 +191,45 @@ donc à la superposition entière.
 - [ ] **un sample fabriqué porte les mêmes effets que ce qu'on entend** — c'est
       l'invariant qui compte, jeu et rendu passent par la même chaîne
 
+### Le rack MIDI — arpégiateur et gammes
+Page **Réglages → Synchronisation MIDI**. Les notes choisies partent vers tout
+ce qui écoute : le rack de moteurs, l'OP‑1, l'EP‑133, les machines branchées.
+
+- [ ] **le rack de moteurs sonne.** C'était le blocage : seuls les studios
+      écoutaient `hub:midi-note`. Ouvre le rack dans un studio, lance l'arpège
+      depuis le hub — le rack doit jouer
+- [ ] l'arpège atteint aussi l'OP‑1 et l'EP‑133 en même temps
+- [ ] les six motifs s'entendent différemment. **Montant-descendant ne répète
+      pas les extrémités** : sur do‑mi‑sol on entend do mi sol mi, pas
+      do mi sol sol mi do
+- [ ] **la pentatonique change vraiment les notes.** Tiens un do# en
+      pentatonique majeure de do : il doit sonner do, pas do#
+- [ ] changer le tempo **pendant que l'arpège tourne** : la vitesse suit
+      immédiatement. Si elle ne bouge qu'au clic suivant, le relevé des
+      réglages ne fonctionne pas
+- [ ] **aucune note suspendue.** Arrêter l'arpège, quitter la page, appuyer sur
+      PANIC en pleine course : la machine doit se taire à chaque fois. C'est le
+      défaut qui oblige à débrancher pour s'en sortir
+- [ ] mode contrôleur actif : l'OP‑1 **choisit** les notes, elle ne les joue
+      plus. Une touche ne doit pas sonner deux fois
+- [ ] une note jouée au clavier physique **et** arpégée ne se coupe pas
+      elle-même (préfixes de voix distincts)
+
+### Le rack d'effets — saturation et chorus
+Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
+
+- [ ] la saturation s'entend, et les deux modes diffèrent : **DOUX** écrête
+      progressivement, **REPLI** replie le signal — beaucoup plus agressif
+- [ ] mélange à 0 % : le son est **strictement** celui d'avant. La voie directe
+      passe toujours
+- [ ] le chorus épaissit sans désaccorder franchement
+- [ ] **profondeur à fond, le chorus ne se tait jamais par intermittence.**
+      C'est la borne qui empêche le temps de délai de passer négatif
+- [ ] vitesse à fond : c'est encore un chorus, pas un vibrato
+- [ ] **un échantillon fabriqué porte saturation et chorus** — même chaîne pour
+      le jeu et le rendu, c'est l'invariant
+
+
 ### Superposition de patches
 Pastille ronde ○ sur chaque patch : elle l'empile **sur** le patch actif, avec
 ses propres réglages et son propre moteur.
