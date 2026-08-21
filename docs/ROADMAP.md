@@ -483,6 +483,33 @@ kept playing perfectly in live, so nothing else would signal it.
 - [x] `packages/fs-handles` — remembered folders and permissions, shared by both apps.
 - [x] 922 lines of dead code removed once their useful parts were integrated.
 
+#### Dead code swept from the studios (2026-08-21)
+
+752 lines removed, verified unreferenced — static imports, dynamic imports and
+string mentions all checked, since `apps/ep133-studio` sits outside the tsconfig
+include and nothing there would have flagged them.
+
+| File | Lines | What it was |
+|---|---|---|
+| `ep133/SynthEngineDrawer.tsx` | 389 | a **third** patch system — 25 patches across 6 engines, describing sound it never produced |
+| `ep133/audioFormatUnified.ts` | 152 | a format-agnostic wrapper over WAV and AIFF |
+| `ep133/SlimKeyboardBar.tsx` | 90 | |
+| `op1/chatgpt-auth.ts` | 86 | |
+| four smaller files | 35 | |
+
+Two of them are worth a note rather than a silent delete:
+
+`SynthEngineDrawer` described Dexed FM, Moog Ladder, TB-303, NES, Karplus-Strong
+and Wavetable — engines the rack **actually implements**, and plays. Keeping a
+parallel catalogue that produces no sound would have made the rack look
+redundant while being the only one that works.
+
+`audioFormatUnified` announced itself as "enabling future interoperability
+between OP-1 and EP-133 sound libraries". That is exactly what
+`packages/audio-formats` now does — the intention was right, it was simply
+realised elsewhere. Deleting the stub is what makes the package the single
+answer to that question.
+
 #### Still open
 
 - [ ] The rack as a **component reusable from the studios**, so several can be chosen
