@@ -770,6 +770,11 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .studio-top-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 0 8px; border-bottom: 1px solid #151e1e; }
 .studio-slide-panel { position: relative; overflow: hidden; transition: max-height .3s ease, opacity .25s ease; }
 .studio-keyboard-panel { overflow: visible; }
+/* Le rack embarque demande `height: 100%` (audio-plugin-rack.css:18). La page
+   OP-1 est une colonne qui defile, donc sans hauteur explicite ici ce 100%
+   se resout en auto et le rack s'effondre a zero. L'EP-133 n'a pas ce
+   probleme : son overlay est un conteneur flex. */
+.studio-rack-panel { height: 78vh; min-height: 420px; }
 .studio-slide-panel.is-folded { max-height: 48px; }
 .studio-slide-panel:not(.is-folded) { max-height: 9999px; }
 .slide-panel-toggle { width: 100%; padding: 6px 12px; display: flex; align-items: center; gap: 6px; background: #0e1515; border: none; border-bottom: 1px solid #151e1e; color: #3a5550; font: 600 9px var(--font-geist-mono), monospace; letter-spacing: .06em; cursor: pointer; text-align: left; transition: color .12s, background .12s; }

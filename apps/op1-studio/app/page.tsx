@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { sAbonner } from "@studio-hub/midi-dispatch";
+// Le rack du hub, importe tel quel. Ce studio n'avait aucun moteur de synthese
+// a lui : op1SynthEngine joue des samples, pas des patches.
+import AudioPluginRack from "../../studio-hub/src/pages/AudioPluginRack";
 
 /**
  * Ce que les gestionnaires MIDI de cette page lisent reellement d'un
@@ -414,6 +417,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [reversed, setReversed] = useState(false);
   const [screenFolded, setScreenFolded] = useState(false);
   const [keyboardFolded, setKeyboardFolded] = useState(false);
+  // Rack audio du hub. Replie par defaut, contrairement aux deux autres :
+  // il n'a rien a faire a l'ecran tant qu'on ne le demande pas, et ses
+  // ecouteurs clavier sont poses sur `window`.
+  const [rackFolded, setRackFolded] = useState(true);
   const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState<string>("FM");
@@ -1234,6 +1241,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
                 <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
                   <button className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
                     <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
+                  <button className="op1-pro-dropdown-item" onClick={() => { setRackFolded(!rackFolded); setActiveDropdown(null); }}>
+                    <span>{rackFolded ? "▲ Afficher Rack Audio" : "▼ Replier Rack Audio"}</span>
+                  </button>
                   </button>
                   <button className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
                     <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
@@ -1466,6 +1476,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onTogglePlayback={toggleGlobalPlayback}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
+          />
+        </div>
+      )}
+
+      {/* ── Rack audio (15 moteurs, 91 patches, effets) ── */}
+      {!rackFolded && (
+        <div className="studio-slide-panel studio-rack-panel" style={{ marginTop: "12px" }}>
+          {/* `enTiroir` retire la TopBar : elle appelle navigateMaquette et
+              demonterait ce studio au moindre clic. `clavierActif` suit le
+              repli — un rack ferme jouerait des notes sous les doigts. */}
+          <AudioPluginRack
+            enTiroir
+            clavierActif={!rackFolded}
+            onClose={() => setRackFolded(true)}
           />
         </div>
       )}
