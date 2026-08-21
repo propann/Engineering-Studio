@@ -32,9 +32,12 @@ const SOURCE = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
  */
 function moteurAudio(): string {
   const debut = SOURCE.indexOf("const construireVoix");
-  const fin = SOURCE.indexOf("const playPluginNote");
+  // Borne explicite plutot que « la fonction suivante » : la premiere version
+  // bornait sur `const playPluginNote` et a casse des qu'une fonction s'est
+  // glissee entre les deux — trois tests tombes pour un simple placement.
+  const fin = SOURCE.indexOf("// ===== FIN DES MOTEURS =====");
   expect(debut, "construireVoix introuvable").toBeGreaterThan(-1);
-  expect(fin, "fin du moteur introuvable").toBeGreaterThan(debut);
+  expect(fin, "borne FIN DES MOTEURS introuvable").toBeGreaterThan(debut);
   return SOURCE.slice(debut, fin);
 }
 
@@ -71,6 +74,14 @@ function parametres(): string[] {
     // par construction. Son propre cablage est verrouille ailleurs, par
     // modules/audio-rack-01-patch-search/PatchSearchWiring.test.ts.
     "patchQuery",
+    // Panneau de fabrication d'echantillons : cible, duree, dossier, etat du
+    // rendu. Etat d'interface, sans effet sur le son PRODUIT — la cible decide
+    // du format du fichier, pas du timbre. Leur propre cablage est verrouille
+    // plus bas, par le bloc « fabrique d'echantillons ».
+    "cibleExport",
+    "dureeExport",
+    "exportEnCours",
+    "espaceNom",
   ]);
   return [...SOURCE.matchAll(/const \[(\w+), set\w+\] = useState/g)]
     .map((m) => m[1])
@@ -139,6 +150,84 @@ describe("briques DSP", () => {
     // cloudsReverb : moins de trois envois signale une regression.
     const envois = [...moteurAudio().matchAll(/sendToReverb\(/g)].length;
     expect(envois).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("fabrique d'echantillons", () => {
+  /**
+   * Le rack fabriquait un son qu'on ne pouvait qu'ecouter. Cette chaine — rendu
+   * hors ligne, encodage, ecriture verifiee — est ce qui permet de le garder.
+   *
+   * Chaque maillon peut se debrancher sans que rien ne le signale : le bouton
+   * resterait a l'ecran, le rendu tournerait, et le fichier serait faux ou
+   * absent. D'ou ces verrous structurels.
+   */
+  it("rend hors ligne, pas en temps reel", () => {
+    // Un pack de 60 notes en temps reel prendrait plusieurs minutes.
+    expect(SOURCE).toContain("new OfflineAudioContext");
+  });
+
+  it("reutilise le moteur au lieu d'en redefinir un", () => {
+    // Un second chemin audio divergerait du premier a la premiere evolution :
+    // le sample ne sonnerait plus comme ce qu'on entend.
+    expect(SOURCE).toMatch(/construireVoix\(offline/);
+  });
+
+  it("programme le relachement du rendu", () => {
+    // Sans lui, l'enveloppe reste au sustain jusqu'au dernier echantillon et le
+    // fichier se coupe net — un claquement a chaque lecture.
+    //
+    // Les DEUX appels comptent : le palier qui fixe le point de depart, puis la
+    // rampe qui descend. Une premiere version ne cherchait que
+    // `plan.debutRelachement`, present dans les deux — retirer le palier seul
+    // ne la faisait pas broncher.
+    const rendu = SOURCE.slice(
+      SOURCE.indexOf("const rendreEchantillon"),
+      SOURCE.indexOf("const empreinte")
+    );
+    expect(rendu).toMatch(/setValueAtTime\([^)]*SUSTAIN/);
+    expect(rendu).toMatch(/exponentialRampToValueAtTime\(0\.0001/);
+  });
+
+  it("dimensionne le tampon par planifierRendu", () => {
+    // Le calcul est teste a part, dans core/audio/rendu.test.ts. Ce qui compte
+    // ici est qu'on s'en serve plutot que de recalculer a la main.
+    expect(SOURCE).toContain("planifierRendu(");
+  });
+
+  it("encode selon le format de la cible, pas un format fixe", () => {
+    // L'OP-1 lit de l'AIFF ; lui ecrire du WAV produit un fichier qu'elle
+    // ignore, sans message.
+    // Pinter le CHOIX d'encodeur, pas la simple presence de la condition :
+    // `spec.format === "aiff"` sert aussi a nommer l'extension du fichier, si
+    // bien qu'une premiere version de ce test restait verte alors que le
+    // sabotage avait fige l'encodeur. Deux occurrences, une seule qui compte.
+    expect(SOURCE).toMatch(/spec\.format === "aiff"\s*\?\s*encodeAiffPcm16/);
+    expect(SOURCE).toMatch(/:\s*encodeWavPcm16\(/);
+  });
+
+  it("RELIT le fichier ecrit et compare les empreintes", () => {
+    // Le verrou central. Un write() qui rend la main ne garantit pas que les
+    // octets sont sur le support : c'est le seul endroit ou une ecriture
+    // tronquee est detectable. Meme precaution que copyFile du coffre, validee
+    // sur l'OP-1 le 2026-08-21.
+    const corps = SOURCE.slice(SOURCE.indexOf("const exporterEchantillon"));
+    expect(corps).toContain("fichier.getFile()");
+    expect(corps).toMatch(/Vérification impossible après écriture/);
+  });
+
+  it("borne la duree par les specs de la machine", () => {
+    expect(SOURCE).toContain("dureeAdmise(");
+  });
+
+  it("ne demande la permission que depuis un clic", () => {
+    // requestStoredPermission appele depuis un effet echoue silencieusement :
+    // sans activation utilisateur, le navigateur resout « prompt » sans rien
+    // afficher. L'effet de reprise doit se contenter d'interroger.
+    const effet = SOURCE.slice(SOURCE.indexOf("Reprise silencieuse au chargement"));
+    const finEffet = effet.slice(0, effet.indexOf("}, []);"));
+    expect(finEffet).toContain("hasStoredPermission");
+    expect(finEffet).not.toContain("requestStoredPermission");
   });
 });
 

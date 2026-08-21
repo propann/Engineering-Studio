@@ -16,6 +16,21 @@ import {
   buildSaturationCurve,
 } from "@studio-hub/core/audio/dsp";
 import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
+import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
+import {
+  dureeAdmise,
+  encodeAiffPcm16,
+  encodeWavPcm16,
+  SPECS_CIBLES,
+  type CibleMachine,
+} from "@studio-hub/audio-formats";
+import {
+  hasStoredPermission,
+  loadDirectoryHandle,
+  requestStoredPermission,
+  saveDirectoryHandle,
+  WORKSPACE_HANDLE_KEY,
+} from "../core/storage/directoryHandleStore";
 import {
   ajouterEtMedianer,
   attenteFile,
@@ -188,6 +203,11 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   // NOTE, sur le fil qui programme l'audio. On ne tape pas au clavier de
   // recherche en jouant.
   const [patchQuery, setPatchQuery] = useState<string>("");
+  // Cible et durée de l'export. L'OP-1 synthé est le défaut : c'est la seule
+  // machine dont l'écriture a été validée sur matériel.
+  const [cibleExport, setCibleExport] = useState<CibleMachine>("op1_synth");
+  const [dureeExport, setDureeExport] = useState<number>(2);
+  const [exportEnCours, setExportEnCours] = useState<boolean>(false);
   const [midiConnected, setMidiConnected] = useState<boolean>(false);
   const [midiDeviceName, setMidiDeviceName] = useState<string>("");
   // Diagnostic visible : on debuggait a l'aveugle via la console.
@@ -590,6 +610,65 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
    * principal fait aussi tourner React et le ramasse-miettes, et un maximum
    * ponctuel de 30 ms ne signifie pas que le rack est lent.
    */
+  /**
+   * Dossier ou sont ecrits les echantillons.
+   *
+   * En ref plutot qu'en etat pour l'acces depuis exporterEchantillon, doublee
+   * d'un etat pour l'affichage du nom : le rack fait 1160 lignes de JSX, et
+   * seul le libelle a besoin d'un rendu.
+   */
+  const espaceRef = useRef<FileSystemDirectoryHandle | null>(null);
+  const [espaceNom, setEspaceNom] = useState<string>("");
+
+  const adopterEspace = (h: FileSystemDirectoryHandle) => {
+    espaceRef.current = h;
+    setEspaceNom(h.name);
+  };
+
+  /**
+   * Reprend le dossier memorise, ou ouvre le selecteur.
+   *
+   * Nous sommes dans un gestionnaire de clic : le seul moment ou le navigateur
+   * accepte de redemander une permission. Un handle relu d'IndexedDB ne la
+   * porte jamais avec lui.
+   */
+  const choisirEspace = async () => {
+    try {
+      if (!espaceRef.current) {
+        const memorise = await loadDirectoryHandle(WORKSPACE_HANDLE_KEY);
+        if (memorise && (await requestStoredPermission(memorise, "readwrite"))) {
+          adopterEspace(memorise);
+          toastRef.current?.afficher(`Dossier ${memorise.name} reconnecté`);
+          return;
+        }
+      }
+      const picker = (window as any).showDirectoryPicker;
+      if (!picker) {
+        // Absente, pas bloquee : hors contexte securise elle n'existe pas.
+        toastRef.current?.afficher("Ouvre http://localhost:3000 — origine non sécurisée");
+        return;
+      }
+      const h = await picker({ id: "studio-hub-workspace", mode: "readwrite" });
+      await saveDirectoryHandle(WORKSPACE_HANDLE_KEY, h);
+      adopterEspace(h);
+      toastRef.current?.afficher(`Dossier ${h.name} connecté`);
+    } catch (e) {
+      if ((e as DOMException)?.name !== "AbortError") {
+        toastRef.current?.afficher(`❌ ${(e as any)?.message ?? String(e)}`);
+      }
+    }
+  };
+
+  // Reprise silencieuse au chargement : on n'adopte le dossier memorise que si
+  // la permission tient encore. L'annoncer sans l'avoir verifiee afficherait un
+  // dossier connecte qui echoue a la premiere ecriture.
+  useEffect(() => {
+    void (async () => {
+      const h = await loadDirectoryHandle(WORKSPACE_HANDLE_KEY);
+      if (h && (await hasStoredPermission(h, "readwrite"))) adopterEspace(h);
+    })();
+  }, []);
+
   const latencesRef = useRef<number[]>([]);
   const mesurerLatence = (tEntree: number, tMessage: number | undefined) => {
     try {
@@ -1477,6 +1556,116 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
 
     return { env, sources, naturalEnd, audibleEnd, ATTACK, DECAY, SUSTAIN, RELEASE };
   };
+  // ===== FIN DES MOTEURS =====
+  // Borne lue par AudioPluginRack.wiring.test.ts pour delimiter le code moteur.
+  // Elle existe parce que le test bornait auparavant sur `const playPluginNote`,
+  // ce qui a casse des l'insertion d'une fonction entre les deux. Ne pas
+  // deplacer sans mettre le test a jour.
+
+  /**
+   * Rend une note hors ligne et en extrait les echantillons.
+   *
+   * C'est le meme code moteur que pour jouer — `construireVoix` — mais alimente
+   * par un OfflineAudioContext. Le rendu va donc plus vite que le temps reel :
+   * un pack de 60 notes se fabriquerait sinon en autant de secondes qu'il dure.
+   *
+   * Deux choses que playPluginNote fait et qu'il faut refaire ici, sous peine
+   * d'un fichier qui claque a chaque lecture :
+   *  - brancher `env` sur une destination, ici celle du contexte hors ligne ;
+   *  - programmer le relachement. Sans lui, l'enveloppe reste au niveau de
+   *    sustain jusqu'au dernier echantillon et le son se coupe net.
+   */
+  const rendreEchantillon = async (
+    p: typeof paramsRef.current,
+    freq: number,
+    secondes: number,
+    frequence: number
+  ): Promise<Float32Array> => {
+    // Premiere passe : construire la voix pour connaitre jusqu'ou le moteur
+    // sonne. Un OfflineAudioContext exige sa longueur a la creation, or
+    // `audibleEnd` n'est connu qu'apres construction — d'ou cette sonde, menee
+    // sur un contexte jetable d'une seule trame. Rien n'y est rendu.
+    const sonde = new OfflineAudioContext(1, 1, frequence);
+    const { audibleEnd, ATTACK, DECAY, RELEASE } = construireVoix(sonde, p, freq, 0);
+    const plan = planifierRendu(secondes, audibleEnd, frequence, { ATTACK, DECAY, RELEASE });
+
+    // Seconde passe : le vrai rendu, dans un contexte correctement dimensionne.
+    const offline = new OfflineAudioContext(1, plan.trames, frequence);
+    const voix = construireVoix(offline, p, freq, 0);
+    voix.env.connect(offline.destination);
+    voix.env.gain.setValueAtTime(voix.SUSTAIN, plan.debutRelachement);
+    voix.env.gain.exponentialRampToValueAtTime(0.0001, plan.debutRelachement + voix.RELEASE);
+
+    const rendu = await offline.startRendering();
+    return rendu.getChannelData(0);
+  };
+
+  /**
+   * Empreinte SHA-256, pour verifier qu'un fichier ecrit est bien celui voulu.
+   */
+  const empreinte = async (buffer: ArrayBuffer): Promise<string> => {
+    const digest = await crypto.subtle.digest("SHA-256", buffer);
+    return Array.from(new Uint8Array(digest), (o) => o.toString(16).padStart(2, "0")).join("");
+  };
+
+  /**
+   * Fabrique un echantillon et l'ecrit dans l'espace de travail.
+   *
+   * Toute la chaine : rendre hors ligne, encoder au format de la machine,
+   * ecrire, puis RELIRE et comparer les empreintes.
+   *
+   * Cette relecture n'est pas une precaution decorative. Un `write()` qui rend
+   * la main ne garantit pas que les octets sont sur le support — c'est
+   * exactement ce qui a ete verifie sur l'OP-1 le 2026-08-21, et c'est le seul
+   * endroit ou une ecriture tronquee est detectable.
+   */
+  const exporterEchantillon = async (cible: CibleMachine, note: number, secondes: number) => {
+    const dossier = espaceRef.current;
+    if (!dossier) {
+      toastRef.current?.afficher("Choisis d'abord un dossier de travail");
+      return;
+    }
+
+    const spec = SPECS_CIBLES[cible];
+    const p = paramsRef.current;
+    const duree = dureeAdmise(cible, secondes);
+    if (!duree) {
+      toastRef.current?.afficher("Durée invalide");
+      return;
+    }
+
+    try {
+      toastRef.current?.afficher(`Rendu ${spec.libelle}…`);
+      const echantillons = await rendreEchantillon(p, frequenceDeNote(note), duree, spec.frequence);
+
+      // L'OP-1 lit de l'AIFF pour ses patches ; le WAV sert de pivot ailleurs.
+      const octets =
+        spec.format === "aiff"
+          ? encodeAiffPcm16(echantillons, spec.canaux, spec.frequence)
+          : encodeWavPcm16(echantillons, spec.canaux, spec.frequence);
+
+      const patch = [...FACTORY_PATCHES[p.activeEngine] ?? [], ...userPatches]
+        .find((x) => x.id === selectedPatchId)?.name ?? p.activeEngine;
+      const nom = `${nomEchantillon(patch, nomDeNote(note))}.${spec.format === "aiff" ? "aif" : "wav"}`;
+
+      const fichier = await dossier.getFileHandle(nom, { create: true });
+      const flux = await fichier.createWritable();
+      await flux.write(octets);
+      await flux.close();
+
+      // Relecture depuis le support, pas depuis ce qu'on vient d'ecrire.
+      const relu = await (await fichier.getFile()).arrayBuffer();
+      if (relu.byteLength !== octets.byteLength || (await empreinte(relu)) !== (await empreinte(octets))) {
+        throw new Error(`Vérification impossible après écriture : ${nom}`);
+      }
+
+      toastRef.current?.afficher(`✅ ${nom} — ${(relu.byteLength / 1024).toFixed(0)} ko`);
+      log.info("Échantillon exporté", { nom, cible, octets: relu.byteLength });
+    } catch (e) {
+      log.error("Export échoué", e);
+      toastRef.current?.afficher(`❌ ${(e as any)?.message ?? String(e)}`);
+    }
+  };
 
   const playPluginNote = (freq: number = 261.63, voiceId?: string) => {
     try {
@@ -1895,6 +2084,56 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                         </button>
                       </div>
 
+                      <div className="export-echantillon">
+                        <div className="export-ligne">
+                          <button
+                            type="button"
+                            className="export-dossier"
+                            onClick={() => void choisirEspace()}
+                            title={espaceNom || "Aucun dossier connecté"}
+                          >
+                            📁 {espaceNom || "Choisir un dossier"}
+                          </button>
+                        </div>
+                        <div className="export-ligne">
+                          <select
+                            className="export-cible"
+                            value={cibleExport}
+                            onChange={(e) => setCibleExport(e.target.value as CibleMachine)}
+                            aria-label="Machine visée"
+                          >
+                            {(Object.keys(SPECS_CIBLES) as CibleMachine[]).map((c) => (
+                              <option key={c} value={c}>{SPECS_CIBLES[c].libelle}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            className="export-duree"
+                            min={0.1}
+                            max={SPECS_CIBLES[cibleExport].dureeMaxSecondes}
+                            step={0.1}
+                            value={dureeExport}
+                            onChange={(e) => setDureeExport(Number(e.target.value))}
+                            aria-label="Durée en secondes"
+                          />
+                          <span className="export-unite">s</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="export-lancer"
+                          disabled={exportEnCours || !espaceNom}
+                          onClick={() => {
+                            setExportEnCours(true);
+                            // La note 60 est le Do central : c'est aussi celle
+                            // que joue le rack par defaut.
+                            void exporterEchantillon(cibleExport, 60, dureeExport)
+                              .finally(() => setExportEnCours(false));
+                          }}
+                        >
+                          {exportEnCours ? "⏳ Rendu…" : "💾 FABRIQUER UN SAMPLE"}
+                        </button>
+                      </div>
+
                       <input
                         type="search"
                         className="patch-search-input"
@@ -1965,6 +2204,56 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                         </span>
                         <button type="button" className="add-patch-btn" onClick={() => setShowSaveModal(true)}>
                           + CRÉER
+                        </button>
+                      </div>
+
+                      <div className="export-echantillon">
+                        <div className="export-ligne">
+                          <button
+                            type="button"
+                            className="export-dossier"
+                            onClick={() => void choisirEspace()}
+                            title={espaceNom || "Aucun dossier connecté"}
+                          >
+                            📁 {espaceNom || "Choisir un dossier"}
+                          </button>
+                        </div>
+                        <div className="export-ligne">
+                          <select
+                            className="export-cible"
+                            value={cibleExport}
+                            onChange={(e) => setCibleExport(e.target.value as CibleMachine)}
+                            aria-label="Machine visée"
+                          >
+                            {(Object.keys(SPECS_CIBLES) as CibleMachine[]).map((c) => (
+                              <option key={c} value={c}>{SPECS_CIBLES[c].libelle}</option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            className="export-duree"
+                            min={0.1}
+                            max={SPECS_CIBLES[cibleExport].dureeMaxSecondes}
+                            step={0.1}
+                            value={dureeExport}
+                            onChange={(e) => setDureeExport(Number(e.target.value))}
+                            aria-label="Durée en secondes"
+                          />
+                          <span className="export-unite">s</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="export-lancer"
+                          disabled={exportEnCours || !espaceNom}
+                          onClick={() => {
+                            setExportEnCours(true);
+                            // La note 60 est le Do central : c'est aussi celle
+                            // que joue le rack par defaut.
+                            void exporterEchantillon(cibleExport, 60, dureeExport)
+                              .finally(() => setExportEnCours(false));
+                          }}
+                        >
+                          {exportEnCours ? "⏳ Rendu…" : "💾 FABRIQUER UN SAMPLE"}
                         </button>
                       </div>
 

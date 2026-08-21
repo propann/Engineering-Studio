@@ -170,6 +170,79 @@
   color: #000000;
 }
 
+/* Fabrique d'echantillons : rendu hors ligne, encodage, ecriture disque. */
+.export-echantillon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  margin-bottom: 6px;
+  background-color: rgba(0, 237, 149, 0.05);
+  border: 1px solid rgba(0, 237, 149, 0.2);
+  border-radius: 4px;
+}
+
+.export-ligne {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.export-dossier,
+.export-cible,
+.export-duree {
+  padding: 3px 6px;
+  background-color: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 237, 149, 0.25);
+  border-radius: 3px;
+  color: #cbd5e1;
+  font-size: 0.68rem;
+  font-family: inherit;
+}
+
+.export-dossier {
+  flex: 1;
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-dossier:hover {
+  border-color: #00ed95;
+}
+
+.export-cible { flex: 1; }
+.export-duree { width: 54px; }
+
+.export-unite {
+  color: #64748b;
+  font-size: 0.68rem;
+}
+
+.export-lancer {
+  padding: 5px;
+  background-color: rgba(0, 237, 149, 0.15);
+  border: 1px solid #00ed95;
+  border-radius: 3px;
+  color: #00ed95;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.export-lancer:hover:not(:disabled) {
+  background-color: rgba(0, 237, 149, 0.28);
+}
+
+.export-lancer:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: rgba(0, 237, 149, 0.3);
+}
+
 /* Filtre de la liste de patches : 91 patches d'usine sur 15 moteurs, qu'on ne
    pouvait auparavant que faire defiler. */
 .patch-search-input {
