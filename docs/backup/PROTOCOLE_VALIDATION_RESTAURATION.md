@@ -94,11 +94,44 @@ rm -rf ~/Sons-Machines/_essai-coffre   # la référence reste
 
 ## Niveau B — cible machine
 
-**Jamais tenté.** À n'aborder qu'après un niveau A entièrement vert.
+### Écriture sur l'OP-1 : validée le 2026-08-21
 
-Le disque de l'OP-1 se monte en lecture seule pendant les essais,
-délibérément — le monter en écriture est le premier geste, et le dernier
-réversible. Sauvegarder la machine **avant** toute écriture vers elle.
+Le mécanisme écrire → vider le tampon → **relire depuis le périphérique** →
+comparer les empreintes fonctionne sur le vrai matériel.
+
+Protocole suivi, dans cet ordre :
+
+1. Sauvegarde intégrale préalable — 66 fichiers, 270 Mo, comparés octet par
+   octet, 0 divergence (`~/Sons-Machines/OP-1_2026-08-21`)
+2. Vérification que la sauvegarde couvre bien les fichiers visés
+3. Remontage en écriture, essai sur un fichier temporaire, puis retrait
+4. Écriture d'une version différente de `synth/user/8.aif` (celle de la veille,
+   **même taille, contenu différent** — le cas qu'une comparaison de tailles
+   laisserait passer)
+5. **Démontage et remontage** avant relecture, pour lire le périphérique et non
+   le cache du noyau — sans cela, la vérification se contenterait de relire ce
+   qu'on vient d'écrire en mémoire
+6. Empreinte conforme ✅
+7. Réécriture de la version d'origine, puis contrôle des 66 fichiers : 0
+   divergence, machine rendue à son état initial
+
+L'étape 5 est celle qu'on oublie. Une relecture immédiate passe par le cache et
+ne prouve rien sur ce qui est réellement sur le support.
+
+### Ce qui reste à valider
+
+| | |
+|---|---|
+| Mécanisme d'écriture vérifiée, au niveau fichier | ✅ 2026-08-21 |
+| Chemin de restauration de l'application, par le navigateur | ⬜ |
+| L'OP-1 relit-elle correctement un fichier restauré ? | ⬜ |
+
+Le dernier point ne se vérifie pas depuis l'ordinateur : il faut charger le
+patch sur la machine et l'écouter. C'est la seule preuve que restaurer produit
+un instrument utilisable, et non des octets conformes.
+
+Prudence conservée : le disque se monte en lecture seule par défaut pendant
+les essais, et toute écriture est précédée d'une sauvegarde vérifiée.
 
 ---
 

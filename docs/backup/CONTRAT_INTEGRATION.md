@@ -226,11 +226,24 @@ Un test écrit sans avoir été vu échouer au moins une fois n'a pas été écr
 | Fichiers déjà identiques ignorés | ✅ |
 | Test de copie interrompue | ✅ |
 | Badges, densité, libellés | ⬜ interface |
+| Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ 2026-08-21 |
 | Restauration validée, cible dossier local | ⬜ protocole prêt, non exécuté |
-| Restauration validée sur matériel | ⬜ jamais tentée |
+| Restauration par l'application, de bout en bout | ⬜ |
 
-**La restauration vers une machine n'a jamais été validée sur du matériel.** Le
-disque de l'OP-1 se monte en lecture seule pendant les essais, délibérément.
+**Ce qui est prouvé sur matériel** : écrire sur l'OP-1, vider le tampon,
+démonter/remonter puis relire depuis le périphérique et comparer les empreintes.
+Fait le 2026-08-21 sur `synth/user/8.aif`, avec un contenu de taille identique —
+le cas qu'une comparaison de tailles laisserait passer. Machine rendue à son état
+initial ensuite, 66 fichiers contrôlés, 0 divergence.
+
+**Ce qui ne l'est pas** : le chemin de restauration de l'application lui-même,
+qui passe par le navigateur, et la relecture du fichier restauré par la machine.
+Ce dernier point ne se vérifie qu'en chargeant le patch sur l'OP-1 et en
+l'écoutant — c'est la seule preuve qu'on produit un instrument utilisable et pas
+seulement des octets conformes.
+
+Prudence conservée : le disque se monte en lecture seule par défaut, et toute
+écriture est précédée d'une sauvegarde vérifiée.
 
 Le protocole est écrit et prêt à dérouler :
 [`PROTOCOLE_VALIDATION_RESTAURATION.md`](PROTOCOLE_VALIDATION_RESTAURATION.md).
