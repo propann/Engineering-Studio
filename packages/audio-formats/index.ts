@@ -10,3 +10,4 @@
  */
 export * from "./aiff";
 export * from "./encode";
+export * from "./machines";

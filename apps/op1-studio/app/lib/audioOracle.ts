@@ -21,16 +21,12 @@ export type {
 
 import type { WavAnalysisReport } from '@studio-hub/audio-bridge';
 
-// Source : docs/OP1_KNOWLEDGE_BASE.md — 6 s synthé, 12 s drum.
-export const OP1_AUDIO_LIMITS = {
-  synthMaxSeconds: 6,
-  drumMaxSeconds: 12,
-} as const;
+// Limites déplacées dans @studio-hub/audio-formats : le rack fabrique les
+// samples et doit les connaître pour viser juste.
+export { OP1_AUDIO_LIMITS, type Op1SampleKind } from '@studio-hub/audio-formats';
+import { op1MaxSeconds, type Op1SampleKind as Kind } from '@studio-hub/audio-formats';
 
-export type Op1SampleKind = 'synth' | 'drum';
-
-export function exceedsOp1Duration(report: WavAnalysisReport, kind: Op1SampleKind): boolean {
-  const limit = kind === 'synth' ? OP1_AUDIO_LIMITS.synthMaxSeconds : OP1_AUDIO_LIMITS.drumMaxSeconds;
+export function exceedsOp1Duration(report: WavAnalysisReport, kind: Kind): boolean {
   const duration = (report as any).durationSeconds || ((report as any).durationMs ? (report as any).durationMs / 1000 : 0);
-  return duration > limit;
+  return duration > op1MaxSeconds(kind);
 }
