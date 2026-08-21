@@ -34,6 +34,17 @@ La machine fait un rapport à chaque déconnexion. Après nos écritures, ce rap
 passe normalement : écrire depuis Linux sur son volume FAT ne la déroute pas et
 ne corrompt pas son système de fichiers.
 
+### La fiche de personnage se recharge depuis le dossier — 2026-08-21
+Confirmé : elle se reconfigure dès que le dossier est sélectionné.
+
+Le défaut d'origine : la fiche était écrite à deux endroits — le localStorage du
+navigateur ET `profile_<NOM>.json` dans le dossier — mais relue depuis un seul.
+Vider les données effaçait la fiche, et re-choisir le dossier retrouvait le
+fichier sans jamais l'ouvrir. Le bouton « supprimer la fiche locale » promettait
+pourtant que « le fichier déjà écrit dans le dossier restera intact » :
+l'intention était bien qu'il serve de recours, la fonction de relecture n'avait
+simplement jamais été écrite.
+
 ### La sauvegarde du coffre écrit réellement — 2026-08-21
 Confirmé par l'utilisateur sur le serveur en ligne, après correction du message
 qui ne disait pas où.
@@ -214,14 +225,6 @@ l'état d'hier, restaurer vers une copie de l'état actuel.
 - [ ] l'aperçu nomme les bons fichiers
 - [ ] `_point-de-retour/` contient exactement les fichiers remplacés
 - [ ] les fichiers inchangés ne sont pas réécrits (horodatages)
-
-### Fiche de personnage rechargée depuis le dossier
-Corrigé le 2026-08-21, jamais vérifié à la main.
-
-- [ ] vider la fiche, re-sélectionner le dossier → elle revient seule
-- [ ] avec une fiche déjà à l'écran → une confirmation est demandée avant
-- [ ] au rechargement de la page, aucune fenêtre ne s'ouvre si le navigateur a
-      déjà la fiche
 
 ### Recherche de patches
 - [ ] taper filtre bien les 91 patches d'usine et les patches perso

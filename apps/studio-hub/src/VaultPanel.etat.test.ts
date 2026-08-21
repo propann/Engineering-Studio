@@ -283,6 +283,63 @@ describe("libelles honnetes", () => {
   });
 });
 
+describe("langage accessible", () => {
+  /**
+   * Les mots de metier ne se devinent pas. « Snapshot », « reinjecter »,
+   * « workspace » supposent qu'on sait deja de quoi il s'agit — et le coffre
+   * est la premiere fonction complete du Hub, donc souvent la premiere page
+   * qu'un nouvel arrivant utilise pour de vrai.
+   *
+   * Ces tests ne jugent pas du style : ils empechent le jargon de revenir par
+   * inadvertance, lors d'un ajout ou d'un copier-coller depuis un ancien
+   * libelle.
+   */
+  const SRC = readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "VaultPanel.tsx"),
+    "utf-8"
+  );
+
+  /** Uniquement ce que l'utilisateur LIT — pas les noms de variables. */
+  function textesVisibles(): string {
+    const titres = [...SRC.matchAll(/<h[23]>([^<]+)<\/h[23]>/g)].map((m) => m[1]);
+    const kickers = [...SRC.matchAll(/section-kicker">([^<]+)</g)].map((m) => m[1]);
+    const muted = [...SRC.matchAll(/className="muted">([^<]+)</g)].map((m) => m[1]);
+    return [...titres, ...kickers, ...muted].join(" | ");
+  }
+
+  it("n'emploie pas « snapshot » a l'ecran", () => {
+    // Le mot reste legitime dans le CODE — snapshotId, snapshotFromFolder —
+    // c'est son affichage qui pose probleme.
+    expect(textesVisibles().toLowerCase()).not.toContain("snapshot");
+  });
+
+  it("n'emploie pas « reinjecter »", () => {
+    expect(textesVisibles().toLowerCase()).not.toContain("réinjecter");
+  });
+
+  it("n'emploie pas « workspace », qui est de l'anglais", () => {
+    expect(textesVisibles().toLowerCase()).not.toContain("workspace");
+  });
+
+  it("dit ce qui se passe, avec un verbe", () => {
+    const t = textesVisibles();
+    expect(t).toContain("COPIER DEPUIS LA MACHINE");
+    expect(t).toContain("REMETTRE SUR LA MACHINE");
+  });
+
+  it("garde les majuscules du nom de machine", () => {
+    // `toLowerCase()` sur un nom de produit donnait « disque op‑1 », qui fait
+    // neglige et se lit mal.
+    expect(SRC).not.toContain("supportMachine.toLowerCase()");
+  });
+
+  it("rassure sur la destination des donnees", () => {
+    // Une question que se pose tout debutant devant un bouton qui parle de
+    // sauvegarde : est-ce que ca part quelque part ?
+    expect(SRC).toContain("rien n'est envoyé ailleurs");
+  });
+});
+
 describe("verifierSnapshot", () => {
   const relus = [{ id: "a", fileCount: 10, totalBytes: 1000 }];
 
