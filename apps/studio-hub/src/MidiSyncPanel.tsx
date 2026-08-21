@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
+import { sAbonner } from "@studio-hub/midi-dispatch";
 import { createLogger } from "@studio-hub/audio-bridge";
 
 const log = createLogger("Hub.MidiSync");
@@ -39,6 +40,14 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const outputsRef = useRef<SyncOutput[]>([]);
   const inputsRef = useRef<SyncInput[]>([]);
   const controllerInputRef = useRef<SyncInput | null>(null);
+  /**
+   * Desabonnement du repartiteur MIDI.
+   *
+   * Ce panneau ecrivait `input.onmidimessage` en direct : il ecrasait le
+   * gestionnaire du repartiteur, et le remettait a `null` en se desactivant,
+   * ce qui rendait muets TOUS les abonnes.
+   */
+  const desabonnerControleurRef = useRef<(() => void) | null>(null);
   const noteTimersRef = useRef<number[]>([]);
   const sequenceTimerRef = useRef<number | undefined>(undefined);
   const sequenceStepRef = useRef(0);
@@ -119,7 +128,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
 
   function disableController() {
     const active = controllerInputRef.current;
-    if (active) active.input.onmidimessage = null;
+    // Se desabonner, jamais debrancher : le port sert aussi aux autres.
+    desabonnerControleurRef.current?.();
+    desabonnerControleurRef.current = null;
     controllerInputRef.current = null;
     setControllerEnabled(false);
   }
@@ -139,16 +150,21 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       setStatus("Aucune entrée OP‑1 : passe la machine en COM → T2 / CTRL puis actualise les ports.");
       return;
     }
-    candidate.input.onmidimessage = (event) => {
-      if (event.data) {
-        try {
-          const message = parseMidiNotePacket(event.data);
-          if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
-        } catch (error) {
-          log.warn("Failed to parse MIDI note packet", error);
-        }
+    // Abonnement filtre sur le port choisi.
+    //
+    // L'ecriture directe de `onmidimessage` ecrasait le gestionnaire du
+    // repartiteur : le rack et les studios devenaient muets des l'activation
+    // du mode controleur, sans aucun message.
+    desabonnerControleurRef.current = sAbonner(({ donnees, port }) => {
+      // Le repartiteur diffuse TOUTES les entrees : on ne garde que la sienne.
+      if (port !== candidate.name) return;
+      try {
+        const message = parseMidiNotePacket(donnees);
+        if (message) relayControllerNote(message.action, message.note, message.velocity, message.channel);
+      } catch (error) {
+        log.warn("Failed to parse MIDI note packet", error);
       }
-    };
+    });
     controllerInputRef.current = candidate;
     setControllerEnabled(true);
     setStatus(`Mode contrôleur OP‑1 actif sur ${candidate.name}. Les notes vont vers EP‑133 sans écho vers l’OP‑1.`);
@@ -297,7 +313,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     noteTimersRef.current = [];
     clearSequence();
     const active = controllerInputRef.current;
-    if (active) active.input.onmidimessage = null;
+    // Se desabonner, jamais debrancher : le port sert aussi aux autres.
+    desabonnerControleurRef.current?.();
+    desabonnerControleurRef.current = null;
     if (wasRunning) {
       const stopAt = Math.max(performance.now(), nextTickRef.current);
       if (hardwareRunningRef.current) sendHardware("stop", stopAt);

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { sAbonner, sAbonnerEtat, sorties } from "@studio-hub/midi-dispatch";
 import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
 import { StudioMachinePanel } from "../../../op1-studio/app/components/StudioMachinePanel";
@@ -76,7 +77,6 @@ export default function OP1Settings() {
   };
 
   useEffect(() => {
-    let access: any = null;
 
     const handle = (portName: string) => (msg: any) => {
       const data = Array.from(msg.data as Uint8Array) as number[];
@@ -103,54 +103,35 @@ export default function OP1Settings() {
       }
     };
 
-    const refresh = () => {
-      if (!access) return;
-      const names: string[] = [];
-      access.inputs.forEach((input: any) => {
-        try {
-          void input.open?.();
-        } catch {
-          /* port pris par une autre application */
-        }
-        input.onmidimessage = handle(input.name ?? "port inconnu");
-        if (input.name) names.push(input.name);
-      });
-      outputsRef.current = Array.from(access.outputs.values());
-      setPorts(names);
+    // Abonnement au repartiteur, plutot qu'un acces MIDI a soi.
+    //
+    // Cette page ecrivait `input.onmidimessage` sur toutes les entrees, et
+    // les remettait a `null` en se demontant. C'est elle qui a livre la
+    // panne d'origine : deux pages de reglages se volant les gestionnaires,
+    // le MIDI muet sans le moindre message d'erreur.
+    const seDesabonner = sAbonner(({ donnees, port }) => {
+      handle(port || "port inconnu")({ data: donnees });
+    });
+
+    const seDesabonnerEtat = sAbonnerEtat(({ entrees, accorde, raison }) => {
+      if (!accorde) {
+        setStatus(raison ?? "accès refusé");
+        return;
+      }
+      setPorts(entrees);
       setStatus(
-        names.length
-          ? `${names.length} entrée(s) : ${names.join(" · ")}`
+        entrees.length
+          ? `${entrees.length} entrée(s) : ${entrees.join(" · ")}`
           : "accès accordé, aucune entrée détectée"
       );
-      log.info("Entrées MIDI", { names });
-    };
+      log.info("Entrées MIDI", { entrees });
+      void sorties().then((liste) => { outputsRef.current = liste; });
+    });
 
-    if (!navigator.requestMIDIAccess) {
-      setStatus("Web MIDI indisponible (navigateur ou contexte non sécurisé)");
-      return;
-    }
-
-    navigator
-      .requestMIDIAccess()
-      .then((a) => {
-        access = a;
-        refresh();
-        (a as any).onstatechange = refresh;
-      })
-      .catch((error) => {
-        setStatus(`accès refusé : ${(error as any)?.message ?? error}`);
-        log.warn("requestMIDIAccess refusé", error);
-      });
-
+    // Se desabonner, sans jamais debrancher les ports des autres pages.
     return () => {
-      // onstatechange doit partir aussi : sans ca il survit au demontage et
-      // reattache nos gestionnaires par-dessus ceux de la page suivante.
-      if (access) {
-        access.onstatechange = null;
-        access.inputs.forEach((input: any) => {
-          input.onmidimessage = null;
-        });
-      }
+      seDesabonner();
+      seDesabonnerEtat();
     };
   }, []);
 
