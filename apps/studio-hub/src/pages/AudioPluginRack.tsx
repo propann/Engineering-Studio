@@ -205,6 +205,25 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   const [patchQuery, setPatchQuery] = useState<string>("");
   // Cible et durée de l'export. L'OP-1 synthé est le défaut : c'est la seule
   // machine dont l'écriture a été validée sur matériel.
+  /**
+   * Moteurs superposes au moteur actif. Vide = un seul moteur, comme avant.
+   *
+   * En etat parce que l'interface les affiche, mais recopies dans paramsRef
+   * pour que le chemin de note les lise sans provoquer de rendu.
+   */
+  const [couches, setCouches] = useState<EnginePluginType[]>([]);
+  const couchesRef = useRef<EnginePluginType[]>([]);
+  couchesRef.current = couches;
+
+  const basculerCouche = (moteur: EnginePluginType) =>
+    setCouches((liste) =>
+      liste.includes(moteur) ? liste.filter((m) => m !== moteur) : [...liste, moteur]
+    );
+
+  /** Moteur actif d'abord, puis les couches. Jamais de doublon. */
+  const moteursEmpiles = (p: typeof paramsRef.current, couchesActives: EnginePluginType[]) =>
+    [p.activeEngine, ...couchesActives.filter((m) => m !== p.activeEngine)];
+
   const [cibleExport, setCibleExport] = useState<CibleMachine>("op1_synth");
   const [dureeExport, setDureeExport] = useState<number>(2);
   const [exportEnCours, setExportEnCours] = useState<boolean>(false);
@@ -1575,6 +1594,59 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
    *  - programmer le relachement. Sans lui, l'enveloppe reste au niveau de
    *    sustain jusqu'au dernier echantillon et le son se coupe net.
    */
+  /**
+   * Superpose plusieurs moteurs sur une meme note.
+   *
+   * C'est ce que l'extraction de `construireVoix` a rendu possible : elle lit
+   * `p.activeEngine` et rend une sortie libre, donc il suffit de l'appeler une
+   * fois par moteur avec un `activeEngine` different et de sommer.
+   *
+   * Deux precautions qui ne sont pas facultatives :
+   *
+   * - **Le volume.** Chaque voix porte deja son propre gain a `masterVolume`.
+   *   Quatre couches donneraient quatre fois le niveau et saturerait des la
+   *   deuxieme. On divise par la racine du nombre de couches plutot que par le
+   *   nombre : des sources non correlees s'additionnent en puissance, pas en
+   *   amplitude, et diviser par 4 rendrait un empilement trop faible.
+   *
+   * - **L'horizon sonore.** On garde le PLUS TARDIF des `audibleEnd`. Prendre
+   *   le premier couperait les moteurs a longue resonance — Rings s'excite sur
+   *   20 ms mais sonne bien plus longtemps.
+   */
+  const construireCouches = (
+    ctx: BaseAudioContext,
+    p: typeof paramsRef.current,
+    freq: number,
+    now: number,
+    moteurs: EnginePluginType[]
+  ) => {
+    const sortie = ctx.createGain();
+    // Compensation en puissance : racine du nombre de couches.
+    sortie.gain.setValueAtTime(1 / Math.sqrt(Math.max(1, moteurs.length)), now);
+
+    const sources: AudioScheduledSourceNode[] = [];
+    let naturalEnd = now;
+    let audibleEnd = now;
+    let enveloppe = { ATTACK: 0.008, DECAY: 0.12, SUSTAIN: 0.75, RELEASE: 0.22 };
+
+    for (const moteur of moteurs) {
+      // Un moteur qui leve ne doit pas emporter les autres : une couche muette
+      // vaut mieux qu'un empilement entierement silencieux.
+      try {
+        const voix = construireVoix(ctx, { ...p, activeEngine: moteur }, freq, now);
+        voix.env.connect(sortie);
+        sources.push(...voix.sources);
+        naturalEnd = Math.max(naturalEnd, voix.naturalEnd);
+        audibleEnd = Math.max(audibleEnd, voix.audibleEnd);
+        enveloppe = voix;
+      } catch (e) {
+        log.error(`Couche ${moteur} en echec`, e);
+      }
+    }
+
+    return { env: sortie, sources, naturalEnd, audibleEnd, ...enveloppe };
+  };
+
   const rendreEchantillon = async (
     p: typeof paramsRef.current,
     freq: number,
@@ -1585,13 +1657,14 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     // sonne. Un OfflineAudioContext exige sa longueur a la creation, or
     // `audibleEnd` n'est connu qu'apres construction — d'ou cette sonde, menee
     // sur un contexte jetable d'une seule trame. Rien n'y est rendu.
+    const moteurs = moteursEmpiles(p, couchesRef.current);
     const sonde = new OfflineAudioContext(1, 1, frequence);
-    const { audibleEnd, ATTACK, DECAY, RELEASE } = construireVoix(sonde, p, freq, 0);
+    const { audibleEnd, ATTACK, DECAY, RELEASE } = construireCouches(sonde, p, freq, 0, moteurs);
     const plan = planifierRendu(secondes, audibleEnd, frequence, { ATTACK, DECAY, RELEASE });
 
     // Seconde passe : le vrai rendu, dans un contexte correctement dimensionne.
     const offline = new OfflineAudioContext(1, plan.trames, frequence);
-    const voix = construireVoix(offline, p, freq, 0);
+    const voix = construireCouches(offline, p, freq, 0, moteurs);
     voix.env.connect(offline.destination);
     voix.env.gain.setValueAtTime(voix.SUSTAIN, plan.debutRelachement);
     voix.env.gain.exponentialRampToValueAtTime(0.0001, plan.debutRelachement + voix.RELEASE);
@@ -1750,7 +1823,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       if (voiceId && voicesRef.current.has(voiceId)) releaseVoice(voiceId);
 
       const { env, sources, naturalEnd, audibleEnd, ATTACK, DECAY, SUSTAIN, RELEASE } =
-        construireVoix(ctx, p, freq, now);
+        construireCouches(ctx, p, freq, now, moteursEmpiles(p, couchesRef.current));
 
       // Sortie vers le bus persistant, donc vers l'analyseur.
       env.connect(masterBusRef.current!);
@@ -2139,6 +2212,19 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                     </div>
                     <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
                   </button>
+                  {/* Superposition : cliquer empile ce moteur SUR le moteur
+                      actif, sans en changer. Separe du bouton principal, sinon
+                      choisir un moteur et l'empiler seraient le meme geste. */}
+                  {!isSelected && (
+                    <button
+                      type="button"
+                      className={`couche-toggle ${couches.includes(e.id) ? "couche-active" : ""}`}
+                      title={couches.includes(e.id) ? `Retirer ${e.name} de la superposition` : `Superposer ${e.name}`}
+                      onClick={(ev) => { ev.stopPropagation(); basculerCouche(e.id); }}
+                    >
+                      {couches.includes(e.id) ? "◉" : "○"}
+                    </button>
+                  )}
 
                   {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
                   {isSelected && (
@@ -2155,6 +2241,14 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                       </div>
 
                       <div className="export-echantillon">
+                        {couches.length > 0 && (
+                          <div className="couches-resume">
+                            🎚️ {couches.length + 1} moteurs superposés
+                            <button type="button" className="couches-vider" onClick={() => setCouches([])}>
+                              vider
+                            </button>
+                          </div>
+                        )}
                         <div className="export-ligne">
                           <button
                             type="button"
@@ -2277,6 +2371,19 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                     </div>
                     <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
                   </button>
+                  {/* Superposition : cliquer empile ce moteur SUR le moteur
+                      actif, sans en changer. Separe du bouton principal, sinon
+                      choisir un moteur et l'empiler seraient le meme geste. */}
+                  {!isSelected && (
+                    <button
+                      type="button"
+                      className={`couche-toggle ${couches.includes(e.id) ? "couche-active" : ""}`}
+                      title={couches.includes(e.id) ? `Retirer ${e.name} de la superposition` : `Superposer ${e.name}`}
+                      onClick={(ev) => { ev.stopPropagation(); basculerCouche(e.id); }}
+                    >
+                      {couches.includes(e.id) ? "◉" : "○"}
+                    </button>
+                  )}
 
                   {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
                   {isSelected && (
@@ -2293,6 +2400,14 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                       </div>
 
                       <div className="export-echantillon">
+                        {couches.length > 0 && (
+                          <div className="couches-resume">
+                            🎚️ {couches.length + 1} moteurs superposés
+                            <button type="button" className="couches-vider" onClick={() => setCouches([])}>
+                              vider
+                            </button>
+                          </div>
+                        )}
                         <div className="export-ligne">
                           <button
                             type="button"

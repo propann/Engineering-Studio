@@ -170,6 +170,51 @@
   color: #000000;
 }
 
+/* Superposition de moteurs : pastille sur chaque moteur non actif. */
+.engine-accordion-group { position: relative; }
+
+.couche-toggle {
+  position: absolute;
+  top: 8px;
+  right: 30px;
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.couche-toggle:hover { color: #b873ff; }
+.couche-toggle.couche-active { color: #b873ff; text-shadow: 0 0 6px #b873ff; }
+
+.couches-resume {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 6px;
+  background-color: rgba(184, 115, 255, 0.12);
+  border: 1px solid rgba(184, 115, 255, 0.35);
+  border-radius: 3px;
+  color: #b873ff;
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.couches-vider {
+  background: none;
+  border: 1px solid rgba(184, 115, 255, 0.4);
+  border-radius: 3px;
+  color: #b873ff;
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  cursor: pointer;
+}
+
+.couches-vider:hover { background-color: rgba(184, 115, 255, 0.25); }
+
 /* Fabrique d'echantillons : rendu hors ligne, encodage, ecriture disque. */
 .export-echantillon {
   display: flex;

@@ -79,6 +79,18 @@ FABRIQUER UN SAMPLE.
       horizons sonores très différents, ce sont eux qui éprouvent le calcul de
       durée
 
+### Superposition de moteurs
+Pastille ronde à droite de chaque moteur non actif : elle l'empile **sur** le
+moteur actif sans en changer.
+
+- [ ] deux moteurs superposés s'entendent tous les deux
+- [ ] quatre moteurs ne saturent pas — c'est ce que la compensation en racine
+      du nombre de couches doit empêcher, et une saturation s'entend nettement
+- [ ] un moteur à longue résonance dans l'empilement (Rings, Clouds) n'est pas
+      coupé par un moteur court
+- [ ] **le sample fabriqué sonne comme le direct** : c'est l'invariant qui
+      compte, jeu et rendu passent par le même chemin
+
 ### Un pack chromatique est utilisable dans un DAW
 Bouton « PACK C3–C7 » : 49 notes rendues d'affilée dans un sous-dossier au nom
 du patch.

@@ -82,6 +82,10 @@ function parametres(): string[] {
     "dureeExport",
     "exportEnCours",
     "espaceNom",
+    // Moteurs superposes : orchestration, pas timbre. Chaque couche est une
+    // voix construite par le meme moteur avec un activeEngine different — les
+    // parametres qui font le son, eux, restent ceux de la liste ci-dessus.
+    "couches",
   ]);
   return [...SOURCE.matchAll(/const \[(\w+), set\w+\] = useState/g)]
     .map((m) => m[1])
@@ -170,7 +174,48 @@ describe("fabrique d'echantillons", () => {
   it("reutilise le moteur au lieu d'en redefinir un", () => {
     // Un second chemin audio divergerait du premier a la premiere evolution :
     // le sample ne sonnerait plus comme ce qu'on entend.
-    expect(SOURCE).toMatch(/construireVoix\(offline/);
+    //
+    // Le rendu passe par construireCouches depuis la superposition. Ce qui
+    // compte n'est pas QUELLE fonction est appelee, mais que la chaine remonte
+    // toujours a construireVoix — d'ou les deux assertions.
+    expect(SOURCE, "le rendu doit deleguer").toMatch(/construireCouches\(offline/);
+    expect(SOURCE, "les couches doivent passer par construireVoix").toMatch(
+      /construireVoix\(ctx, \{ \.\.\.p, activeEngine: moteur \}/
+    );
+  });
+
+  it("joue et rend par le MEME chemin", () => {
+    // Si le jeu passait par les couches et le rendu par une voix seule, le
+    // fichier ne sonnerait pas comme ce qu'on entend — et rien ne le dirait.
+    // Trois sites, nommes plutot que comptes : compter m'a fait ecrire 4 en
+    // incluant la declaration, qui s'ecrit `construireCouches = (` et
+    // n'est donc pas attrapee par la meme regex.
+    expect(SOURCE, "le jeu").toMatch(/construireCouches\(ctx,/);
+    expect(SOURCE, "la sonde de duree").toMatch(/construireCouches\(sonde,/);
+    expect(SOURCE, "le rendu").toMatch(/construireCouches\(offline,/);
+  });
+
+  it("compense le niveau quand des moteurs se superposent", () => {
+    // Quatre couches a plein volume saturent des la deuxieme. La racine du
+    // nombre de couches, et non le nombre : des sources non correlees
+    // s'additionnent en puissance, pas en amplitude.
+    expect(SOURCE).toMatch(/Math\.sqrt\(Math\.max\(1, moteurs\.length\)\)/);
+  });
+
+  it("garde l'horizon sonore le plus tardif de toutes les couches", () => {
+    // Prendre le premier couperait les moteurs a longue resonance : Rings
+    // s'excite sur 20 ms mais sonne bien plus longtemps.
+    const couches = SOURCE.slice(SOURCE.indexOf("const construireCouches"));
+    expect(couches).toMatch(/audibleEnd = Math\.max\(audibleEnd, voix\.audibleEnd\)/);
+  });
+
+  it("isole l'echec d'une couche", () => {
+    // Une couche muette vaut mieux qu'un empilement entierement silencieux.
+    const couches = SOURCE.slice(
+      SOURCE.indexOf("const construireCouches"),
+      SOURCE.indexOf("const rendreEchantillon")
+    );
+    expect(couches).toMatch(/catch \(e\)/);
   });
 
   it("programme le relachement du rendu", () => {
