@@ -1,84 +1,59 @@
 import type { LocalDirectoryHandle } from './localFolders';
+import {
+  aLaPermission,
+  creerMagasinHandles,
+  demanderLaPermission,
+} from '@studio-hub/fs-handles';
 
 /**
+ * Dossiers mémorisés de l'EP-133.
+ *
  * Un `FileSystemDirectoryHandle` ne tient pas dans `localStorage` (pas
  * sérialisable en JSON) mais IndexedDB sait le stocker tel quel — c'est la
- * seule façon standard de « se souvenir » d'un dossier choisi d'une visite
- * à l'autre sans redemander le sélecteur natif à chaque fois. Un seul
- * dossier de travail à la fois pour l'instant (clé fixe) ; la mémoire ne
- * survit que si l'utilisateur régénère la permission au retour (le
- * navigateur ne la garde jamais indéfiniment, voir `verifyStoredPermission`).
+ * seule façon standard de « se souvenir » d'un dossier choisi d'une visite à
+ * l'autre sans redemander le sélecteur natif à chaque fois.
+ *
+ * L'implémentation vit désormais dans `@studio-hub/fs-handles`, partagée avec
+ * `studio-hub` qui en portait une copie quasi identique. Le partage compte
+ * particulièrement ici : ce répertoire est **hors du périmètre de `tsconfig`**,
+ * donc une divergence entre les deux copies — sur du code de permission —
+ * n'aurait été vue ni par le typecheck ni par les tests.
+ *
+ * Ce fichier ne garde que ce qui est propre à l'EP-133 : le nom de la base et
+ * les clés. Le nom de la base reste distinct de celui du Hub, sans quoi ouvrir
+ * une application changerait le dossier de l'autre.
  */
-const DB_NAME = 'ep133-rhythm-hero-handles';
-const STORE_NAME = 'directories';
+const magasin = creerMagasinHandles<LocalDirectoryHandle>('ep133-rhythm-hero-handles');
+
 export const SAMPLE_FOLDER_KEY = 'sample-folder';
 /** Bibliothèque de sons personnelle de l'utilisateur — distincte du dossier de travail machine
  * (`SAMPLE_FOLDER_KEY`) : c'est la source (ses propres sons rangés), pas la destination (le clone). */
 export const LOCAL_LIBRARY_FOLDER_KEY = 'local-library-folder';
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => { request.result.createObjectStore(STORE_NAME); };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+export function saveDirectoryHandle(key: string, handle: LocalDirectoryHandle): Promise<void> {
+  return magasin.sauver(key, handle);
 }
 
-export async function saveDirectoryHandle(key: string, handle: LocalDirectoryHandle): Promise<void> {
-  const db = await openDb();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(handle, key);
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
+export function loadDirectoryHandle(key: string): Promise<LocalDirectoryHandle | null> {
+  return magasin.charger(key);
 }
 
-export async function loadDirectoryHandle(key: string): Promise<LocalDirectoryHandle | null> {
-  try {
-    const db = await openDb();
-    return await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const request = tx.objectStore(STORE_NAME).get(key);
-      request.onsuccess = () => resolve((request.result as LocalDirectoryHandle | undefined) || null);
-      request.onerror = () => reject(request.error);
-    });
-  } catch {
-    return null;
-  }
+export function forgetDirectoryHandle(key: string): Promise<void> {
+  return magasin.oublier(key);
 }
-
-export async function forgetDirectoryHandle(key: string): Promise<void> {
-  try {
-    const db = await openDb();
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).delete(key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch {
-    // Rien à oublier si IndexedDB est indisponible.
-  }
-}
-
-type PermissionAware = LocalDirectoryHandle & {
-  queryPermission?: (options: { mode: 'read' | 'readwrite' }) => Promise<'granted' | 'denied' | 'prompt'>;
-  requestPermission?: (options: { mode: 'read' | 'readwrite' }) => Promise<'granted' | 'denied' | 'prompt'>;
-};
 
 /** Vérification silencieuse (pas de prompt) — sûre à appeler automatiquement au chargement d'une page. */
-export async function hasStoredPermission(handle: LocalDirectoryHandle, mode: 'read' | 'readwrite'): Promise<boolean> {
-  const aware = handle as PermissionAware;
-  if (!aware.queryPermission) return true;
-  try { return (await aware.queryPermission({ mode })) === 'granted'; } catch { return false; }
+export function hasStoredPermission(
+  handle: LocalDirectoryHandle,
+  mode: 'read' | 'readwrite'
+): Promise<boolean> {
+  return aLaPermission(handle, mode);
 }
 
 /** Redemande la permission — nécessite un vrai geste utilisateur (clic), sinon le navigateur rejette silencieusement. */
-export async function requestStoredPermission(handle: LocalDirectoryHandle, mode: 'read' | 'readwrite'): Promise<boolean> {
-  const aware = handle as PermissionAware;
-  if (!aware.requestPermission) return true;
-  try { return (await aware.requestPermission({ mode })) === 'granted'; } catch { return false; }
+export function requestStoredPermission(
+  handle: LocalDirectoryHandle,
+  mode: 'read' | 'readwrite'
+): Promise<boolean> {
+  return demanderLaPermission(handle, mode);
 }

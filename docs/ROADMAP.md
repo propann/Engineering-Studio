@@ -261,9 +261,19 @@ appeared on the roadmap.
       reads "Changer" once a workspace is active, and without the guard it would have
       silently re-adopted the folder already stored — i.e. refused to change.
       Verified by sabotage, three guards, each failing only its own test.
-      Note: the permission helpers now exist in both apps. ep133-studio sits outside
-      the tsconfig include, so its copy is not typechecked; sharing them through
-      packages/ is the clean follow-up.
+- [x] Handle store shared through `packages/fs-handles` (2026-08-21). The two apps
+      each carried their own copy, and ep133-studio's sits **outside the tsconfig
+      include** — a divergence between them, in permission code, would have been caught
+      by neither the typecheck nor the tests.
+      The database name stays per-app (`studio-hub-handles` vs
+      `ep133-rhythm-hero-handles`): they remember different folders, and merging them
+      would mean opening one app changed the other's folder. Hence a factory taking the
+      name, not a single shared store. Both app-level files became thin wrappers keeping
+      their historical export names, so no call site changed.
+      Gotcha worth recording: an `@studio-hub/*` alias must be declared in **three**
+      places — vite.config.ts, tsconfig.json paths, and vitest.config.ts, which keeps
+      its own alias list. Missing the third passes typecheck and build while five test
+      files fail on `Cannot find package`.
 
 #### Patch search wired to the rack (2026-08-21)
 - [x] Patch search connected — the rack holds 91 factory patches across 15 engines
