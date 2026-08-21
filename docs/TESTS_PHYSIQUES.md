@@ -147,6 +147,26 @@ sur `http://192.168.2.59:3000` — `requestMIDIAccess` ne renvoie aucun appareil
 sans message d'erreur. Chercher une panne là serait chercher une panne qui
 n'existe pas.
 
+### Sauvegarde du coffre — emplacement à confirmer — 2026-08-21
+Rapporté : « les sauvegardes n'écrivent rien sur le disque », **avec un message
+de succès**.
+
+Diagnostic : rien n'était cassé. `verifierSnapshot` relit le snapshot après
+écriture — un succès annoncé signifie que les fichiers sont bien là. Le snapshot
+vit à **trois niveaux de profondeur**, dans un dossier horodaté :
+
+```
+<espace de travail>/op1/backups/op1_20260821T…Z_abc123/files/synth/user/1.aif
+                    └─ machine   └─ horodatage        └─ contenu
+```
+
+Le message annonçait « 66 fichiers (270 Mo) » sans jamais dire où. Il donne
+maintenant le chemin complet.
+
+- [ ] refaire une sauvegarde, suivre le chemin annoncé, confirmer que les
+      fichiers y sont
+- [ ] vérifier que `manifest.json` est à côté du dossier `files/`
+
 ### Restauration par l'application
 Le mécanisme est validé sur matériel ; son **orchestration** ne l'est pas —
 prévol, point de retour, boucle de `restoreBackup`.

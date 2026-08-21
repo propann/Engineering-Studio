@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   categoriesIncompletes,
@@ -198,6 +201,41 @@ describe("libelleEtat", () => {
   it("distingue partial de failed par le ton", () => {
     expect(libelleEtat("partial").ton).toBe("alerte");
     expect(libelleEtat("failed").ton).toBe("erreur");
+  });
+});
+
+describe("le message de succes dit OU", () => {
+  /**
+   * Lu dans le source : c'est une chaine d'interface, pas une fonction pure.
+   *
+   * Le defaut qu'il ferme a ete rapporte par l'utilisateur le 2026-08-21 : la
+   * sauvegarde annoncait « 66 fichiers (270 Mo) » sans jamais dire ou, et le
+   * snapshot vit a TROIS niveaux de profondeur dans un dossier horodate —
+   * <espace>/op1/backups/<horodatage>/files/. Il a regarde la racine de son
+   * dossier, n'y a rien vu, et conclu que rien ne s'ecrivait.
+   *
+   * Rien n'etait casse. verifierSnapshot relit d'ailleurs le snapshot apres
+   * ecriture : un succes annonce signifie que les fichiers sont bien la.
+   */
+  const SOURCE = readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "VaultPanel.tsx"),
+    "utf-8"
+  );
+
+  it("annonce le chemin du snapshot, pas seulement le nombre de fichiers", () => {
+    const ligne = SOURCE.slice(SOURCE.indexOf("Sauvegarde créée"));
+    expect(ligne.slice(0, 400)).toContain("backups/${snapshotId}");
+  });
+
+  it("nomme l'espace de travail dans ce chemin", () => {
+    // Un chemin relatif sans point de depart n'aide pas : l'utilisateur a
+    // plusieurs dossiers.
+    const ligne = SOURCE.slice(SOURCE.indexOf("Sauvegarde créée"));
+    expect(ligne.slice(0, 400)).toContain("workspaceHandle?.name");
+  });
+
+  it("la restauration dit aussi vers ou elle a ecrit", () => {
+    expect(SOURCE).toContain("Restauration terminée vers ${restoreTargetName}");
   });
 });
 

@@ -797,7 +797,14 @@ async function createBackup() {
       onBackupRecorded(machine);
       const report: VaultReport = { operation: "backup", machine, snapshotId, sourceOrTarget: sourceName || machine, createdAt: manifest.createdAt ?? new Date().toISOString(), categories: selectedCategories, fileCount: manifestFiles.length, totalBytes: manifest.totalBytes ?? 0, files: fichiersCopies, phase: "verified" };
       setLastReport(report);
-      setStatus(`Sauvegarde créée : ${fichiersCopies.length} fichiers (${formatBytes(manifest.totalBytes ?? 0)}).`);
+      // Dire OU, pas seulement combien. Le snapshot vit a trois niveaux de
+      // profondeur, dans un dossier horodate : sans ce chemin, l'utilisateur
+      // regarde la racine de son dossier, n'y voit rien, et conclut que la
+      // sauvegarde n'a pas fonctionne. C'est arrive.
+      setStatus(
+        `Sauvegarde créée : ${fichiersCopies.length} fichiers (${formatBytes(manifest.totalBytes ?? 0)})\n` +
+          `→ ${workspaceHandle?.name ?? "espace"}/${machine}/backups/${snapshotId}/files/`
+      );
     } catch (err) {
       const reason = err instanceof Error ? err.message : "La sauvegarde a échoué.";
       if (backups && snapshotId && backups.removeEntry) {
