@@ -86,6 +86,11 @@ function parametres(): string[] {
     // voix construite par le meme moteur avec un activeEngine different — les
     // parametres qui font le son, eux, restent ceux de la liste ci-dessus.
     "couches",
+    // Favoris et etiquettes : classement de la bibliotheque, pas timbre. Ils
+    // ne touchent pas au son PRODUIT — seulement a l'ordre dans lequel on
+    // trouve les patches qui, eux, le decident.
+    "metas",
+    "favorisSeuls",
   ]);
   return [...SOURCE.matchAll(/const \[(\w+), set\w+\] = useState/g)]
     .map((m) => m[1])
@@ -154,6 +159,54 @@ describe("briques DSP", () => {
     // cloudsReverb : moins de trois envois signale une regression.
     const envois = [...moteurAudio().matchAll(/sendToReverb\(/g)].length;
     expect(envois).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("favoris et etiquettes", () => {
+  /**
+   * Les 91 patches d'usine sont des CONSTANTES du source : on ne peut pas y
+   * ecrire un favori. Les metadonnees vivent donc a part et sont fusionnees a
+   * l'affichage. La logique est testee dans core/patchMeta.test.ts ; ce qui
+   * est verrouille ici est son branchement.
+   */
+  it("fusionne les metadonnees avant de filtrer", () => {
+    // PatchSearchEngine lit `tags` et `isFavorite`. Filtrer avant de fusionner
+    // chercherait dans des patches encore vierges : la recherche par etiquette
+    // ne trouverait jamais rien, et le filtre favoris serait toujours vide.
+    // Ce qui compte n'est pas l'ORDRE des lignes — les echanger ne change rien,
+    // elles sont independantes — mais ce que le moteur RECOIT. Une premiere
+    // version comparait des positions et restait verte au sabotage.
+    const filtre = SOURCE.slice(SOURCE.indexOf("const filtrerPatches"));
+    const corps = filtre.slice(0, filtre.indexOf("};"));
+    expect(corps).toContain("fusionnerMetas(liste, metas)");
+    expect(corps, "le moteur doit recevoir la liste fusionnee").toContain(
+      "new PatchSearchEngine(avecMetas)"
+    );
+    expect(corps, "et jamais la liste brute").not.toMatch(/new PatchSearchEngine\(liste\)/);
+    expect(corps, "le retour rapide aussi").toContain("return avecMetas");
+  });
+
+  it("persiste a chaque modification", () => {
+    // Un favori perdu au rechargement serait pire que pas de favori du tout.
+    const maj = SOURCE.slice(SOURCE.indexOf("const majMetas"));
+    expect(maj.slice(0, maj.indexOf("};"))).toContain("ecrireMetas");
+  });
+
+  it("relit les metadonnees au demarrage", () => {
+    expect(SOURCE).toMatch(/useState<MetasPatches>\(\(\) => lireMetas\(\)\)/);
+  });
+
+  it("passe le filtre favoris au moteur de recherche", () => {
+    // `getFavorites` existait deja dans PatchSearchEngine, inutilisee.
+    expect(SOURCE).toMatch(/favorisSeuls \? \{ favorites: true \}/);
+  });
+
+  it("n'a plus de type PatchPreset local", () => {
+    // Le rack en declarait un sous-ensemble strict, sans tags ni isFavorite :
+    // deux definitions du meme objet, dont une amputee. C'est ce qui empechait
+    // d'afficher un favori sans changer de type.
+    expect(SOURCE).not.toMatch(/^interface PatchPreset \{/m);
+    expect(SOURCE).toMatch(/import type \{ PatchPreset \} from/);
   });
 });
 

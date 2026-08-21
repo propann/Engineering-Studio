@@ -339,6 +339,74 @@
   font-style: italic;
 }
 
+/* Favoris et etiquettes : une ligne par patch, etoile a gauche, etiqueteur a
+   droite, le bouton du patch au milieu. */
+.patch-ligne {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.patch-ligne .unfolded-patch-btn { flex: 1; min-width: 0; }
+
+.patch-favori,
+.patch-etiqueter,
+.filtre-favoris {
+  background: none;
+  border: none;
+  color: #475569;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0 3px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.patch-favori:hover,
+.patch-etiqueter:hover,
+.filtre-favoris:hover { color: #fbbf24; }
+
+.patch-favori.favori-actif,
+.filtre-favoris.favori-actif {
+  color: #fbbf24;
+  text-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+}
+
+.patch-etiqueter { font-size: 0.7rem; opacity: 0.5; }
+.patch-ligne:hover .patch-etiqueter { opacity: 1; }
+
+.patch-etiquettes {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+  flex-wrap: wrap;
+}
+
+.patch-etiquette {
+  padding: 0 4px;
+  background-color: rgba(184, 115, 255, 0.18);
+  border: 1px solid rgba(184, 115, 255, 0.4);
+  border-radius: 2px;
+  color: #b873ff;
+  font-size: 0.58rem;
+  letter-spacing: 0.02em;
+}
+
+.patch-etiquette:hover {
+  background-color: rgba(248, 113, 113, 0.25);
+  border-color: #f87171;
+  color: #f87171;
+}
+
+.patch-recherche-ligne {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.patch-recherche-ligne .patch-search-input { flex: 1; margin-bottom: 0; }
+.patch-recherche-ligne { margin-bottom: 5px; }
+
 .unfolded-patch-btn {
   display: flex;
   align-items: center;

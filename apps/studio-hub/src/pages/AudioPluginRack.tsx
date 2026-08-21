@@ -18,6 +18,15 @@ import {
 import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
 import {
+  ajouterEtiquette,
+  basculerFavori,
+  ecrireMetas,
+  fusionnerMetas,
+  lireMetas,
+  retirerEtiquette,
+  type MetasPatches,
+} from "../core/patchMeta";
+import {
   dureeAdmise,
   encodeAiffPcm16,
   encodeWavPcm16,
@@ -57,14 +66,17 @@ type EnginePluginType =
   | "open303"
   | "faust_dsp";
 
-interface PatchPreset {
-  id: string;
-  name: string;
-  engine: EnginePluginType;
-  category: string;
-  isUserPatch?: boolean;
-  params: Record<string, any>;
-}
+/**
+ * Le rack declarait son propre PatchPreset, sous-ensemble strict de celui de
+ * core/types/audio.ts : memes champs obligatoires, mais sans `tags`,
+ * `isFavorite`, `createdAt` ni `lastModified`.
+ *
+ * Deux definitions du meme objet, dont une amputee — c'est ce qui empechait
+ * d'afficher un favori sans changer de type. La liste des moteurs etait elle
+ * aussi dupliquee, a l'identique, moteur pour moteur : verifie avant de
+ * fusionner.
+ */
+import type { PatchPreset } from "../core/types/audio";
 
 // COMPREHENSIVE FACTORY PATCH BANK (75+ PRESETS)
 const FACTORY_PATCHES: Record<EnginePluginType, PatchPreset[]> = {
@@ -202,6 +214,22 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   // extraites dans RackDiagnostic/RackToast. Celles-la etaient ecrites A CHAQUE
   // NOTE, sur le fil qui programme l'audio. On ne tape pas au clavier de
   // recherche en jouant.
+  /**
+   * Favoris et etiquettes, stockes a part des patches.
+   *
+   * Les 91 patches d'usine sont des constantes du source : on ne peut pas y
+   * ecrire. Ces metadonnees sont donc fusionnees a l'affichage.
+   */
+  const [metas, setMetas] = useState<MetasPatches>(() => lireMetas());
+  const [favorisSeuls, setFavorisSeuls] = useState<boolean>(false);
+
+  /** Toute modification est persistee aussitot : un favori perdu au
+   *  rechargement serait pire que pas de favori du tout. */
+  const majMetas = (suivant: MetasPatches) => {
+    setMetas(suivant);
+    ecrireMetas(suivant);
+  };
+
   const [patchQuery, setPatchQuery] = useState<string>("");
   // Cible et durée de l'export. L'OP-1 synthé est le défaut : c'est la seule
   // machine dont l'écriture a été validée sur matériel.
@@ -602,9 +630,13 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
    * porte sur quelques dizaines d'entrees.
    */
   const filtrerPatches = (liste: PatchPreset[]): PatchPreset[] => {
+    // Fusion d'abord : PatchSearchEngine lit `tags` et `isFavorite`, donc la
+    // recherche par etiquette et le filtre favoris fonctionnent sans une ligne
+    // de plus une fois les donnees fournies.
+    const avecMetas = fusionnerMetas(liste, metas);
     const q = patchQuery.trim();
-    if (!q) return liste;
-    return new PatchSearchEngine(liste).search(q);
+    if (!q && !favorisSeuls) return avecMetas;
+    return new PatchSearchEngine(avecMetas).search(q, favorisSeuls ? { favorites: true } : undefined);
   };
 
   /**
@@ -2313,29 +2345,73 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                         </button>
                       </div>
 
-                      <input
-                        type="search"
-                        className="patch-search-input"
-                        placeholder="Chercher un patch…"
-                        value={patchQuery}
-                        onChange={(e) => setPatchQuery(e.target.value)}
-                        aria-label="Chercher un patch"
-                      />
+                      <div className="patch-recherche-ligne">
+                        <input
+                          type="search"
+                          className="patch-search-input"
+                          placeholder="Chercher — nom, catégorie, étiquette…"
+                          value={patchQuery}
+                          onChange={(e) => setPatchQuery(e.target.value)}
+                          aria-label="Chercher un patch"
+                        />
+                        <button
+                          type="button"
+                          className={`filtre-favoris ${favorisSeuls ? "favori-actif" : ""}`}
+                          title={favorisSeuls ? "Afficher tous les patches" : "N'afficher que les favoris"}
+                          onClick={() => setFavorisSeuls((v) => !v)}
+                        >
+                          ★
+                        </button>
+                      </div>
 
                       {patchQuery.trim() && !patchesAffiches.length && (
                         <p className="patch-search-empty">Aucun patch ne correspond.</p>
                       )}
 
                       {patchesAffiches.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
-                          onClick={() => applyPatch(p)}
-                        >
-                          <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
-                          <span className="patch-name">{p.name}</span>
-                        </button>
+                        <div className="patch-ligne" key={p.id}>
+                          <button
+                            type="button"
+                            className={`patch-favori ${p.isFavorite ? "favori-actif" : ""}`}
+                            title={p.isFavorite ? "Retirer des favoris" : "Mettre en favori"}
+                            onClick={() => majMetas(basculerFavori(metas, p.id))}
+                          >
+                            {p.isFavorite ? "★" : "☆"}
+                          </button>
+                          <button
+                            type="button"
+                            className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
+                            onClick={() => applyPatch(p)}
+                          >
+                            <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
+                            <span className="patch-name">{p.name}</span>
+                            {p.tags?.length ? (
+                              <span className="patch-etiquettes">
+                                {p.tags.map((t) => (
+                                  <span
+                                    className="patch-etiquette"
+                                    key={t}
+                                    title="Retirer cette étiquette"
+                                    onClick={(ev) => { ev.stopPropagation(); majMetas(retirerEtiquette(metas, p.id, t)); }}
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : null}
+                          </button>
+                          <button
+                            type="button"
+                            className="patch-etiqueter"
+                            title="Ajouter une étiquette"
+                            onClick={() => {
+                              const t = window.prompt(`Étiquette pour « ${p.name} »`);
+                              if (t) majMetas(ajouterEtiquette(metas, p.id, t));
+                            }}
+                          >
+                            🏷️
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -2472,29 +2548,73 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                         </button>
                       </div>
 
-                      <input
-                        type="search"
-                        className="patch-search-input"
-                        placeholder="Chercher un patch…"
-                        value={patchQuery}
-                        onChange={(e) => setPatchQuery(e.target.value)}
-                        aria-label="Chercher un patch"
-                      />
+                      <div className="patch-recherche-ligne">
+                        <input
+                          type="search"
+                          className="patch-search-input"
+                          placeholder="Chercher — nom, catégorie, étiquette…"
+                          value={patchQuery}
+                          onChange={(e) => setPatchQuery(e.target.value)}
+                          aria-label="Chercher un patch"
+                        />
+                        <button
+                          type="button"
+                          className={`filtre-favoris ${favorisSeuls ? "favori-actif" : ""}`}
+                          title={favorisSeuls ? "Afficher tous les patches" : "N'afficher que les favoris"}
+                          onClick={() => setFavorisSeuls((v) => !v)}
+                        >
+                          ★
+                        </button>
+                      </div>
 
                       {patchQuery.trim() && !patchesAffiches.length && (
                         <p className="patch-search-empty">Aucun patch ne correspond.</p>
                       )}
 
                       {patchesAffiches.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
-                          onClick={() => applyPatch(p)}
-                        >
-                          <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
-                          <span className="patch-name">{p.name}</span>
-                        </button>
+                        <div className="patch-ligne" key={p.id}>
+                          <button
+                            type="button"
+                            className={`patch-favori ${p.isFavorite ? "favori-actif" : ""}`}
+                            title={p.isFavorite ? "Retirer des favoris" : "Mettre en favori"}
+                            onClick={() => majMetas(basculerFavori(metas, p.id))}
+                          >
+                            {p.isFavorite ? "★" : "☆"}
+                          </button>
+                          <button
+                            type="button"
+                            className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
+                            onClick={() => applyPatch(p)}
+                          >
+                            <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
+                            <span className="patch-name">{p.name}</span>
+                            {p.tags?.length ? (
+                              <span className="patch-etiquettes">
+                                {p.tags.map((t) => (
+                                  <span
+                                    className="patch-etiquette"
+                                    key={t}
+                                    title="Retirer cette étiquette"
+                                    onClick={(ev) => { ev.stopPropagation(); majMetas(retirerEtiquette(metas, p.id, t)); }}
+                                  >
+                                    {t}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : null}
+                          </button>
+                          <button
+                            type="button"
+                            className="patch-etiqueter"
+                            title="Ajouter une étiquette"
+                            onClick={() => {
+                              const t = window.prompt(`Étiquette pour « ${p.name} »`);
+                              if (t) majMetas(ajouterEtiquette(metas, p.id, t));
+                            }}
+                          >
+                            🏷️
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}

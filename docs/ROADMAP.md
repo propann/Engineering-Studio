@@ -292,6 +292,22 @@ appeared on the roadmap.
       factory + user lists. Verified by sabotage: unfiltering one of the two engine
       lists fails exactly two tests, and making an empty search return everything
       fails exactly two more.
+- [x] Favourites and tags wired into the rack (2026-08-21). `PatchSearchEngine`
+      carried nine functions; only `search` was used. Favourites, tags and the
+      favourites filter are now live, integrated into the existing patch list rather
+      than through the separate `Patch Browser` panel — the rack already had a working
+      list with search in it.
+      The 91 factory patches are **constants in the source**: you cannot write a
+      favourite onto them, and copying them to do so would duplicate every patch on the
+      first star click. Hence `core/patchMeta.ts`, a dictionary keyed by patch id,
+      merged at display time. 30 tests, and `fusionnerMetas` never mutates what it
+      receives — a mutated factory patch would contaminate every list referencing it,
+      and the defect would only show up elsewhere, later.
+      Removed on the way: the rack declared its own `PatchPreset`, a strict subset of
+      the shared one, missing `tags` and `isFavorite`. Two definitions of the same
+      object, one of them amputated — that is what made a favourite impossible to
+      display without changing type. The engine list was duplicated too, identically,
+      engine for engine (verified before merging).
 - [ ] Dead duplicates left to decide — PatchSearchModule.tsx (429 lines) and
       audioRackStore.ts (470 lines) are now redundant and have no consumer. Not
       removed here: the panel is UI, which belongs to the other track per

@@ -34,6 +34,21 @@ La machine fait un rapport à chaque déconnexion. Après nos écritures, ce rap
 passe normalement : écrire depuis Linux sur son volume FAT ne la déroute pas et
 ne corrompt pas son système de fichiers.
 
+### Un sample fabriqué sonne juste — 2026-08-21
+**Le test qui débloquait tout.** Le rack fabrique des samples depuis ce jour et
+rien ne le validait : aucun test automatique ne dit si un son est juste.
+
+Confirmé à l'écoute par l'utilisateur. La chaîne complète tient donc — rendu
+hors ligne, encodage AIFF, écriture vérifiée — et le fichier produit sonne comme
+ce que le rack joue en direct.
+
+Ce que cela valide au passage, et qui n'allait pas de soi :
+- le relâchement programmé du rendu hors ligne : sans lui le fichier se coupe
+  net et claque à chaque lecture
+- le calcul de durée en deux passes, la sonde puis le rendu
+- l'encodage AIFF, y compris le flottant étendu 80 bits de la fréquence
+- le choix d'encodeur selon la cible
+
 ### Transport MIDI — 2026-08-21
 30 s de jeu réel sur les pads de l'EP-133 : 166 messages, 60 frappes, notes 36
 à 47.
@@ -61,23 +76,17 @@ avec le piège du nominal qui fait voir une dérive de 10 ms inexistante.
 
 ## ⬜ À faire
 
-### Un sample fabriqué sonne juste
-**Le plus urgent** : c'est la fonction livrée le 2026-08-21 et rien ne la valide.
+### Favoris et étiquettes
+Étoile à gauche de chaque patch, étiqueteur 🏷️ à droite, filtre ★ à côté de la
+recherche.
 
-Sur `https://engineering-studio.duckdns.org` — vrai HTTPS, le sélecteur y
-fonctionne. Rack → déplier un moteur → choisir un dossier → OP-1 synthé, 2 s →
-FABRIQUER UN SAMPLE.
-
-À vérifier en écoutant le fichier produit, comparé au rack en direct :
-
-- [ ] même hauteur de note
-- [ ] même timbre
-- [ ] **aucun claquement en fin de note** — c'est ce que le relâchement
-      programmé doit empêcher ; son absence s'entend immédiatement
-- [ ] pas de silence inutile en fin de fichier
-- [ ] plusieurs moteurs, pas seulement Plaits — Rings et Clouds ont des
-      horizons sonores très différents, ce sont eux qui éprouvent le calcul de
-      durée
+- [ ] une étoile posée survit au rechargement de la page
+- [ ] le filtre ★ ne montre que les patches marqués
+- [ ] une étiquette posée se retrouve **par la recherche** — taper son nom
+      filtre la liste
+- [ ] cliquer une étiquette la retire
+- [ ] les patches d'usine acceptent étoiles et étiquettes comme les patches
+      perso — ce sont pourtant des constantes du source, d'où le stockage à part
 
 ### Superposition de moteurs
 Pastille ronde à droite de chaque moteur non actif : elle l'empile **sur** le
