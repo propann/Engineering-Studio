@@ -19,7 +19,8 @@ import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSe
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
-import { construireChaineEffets } from "../core/audio/effets";
+import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
+import { RackEffets } from "../racks/RackEffets";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
   ajouterEtiquette,
@@ -697,6 +698,33 @@ export default function AudioPluginRack({
   // Réglage d'un paramètre. Volontairement silencieux : déclencher une note
   // à chaque mouvement de curseur rendait le réglage impraticable.
   // Pour écouter, on joue une touche.
+  /**
+   * Pont vers le rack d'effets.
+   *
+   * Il rend un nom et une valeur ; c'est ici qu'on sait quel setter va avec.
+   * Une table plutot qu'un `switch` : ajouter un effet sans l'inscrire ici
+   * donnerait un curseur qui bouge a l'ecran sans rien changer au son, et
+   * seul le garde-fou « aucun parametre inerte » le verrait.
+   */
+  const SETTERS_EFFETS: Record<keyof ParamsEffets, (v: any) => void> = {
+    fxDriveMix: setFxDriveMix,
+    fxDriveAmount: setFxDriveAmount,
+    fxDriveMode: setFxDriveMode,
+    fxEqLow: setFxEqLow,
+    fxEqMid: setFxEqMid,
+    fxEqHigh: setFxEqHigh,
+    fxChorusMix: setFxChorusMix,
+    fxChorusRate: setFxChorusRate,
+    fxChorusDepth: setFxChorusDepth,
+    fxDelayMix: setFxDelayMix,
+    fxDelayTime: setFxDelayTime,
+    fxDelayFeedback: setFxDelayFeedback,
+  };
+
+  const appliquerParamEffet = (nom: keyof ParamsEffets, valeur: number | "soft" | "fold") => {
+    updateParam(nom, valeur, SETTERS_EFFETS[nom]);
+  };
+
   const updateParam = (key: string, val: any, setter: (v: any) => void) => {
     (paramsRef.current as any)[key] = val;
     setter(val);
@@ -2933,100 +2961,21 @@ export default function AudioPluginRack({
             {/* Effets globaux : appliques APRES les moteurs, donc a la superposition
                 entiere. Ils traversent le rendu hors ligne comme le jeu — un sample
                 fabrique porte exactement les memes effets que ce qu'on entend. */}
-            <div className="fx-globaux">
-              <div className="fx-titre">🎛️ EFFETS GLOBAUX</div>
-              <div className="fx-groupe">
-                <span className="fx-groupe-nom">SATURATION</span>
-                <label>MIX {fxDriveMix}%
-                  <input type="range" min={0} max={100} value={fxDriveMix}
-                    onChange={(e) => updateParam("fxDriveMix", Number(e.target.value), setFxDriveMix)} />
-                </label>
-                <label>GAIN {fxDriveAmount}%
-                  <input type="range" min={0} max={100} value={fxDriveAmount} disabled={fxDriveMix === 0}
-                    onChange={(e) => updateParam("fxDriveAmount", Number(e.target.value), setFxDriveAmount)} />
-                </label>
-                <div className="fx-modes">
-                  {(["soft", "fold"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      className={`fx-mode-btn ${fxDriveMode === m ? "actif" : ""}`}
-                      disabled={fxDriveMix === 0}
-                      onClick={() => updateParam("fxDriveMode", m, setFxDriveMode)}
-                      title={m === "soft" ? "Écrêtage doux, façon lampe" : "Repliement : le signal se replie au lieu d'écrêter"}
-                    >
-                      {m === "soft" ? "DOUX" : "REPLI"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="fx-groupe">
-                <span className="fx-groupe-nom">CHORUS</span>
-                <label>MIX {fxChorusMix}%
-                  <input type="range" min={0} max={100} value={fxChorusMix}
-                    onChange={(e) => updateParam("fxChorusMix", Number(e.target.value), setFxChorusMix)} />
-                </label>
-                <label>VITESSE {(fxChorusRate / 10).toFixed(1)} Hz
-                  <input type="range" min={1} max={80} value={fxChorusRate} disabled={fxChorusMix === 0}
-                    onChange={(e) => updateParam("fxChorusRate", Number(e.target.value), setFxChorusRate)} />
-                </label>
-                <label>PROFONDEUR {fxChorusDepth} ms
-                  <input type="range" min={0} max={10} value={fxChorusDepth} disabled={fxChorusMix === 0}
-                    onChange={(e) => updateParam("fxChorusDepth", Number(e.target.value), setFxChorusDepth)} />
-                </label>
-              </div>
-              <div className="fx-groupe">
-                <span className="fx-groupe-nom">DELAY</span>
-                <label>MIX {fxDelayMix}%
-                  <input type="range" min={0} max={100} value={fxDelayMix}
-                    onChange={(e) => updateParam("fxDelayMix", Number(e.target.value), setFxDelayMix)} />
-                </label>
-                <label>TEMPS {fxDelayTime} ms
-                  <input type="range" min={20} max={1200} step={10} value={fxDelayTime} disabled={delaySync}
-                    onChange={(e) => updateParam("fxDelayTime", Number(e.target.value), setFxDelayTime)} />
-                </label>
-                <div className="fx-sync">
-                  <button
-                    type="button"
-                    className={`fx-sync-btn ${delaySync ? "actif" : ""}`}
-                    onClick={() => setDelaySync(!delaySync)}
-                    title={`Cale le delay sur le tempo du studio (${bpmHote} BPM)`}
-                  >
-                    SYNC {delaySync ? `· ${bpmHote} BPM` : ""}
-                  </button>
-                  <select
-                    className="fx-sync-div"
-                    value={delayDivision}
-                    disabled={!delaySync}
-                    onChange={(e) => setDelayDivision(e.target.value as Division)}
-                    title="Division musicale"
-                  >
-                    {ORDRE_DIVISIONS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
-                </div>
-                <label>RETOUR {fxDelayFeedback}%
-                  <input type="range" min={0} max={100} value={fxDelayFeedback}
-                    onChange={(e) => updateParam("fxDelayFeedback", Number(e.target.value), setFxDelayFeedback)} />
-                </label>
-              </div>
-              <div className="fx-groupe">
-                <span className="fx-groupe-nom">ÉGALISEUR</span>
-                <label>GRAVES {fxEqLow > 0 ? "+" : ""}{fxEqLow} dB
-                  <input type="range" min={-18} max={18} value={fxEqLow}
-                    onChange={(e) => updateParam("fxEqLow", Number(e.target.value), setFxEqLow)} />
-                </label>
-                <label>MÉDIUMS {fxEqMid > 0 ? "+" : ""}{fxEqMid} dB
-                  <input type="range" min={-18} max={18} value={fxEqMid}
-                    onChange={(e) => updateParam("fxEqMid", Number(e.target.value), setFxEqMid)} />
-                </label>
-                <label>AIGUS {fxEqHigh > 0 ? "+" : ""}{fxEqHigh} dB
-                  <input type="range" min={-18} max={18} value={fxEqHigh}
-                    onChange={(e) => updateParam("fxEqHigh", Number(e.target.value), setFxEqHigh)} />
-                </label>
-              </div>
-            </div>
+            {/* Le rack d'effets rend sa propre interface. Elle vivait ici, dans le
+                ventre du rack de moteurs : la separation n'existait qu'a moitie. */}
+            <RackEffets params={{
+              fxDriveMix, fxDriveAmount, fxDriveMode,
+              fxEqLow, fxEqMid, fxEqHigh,
+              fxChorusMix, fxChorusRate, fxChorusDepth,
+              fxDelayMix, fxDelayTime, fxDelayFeedback,
+            }}
+              onParam={appliquerParamEffet}
+              delaySync={delaySync}
+              onDelaySync={setDelaySync}
+              delayDivision={delayDivision}
+              onDelayDivision={setDelayDivision}
+              bpmHote={bpmHote}
+            />
 
             <div className="waveform-display-box">
               <div className="vis-info-bar">

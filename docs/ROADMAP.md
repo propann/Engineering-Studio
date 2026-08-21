@@ -586,6 +586,29 @@ reaches everything that listens.
         (not harmless) meant editing the test at the same spot — no friction at
         all. The new one checks what matters: feedback stays strictly below 1
         for every slider value.
+  - [x] **Every rack carries its own interface** (2026-08-22). The user's word for
+        it was balance — *c'est comme de la musique, il faut de l'équilibre* —
+        and the imbalance was concrete: the effects logic had been extracted but
+        its 94 lines of controls still lived in the middle of the engines rack.
+        The separation existed by half, and nothing stopped the next one from
+        moving back in. A test forbids it now: no `fx-groupe` may reappear in the
+        engines rack.
+        The interface racks are **controlled, not autonomous** — they receive
+        their values and return their changes. Not a convenience: patches write
+        effect settings, so the engines rack has to push them down. A component
+        owning its own state would show the previous setting after a patch
+        change. Same shape as `SelecteurGamme`.
+  - [x] **All the scales** (2026-08-22) — 29 in `packages/musique`, shared so the
+        studios can reach them, which is the precondition for the selector being
+        placeable anywhere. Full major modes, harmonic and melodic minor, the
+        symmetric scales, nine world scales, three jazz. One correction on the
+        way: what was labelled "japonaise (in sen)" was in fact miyako-bushi —
+        right degrees, wrong name. Both now exist under their own.
+        `ORDRE_GAMMES` is *derived* from the families: two lists would diverge on
+        the first scale added, and the missing one would simply be absent from
+        the menu with no error anywhere. The tests check musical correctness, not
+        just shape — modes against rotations of the major scale, symmetric scales
+        against their own transposition.
   - [ ] **Flanger and phaser** — the chorus is in, the other two modulations are
         not.
   - [ ] **Multi-tap delay** (module 2) — single tap plus tempo SYNC today.

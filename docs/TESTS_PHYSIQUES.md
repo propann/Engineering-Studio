@@ -215,6 +215,19 @@ ce qui écoute : le rack de moteurs, l'OP‑1, l'EP‑133, les machines branché
 - [ ] une note jouée au clavier physique **et** arpégée ne se coupe pas
       elle-même (préfixes de voix distincts)
 
+### Les 29 gammes et le sélecteur
+Menu **Gamme** du rack MIDI, groupé par familles.
+
+- [ ] les sept familles apparaissent comme des groupes dans le menu
+- [ ] taper « dor » au clavier menu ouvert saute à Dorien — c'est pour ça que
+      c'est un `<select>` natif et pas un menu maison
+- [ ] **chaque famille sonne différemment.** Le test qui compte : tenir un
+      accord, passer de pentatonique mineure à Hongroise mineure sans rien
+      toucher d'autre. Si ça sonne pareil, la quantification ne s'applique pas
+- [ ] la chromatique ne change **rien** — c'est « aucune contrainte »
+- [ ] changer de tonique déplace bien la gamme entière
+
+
 ### Le rack d'effets — saturation et chorus
 Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
 

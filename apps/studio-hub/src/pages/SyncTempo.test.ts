@@ -22,6 +22,10 @@ import { describe, expect, it } from "vitest";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const RACK = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
 const CSS = readFileSync(path.join(DIR, "audio-plugin-rack.css"), "utf-8");
+// L'interface du delai vit dans le rack d'effets : chaque rack porte la sienne.
+// Ces tests lisent donc deux sources — le rack de moteurs pour l'ecoute du
+// tempo, le rack d'effets pour les commandes.
+const EFFETS_UI = readFileSync(path.join(DIR, "..", "racks", "RackEffets.tsx"), "utf-8");
 
 describe("le rack ecoute le tempo de l'hote", () => {
   it("lit bien le source du rack", () => {
@@ -71,24 +75,26 @@ describe("l'interface du delay synchronise", () => {
   it("desactive le curseur TEMPS quand SYNC est actif", () => {
     // Sinon on peut le bouger : la valeur saute, puis revient au prochain
     // recalage. Un controle qui ne tient pas ce qu'on lui donne.
-    const i = RACK.indexOf("TEMPS {fxDelayTime} ms");
-    expect(RACK.slice(i, i + 300)).toContain("disabled={delaySync}");
+    const i = EFFETS_UI.indexOf("TEMPS {params.fxDelayTime} ms");
+    expect(i).toBeGreaterThan(-1);
+    expect(EFFETS_UI.slice(i, i + 300)).toContain("disabled={delaySync}");
   });
 
   it("verrouille le choix de division tant que SYNC est inactif", () => {
-    const i = RACK.indexOf('className="fx-sync-div"');
-    expect(RACK.slice(i, i + 200)).toContain("disabled={!delaySync}");
+    const i = EFFETS_UI.indexOf('className="fx-sync-div"');
+    expect(i).toBeGreaterThan(-1);
+    expect(EFFETS_UI.slice(i, i + 200)).toContain("disabled={!delaySync}");
   });
 
   it("affiche le tempo sur lequel il cale", () => {
     // Un « SYNC » allume sans chiffre laisse croire que ca marche alors que le
     // rack peut etre reste sur son 120 par defaut, faute de studio hote.
-    expect(RACK).toContain("`· ${bpmHote} BPM`");
+    expect(EFFETS_UI).toContain("`· ${bpmHote} BPM`");
   });
 
   it("propose toutes les divisions, sans liste ecrite en dur", () => {
     // Une seconde liste divergerait de ORDRE_DIVISIONS a la premiere retouche.
-    expect(RACK).toContain("ORDRE_DIVISIONS.map((d) => (");
+    expect(EFFETS_UI).toContain("ORDRE_DIVISIONS.map((d) => (");
   });
 
   it("les classes rendues ont une regle CSS", () => {

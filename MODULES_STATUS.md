@@ -36,11 +36,23 @@ tout le reste :
 - **Le rack s'ouvre dans les deux studios.** Onglet RACK côté EP‑133, menu vue →
   « Afficher Rack Audio » côté OP‑1. Le panneau OP‑1 part replié : le rack monte
   un AudioContext et pose ses écouteurs clavier sur `window`.
-- **Trois racks, trois métiers.** Le **rack MIDI** (panneau du hub) produit les
-  notes — arpégiateur, gammes, pentatoniques. Le **rack de moteurs** en fait du
-  son. Le **rack d'effets** (`core/audio/effets.ts`) le traite. C'est ce qui
-  décide de l'emplacement d'une fonction : un arpégiateur posé dans le rack de
-  moteurs n'arpégerait que lui ; d'où il est, il atteint tout ce qui écoute.
+- **Trois racks, trois métiers — et chacun porte son interface.** Le **rack
+  MIDI** produit les notes (arpégiateur, 29 gammes, `packages/musique`). Le
+  **rack de moteurs** en fait du son. Le **rack d'effets** le traite
+  (`core/audio/effets.ts` pour la chaîne, `racks/RackEffets.tsx` pour ses
+  commandes). C'est ce qui décide de l'emplacement d'une fonction : un
+  arpégiateur posé dans le rack de moteurs n'arpégerait que lui.
+
+  La règle vaut aussi pour l'interface. Tant que les 94 lignes de commandes
+  d'effets vivaient au milieu du rack de moteurs, la séparation n'existait qu'à
+  moitié — et rien n'empêchait la suivante d'y retourner. Un test l'interdit
+  maintenant : aucun `fx-groupe` ne peut réapparaître dans le rack de moteurs.
+
+  Les racks d'interface sont **contrôlés, pas autonomes** : ils reçoivent leurs
+  valeurs et rendent leurs changements. Les patches écrivent les réglages
+  d'effets, donc le rack de moteurs doit pouvoir les pousser vers le bas ; un
+  composant qui posséderait son état afficherait l'ancien réglage après un
+  changement de patch. Même forme pour `SelecteurGamme`.
 - **Le delay se cale sur le tempo du studio hôte** (bouton SYNC). Le rack n'a pas
   de transport à lui — rien à démarrer ni à arrêter — donc c'est la seule
   synchronisation qui ait un sens aujourd'hui.
