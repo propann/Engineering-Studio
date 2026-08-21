@@ -167,6 +167,21 @@ maintenant le chemin complet.
       fichiers y sont
 - [ ] vérifier que `manifest.json` est à côté du dossier `files/`
 
+### Reconnaissance du support machine
+Après avoir choisi un dossier, le coffre dit s'il ressemble à la machine
+attendue : « ✅ OP‑1 reconnu — tape, album, drum, synth ».
+
+- [ ] désigner le vrai disque OP-1 → reconnu, les quatre catégories listées
+- [ ] désigner un dossier quelconque → avertissement, **sans blocage**
+- [ ] un OP-1 dont un dossier est vide reste reconnu — un dossier vide est un
+      emplacement libre, pas une absence
+
+> Le navigateur **ne peut pas** énumérer les disques : aucune API ne le permet,
+> et c'est délibéré — une page web ne doit pas pouvoir explorer un ordinateur.
+> Le sélecteur natif reste donc obligatoire. La reconnaissance se fait après
+> coup, et c'est ce qui évite de désigner le mauvais dossier sans s'en
+> apercevoir.
+
 ### Les dossiers vides sont copiés
 Corrigé le 2026-08-21 : `collectFiles` ne rapportait que des fichiers, donc un
 dossier vide n'était ni sauvegardé ni restauré. La structure revenait amputée —

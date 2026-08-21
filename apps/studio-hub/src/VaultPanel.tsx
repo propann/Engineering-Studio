@@ -393,6 +393,62 @@ export type ScanSource = {
 };
 
 /**
+ * Reconnait la machine d'apres ce qu'un scan a trouve.
+ *
+ * Le navigateur ne peut PAS enumerer les disques : aucune API ne le permet, et
+ * c'est deliberé — une page web ne doit pas pouvoir explorer un ordinateur. Le
+ * selecteur natif reste donc obligatoire.
+ *
+ * Ce qu'on peut faire, en revanche, c'est confirmer APRES coup que le dossier
+ * choisi ressemble bien a la machine attendue. C'est ce qui evite l'erreur
+ * couteuse : designer le mauvais dossier et le decouvrir apres l'ecriture.
+ */
+export type Reconnaissance = {
+  /** Le dossier porte-t-il la structure attendue ? */
+  reconnu: boolean;
+  /** Categories effectivement trouvees, vides comprises. */
+  presentes: BackupCategory[];
+  /** Categories attendues et introuvables. */
+  manquantes: BackupCategory[];
+  /** Message court, pret a afficher. */
+  libelle: string;
+};
+
+export function reconnaitreMachine(scan: ScanSource, machine: MachineId): Reconnaissance {
+  // « absente » signifie que le dossier n'existe pas. Un dossier vide compte
+  // comme present : sur une OP-1, c'est un emplacement libre, pas une absence.
+  const presentes = scan.categories.filter((c) => c.etat !== "absente").map((c) => c.categorie);
+  const manquantes = scan.categories.filter((c) => c.etat === "absente").map((c) => c.categorie);
+
+  // Une seule categorie ne suffit pas : n'importe quel dossier nomme « synth »
+  // passerait. Deux, c'est deja une structure.
+  const reconnu = presentes.length >= 2;
+  const nom = machine === "op1" ? "OP‑1" : "EP‑133";
+
+  if (reconnu && !manquantes.length) {
+    return { reconnu, presentes, manquantes, libelle: `✅ ${nom} reconnu — ${presentes.join(", ")}` };
+  }
+  if (reconnu) {
+    return {
+      reconnu,
+      presentes,
+      manquantes,
+      libelle: `✅ ${nom} reconnu — ${presentes.join(", ")} · manque ${manquantes.join(", ")}`,
+    };
+  }
+  return {
+    reconnu,
+    presentes,
+    manquantes,
+    // Ne pas refuser : un dossier de travail personnel est un choix legitime.
+    // On signale, on ne bloque pas.
+    libelle: presentes.length
+      ? `⚠️ Ne ressemble pas a un ${nom} — seul ${presentes.join(", ")} trouve`
+      : `⚠️ Aucun dossier de ${nom} ici (${manquantes.join(", ")} introuvables)`,
+  };
+}
+
+/**
  * Inventorie la source, categorie par categorie.
  *
  * L'ancien scan additionnait tout en un seul total et avalait les categories
@@ -1073,12 +1129,38 @@ async function createBackup() {
   }
 
   return <section className={`vault-panel ${compact ? "vault-panel-compact" : ""}`} id={`atelier-vault-${machine}`}>
-    <div className="vault-header"><div><span className="section-kicker">COFFRE {machine === "op1" ? "OP‑1" : "EP‑133"}</span><h2>Gérer les sauvegardes</h2><p className="muted">Coche les catégories à archiver. Les fichiers restent dans ton workspace local.</p></div>{showWorkspace && <div className="vault-workspace"><span>SAUVEGARDES · CET ORDINATEUR</span><strong>{workspaceHandle ? workspaceHandle.name : "Non connecté"}</strong><button className="secondary-button" onClick={() => void chooseWorkspace()}>{workspaceHandle ? "Changer" : "Connecter"}</button></div>}</div>
+    <div className="vault-header"><div><span className="section-kicker">COFFRE {machine === "op1" ? "OP‑1" : "EP‑133"}</span><h2>Gérer les sauvegardes</h2><p className="muted">Coche les catégories à archiver. Les fichiers restent dans ton workspace local.</p></div>{showWorkspace && (
+      // Une fois choisi, il est memorise d'une visite a l'autre : l'afficher en
+      // permanence encombre pour un reglage qu'on ne touche plus. Reduit a une
+      // ligne discrete, mais jamais masque — l'utilisateur doit pouvoir voir ou
+      // ses sauvegardes atterrissent.
+      workspaceHandle ? (
+        <button
+          type="button"
+          className="vault-workspace-discret"
+          title="Changer le dossier où sont rangées les sauvegardes"
+          onClick={() => void chooseWorkspace()}
+        >
+          💾 {workspaceHandle.name}
+        </button>
+      ) : (
+        <div className="vault-workspace">
+          <span>SAUVEGARDES · CET ORDINATEUR</span>
+          <strong>Non connecté</strong>
+          <button className="secondary-button" onClick={() => void chooseWorkspace()}>Connecter</button>
+        </div>
+      )
+    )}</div>
     {!compact && <div className="vault-machine-tabs" role="tablist">{(["op1", "ep133"] as MachineId[]).map((id) => <button type="button" key={id} className={machine === id ? "active" : ""} onClick={() => setMachine(id)}>{id === "op1" ? "🎛️ OP‑1" : "🥁 EP‑133"}</button>)}</div>}
     <div className="vault-grid">
       <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SCANNER ET SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button type="button" className="secondary-button" onClick={() => void chooseSource()}>{source ? "Relancer le scan" : supportMachine}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Depuis : ${sourceName}` : `Choisis le ${supportMachine.toLowerCase()} à sauvegarder`}</p>{sourceScan && (
         <div className="vault-scan-result" aria-live="polite">
-          <span className="scan-ok">✓ DOSSIER LOCAL INSPECTÉ</span>
+          {/* Le navigateur ne peut pas enumerer les disques : on ne detecte
+              donc rien avant le choix. Mais on confirme APRES, ce qui evite de
+              designer le mauvais dossier et de s'en apercevoir apres coup. */}
+          <span className={reconnaitreMachine(sourceScan, machine).reconnu ? "scan-ok" : "scan-doute"}>
+            {reconnaitreMachine(sourceScan, machine).libelle}
+          </span>
           <strong>{sourceScan.fichiers} fichiers</strong>
           <strong>{formatBytes(sourceScan.octets)}</strong>
           <small>Lecture seule — aucune écriture sur la source</small>
