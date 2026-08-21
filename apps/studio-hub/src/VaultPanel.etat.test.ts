@@ -239,6 +239,50 @@ describe("le message de succes dit OU", () => {
   });
 });
 
+describe("libelles honnetes", () => {
+  /**
+   * Regle produit du projet, dans docs/backup/CONTRAT_INTEGRATION.md :
+   *
+   *   « L'interface ne doit jamais laisser croire qu'une machine a ete lue ou
+   *     ecrite quand l'application n'a fait qu'inspecter ou copier un dossier
+   *     local. »
+   *
+   * Deux pieges concrets que ces tests ferment :
+   *
+   * - L'espace de sauvegarde est un dossier de l'ORDINATEUR, pas le disque de
+   *   la machine. Le nommer « Disque OP-1 » ferait choisir la machine comme
+   *   destination de sa propre sauvegarde : elle s'ecrirait sur elle-meme.
+   * - L'EP-133 n'a AUCUN mode disque, ses sons passent par SysEx. Parler de
+   *   « disque EP-133 » serait faux.
+   */
+  const SRC = readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "VaultPanel.tsx"),
+    "utf-8"
+  );
+
+  it("ne parle jamais de disque pour l'EP-133", () => {
+    expect(SRC).toContain('machine === "op1" ? "Disque OP‑1" : "Dossier EP‑133"');
+  });
+
+  it("dit que les sauvegardes sont sur l'ordinateur", () => {
+    // Et non sur la machine : c'est la distinction que la regle protege.
+    expect(SRC).toContain("SAUVEGARDES · CET ORDINATEUR");
+  });
+
+  it("ne nomme pas l'espace de sauvegarde d'apres une machine", () => {
+    // Le libelle de l'espace ne doit pas etre `supportMachine` : ce serait
+    // exactement l'inversion que la regle interdit.
+    const entete = SRC.slice(SRC.indexOf("vault-workspace"), SRC.indexOf("vault-machine-tabs"));
+    expect(entete).not.toContain("supportMachine");
+  });
+
+  it("nomme le support de la machine pour la source et la cible", () => {
+    // La, c'est juste : on lit et on ecrit bien sur le support de la machine.
+    expect(SRC).toContain("à sauvegarder");
+    expect(SRC).toContain("à restaurer");
+  });
+});
+
 describe("verifierSnapshot", () => {
   const relus = [{ id: "a", fileCount: 10, totalBytes: 1000 }];
 
