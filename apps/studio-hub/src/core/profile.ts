@@ -147,3 +147,51 @@ export function profilLePlusRecent(
     return d !== 0 ? d : a.fichier.localeCompare(b.fichier);
   })[0];
 }
+
+
+// =====================================================================
+// MACHINES DÉCLARÉES DANS LA FICHE
+// =====================================================================
+
+export type MachineDeclaree = "op1" | "ep133";
+
+/**
+ * Machines que l'utilisateur a réellement déclarées.
+ *
+ * Le coffre affichait les deux colonnes quoi qu'il arrive. Quelqu'un qui ne
+ * possède qu'une EP-133 voyait donc une colonne OP-1 vide, avec ses boutons
+ * actifs — une invitation à sauvegarder une machine qu'il n'a pas.
+ *
+ * Deux sources dans la fiche, et il faut les deux :
+ *  - `machineInventory` : la liste détaillée, avec modèle et mémoire.
+ *  - `machines` : le résumé, avec un drapeau `enabled` par machine.
+ *
+ * Une fiche ancienne peut ne porter que l'un des deux. N'en lire qu'un ferait
+ * disparaître une machine réellement déclarée — pire défaut que d'en afficher
+ * une de trop.
+ */
+export function machinesDeclarees(profile: StudioProfile | null): MachineDeclaree[] {
+  if (!profile) return [];
+  const vues = new Set<MachineDeclaree>();
+
+  const inventaire = profile.machineInventory;
+  if (Array.isArray(inventaire)) {
+    for (const item of inventaire) {
+      if (!isRecord(item)) continue;
+      // `active: false` reste une machine possédée, simplement débranchée : on
+      // l'affiche. C'est `enabled` du résumé qui traduit un choix explicite.
+      if (item.kind === "op1" || item.kind === "ep133") vues.add(item.kind);
+    }
+  }
+
+  const resume = profile.machines;
+  if (isRecord(resume)) {
+    for (const kind of ["op1", "ep133"] as MachineDeclaree[]) {
+      const entree = resume[kind];
+      if (isRecord(entree) && entree.enabled === true) vues.add(kind);
+    }
+  }
+
+  // Ordre stable : l'OP-1 d'abord, comme dans l'interface.
+  return (["op1", "ep133"] as MachineDeclaree[]).filter((m) => vues.has(m));
+}

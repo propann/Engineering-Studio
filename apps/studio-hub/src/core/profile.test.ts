@@ -8,6 +8,7 @@ import {
   readProfile,
   readProfileName,
   writeProfile,
+  machinesDeclarees,
 } from "./profile";
 
 /**
@@ -167,5 +168,65 @@ describe("readProfileName", () => {
   it("accepte un repli sur mesure", () => {
     installStorage();
     expect(readProfileName("Invite")).toBe("Invite");
+  });
+});
+
+describe("machinesDeclarees", () => {
+  const fiche = (o: Record<string, unknown>) => ({ version: 2, name: "x", bio: "", ...o }) as any;
+
+  it("rend une liste vide sans fiche", () => {
+    expect(machinesDeclarees(null)).toEqual([]);
+  });
+
+  it("rend une liste vide quand rien n'est declare", () => {
+    expect(machinesDeclarees(fiche({}))).toEqual([]);
+  });
+
+  it("lit l'inventaire detaille", () => {
+    expect(machinesDeclarees(fiche({ machineInventory: [{ kind: "ep133" }] }))).toEqual(["ep133"]);
+  });
+
+  it("lit aussi le resume, quand l'inventaire est absent", () => {
+    // Une fiche ancienne peut ne porter que l'un des deux. N'en lire qu'un
+    // ferait disparaitre une machine reellement declaree.
+    expect(machinesDeclarees(fiche({ machines: { op1: { enabled: true } } }))).toEqual(["op1"]);
+  });
+
+  it("fusionne les deux sources sans doublon", () => {
+    const m = machinesDeclarees(
+      fiche({ machineInventory: [{ kind: "op1" }], machines: { op1: { enabled: true } } })
+    );
+    expect(m).toEqual(["op1"]);
+  });
+
+  it("garde une machine declaree mais inactive", () => {
+    // `active: false` signifie debranchee, pas absente : elle reste possedee.
+    expect(machinesDeclarees(fiche({ machineInventory: [{ kind: "op1", active: false }] }))).toEqual(["op1"]);
+  });
+
+  it("ignore un resume ou enabled est faux", () => {
+    expect(machinesDeclarees(fiche({ machines: { op1: { enabled: false } } }))).toEqual([]);
+  });
+
+  it("exige enabled exactement true, pas seulement truthy", () => {
+    expect(machinesDeclarees(fiche({ machines: { op1: { enabled: "oui" } } }))).toEqual([]);
+  });
+
+  it("rend les deux dans un ordre stable", () => {
+    // L'OP-1 d'abord, comme dans l'interface : un ordre qui change d'un
+    // chargement a l'autre deplacerait les colonnes sous la souris.
+    const m = machinesDeclarees(fiche({ machineInventory: [{ kind: "ep133" }, { kind: "op1" }] }));
+    expect(m).toEqual(["op1", "ep133"]);
+  });
+
+  it("ignore les entrees malformees de l'inventaire", () => {
+    const m = machinesDeclarees(
+      fiche({ machineInventory: [null, "casse", { kind: "inconnu" }, { kind: "op1" }] })
+    );
+    expect(m).toEqual(["op1"]);
+  });
+
+  it("ne plante pas si machineInventory n'est pas un tableau", () => {
+    expect(machinesDeclarees(fiche({ machineInventory: "casse" }))).toEqual([]);
   });
 });

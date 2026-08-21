@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { TopBar } from "../components/TopBar";
-import { readProfile, DEFAULT_PROFILE_NAME, type StudioProfile } from "../core/profile";
+import { readProfile, DEFAULT_PROFILE_NAME, machinesDeclarees, type StudioProfile } from "../core/profile";
 import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { VaultPanel, type MachineId } from "../VaultPanel";
 import "./backup-lab.css";
@@ -22,6 +22,15 @@ export default function BackupLab() {
   const [workspaceHandle, setWorkspaceHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [workspaceName, setWorkspaceName] = useState(profile?.workspace?.name ?? "");
   const [lastBackup, setLastBackup] = useState<MachineId | null>(null);
+  /**
+   * Machines reellement declarees dans la fiche.
+   *
+   * Les deux colonnes s'affichaient quoi qu'il arrive : quelqu'un qui ne possede
+   * qu'une EP-133 voyait une colonne OP-1 vide avec ses boutons actifs, ce qui
+   * l'invitait a sauvegarder une machine qu'il n'a pas.
+   */
+  const declarees = machinesDeclarees(profile);
+
   const drives = Array.isArray(profile?.drives) ? profile.drives as DriveRecord[] : [];
   const machineSummary = profile?.machines as Record<MachineId, { enabled?: boolean }> | undefined;
 
@@ -72,9 +81,15 @@ export default function BackupLab() {
 
       <section className="backup-columns-section" aria-labelledby="backup-columns-title">
         <div className="backup-section-heading"><div><span>01 · DEUX MACHINES · UN COFFRE</span><h2 id="backup-columns-title">Choisis ce que tu veux sauver</h2></div><p>Les colonnes sont indépendantes. Une machine peut être sauvegardée sans toucher à l’autre.</p></div>
-        <div className="backup-machine-columns">
-          <BackupMachineColumn kind="op1" profileMachines={profileMachines(profile, "op1")} enabled={Boolean(machineSummary?.op1?.enabled)} workspaceHandle={workspaceHandle} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setWorkspaceName(name); }} onBackupRecorded={setLastBackup} showWorkspace />
-          <BackupMachineColumn kind="ep133" profileMachines={profileMachines(profile, "ep133")} enabled={Boolean(machineSummary?.ep133?.enabled)} workspaceHandle={workspaceHandle} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setWorkspaceName(name); }} onBackupRecorded={setLastBackup} />
+        <div className={`backup-machine-columns ${declarees.length === 1 ? "une-machine" : ""}`}>
+          {declarees.includes("op1") && <BackupMachineColumn kind="op1" profileMachines={profileMachines(profile, "op1")} enabled={Boolean(machineSummary?.op1?.enabled)} workspaceHandle={workspaceHandle} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setWorkspaceName(name); }} onBackupRecorded={setLastBackup} showWorkspace />}
+          {declarees.includes("ep133") && <BackupMachineColumn kind="ep133" profileMachines={profileMachines(profile, "ep133")} enabled={Boolean(machineSummary?.ep133?.enabled)} workspaceHandle={workspaceHandle} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setWorkspaceName(name); }} onBackupRecorded={setLastBackup} />}
+            {!declarees.length && (
+              <p className="backup-aucune-machine">
+                Aucune machine déclarée dans ta fiche. Ajoute-la depuis la fiche
+                de personnage pour voir apparaître son coffre ici.
+              </p>
+            )}
         </div>
         {lastBackup && <div className="backup-lab-confirmation">✓ Dernier snapshot enregistré : {lastBackup.toUpperCase()} · les deux colonnes restent disponibles.</div>}
       </section>

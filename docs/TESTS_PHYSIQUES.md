@@ -158,6 +158,26 @@ sur `http://192.168.2.59:3000` — `requestMIDIAccess` ne renvoie aucun appareil
 sans message d'erreur. Chercher une panne là serait chercher une panne qui
 n'existe pas.
 
+### Le coffre n'affiche que tes machines
+Les deux colonnes s'affichaient quoi qu'il arrive : quelqu'un ne possédant
+qu'une EP‑133 voyait une colonne OP‑1 vide, boutons actifs — une invitation à
+sauvegarder une machine qu'il n'a pas.
+
+- [ ] avec une seule machine déclarée, une seule colonne s'affiche, centrée
+- [ ] avec les deux, les deux colonnes reviennent
+- [ ] sans aucune machine déclarée, un message renvoie à la fiche de personnage
+- [ ] ajouter une machine dans la fiche la fait apparaître ici
+
+### Jauge de remplissage
+- [ ] le pourcentage correspond à ce que la machine annonce elle-même
+- [ ] la jauge passe en orange au-delà de 90 %
+
+> La capacité est une **constante**, pas une mesure : le navigateur ne peut pas
+> lire la taille d'un volume. 384 Mo pour l'OP‑1 (relevé matériel), 64 ou 128 Mo
+> pour l'EP‑133 selon ce que dit ta fiche. D'où « sur environ ». Si le
+> pourcentage semble faux, c'est le modèle déclaré dans la fiche qu'il faut
+> vérifier.
+
 ### Reconnaissance du support machine
 Après avoir choisi un dossier, le coffre dit s'il ressemble à la machine
 attendue : « ✅ OP‑1 reconnu — tape, album, drum, synth ».
