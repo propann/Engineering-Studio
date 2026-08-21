@@ -17,6 +17,7 @@ import {
 } from "@studio-hub/core/audio/dsp";
 import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
+import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import {
   ajouterEtiquette,
   basculerFavori,
@@ -2050,80 +2051,50 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
 
   // WEB MIDI & PC KEYBOARD EVENT LISTENERS
   useEffect(() => {
-    // 1. Web MIDI
-    //
-    // requestMIDIAccess ne liste que les appareils présents à l'instant T.
-    // Sans onstatechange, brancher l'OP-1 après le chargement de la page
-    // n'aurait aucun effet.
-    let midiAccess: any = null;
-
-    const bindInput = (input: any) => {
-      // Ouverture explicite : un port peut etre liste mais refuser de
-      // s'ouvrir (deja pris par une autre application, par exemple).
-      try {
-        void input.open?.();
-      } catch (error) {
-        log.warn("input.open a echoue", { name: input.name, error });
-      }
-      input.onmidimessage = (msg: any) => {
-        // Tout premier geste : figer l'instant d'entree. Ce qui suit compte.
+      // 1. Web MIDI, par le repartiteur partage.
+      //
+      // Le rack ouvrait son propre acces et ecrivait `input.onmidimessage`
+      // directement. Deux problemes, qui interdisaient toute cohabitation :
+      //
+      //  - `onmidimessage` est une propriete unique : le dernier qui ecrit
+      //    gagne. Le rack et un studio ne pouvaient pas recevoir tous les deux.
+      //  - son nettoyage faisait `inputs.forEach(i => i.onmidimessage = null)`,
+      //    effacant AUSSI les gestionnaires du studio hote. Fermer le rack
+      //    coupait le MIDI de la page qui restait.
+      //
+      // Le repartiteur rend un desabonnement qui ne retire que cet auditeur.
+      const seDesabonner = sAbonner(({ donnees, port }) => {
         const tEntree = performance.now();
-        const [command, note, velocity] = msg.data;
+        const [command, note, velocity] = donnees;
         diagRef.current?.setDernierMessage(
-          `[${Array.from(msg.data as Uint8Array).map((b) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] ${input.name ?? ""}`
+          `[${Array.from(donnees).map((b: number) => "0x" + b.toString(16).padStart(2, "0")).join(" ")}] ${port}`
         );
         const kind = command & 0xf0; // ignore le canal MIDI
         const voiceId = `midi:${note}`;
         if (kind === 0x90 && velocity > 0) {
           const freq = 440 * Math.pow(2, (note - 69) / 12);
           playPluginNote(freq, voiceId);
-          mesurerLatence(tEntree, msg.timeStamp);
+          mesurerLatence(tEntree, undefined);
         } else if (kind === 0x80 || (kind === 0x90 && velocity === 0)) {
-          // 0x80 = note-off ; 0x90 vélocité 0 = note-off déguisé, que
-          // beaucoup de claviers envoient à la place.
+          // 0x80 = note-off ; 0x90 velocite 0 = note-off deguise, que beaucoup
+          // de claviers envoient a la place.
           releaseVoice(voiceId);
         }
-      };
-    };
-
-    const refreshInputs = () => {
-      if (!midiAccess) return;
-      const names: string[] = [];
-      midiAccess.inputs.forEach((input: any) => {
-        bindInput(input);
-        if (input.name) names.push(input.name);
       });
-      setMidiConnected(names.length > 0);
-      setMidiDeviceName(names.join(" · "));
-      diagRef.current?.setMidi(
-        names.length > 0,
-        names.length > 0
-          ? `${names.length} entrée(s) : ${names.join(" · ")}`
-          : "accès accordé, aucune entrée détectée"
-      );
-      log.info("MIDI inputs", { count: names.length, names });
-    };
 
-    if (navigator.requestMIDIAccess) {
-      navigator
-        .requestMIDIAccess()
-        .then((access) => {
-          midiAccess = access;
-          refreshInputs();
-          // Branchement / débranchement à chaud.
-          (access as any).onstatechange = (e: any) => {
-            log.info("MIDI state change", { port: e?.port?.name, state: e?.port?.state });
-            refreshInputs();
-          };
-        })
-        .catch((error) => {
-          diagRef.current?.setMidi(false, `accès refusé : ${(error as any)?.message ?? error}`);
-          log.warn("requestMIDIAccess refuse", error);
-        });
-    } else {
-      diagRef.current?.setMidi(false, "Web MIDI indisponible (navigateur ou contexte non sécurisé)");
-      log.warn("Web MIDI indisponible sur ce navigateur");
-    }
+      const seDesabonnerEtat = sAbonnerEtat(({ entrees, accorde, raison }) => {
+        if (!accorde) {
+          diagRef.current?.setMidi(false, raison ?? "accès refusé");
+          return;
+        }
+        diagRef.current?.setMidi(
+          entrees.length > 0,
+          entrees.length > 0
+            ? `${entrees.length} entrée(s) : ${entrees.join(" · ")}`
+            : "accès accordé, aucune entrée détectée"
+        );
+      });
+
 
     // 2. PC Computer Keyboard Fallback (A, W, S, E, D, F, T, G, Y, H, U, J, K)
     const keyToFreq: Record<string, { freq: number; note: string }> = {
@@ -2181,16 +2152,16 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       window.removeEventListener("blur", handleBlur);
       releaseAllVoices();
 
-      // Detacher le MIDI, sinon le rack continue de capter apres avoir
-      // quitte la page. onstatechange est le plus nuisible : il survit au
-      // demontage et, au prochain branchement, reattache les gestionnaires
-      // du rack par-dessus ceux de la page active, qui cesse de recevoir.
-      if (midiAccess) {
-        midiAccess.onstatechange = null;
-        midiAccess.inputs.forEach((input: any) => {
-          input.onmidimessage = null;
-        });
-      }
+      // Se desabonner du MIDI, sans jamais debrancher les ports.
+      //
+      // Ce bloc faisait auparavant `inputs.forEach(i => i.onmidimessage = null)`
+      // — il effacait donc AUSSI les gestionnaires des autres pages. Quitter
+      // le rack coupait le MIDI de celle qui prenait sa place : c'est
+      // exactement la panne diagnostiquee entre les deux pages de reglages.
+      //
+      // Le repartiteur rend un desabonnement qui ne retire que cet auditeur.
+      seDesabonner();
+      seDesabonnerEtat();
     };
   }, []);
 
