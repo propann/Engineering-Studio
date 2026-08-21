@@ -116,7 +116,19 @@ jobs:
     # Trivy analyse l'image PUBLIEE, qu'il recupere depuis le registre. Hors de
     # main l'image est construite mais pas poussee : il n'y aurait rien a tirer,
     # et l'etape echouerait pour une raison sans rapport avec la securite.
+    #
+    # Consequence assumee : ce job ne se verifie que sur main, contrairement aux
+    # deux autres. Il n'y a pas moyen de faire autrement sans publier depuis
+    # `validation`, ce qui encombrerait le registre.
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    # Sans cette permission, le televersement echoue sur « Resource not
+    # accessible by integration » — apres que Trivy a pourtant fini son analyse.
+    # Le job semble alors signaler un probleme de securite ; il ne signale qu'un
+    # droit manquant.
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - uses: actions/checkout@v3
@@ -128,8 +140,10 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
 
+      # v3 obligatoire : les versions 1 et 2 de l'action CodeQL sont depreciees
+      # depuis janvier 2025 et echouent desormais.
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
