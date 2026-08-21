@@ -188,6 +188,26 @@ appeared on the roadmap.
       caught three parameters an earlier manual audit had missed: `dxAlgorithm`,
       `surgeWavetable` and `fluidPreset` were read only to fill a toast string.
 
+#### Patch search wired to the rack (2026-08-21)
+- [x] Patch search connected — the rack holds 91 factory patches across 15 engines
+      plus the user's own, and had no way to search them: you scrolled. Meanwhile
+      `PatchSearchEngine` sat in modules/audio-rack-01-patch-search, fully written
+      and covered by 159 lines of green tests, imported by nobody.
+      It searched a parallel Zustand store (core/store/audioRackStore.ts) persisted
+      under "studio-hub-audio-rack", while the rack persists user patches under
+      "studio_hub_user_patches" — a different key, so the store was always empty.
+      A tested search that could never find anything, next to 91 unsearchable patches.
+      Now wired straight into AudioPluginRack via `filtrerPatches`, over the real
+      factory + user lists. Verified by sabotage: unfiltering one of the two engine
+      lists fails exactly two tests, and making an empty search return everything
+      fails exactly two more.
+- [ ] Dead duplicates left to decide — PatchSearchModule.tsx (429 lines) and
+      audioRackStore.ts (470 lines) are now redundant and have no consumer. Not
+      removed here: the panel is UI, which belongs to the other track per
+      CONTRAT_INTEGRATION.md. Either the panel gets pointed at the rack's real
+      patches and the store goes, or both files go. A warning header was added to
+      PatchSearchModule.tsx so the next reader is not misled.
+
 #### Infrastructure
 - [x] Coolify deploy steps removed from CI. They called three secrets that were
       never set, and duplicated what Coolify already does by watching the repo.
@@ -200,9 +220,26 @@ appeared on the roadmap.
 
 ---
 
-### Phase 4.4: Performance Optimization (⏳ PLANNED)
-- [ ] MIDI latency profiling (< 20ms target)
-- [ ] Audio synthesis optimization
+### Phase 4.4: Performance Optimization (🔶 4/5 — remaining item needs hardware)
+- [ ] MIDI latency profiling (< 20ms target) — blocked: needs a connected machine.
+      Deferred to the next session with hardware on the bench, together with the
+      OP-1 restore validation (see Phase 4.3).
+- [x] Audio synthesis optimization — investigated and closed with nothing to change.
+      Three hypotheses were measured rather than assumed:
+      (1) buildBitcrushCurve and buildSaturationCurve rebuild 4096-element Float32Arrays
+      on every note — measured at 13.5 us and 50.7 us per call, i.e. 6.4 ms of redundant
+      work per 100 notes. Memoizing would have added module-level state to a purely
+      functional file to save 6 ms. Not worth it. (Note for anyone revisiting:
+      buildImpulseResponse must NOT be memoized — dsp-nodes.test.ts:94 averages 40 random
+      draws and would become flaky.)
+      (2) 71 AudioNodes are created per note and only one is ever disconnected — but that
+      one is env, the last node before the master bus. Cutting it severs the subgraph's
+      only path to the destination, making all 71 collectable at once. Both exit paths
+      (VaultPanel-style held voices at :490, one-shots at :1415) do it. Correct as-is.
+      (3) No rack setState remains in playPluginNote; the diagnostic and toast writes go
+      through imperative refs that compare before writing.
+      Conclusion: the real win was already taken by the RackDiagnostic/RackToast
+      extraction below. There is no remaining synthesis bottleneck to remove.
 - [x] React component memoization — AudioPluginRack holds 99 useState and 1160 lines of
       JSX. Four diagnostic values and the toast lived in that state, so every note and
       every incoming MIDI message re-rendered the whole tree: six full renders per note.
@@ -218,7 +255,24 @@ appeared on the roadmap.
       view, deferring it would only add a spinner.
       Note: the 2 MB wavConvert chunk was already correctly deferred and documented;
       it was not the problem.
-- [ ] Load time profiling
+- [x] Load time profiling — measured on the production build, 2026-08-21.
+      Critical path is exactly two files: index-*.js (200.7 kB / 62.6 kB gzip) and
+      index-*.css (104.6 kB / 20.5 kB gzip) = 305.3 kB raw, 83.1 kB gzipped.
+      index.html emits no stray modulepreload, so no lazy route is pulled in early —
+      verified by grepping the entry chunk: it contains the string
+      "AudioPluginRack-*.js" (the lazy reference) and zero lines of rack code.
+      Transfer time for the critical path, versus before the lazy-route split:
+        slow 3G (1.6 Mbps)  1618 ms -> 425 ms
+        4G (9 Mbps)          288 ms ->  76 ms
+        fibre (50 Mbps)       52 ms ->  14 ms
+      Cross-check worth recording: Tone.js is still a dependency (7.2 MB installed,
+      package.json:20) and is genuinely used — by apps/ep133-studio AudioEngine.ts:1,
+      not by the rack, which dropped it for a native GainNode envelope. It lands in the
+      EP133StudioPage chunk (504 kB / 141 kB gzip), which is lazy. It is NOT on the
+      critical path; a substring grep for "tone" in the minified entry says otherwise
+      and is a false positive.
+      Not measured: parse/execute and first-paint timings, which need a real browser.
+      Bytes are what this profiling covers.
 
 **Est. Start**: 2026-08-23  
 **Est. Completion**: 2026-09-01

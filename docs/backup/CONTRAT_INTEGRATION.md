@@ -185,7 +185,8 @@ c'est arrivé une fois dans cette session.
 
 ## Tester
 
-192 tests, tous sur des fonctions pures exportées. Aucun test de rendu React.
+205 tests, sur des fonctions pures exportées et sur la structure du source.
+Aucun test de rendu React.
 
 ```bash
 npm test                 # local
@@ -225,7 +226,15 @@ Un test écrit sans avoir été vu échouer au moins une fois n'a pas été écr
 | Fichiers déjà identiques ignorés | ✅ |
 | Test de copie interrompue | ✅ |
 | Badges, densité, libellés | ⬜ interface |
+| Restauration validée, cible dossier local | ⬜ protocole prêt, non exécuté |
 | Restauration validée sur matériel | ⬜ jamais tentée |
 
 **La restauration vers une machine n'a jamais été validée sur du matériel.** Le
 disque de l'OP-1 se monte en lecture seule pendant les essais, délibérément.
+
+Le protocole est écrit et prêt à dérouler :
+[`PROTOCOLE_VALIDATION_RESTAURATION.md`](PROTOCOLE_VALIDATION_RESTAURATION.md).
+Il se fait en deux niveaux — d'abord vers une **copie** du dossier récupéré de
+l'OP-1 (66 fichiers, 270 Mo, aucun matériel requis), ensuite seulement vers la
+machine. Les deux lignes ci-dessus restent distinctes pour cette raison : un
+niveau A vert ne prouve rien sur l'écriture vers l'OP-1.

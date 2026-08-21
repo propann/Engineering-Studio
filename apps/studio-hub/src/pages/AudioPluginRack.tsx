@@ -15,6 +15,7 @@ import {
   buildPulseWave,
   buildSaturationCurve,
 } from "@studio-hub/core/audio/dsp";
+import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
 
 type EnginePluginType =
   // MUTABLE INSTRUMENTS EURORACK SUITE
@@ -173,6 +174,14 @@ const VIRTUAL_PIANO_KEYS = [
 export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClose }: { profileName?: string; onClose?: () => void }) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
+  // Filtre de la liste de patches. 91 patches d'usine repartis sur 15 moteurs,
+  // qu'on ne pouvait jusqu'ici que faire defiler.
+  //
+  // Un rendu du rack par frappe : acceptable ici, contrairement aux valeurs
+  // extraites dans RackDiagnostic/RackToast. Celles-la etaient ecrites A CHAQUE
+  // NOTE, sur le fil qui programme l'audio. On ne tape pas au clavier de
+  // recherche en jouant.
+  const [patchQuery, setPatchQuery] = useState<string>("");
   const [midiConnected, setMidiConnected] = useState<boolean>(false);
   const [midiDeviceName, setMidiDeviceName] = useState<string>("");
   // Diagnostic visible : on debuggait a l'aveugle via la console.
@@ -536,6 +545,23 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   };
 
   // APPLY PATCH PRESET WITH SYNCHRONOUS REF UPDATE & SOUND AUDITION
+  /**
+   * Filtre la liste de patches d'un moteur selon la recherche courante.
+   *
+   * S'appuie sur PatchSearchEngine plutot que sur un `includes()` maison : il
+   * cherche deja dans le nom, la categorie et les etiquettes, avec un
+   * classement par pertinence, et il est couvert par ses propres tests.
+   * Il etait ecrit et teste mais n'avait jamais ete branche a rien.
+   *
+   * Instancie a la demande : un seul moteur est deplie a la fois, et l'index
+   * porte sur quelques dizaines d'entrees.
+   */
+  const filtrerPatches = (liste: PatchPreset[]): PatchPreset[] => {
+    const q = patchQuery.trim();
+    if (!q) return liste;
+    return new PatchSearchEngine(liste).search(q);
+  };
+
   const applyPatch = (patch: PatchPreset) => {
     setSelectedPatchId(patch.id);
     setActiveEngine(patch.engine);
@@ -1759,6 +1785,10 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
               const factory = FACTORY_PATCHES[e.id] || [];
               const custom = userPatches.filter((p) => p.engine === e.id);
               const allPatchesForEngine = [...factory, ...custom];
+              // Liste affichee apres filtre. Le choix automatique au depliage
+              // reste sur la liste complete : ouvrir un moteur ne doit pas
+              // dependre de ce qui est tape dans la recherche.
+              const patchesAffiches = filtrerPatches(allPatchesForEngine);
 
               return (
                 <div key={e.id} className="engine-accordion-group">
@@ -1782,13 +1812,30 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                   {isSelected && (
                     <div className="unfolded-patch-list">
                       <div className="patch-list-header-row">
-                        <span className="patch-list-header">🎵 PATCHES ({allPatchesForEngine.length}) :</span>
+                        <span className="patch-list-header">
+                          🎵 PATCHES ({patchQuery.trim()
+                            ? `${patchesAffiches.length}/${allPatchesForEngine.length}`
+                            : allPatchesForEngine.length}) :
+                        </span>
                         <button type="button" className="add-patch-btn" onClick={() => setShowSaveModal(true)}>
                           + CRÉER
                         </button>
                       </div>
 
-                      {allPatchesForEngine.map((p) => (
+                      <input
+                        type="search"
+                        className="patch-search-input"
+                        placeholder="Chercher un patch…"
+                        value={patchQuery}
+                        onChange={(e) => setPatchQuery(e.target.value)}
+                        aria-label="Chercher un patch"
+                      />
+
+                      {patchQuery.trim() && !patchesAffiches.length && (
+                        <p className="patch-search-empty">Aucun patch ne correspond.</p>
+                      )}
+
+                      {patchesAffiches.map((p) => (
                         <button
                           key={p.id}
                           type="button"
@@ -1811,6 +1858,10 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
               const factory = FACTORY_PATCHES[e.id] || [];
               const custom = userPatches.filter((p) => p.engine === e.id);
               const allPatchesForEngine = [...factory, ...custom];
+              // Liste affichee apres filtre. Le choix automatique au depliage
+              // reste sur la liste complete : ouvrir un moteur ne doit pas
+              // dependre de ce qui est tape dans la recherche.
+              const patchesAffiches = filtrerPatches(allPatchesForEngine);
 
               return (
                 <div key={e.id} className="engine-accordion-group">
@@ -1834,13 +1885,30 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                   {isSelected && (
                     <div className="unfolded-patch-list">
                       <div className="patch-list-header-row">
-                        <span className="patch-list-header">🎵 PATCHES ({allPatchesForEngine.length}) :</span>
+                        <span className="patch-list-header">
+                          🎵 PATCHES ({patchQuery.trim()
+                            ? `${patchesAffiches.length}/${allPatchesForEngine.length}`
+                            : allPatchesForEngine.length}) :
+                        </span>
                         <button type="button" className="add-patch-btn" onClick={() => setShowSaveModal(true)}>
                           + CRÉER
                         </button>
                       </div>
 
-                      {allPatchesForEngine.map((p) => (
+                      <input
+                        type="search"
+                        className="patch-search-input"
+                        placeholder="Chercher un patch…"
+                        value={patchQuery}
+                        onChange={(e) => setPatchQuery(e.target.value)}
+                        aria-label="Chercher un patch"
+                      />
+
+                      {patchQuery.trim() && !patchesAffiches.length && (
+                        <p className="patch-search-empty">Aucun patch ne correspond.</p>
+                      )}
+
+                      {patchesAffiches.map((p) => (
                         <button
                           key={p.id}
                           type="button"

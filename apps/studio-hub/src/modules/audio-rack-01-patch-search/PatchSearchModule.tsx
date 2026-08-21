@@ -1,6 +1,29 @@
 /**
  * Patch Search Module
  * UI for searching and filtering patches
+ *
+ * ⚠️ CE COMPOSANT N'EST IMPORTE PAR PERSONNE, ET IL CHERCHE DANS UN STOCK VIDE.
+ *
+ * Il lit `useAudioRackPatches` (core/store/audioRackStore.ts), un store Zustand
+ * persiste sous la clef « studio-hub-audio-rack ». Le rack, lui, garde ses
+ * patches utilisateur dans son propre useState, persiste sous
+ * « studio_hub_user_patches » — une clef differente. Rien n'ecrit jamais dans
+ * le store : ce composant afficherait donc une recherche vide.
+ *
+ * Ce qui a ete fait le 2026-08-21 : `PatchSearchEngine` — la logique de ce
+ * module, la partie testee — est desormais branchee directement dans
+ * AudioPluginRack, sur les 91 patches d'usine et les patches utilisateur
+ * reels. La recherche fonctionne, dans le rack.
+ *
+ * Restent donc en double, sans consommateur :
+ *   - ce fichier (429 lignes)
+ *   - core/store/audioRackStore.ts (470 lignes)
+ *
+ * Non supprimes ici : l'interface releve de l'autre terrain, cf.
+ * docs/backup/CONTRAT_INTEGRATION.md. A trancher — soit ce panneau est branche
+ * sur les patches reels du rack et le store est supprime, soit les deux
+ * fichiers partent. Les laisser tels quels fera perdre du temps au prochain
+ * qui les lira.
  */
 
 import React, { useState, useMemo } from "react";

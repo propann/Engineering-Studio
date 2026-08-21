@@ -59,6 +59,10 @@ function parametres(): string[] {
     "newPatchName",
     "showSaveModal",
     "toastMessage",
+    // Filtre de la liste de patches : etat d'interface, sans effet sur le son
+    // par construction. Son propre cablage est verrouille ailleurs, par
+    // modules/audio-rack-01-patch-search/PatchSearchWiring.test.ts.
+    "patchQuery",
   ]);
   return [...SOURCE.matchAll(/const \[(\w+), set\w+\] = useState/g)]
     .map((m) => m[1])

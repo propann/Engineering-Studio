@@ -170,6 +170,36 @@
   color: #000000;
 }
 
+/* Filtre de la liste de patches : 91 patches d'usine sur 15 moteurs, qu'on ne
+   pouvait auparavant que faire defiler. */
+.patch-search-input {
+  width: 100%;
+  padding: 4px 8px;
+  margin-bottom: 5px;
+  background-color: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 237, 149, 0.25);
+  border-radius: 4px;
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  font-family: inherit;
+}
+
+.patch-search-input::placeholder {
+  color: #64748b;
+}
+
+.patch-search-input:focus {
+  outline: none;
+  border-color: #00ed95;
+}
+
+.patch-search-empty {
+  margin: 2px 0 4px;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-style: italic;
+}
+
 .unfolded-patch-btn {
   display: flex;
   align-items: center;
