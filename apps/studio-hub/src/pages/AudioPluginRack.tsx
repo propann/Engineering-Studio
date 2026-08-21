@@ -2231,6 +2231,36 @@ export default function AudioPluginRack({
     };
   }, [clavierActif]);
 
+  // Ferme l'AudioContext au demontage.
+  //
+  // Le rack en creait un par montage sans jamais le fermer. En page a part
+  // ca ne se voyait pas : on n'y revient pas dix fois. En tiroir de studio,
+  // chaque ouverture en ajoutait un — et Chrome en plafonne six par
+  // document. Au septieme, plus aucun son, sans erreur.
+  //
+  // Deliberement separe du nettoyage ci-dessus : celui-la depend de
+  // `clavierActif` et se rejoue a chaque bascule du tiroir. Y fermer le
+  // contexte le tuerait en pleine session.
+  //
+  // Les references sont remises a zero en plus d'etre fermees : en mode
+  // strict React rejoue l'effet sur la MEME instance, donc avec les memes
+  // refs. Sans ce nettoyage, getAudioContext rendrait un contexte ferme et
+  // le developpement serait muet.
+  useEffect(() => {
+    return () => {
+      const ctx = audioCtxRef.current;
+      audioCtxRef.current = null;
+      masterBusRef.current = null;
+      analyserRef.current = null;
+      reverbRef.current = null;
+      reverbReturnRef.current = null;
+      if (!ctx || ctx.state === "closed") return;
+      // `close()` rejette si le contexte est deja en fermeture : rien a
+      // reparer dans ce cas, on ne veut pas d'un rejet non capture.
+      void ctx.close().catch(() => {});
+    };
+  }, []);
+
   // ANIMATED OSCILLOSCOPE WAVEFORM
   useEffect(() => {
     const canvas = oscCanvasRef.current;

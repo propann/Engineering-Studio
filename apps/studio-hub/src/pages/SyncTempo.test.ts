@@ -99,3 +99,58 @@ describe("l'interface du delay synchronise", () => {
     }
   });
 });
+
+describe("cycle de vie de l'AudioContext", () => {
+  const bloc = () => {
+    const i = RACK.indexOf("// Ferme l'AudioContext au demontage.");
+    expect(i).toBeGreaterThan(-1);
+    return RACK.slice(i, i + 1800);
+  };
+
+  it("ferme le contexte au demontage", () => {
+    // Le rack en creait un par montage sans jamais le fermer. En tiroir de
+    // studio, chaque ouverture en ajoutait un — et Chrome en plafonne six par
+    // document. Au septieme, plus aucun son et aucune erreur.
+    expect(bloc()).toMatch(/ctx\.close\(\)/);
+  });
+
+  it("le fait dans un effet de demontage, pas dans celui du clavier", () => {
+    // Le nettoyage du clavier depend de `clavierActif` : il se rejoue a chaque
+    // bascule du tiroir. Y fermer le contexte le tuerait en pleine session.
+    //
+    // On lit le CODE, pas le commentaire qui le precede — celui-ci nomme
+    // `clavierActif` pour expliquer justement pourquoi il n'y est pas. Un
+    // premier jet de ce test partait du commentaire et tombait sur sa propre
+    // prose.
+    const i = RACK.indexOf("// Ferme l'AudioContext au demontage.");
+    const debut = RACK.indexOf("useEffect(() => {", i);
+    const fin = RACK.indexOf("}, []);", debut);
+    expect(debut).toBeGreaterThan(-1);
+    expect(fin).toBeGreaterThan(debut);
+    // Le corps de l'effet ne mentionne pas clavierActif...
+    expect(RACK.slice(debut, fin)).not.toContain("clavierActif");
+    // ...et ses dependances sont bien vides : `[]` = demontage seul.
+    expect(RACK.slice(fin, fin + 7)).toBe("}, []);");
+    // Le contexte se ferme bien la, et pas ailleurs.
+    expect(RACK.slice(debut, fin)).toContain("ctx.close()");
+  });
+
+  it("remet les references a zero, pas seulement le contexte", () => {
+    // En mode strict React rejoue l'effet sur la MEME instance, donc avec les
+    // memes refs. Un contexte ferme laisse dans audioCtxRef rendrait le
+    // developpement muet, et le bus reste accroche a un contexte mort.
+    const b = bloc();
+    for (const ref of ["audioCtxRef", "masterBusRef", "analyserRef", "reverbRef", "reverbReturnRef"]) {
+      expect(b, `${ref} non remise a zero`).toContain(`${ref}.current = null;`);
+    }
+  });
+
+  it("ne ferme pas deux fois", () => {
+    expect(bloc()).toMatch(/state === "closed"/);
+  });
+
+  it("ne laisse pas un rejet sans capture", () => {
+    // `close()` rejette si le contexte est deja en fermeture.
+    expect(bloc()).toMatch(/ctx\.close\(\)\.catch\(/);
+  });
+});
