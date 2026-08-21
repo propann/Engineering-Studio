@@ -210,6 +210,52 @@ describe("favoris et etiquettes", () => {
   });
 });
 
+describe("ondes des couches", () => {
+  /**
+   * Une trace par patch superpose, pour VOIR ce que chaque couche apporte.
+   * Sommer les couches en une seule onde donnerait un trace correct mais
+   * inutile : on ne saurait plus ce que chacune fait.
+   */
+  it("garde des analyseurs persistants entre les notes", () => {
+    // Une voix vit le temps d'une note. Un analyseur cree avec elle ne
+    // montrerait rien entre deux frappes.
+    expect(SOURCE).toContain("analyseursCouchesRef");
+    expect(SOURCE).toMatch(/const analyseursPourCouches = \(/);
+  });
+
+  it("ne branche les analyseurs QU'EN direct", () => {
+    // Brancher un noeud d'un contexte hors ligne sur un analyseur du contexte
+    // vivant leve. Le rendu ne doit donc rien recevoir.
+    expect(SOURCE).toMatch(/if \(analyseurs\) \{/);
+    expect(SOURCE).not.toMatch(/construireCouches\(offline[^)]*analyseurs/);
+  });
+
+  it("trace une couche par patch, pas une somme", () => {
+    const scope = SOURCE.slice(SOURCE.indexOf("Une trace par couche superposee"));
+    expect(scope).toMatch(/for \(let couche = combien - 1; couche >= 0; couche--\)/);
+  });
+
+  it("dessine le patch actif PAR-DESSUS les couches", () => {
+    // D'ou la boucle decroissante : trace en dernier, il reste lisible quand
+    // les ondes se recouvrent.
+    const scope = SOURCE.slice(SOURCE.indexOf("Une trace par couche superposee"));
+    expect(scope).toContain("couche--");
+  });
+
+  it("ne trace pas une couche muette", () => {
+    // Une ligne plate par couche encombrerait sans rien apprendre.
+    const scope = SOURCE.slice(SOURCE.indexOf("Une trace par couche superposee"));
+    expect(scope).toContain("if (peak < 2) continue");
+  });
+
+  it("retablit l'opacite apres les couches translucides", () => {
+    // Sans ce retour a 1, la grille et tout ce qui suit heriteraient de
+    // l'opacite de la derniere couche tracee.
+    const scope = SOURCE.slice(SOURCE.indexOf("Une trace par couche superposee"));
+    expect(scope).toContain("ctx.globalAlpha = 1;");
+  });
+});
+
 describe("effets globaux", () => {
   /**
    * Places APRES les moteurs, donc appliques a la superposition entiere.
@@ -283,7 +329,7 @@ describe("fabrique d'echantillons", () => {
     // toujours a construireVoix — d'ou les deux assertions.
     expect(SOURCE, "le rendu doit deleguer").toMatch(/construireCouches\(offline/);
     expect(SOURCE, "les couches doivent passer par construireVoix").toMatch(
-      /construireVoix\(ctx, \{ \.\.\.p, activeEngine: moteur \}/
+      /construireVoix\(ctx, jeu, freq, now\)/
     );
   });
 
@@ -298,11 +344,26 @@ describe("fabrique d'echantillons", () => {
     expect(SOURCE, "le rendu").toMatch(/construireCouches\(offline,/);
   });
 
-  it("compense le niveau quand des moteurs se superposent", () => {
+  it("compense le niveau quand des patches se superposent", () => {
     // Quatre couches a plein volume saturent des la deuxieme. La racine du
     // nombre de couches, et non le nombre : des sources non correlees
     // s'additionnent en puissance, pas en amplitude.
-    expect(SOURCE).toMatch(/Math\.sqrt\(Math\.max\(1, moteurs\.length\)\)/);
+    expect(SOURCE).toMatch(/Math\.sqrt\(Math\.max\(1, jeux\.length\)\)/);
+  });
+
+  it("applique les reglages PROPRES a chaque patch superpose", () => {
+    // Superposer une basse Plaits et une nappe Rings doit donner les deux
+    // timbres. Empiler le meme jeu de parametres avec un moteur different
+    // donnerait le bon moteur mais les mauvais reglages — un son qui ne
+    // ressemble a aucun des deux patches choisis.
+    expect(SOURCE).toContain("...p, ...patch.params, activeEngine: patch.engine");
+  });
+
+  it("ignore un patch supprime entre-temps", () => {
+    // La liste des couches vit dans l'etat ; un patch personnel efface entre
+    // deux notes laisserait un identifiant orphelin.
+    const emp = SOURCE.slice(SOURCE.indexOf("const couchesEmpilees"));
+    expect(emp.slice(0, emp.indexOf("};"))).toContain("if (!patch) continue");
   });
 
   it("garde l'horizon sonore le plus tardif de toutes les couches", () => {

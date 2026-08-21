@@ -174,9 +174,6 @@
 .engine-accordion-group { position: relative; }
 
 .couche-toggle {
-  position: absolute;
-  top: 8px;
-  right: 30px;
   background: none;
   border: none;
   color: #64748b;
@@ -186,7 +183,9 @@
   line-height: 1;
 }
 
-.couche-toggle:hover { color: #b873ff; }
+.couche-toggle { flex-shrink: 0; padding: 0 3px; }
+.couche-toggle:hover:not(:disabled) { color: #b873ff; }
+.couche-toggle:disabled { opacity: .2; cursor: default; }
 .couche-toggle.couche-active { color: #b873ff; text-shadow: 0 0 6px #b873ff; }
 
 .couches-resume {

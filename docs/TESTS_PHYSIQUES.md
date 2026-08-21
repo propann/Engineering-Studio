@@ -134,17 +134,20 @@ donc à la superposition entière.
 - [ ] **un sample fabriqué porte les mêmes effets que ce qu'on entend** — c'est
       l'invariant qui compte, jeu et rendu passent par la même chaîne
 
-### Superposition de moteurs
-Pastille ronde à droite de chaque moteur non actif : elle l'empile **sur** le
-moteur actif sans en changer.
+### Superposition de patches
+Pastille ronde ○ sur chaque patch : elle l'empile **sur** le patch actif, avec
+ses propres réglages et son propre moteur.
 
-- [ ] deux moteurs superposés s'entendent tous les deux
-- [ ] quatre moteurs ne saturent pas — c'est ce que la compensation en racine
-      du nombre de couches doit empêcher, et une saturation s'entend nettement
-- [ ] un moteur à longue résonance dans l'empilement (Rings, Clouds) n'est pas
-      coupé par un moteur court
+- [ ] deux patches superposés s'entendent tous les deux, chacun avec SON timbre
+      — pas le même moteur deux fois
+- [ ] l'oscilloscope montre **une onde par couche**, de couleurs différentes,
+      le patch actif par-dessus
+- [ ] quatre patches ne saturent pas — la compensation est en racine du nombre
+      de couches, et une saturation s'entend nettement
+- [ ] un patch à longue résonance (Rings, Clouds) n'est pas coupé par un patch
+      court dans le même empilement
 - [ ] **le sample fabriqué sonne comme le direct** : c'est l'invariant qui
-      compte, jeu et rendu passent par le même chemin
+      compte, jeu et rendu passent par le même chemin, effets compris
 
 ### Un pack chromatique est utilisable dans un DAW
 Bouton « PACK C3–C7 » : 49 notes rendues d'affilée dans un sous-dossier au nom

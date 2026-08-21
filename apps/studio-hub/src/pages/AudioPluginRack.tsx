@@ -239,18 +239,37 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
    * En etat parce que l'interface les affiche, mais recopies dans paramsRef
    * pour que le chemin de note les lise sans provoquer de rendu.
    */
-  const [couches, setCouches] = useState<EnginePluginType[]>([]);
-  const couchesRef = useRef<EnginePluginType[]>([]);
+  const [couches, setCouches] = useState<string[]>([]);
+  const couchesRef = useRef<string[]>([]);
   couchesRef.current = couches;
 
-  const basculerCouche = (moteur: EnginePluginType) =>
+  const basculerCouche = (patchId: string) =>
     setCouches((liste) =>
-      liste.includes(moteur) ? liste.filter((m) => m !== moteur) : [...liste, moteur]
+      liste.includes(patchId) ? liste.filter((x) => x !== patchId) : [...liste, patchId]
     );
 
-  /** Moteur actif d'abord, puis les couches. Jamais de doublon. */
-  const moteursEmpiles = (p: typeof paramsRef.current, couchesActives: EnginePluginType[]) =>
-    [p.activeEngine, ...couchesActives.filter((m) => m !== p.activeEngine)];
+  /** Retrouve un patch par son identifiant, d'usine ou personnel. */
+  const patchParId = (id: string): PatchPreset | undefined =>
+    Object.values(FACTORY_PATCHES).flat().find((x) => x.id === id) ??
+    userPatches.find((x) => x.id === id);
+
+  /**
+   * Reglages de chaque couche.
+   *
+   * Le patch actif d'abord — ses parametres sont deja dans `p` — puis un jeu de
+   * parametres par patch superpose. Chaque couche applique SES propres reglages
+   * et SON moteur : superposer une basse Plaits et une nappe Rings doit donner
+   * les deux timbres, pas le meme moteur deux fois.
+   */
+  const couchesEmpilees = (p: typeof paramsRef.current, ids: string[]) => {
+    const jeux = [p];
+    for (const id of ids) {
+      const patch = patchParId(id);
+      if (!patch) continue; // patch supprime entre-temps
+      jeux.push({ ...p, ...patch.params, activeEngine: patch.engine });
+    }
+    return jeux;
+  };
 
   const [cibleExport, setCibleExport] = useState<CibleMachine>("op1_synth");
   const [dureeExport, setDureeExport] = useState<number>(2);
@@ -481,6 +500,18 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
   const reverbRef = useRef<ConvolverNode | null>(null);
   const reverbReturnRef = useRef<GainNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  /**
+   * Un analyseur par couche superposee, pour tracer chaque onde separement.
+   *
+   * Persistants entre les notes : une voix vit le temps d'une note, un
+   * analyseur cree avec elle ne montrerait rien entre deux frappes. Ils sont
+   * donc crees une fois, dans le contexte VIVANT, et chaque nouvelle voix s'y
+   * rebranche.
+   *
+   * Index 0 = patch actif, 1..n = couches, dans l'ordre d'empilement.
+   */
+  const analyseursCouchesRef = useRef<AnalyserNode[]>([]);
+  const donneesCouchesRef = useRef<Uint8Array<ArrayBuffer>[]>([]);
   // Uint8Array<ArrayBuffer> explicite : getByteTimeDomainData refuse une vue
   // adossée à un SharedArrayBuffer, que le type par défaut autorise.
   const scopeDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
@@ -1740,34 +1771,63 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
    *   le premier couperait les moteurs a longue resonance — Rings s'excite sur
    *   20 ms mais sonne bien plus longtemps.
    */
+  /**
+   * Analyseurs du contexte vivant, un par couche, crees a la demande.
+   *
+   * Ils persistent entre les notes : une voix vit le temps d'une note, un
+   * analyseur cree avec elle ne montrerait rien entre deux frappes.
+   *
+   * `fftSize` volontairement court : on trace une forme d'onde sur 900 pixels,
+   * pas une analyse spectrale. Plus long ferait defiler trop vite pour l'oeil.
+   */
+  const analyseursPourCouches = (ctx: BaseAudioContext, combien: number): AnalyserNode[] => {
+    const liste = analyseursCouchesRef.current;
+    while (liste.length < combien) {
+      const a = ctx.createAnalyser();
+      a.fftSize = 2048;
+      liste.push(a);
+      donneesCouchesRef.current.push(new Uint8Array(new ArrayBuffer(a.fftSize)));
+    }
+    return liste;
+  };
+
   const construireCouches = (
     ctx: BaseAudioContext,
-    p: typeof paramsRef.current,
+    _p: typeof paramsRef.current,
     freq: number,
     now: number,
-    moteurs: EnginePluginType[]
+    jeux: (typeof paramsRef.current)[],
+    /** Analyseurs du contexte VIVANT. Absents pour un rendu hors ligne. */
+    analyseurs?: AnalyserNode[]
   ) => {
     const sortie = ctx.createGain();
     // Compensation en puissance : racine du nombre de couches.
-    sortie.gain.setValueAtTime(1 / Math.sqrt(Math.max(1, moteurs.length)), now);
+    sortie.gain.setValueAtTime(1 / Math.sqrt(Math.max(1, jeux.length)), now);
 
     const sources: AudioScheduledSourceNode[] = [];
     let naturalEnd = now;
     let audibleEnd = now;
     let enveloppe = { ATTACK: 0.008, DECAY: 0.12, SUSTAIN: 0.75, RELEASE: 0.22 };
 
-    for (const moteur of moteurs) {
-      // Un moteur qui leve ne doit pas emporter les autres : une couche muette
+    for (const [index, jeu] of jeux.entries()) {
+      // Une couche qui leve ne doit pas emporter les autres : une couche muette
       // vaut mieux qu'un empilement entierement silencieux.
       try {
-        const voix = construireVoix(ctx, { ...p, activeEngine: moteur }, freq, now);
+        const voix = construireVoix(ctx, jeu, freq, now);
         voix.env.connect(sortie);
+
+        // Analyseur par couche, uniquement en direct : brancher un noeud d'un
+        // contexte hors ligne sur un analyseur du contexte vivant leve.
+        if (analyseurs) {
+          const a = analyseurs[index];
+          if (a) voix.env.connect(a);
+        }
         sources.push(...voix.sources);
         naturalEnd = Math.max(naturalEnd, voix.naturalEnd);
         audibleEnd = Math.max(audibleEnd, voix.audibleEnd);
         enveloppe = voix;
       } catch (e) {
-        log.error(`Couche ${moteur} en echec`, e);
+        log.error(`Couche ${jeu.activeEngine} en echec`, e);
       }
     }
 
@@ -1784,14 +1844,14 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
     // sonne. Un OfflineAudioContext exige sa longueur a la creation, or
     // `audibleEnd` n'est connu qu'apres construction — d'ou cette sonde, menee
     // sur un contexte jetable d'une seule trame. Rien n'y est rendu.
-    const moteurs = moteursEmpiles(p, couchesRef.current);
+    const jeux = couchesEmpilees(p, couchesRef.current);
     const sonde = new OfflineAudioContext(1, 1, frequence);
-    const { audibleEnd, ATTACK, DECAY, RELEASE } = construireCouches(sonde, p, freq, 0, moteurs);
+    const { audibleEnd, ATTACK, DECAY, RELEASE } = construireCouches(sonde, p, freq, 0, jeux);
     const plan = planifierRendu(secondes, audibleEnd, frequence, { ATTACK, DECAY, RELEASE });
 
     // Seconde passe : le vrai rendu, dans un contexte correctement dimensionne.
     const offline = new OfflineAudioContext(1, plan.trames, frequence);
-    const voix = construireCouches(offline, p, freq, 0, moteurs);
+    const voix = construireCouches(offline, p, freq, 0, jeux);
     // Memes effets qu'au jeu : sans cela le fichier sonnerait autrement que ce
     // qu'on entend, et rien ne le signalerait.
     const effets = construireEffets(offline, p, 0);
@@ -1954,7 +2014,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
       if (voiceId && voicesRef.current.has(voiceId)) releaseVoice(voiceId);
 
       const { env, sources, naturalEnd, audibleEnd, ATTACK, DECAY, SUSTAIN, RELEASE } =
-        construireCouches(ctx, p, freq, now, moteursEmpiles(p, couchesRef.current));
+        construireCouches(ctx, p, freq, now, couchesEmpilees(p, couchesRef.current), analyseursPourCouches(ctx, couchesRef.current.length + 1));
 
       // Sortie vers le bus persistant, en passant par les effets globaux.
       const effets = construireEffets(ctx, p, now);
@@ -2180,46 +2240,73 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
         surge_xt: "#d9ff43",
       };
 
-      ctx.strokeStyle = colorMap[p.activeEngine] || "#00ed95";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
+      /**
+       * Une trace par couche superposee.
+       *
+       * Chacune a son analyseur persistant, rebranche a chaque nouvelle voix.
+       * Les tracer separement plutot que de sommer permet de VOIR ce que chaque
+       * patch apporte — c'est tout l'interet de la superposition.
+       *
+       * La couche 0 est le patch actif : elle garde la couleur de son moteur.
+       * Les suivantes prennent des teintes fixes, pour qu'une couche ne change
+       * pas de couleur en cours de route.
+       */
+      const TEINTES = ["#b873ff", "#ffad79", "#7ea5ff"];
+      const analyseurs = analyseursCouchesRef.current;
+      const donnees = donneesCouchesRef.current;
+      const combien = Math.min(analyseurs.length, 1 + couchesRef.current.length);
+      let quelqueChose = false;
 
-      const analyser = analyserRef.current;
-      const data = scopeDataRef.current;
+      // De la derniere couche a la premiere : le patch actif passe ainsi
+      // par-dessus et reste lisible quand les ondes se recouvrent.
+      for (let couche = combien - 1; couche >= 0; couche--) {
+        const analyser = analyseurs[couche];
+        const data = donnees[couche];
+        if (!analyser || !data) continue;
 
-      if (analyser && data) {
         const n = analyser.fftSize;
         const view = data.subarray(0, n);
         analyser.getByteTimeDomainData(view);
 
-        // 128 = silence (centre). On mesure l'amplitude pour distinguer un
-        // vrai silence d'un signal, et afficher une ligne plate franche.
+        // 128 = silence (centre). Une couche muette n'est pas tracee : une
+        // ligne plate par couche encombrerait sans rien apprendre.
         let peak = 0;
         for (let i = 0; i < n; i++) {
-          const d = Math.abs(view[i] - 128);
-          if (d > peak) peak = d;
+          const dd = Math.abs(view[i] - 128);
+          if (dd > peak) peak = dd;
         }
+        if (peak < 2) continue;
+        quelqueChose = true;
 
-        if (peak < 2) {
-          // Silence : ligne médiane, pas de bruit de quantification amplifié.
-          ctx.moveTo(0, height / 2);
-          ctx.lineTo(width, height / 2);
-        } else {
-          const step = n / width;
-          for (let x = 0; x < width; x++) {
-            const v = view[Math.floor(x * step)] / 128 - 1; // -1 .. +1
-            const y = height / 2 - v * (height / 2 - 4);
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
+        ctx.strokeStyle =
+          couche === 0 ? colorMap[p.activeEngine] || "#00ed95" : TEINTES[(couche - 1) % TEINTES.length];
+        // Couches plus fines et translucides : le patch actif reste celui
+        // qu'on lit en premier.
+        ctx.lineWidth = couche === 0 ? 2.5 : 1.6;
+        ctx.globalAlpha = couche === 0 ? 1 : 0.75;
+        ctx.beginPath();
+
+        const step = n / width;
+        for (let x = 0; x < width; x++) {
+          const v = view[Math.floor(x * step)] / 128 - 1; // -1 .. +1
+          const y = height / 2 - v * (height / 2 - 4);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
         }
-      } else {
-        // Analyseur pas encore créé : le contexte audio attend un geste
-        // utilisateur. Ligne plate plutôt qu'une animation mensongère.
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      if (!quelqueChose) {
+        // Silence, ou contexte audio pas encore demarre : ligne mediane franche
+        // plutot qu'une animation mensongere.
+        ctx.strokeStyle = colorMap[p.activeEngine] || "#00ed95";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
         ctx.moveTo(0, height / 2);
         ctx.lineTo(width, height / 2);
+        ctx.stroke();
       }
-      ctx.stroke();
 
       animFrameRef.current = requestAnimationFrame(render);
     };
@@ -2345,19 +2432,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                     </div>
                     <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
                   </button>
-                  {/* Superposition : cliquer empile ce moteur SUR le moteur
-                      actif, sans en changer. Separe du bouton principal, sinon
-                      choisir un moteur et l'empiler seraient le meme geste. */}
-                  {!isSelected && (
-                    <button
-                      type="button"
-                      className={`couche-toggle ${couches.includes(e.id) ? "couche-active" : ""}`}
-                      title={couches.includes(e.id) ? `Retirer ${e.name} de la superposition` : `Superposer ${e.name}`}
-                      onClick={(ev) => { ev.stopPropagation(); basculerCouche(e.id); }}
-                    >
-                      {couches.includes(e.id) ? "◉" : "○"}
-                    </button>
-                  )}
+
 
                   {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
                   {isSelected && (
@@ -2376,7 +2451,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                       <div className="export-echantillon">
                         {couches.length > 0 && (
                           <div className="couches-resume">
-                            🎚️ {couches.length + 1} moteurs superposés
+                            🎚️ {couches.length + 1} patches superposés
                             <button type="button" className="couches-vider" onClick={() => setCouches([])}>
                               vider
                             </button>
@@ -2500,6 +2575,19 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                                 ))}
                               </span>
                             ) : null}
+                          </button>
+                          {/* Superposition : empile CE patch sur le patch
+                              actif, avec ses propres reglages et son moteur.
+                              Separe du bouton du patch, sinon choisir et
+                              empiler seraient le meme geste. */}
+                          <button
+                            type="button"
+                            className={`couche-toggle ${couches.includes(p.id) ? "couche-active" : ""}`}
+                            title={couches.includes(p.id) ? `Retirer ${p.name} de la superposition` : `Superposer ${p.name}`}
+                            onClick={() => basculerCouche(p.id)}
+                            disabled={p.id === selectedPatchId}
+                          >
+                            {couches.includes(p.id) ? "◉" : "○"}
                           </button>
                           <button
                             type="button"
@@ -2548,19 +2636,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                     </div>
                     <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
                   </button>
-                  {/* Superposition : cliquer empile ce moteur SUR le moteur
-                      actif, sans en changer. Separe du bouton principal, sinon
-                      choisir un moteur et l'empiler seraient le meme geste. */}
-                  {!isSelected && (
-                    <button
-                      type="button"
-                      className={`couche-toggle ${couches.includes(e.id) ? "couche-active" : ""}`}
-                      title={couches.includes(e.id) ? `Retirer ${e.name} de la superposition` : `Superposer ${e.name}`}
-                      onClick={(ev) => { ev.stopPropagation(); basculerCouche(e.id); }}
-                    >
-                      {couches.includes(e.id) ? "◉" : "○"}
-                    </button>
-                  )}
+
 
                   {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
                   {isSelected && (
@@ -2579,7 +2655,7 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                       <div className="export-echantillon">
                         {couches.length > 0 && (
                           <div className="couches-resume">
-                            🎚️ {couches.length + 1} moteurs superposés
+                            🎚️ {couches.length + 1} patches superposés
                             <button type="button" className="couches-vider" onClick={() => setCouches([])}>
                               vider
                             </button>
@@ -2703,6 +2779,19 @@ export default function AudioPluginRack({ profileName = "NOUVEAU MEMBRE", onClos
                                 ))}
                               </span>
                             ) : null}
+                          </button>
+                          {/* Superposition : empile CE patch sur le patch
+                              actif, avec ses propres reglages et son moteur.
+                              Separe du bouton du patch, sinon choisir et
+                              empiler seraient le meme geste. */}
+                          <button
+                            type="button"
+                            className={`couche-toggle ${couches.includes(p.id) ? "couche-active" : ""}`}
+                            title={couches.includes(p.id) ? `Retirer ${p.name} de la superposition` : `Superposer ${p.name}`}
+                            onClick={() => basculerCouche(p.id)}
+                            disabled={p.id === selectedPatchId}
+                          >
+                            {couches.includes(p.id) ? "◉" : "○"}
                           </button>
                           <button
                             type="button"
