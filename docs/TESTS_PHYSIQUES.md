@@ -167,6 +167,16 @@ maintenant le chemin complet.
       fichiers y sont
 - [ ] vérifier que `manifest.json` est à côté du dossier `files/`
 
+### Les dossiers vides sont copiés
+Corrigé le 2026-08-21 : `collectFiles` ne rapportait que des fichiers, donc un
+dossier vide n'était ni sauvegardé ni restauré. La structure revenait amputée —
+et sur une OP-1 un dossier vide est un **emplacement libre**, pas une absence.
+
+- [ ] sauvegarder une machine dont certains dossiers sont vides, puis ouvrir le
+      snapshot : les dossiers vides y sont
+- [ ] restaurer vers un dossier neuf : ils y sont recréés
+- [ ] restaurer une seule catégorie ne recrée pas les dossiers des autres
+
 ### Restauration par l'application
 Le mécanisme est validé sur matériel ; son **orchestration** ne l'est pas —
 prévol, point de retour, boucle de `restoreBackup`.

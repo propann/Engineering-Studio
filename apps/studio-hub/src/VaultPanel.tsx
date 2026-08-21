@@ -11,6 +11,10 @@ type DirectoryHandle = FileSystemDirectoryHandle & {
 };
 type BackupFile = { path: string; size: number; sha256?: string; category?: BackupCategory };
 type BackupManifest = {
+  /** Dossiers sans aucun fichier, a recreer tels quels a la restauration.
+   *  Sans eux la structure revient amputee : sur une OP-1, un dossier vide est
+   *  un emplacement libre, pas une absence. */
+  dossiersVides?: string[];
   snapshotId?: string;
   createdAt?: string;
   sourceLabel?: string;
@@ -322,6 +326,44 @@ async function collectFiles(directory: DirectoryHandle, prefix = ""): Promise<{ 
     else files.push(...await collectFiles(entry as DirectoryHandle, path));
   }
   return files;
+}
+
+/**
+ * Dossiers ne contenant AUCUN fichier, nulle part sous eux.
+ *
+ * `collectFiles` descend dans l'arborescence mais ne rapporte que des fichiers :
+ * un dossier vide ne produit rien, donc il n'est ni sauvegarde ni restaure. La
+ * structure de la machine revenait ampute de ses dossiers vides — et sur une
+ * OP-1, ces dossiers ont un sens : ce sont les emplacements libres.
+ *
+ * Un dossier qui contient des fichiers n'a pas besoin d'etre liste : `copyFile`
+ * cree l'arborescence intermediaire en chemin.
+ */
+export async function collecterDossiersVides(
+  directory: DirectoryHandle,
+  prefix = ""
+): Promise<string[]> {
+  const vides: string[] = [];
+  let contientUnFichier = false;
+  const sousDossiers: { handle: DirectoryHandle; path: string }[] = [];
+
+  for await (const [name, entry] of directory.entries()) {
+    const path = prefix ? `${prefix}/${name}` : name;
+    if (entry.kind === "file") contientUnFichier = true;
+    else sousDossiers.push({ handle: entry as DirectoryHandle, path });
+  }
+
+  for (const sd of sousDossiers) {
+    const sousVides = await collecterDossiersVides(sd.handle, sd.path);
+    // Le sous-dossier se declare vide lui-meme : il est dans sa propre liste.
+    if (sousVides.length === 1 && sousVides[0] === sd.path) vides.push(sd.path);
+    else if (sousVides.length) vides.push(...sousVides);
+    else contientUnFichier = true; // il porte des fichiers, donc on n'est pas vide
+  }
+
+  // La racine ne se declare vide que si rien n'a ete trouve dessous.
+  if (!contientUnFichier && !vides.length && prefix) return [prefix];
+  return vides;
 }
 
 async function sha256(buffer: ArrayBuffer) {
@@ -727,6 +769,9 @@ async function createBackup() {
     // Hissee pour la meme raison : le `catch` doit savoir ce qui etait prevu
     // afin de nommer les categories restees incompletes.
     let filesToCopy: { category: BackupCategory; handle: FileSystemFileHandle; path: string }[] = [];
+      // Hors du try pour la meme raison : le catch produit un rapport partiel
+      // qui doit pouvoir les mentionner.
+      let dossiersVides: string[] = [];
     // Renomme depuis `manifestFiles` : ce nom masquait la fonction homonyme du
     // module (ligne 496), si bien que le `catch` — hors de la portee du `try` —
     // recuperait la fonction au lieu du tableau.
@@ -743,12 +788,24 @@ async function createBackup() {
       const filesRoot = await snapshot.getDirectoryHandle("files", { create: true }) as DirectoryHandle;
       fichiersCopies = [];
       filesToCopy = [];
+        dossiersVides = [];
       for (const category of selectedCategories) {
         const categorySource = await source.getDirectoryHandle(category) as DirectoryHandle;
         const files = await collectFiles(categorySource);
         filesToCopy.push(...files.map((file) => ({ category, handle: file.handle, path: `${category}/${file.path}` })));
+
+          // Les dossiers vides ne produisent aucun fichier, donc collectFiles
+          // les ignore et la structure reviendrait amputee.
+          const vides = await collecterDossiersVides(categorySource);
+          dossiersVides.push(...vides.map((d) => `${category}/${d}`));
+          // Une categorie entierement vide est elle-meme a recreer.
+          if (!files.length && !vides.length) dossiersVides.push(category);
       }
-      if (!filesToCopy.length) throw new Error("Les catégories sélectionnées ne contiennent aucun fichier.");
+        // Des dossiers vides seuls restent une sauvegarde legitime : c'est la
+        // structure de la machine, et la restaurer telle quelle a un sens.
+        if (!filesToCopy.length && !dossiersVides.length) {
+          throw new Error("Les catégories sélectionnées sont introuvables ou inaccessibles.");
+        }
       total = filesToCopy.length;
       let totalBytes = 0;
       for (const file of filesToCopy) totalBytes += (await file.handle.getFile()).size;
@@ -780,7 +837,12 @@ async function createBackup() {
         fileCount: fichiersCopies.length,
         totalBytes: fichiersCopies.reduce((sum, file) => sum + file.size, 0),
         files: fichiersCopies,
+        ...(dossiersVides.length ? { dossiersVides } : {}),
       };
+      // Recreer les dossiers vides DANS le snapshot : le manifeste seul ne
+      // suffirait pas, une sauvegarde doit refleter la structure telle quelle.
+      for (const vide of dossiersVides) await childDirectory(filesRoot, vide, true);
+
       const manifestHandle = await snapshot.getFileHandle("manifest.json", { create: true });
       const writable = await manifestHandle.createWritable();
       await writable.write(JSON.stringify(manifest, null, 2));
@@ -925,6 +987,17 @@ async function createBackup() {
       setStatus("Restauration des catégories sélectionnées…");
       setProgress({ current: 0, total, bytes: 0, totalBytes, label: `Préparation : ${total} fichiers (${formatBytes(totalBytes)})` });
       let restoredBytes = 0;
+      // Recreer les dossiers vides de la sauvegarde, en respectant les
+      // categories choisies : restaurer « synth » ne doit pas ressusciter les
+      // dossiers de « tape ».
+      //
+      // Avant la boucle de copie : si celle-ci s'interrompt, la structure est
+      // deja en place, ce qui rend la cible utilisable.
+      const videsARecreer = (manifest.dossiersVides ?? []).filter((d) =>
+        restoreCategories.includes(d.split("/")[0] as BackupCategory)
+      );
+      for (const vide of videsARecreer) await childDirectory(restoreTarget, vide, true);
+
       const aIgnorer = new Set(prevol.inchanges);
       for (const file of files) {
         // Deja conforme au manifeste : la reecriture serait un travail inutile
