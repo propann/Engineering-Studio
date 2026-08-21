@@ -86,6 +86,49 @@ export function op1MaxSeconds(kind: Op1SampleKind): number {
 }
 
 // =====================================================================
+// Capacité de stockage
+// =====================================================================
+
+/**
+ * Capacité du support de chaque machine, en octets décimaux.
+ *
+ * **Ce sont des constantes, pas des mesures.** Le navigateur ne peut pas lire
+ * la taille d'un volume : la File System Access API n'expose ni capacité ni
+ * espace libre. `navigator.storage.estimate()` renseigne le quota de l'origine,
+ * pas le disque.
+ *
+ * L'OP-1 présente un volume de 384 Mo — relevé sur le matériel le 2026-08-21
+ * (`lsblk` : `sda 384M vfat`). L'EP-133 existe en 64 et 128 Mo selon le modèle,
+ * d'où une valeur prise dans la fiche de la machine plutôt qu'ici.
+ */
+export const CAPACITE_OP1_OCTETS = 384 * 1e6;
+export const CAPACITE_EP133_OCTETS = { 64: 64 * 1e6, 128: 128 * 1e6 } as const;
+
+export interface Remplissage {
+  utilises: number;
+  capacite: number;
+  /** 0 à 100, borné — un support plus rempli que sa capacité annoncée existe. */
+  pourcentage: number;
+  /** Au-delà de 90 % : il devient difficile d'ajouter quoi que ce soit. */
+  critique: boolean;
+}
+
+/**
+ * Taux de remplissage d'un support.
+ *
+ * Borne à 100 % plutôt que de laisser filer : une capacité sous-estimée — un
+ * modèle d'EP-133 mal renseigné dans la fiche, par exemple — produirait sinon
+ * une jauge à 140 %, qui ne veut rien dire à l'écran.
+ */
+export function calculerRemplissage(utilises: number, capacite: number): Remplissage {
+  const sain = (x: number) => (Number.isFinite(x) && x > 0 ? x : 0);
+  const u = sain(utilises);
+  const c = sain(capacite);
+  const pourcentage = c ? Math.min(100, Math.round((u / c) * 100)) : 0;
+  return { utilises: u, capacite: c, pourcentage, critique: pourcentage >= 90 };
+}
+
+// =====================================================================
 // Description unifiée, pour qui fabrique un sample
 // =====================================================================
 

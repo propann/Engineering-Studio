@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { loadDirectoryHandle, requestStoredPermission, saveDirectoryHandle, WORKSPACE_HANDLE_KEY } from "./core/storage/directoryHandleStore";
+import {
+  calculerRemplissage,
+  CAPACITE_EP133_OCTETS,
+  CAPACITE_OP1_OCTETS,
+} from "@studio-hub/audio-formats";
 
 export type MachineId = "op1" | "ep133";
 export type BackupCategory = "tape" | "album" | "drum" | "synth" | "projects" | "samples";
@@ -700,6 +705,7 @@ export function VaultPanel({
   initialMachine = "op1",
   compact = false,
   showWorkspace = true,
+  memoireMo,
 }: {
   workspaceHandle: FileSystemDirectoryHandle | null;
   onWorkspaceSelected: (handle: FileSystemDirectoryHandle, name: string) => void;
@@ -707,6 +713,10 @@ export function VaultPanel({
   initialMachine?: MachineId;
   compact?: boolean;
   showWorkspace?: boolean;
+  /** Modele d'EP-133, pour la jauge : la capacite depend du modele (64 ou 128 Mo).
+   *  Le navigateur ne peut pas la mesurer — la File System Access API n'expose
+   *  ni capacite ni espace libre. */
+  memoireMo?: 64 | 128;
 }) {
   const [machine, setMachine] = useState<MachineId>(initialMachine);
   const [source, setSource] = useState<DirectoryHandle | null>(null);
@@ -1153,7 +1163,7 @@ async function createBackup() {
     )}</div>
     {!compact && <div className="vault-machine-tabs" role="tablist">{(["op1", "ep133"] as MachineId[]).map((id) => <button type="button" key={id} className={machine === id ? "active" : ""} onClick={() => setMachine(id)}>{id === "op1" ? "🎛️ OP‑1" : "🥁 EP‑133"}</button>)}</div>}
     <div className="vault-grid">
-      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SCANNER ET SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button type="button" className="secondary-button" onClick={() => void chooseSource()}>{source ? "Relancer le scan" : supportMachine}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Depuis : ${sourceName}` : `Choisis le ${supportMachine.toLowerCase()} à sauvegarder`}</p>{sourceScan && (
+      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">1 · SCANNER ET SAUVEGARDER</span><h3>Créer un snapshot {machine.toUpperCase()}</h3></div><button type="button" className="secondary-button" onClick={() => void chooseSource()}>{source ? "Relancer le scan" : `Choisir le ${supportMachine.toLowerCase()}`}</button></div><p className="vault-warning">⏱️ Une sauvegarde peut prendre plusieurs minutes. Ne débranche pas la machine et garde cette fenêtre ouverte.</p><p className="vault-path">{source ? `Depuis : ${sourceName}` : `Choisis le ${supportMachine.toLowerCase()} à sauvegarder`}</p>{sourceScan && (
         <div className="vault-scan-result" aria-live="polite">
           {/* Le navigateur ne peut pas enumerer les disques : on ne detecte
               donc rien avant le choix. Mais on confirme APRES, ce qui evite de
@@ -1164,6 +1174,32 @@ async function createBackup() {
           <strong>{sourceScan.fichiers} fichiers</strong>
           <strong>{formatBytes(sourceScan.octets)}</strong>
           <small>Lecture seule — aucune écriture sur la source</small>
+
+          {/* Jauge de remplissage.
+              La capacite est une CONSTANTE, pas une mesure : le navigateur ne peut
+              pas lire la taille d'un volume, la File System Access API n'expose ni
+              capacite ni espace libre. D'ou le libelle « environ », qui evite de
+              faire passer une estimation pour un releve. */}
+          {(() => {
+            const capacite =
+              machine === "op1" ? CAPACITE_OP1_OCTETS : CAPACITE_EP133_OCTETS[memoireMo ?? 64];
+            const r = calculerRemplissage(sourceScan.octets, capacite);
+            return (
+              <div className={`vault-jauge ${r.critique ? "jauge-critique" : ""}`}>
+                <div className="vault-jauge-tete">
+                  <span>REMPLISSAGE {nomMachine}</span>
+                  <strong>{r.pourcentage} %</strong>
+                </div>
+                <div className="vault-jauge-piste">
+                  <div className="vault-jauge-barre" style={{ width: `${r.pourcentage}%` }} />
+                </div>
+                <small>
+                  {formatBytes(r.utilises)} sur environ {formatBytes(r.capacite)}
+                  {r.critique ? " · presque plein" : ` · ${formatBytes(r.capacite - r.utilises)} libres`}
+                </small>
+              </div>
+            );
+          })()}
           {/* Detail par categorie : un total agrege ne disait pas si une
               categorie manquait, et une sauvegarde amputee passait donc pour
               complete. */}
@@ -1182,8 +1218,8 @@ async function createBackup() {
             ))}
           </ul>
         </div>
-      )}<div className="category-list">{availableCategories.map((category) => <label className={`category-choice ${selectedCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} /><span><strong>{categoryInfo[category].label}</strong><small>{categoryInfo[category].description}</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action" disabled={busy || !workspaceHandle} onClick={() => void createBackup()}>{busy ? "Sauvegarde en cours…" : "Sauvegarder la sélection"}<span>↓</span></button></div>
-      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">2 · RESTAURER</span><h3>Réinjecter une sauvegarde</h3></div><button type="button" className="secondary-button" onClick={() => void chooseRestoreTarget()}>{restoreTarget ? `Changer` : supportMachine}</button></div><p className="vault-path">{restoreTarget ? `Vers : ${restoreTargetName}` : `Choisis le ${supportMachine.toLowerCase()} à restaurer`}</p><label className="snapshot-select">Sauvegarde<select value={selectedSnapshotId} onChange={(event) => chooseSnapshot(event.target.value)} disabled={!snapshots.length}><option value="">Aucune sauvegarde</option>{snapshots.map((snapshot) => <option value={snapshot.id} key={snapshot.id}>{snapshot.id} · {snapshot.fileCount} fichiers · {formatBytes(snapshot.totalBytes)}</option>)}</select></label>{selectedSnapshot && <div className="snapshot-meta">{selectedSnapshot.categories.map((category) => <span key={category}>{categoryInfo[category].label}</span>)}</div>}<div className="category-list restore-list">{(selectedSnapshot?.categories ?? []).map((category) => <label className={`category-choice ${restoreCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={restoreCategories.includes(category)} onChange={() => toggleCategory(category, true)} /><span><strong>{categoryInfo[category].label}</strong><small>Restaurer cette catégorie</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar restore-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action restore" disabled={busy || !selectedSnapshot} onClick={() => void restoreBackup()}>{busy ? "Restauration en cours…" : "Restaurer la sélection"}<span>↑</span></button></div>
+      )}<div className="category-list">{availableCategories.map((category) => <label className={`category-choice ${selectedCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={selectedCategories.includes(category)} onChange={() => toggleCategory(category)} /><span><strong>{categoryInfo[category].label}</strong><small>{categoryInfo[category].description}</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action" disabled={busy || !workspaceHandle} onClick={() => void createBackup()}>{busy ? "Copie en cours…" : `Copier ${nomMachine} → cet ordinateur`}<span>↓</span></button></div>
+      <div className="vault-card"><div className="vault-card-heading"><div><span className="section-kicker">2 · RESTAURER</span><h3>Réinjecter une sauvegarde</h3></div><button type="button" className="secondary-button" onClick={() => void chooseRestoreTarget()}>{restoreTarget ? "Changer" : `Choisir le ${supportMachine.toLowerCase()}`}</button></div><p className="vault-path">{restoreTarget ? `Vers : ${restoreTargetName}` : `Choisis le ${supportMachine.toLowerCase()} à restaurer`}</p><label className="snapshot-select">Sauvegarde<select value={selectedSnapshotId} onChange={(event) => chooseSnapshot(event.target.value)} disabled={!snapshots.length}><option value="">Aucune sauvegarde</option>{snapshots.map((snapshot) => <option value={snapshot.id} key={snapshot.id}>{snapshot.id} · {snapshot.fileCount} fichiers · {formatBytes(snapshot.totalBytes)}</option>)}</select></label>{selectedSnapshot && <div className="snapshot-meta">{selectedSnapshot.categories.map((category) => <span key={category}>{categoryInfo[category].label}</span>)}</div>}<div className="category-list restore-list">{(selectedSnapshot?.categories ?? []).map((category) => <label className={`category-choice ${restoreCategories.includes(category) ? "selected" : ""}`} key={category}><input type="checkbox" checked={restoreCategories.includes(category)} onChange={() => toggleCategory(category, true)} /><span><strong>{categoryInfo[category].label}</strong><small>Restaurer cette catégorie</small></span></label>)}</div>{busy && progress && <div className="vault-progress" aria-live="polite"><div className="vault-progress-heading"><strong>{progress.current} / {progress.total} fichiers · {formatBytes(progress.bytes)} / {formatBytes(progress.totalBytes)}</strong><span>{Math.round((progress.current / progress.total) * 100)}%</span></div><div className="vault-progress-track"><div className="vault-progress-bar restore-bar" style={{ width: `${Math.round((progress.current / progress.total) * 100)}%` }} /></div><small>{progress.label}</small></div>}<button type="button" className="primary-button vault-action restore" disabled={busy || !selectedSnapshot} onClick={() => void restoreBackup()}>{busy ? "Écriture en cours…" : `Écrire cet ordinateur → ${nomMachine}`}<span>↑</span></button></div>
     </div>
     {status && <p className="vault-status success">{status}</p>}{error && <p className="vault-status error-message">{error}</p>}{lastReport && <div className="vault-report"><span>Rapport local prêt : {lastReport.fileCount} fichiers · {formatBytes(lastReport.totalBytes)}</span><button type="button" className="secondary-button" onClick={() => downloadReport(lastReport)}>Télécharger le rapport JSON</button></div>}
     <p className="vault-note">Chaque snapshot contient un manifeste, le nombre de fichiers, leur taille et leur empreinte SHA‑256. Aucune restauration ne démarre sans choix explicite de la cible.</p>

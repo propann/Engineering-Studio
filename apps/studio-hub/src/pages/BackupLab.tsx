@@ -92,7 +92,7 @@ function BackupMachineColumn({ kind, profileMachines: machines, enabled, workspa
   const isOp1 = kind === "op1";
   return <article className={`backup-machine-column ${isOp1 ? "op1" : "ep133"}`}>
     <header className="backup-column-head"><div className="backup-column-title"><span>{isOp1 ? "OP-1" : "EP-133"}</span><small>{isOp1 ? "ORIGINAL · DISK MODE" : "K.O. II · PROJECTS + SAMPLES"}</small></div><div className="backup-column-image"><img src={isOp1 ? "/media/op1.jpeg" : "/media/ep133.jpeg"} alt={isOp1 ? "OP-1" : "EP-133 K.O. II"} /></div><h3>{isOp1 ? "Sauvegarde OP-1" : "Sauvegarde EP-133"}</h3><p>{isOp1 ? "Tape, Album, Drum et Synth : coche uniquement ce que tu veux archiver." : "Projets et samples : prépare un clone local sans écrire sur la machine."}</p><div className="backup-column-meta"><strong>{machines[0]?.name || (isOp1 ? "OP-1 non nommée" : "EP-133 non nommé")}</strong><span>{machines.length ? "Fiche configurée" : enabled ? "Activée dans le profil" : "À configurer dans Profil"}</span></div></header>
-    <VaultPanel key={kind} initialMachine={kind} compact showWorkspace={showWorkspace} workspaceHandle={workspaceHandle} onWorkspaceSelected={onWorkspaceSelected} onBackupRecorded={onBackupRecorded} />
+    <VaultPanel key={kind} initialMachine={kind} compact showWorkspace={showWorkspace} memoireMo={machines.find((m) => m.active)?.memory ?? machines[0]?.memory} workspaceHandle={workspaceHandle} onWorkspaceSelected={onWorkspaceSelected} onBackupRecorded={onBackupRecorded} />
   </article>;
 }
 

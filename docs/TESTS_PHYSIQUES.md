@@ -34,6 +34,17 @@ La machine fait un rapport à chaque déconnexion. Après nos écritures, ce rap
 passe normalement : écrire depuis Linux sur son volume FAT ne la déroute pas et
 ne corrompt pas son système de fichiers.
 
+### La sauvegarde du coffre écrit réellement — 2026-08-21
+Confirmé par l'utilisateur sur le serveur en ligne, après correction du message
+qui ne disait pas où.
+
+Rien n'était cassé au départ : `verifierSnapshot` relit le snapshot après
+écriture, donc un succès annoncé signifiait déjà que les fichiers étaient là. Le
+message annonçait « 66 fichiers » sans le chemin, et le snapshot vit à trois
+niveaux de profondeur — `<espace>/op1/backups/<horodatage>/files/`. Une panne de
+communication, pas d'écriture, et elle coûte aussi cher : elle fait douter d'une
+fonction qui marche.
+
 ### Un sample fabriqué sonne juste — 2026-08-21
 **Le test qui débloquait tout.** Le rack fabrique des samples depuis ce jour et
 rien ne le validait : aucun test automatique ne dit si un son est juste.
@@ -146,26 +157,6 @@ navigateur, traitement, mémoire tampon de sortie.
 sur `http://192.168.2.59:3000` — `requestMIDIAccess` ne renvoie aucun appareil,
 sans message d'erreur. Chercher une panne là serait chercher une panne qui
 n'existe pas.
-
-### Sauvegarde du coffre — emplacement à confirmer — 2026-08-21
-Rapporté : « les sauvegardes n'écrivent rien sur le disque », **avec un message
-de succès**.
-
-Diagnostic : rien n'était cassé. `verifierSnapshot` relit le snapshot après
-écriture — un succès annoncé signifie que les fichiers sont bien là. Le snapshot
-vit à **trois niveaux de profondeur**, dans un dossier horodaté :
-
-```
-<espace de travail>/op1/backups/op1_20260821T…Z_abc123/files/synth/user/1.aif
-                    └─ machine   └─ horodatage        └─ contenu
-```
-
-Le message annonçait « 66 fichiers (270 Mo) » sans jamais dire où. Il donne
-maintenant le chemin complet.
-
-- [ ] refaire une sauvegarde, suivre le chemin annoncé, confirmer que les
-      fichiers y sont
-- [ ] vérifier que `manifest.json` est à côté du dossier `files/`
 
 ### Reconnaissance du support machine
 Après avoir choisi un dossier, le coffre dit s'il ressemble à la machine
