@@ -10,11 +10,13 @@ import type { PatchPreset } from "@studio-hub/core/types/audio";
  *
  * Ce module existait depuis le debut, avec ses 159 lignes de tests au vert, et
  * n'etait importe par personne. Il cherchait dans un store Zustand parallele
- * (`core/store/audioRackStore.ts`) que rien n'alimentait : une clef
- * localStorage differente de celle du rack, donc toujours vide.
+ * que rien n'alimentait : une clef localStorage differente de celle du rack,
+ * donc toujours vide. Une recherche testee qui ne pouvait rien trouver, a cote
+ * de 91 patches d'usine qu'on ne pouvait que faire defiler.
  *
- * Autrement dit, une recherche testee qui ne pouvait rien trouver, a cote de
- * 91 patches d'usine qu'on ne pouvait que faire defiler.
+ * Le panneau et le store ont ete supprimes le 2026-08-21, une fois leurs
+ * fonctions utiles integrees a la liste de patches du rack : recherche,
+ * favoris et etiquettes. Le MOTEUR, lui, reste — c'est lui qui les rend.
  *
  * Les tests structurels ci-dessous verrouillent le branchement lui-meme. Sans
  * eux, revenir a la liste non filtree ne casserait rien de visible : le

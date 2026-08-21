@@ -49,6 +49,17 @@ Ce que cela valide au passage, et qui n'allait pas de soi :
 - l'encodage AIFF, y compris le flottant étendu 80 bits de la fréquence
 - le choix d'encodeur selon la cible
 
+### Latence MIDI ressentie au jeu — 2026-08-21
+**Instantané sur l'OP-1**, confirmé par l'utilisateur en jouant sur le serveur
+en ligne. Aucune latence perceptible.
+
+Cohérent avec les mesures : le transport prend 0,3 ms pour 19 notes simultanées,
+et le plancher système ~1 ms. Les 20 ms visées ne sont donc jamais approchées.
+
+*Reste optionnel : relever le chiffre exact de la ligne `LATENCE MIDI` du rack
+pour connaître la répartition entre file d'attente, traitement et tampon de
+sortie. Utile seulement si la latence devenait perceptible un jour.*
+
 ### Transport MIDI — 2026-08-21
 30 s de jeu réel sur les pads de l'EP-133 : 166 messages, 60 frappes, notes 36
 à 47.

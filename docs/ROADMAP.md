@@ -308,12 +308,10 @@ appeared on the roadmap.
       object, one of them amputated — that is what made a favourite impossible to
       display without changing type. The engine list was duplicated too, identically,
       engine for engine (verified before merging).
-- [ ] Dead duplicates left to decide — PatchSearchModule.tsx (429 lines) and
-      audioRackStore.ts (470 lines) are now redundant and have no consumer. Not
-      removed here: the panel is UI, which belongs to the other track per
-      CONTRAT_INTEGRATION.md. Either the panel gets pointed at the rack's real
-      patches and the store goes, or both files go. A warning header was added to
-      PatchSearchModule.tsx so the next reader is not misled.
+- [x] Dead duplicates removed (2026-08-21) — PatchSearchModule.tsx (452 lines) and
+      audioRackStore.ts (470 lines), once their useful functions were integrated into
+      the rack's own patch list: search, favourites, tags. The ENGINE stays; it is what
+      delivers them. 922 lines gone, no consumer left behind.
 
 #### Infrastructure
 - [x] Coolify deploy steps removed from CI. They called three secrets that were
