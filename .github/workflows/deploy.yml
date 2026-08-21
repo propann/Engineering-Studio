@@ -72,8 +72,15 @@ jobs:
       - name: Set image tag
         id: image
         run: |
-          echo "tag=ghcr.io/${{ github.repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "tag-latest=ghcr.io/${{ github.repository }}:latest" >> $GITHUB_OUTPUT
+          # Le nom d'un depot d'images doit etre en MINUSCULES. `github.repository`
+          # vaut ici « propann/Engineering-Studio », avec des majuscules, ce qui
+          # faisait echouer buildx avec « repository name must be lowercase ».
+          # La construction de l'image n'avait donc jamais abouti, sur aucune
+          # branche — personne ne le voyait, le workflow ne tournant que sur une
+          # branche que rien ne deployait.
+          depot=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=ghcr.io/${depot}:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "tag-latest=ghcr.io/${depot}:latest" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
