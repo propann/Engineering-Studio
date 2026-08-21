@@ -1,4 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sAbonner } from "@studio-hub/midi-dispatch";
+
+/**
+ * Ce que le gestionnaire lit reellement d'un MIDIMessageEvent : trois champs,
+ * verifies par lecture du corps.
+ *
+ * Nommer cette forme plutot que d'ecrire `as unknown as MIDIMessageEvent` :
+ * un cast de ce genre a deja masque une interop impossible dans ce depot, et
+ * l'erreur ne s'etait vue qu'au silence complet du moteur audio.
+ */
+type EvenementMidiLu = {
+  data: Uint8Array | null;
+  target: { name?: string | null } | null;
+  timeStamp: number;
+};
 import { PAD_MIDI_NOTES } from '../project/exporters.ts';
 
 export interface MidiHit {
@@ -107,8 +122,19 @@ export function useWebMidi(
   useEffect(() => { hitRef.current = onPadHit; }, [onPadHit]);
   useEffect(() => { observationRef.current = onObservation; }, [onObservation]);
 
+  /**
+   * Desabonnement du repartiteur MIDI.
+   *
+   * Ce hook ecrivait `input.onmidimessage` sur chaque entree et les
+   * remettait TOUTES a `null` en se detachant — y compris celles d'autres
+   * composants. Demonter l'EP-133 coupait donc le MIDI du rack.
+   */
+  const desabonnerRef = useRef<(() => void) | null>(null);
+
   const detachInputs = useCallback(() => {
-    accessRef.current?.inputs.forEach((input) => { input.onmidimessage = null; });
+    // Se desabonner, jamais debrancher : les ports servent aussi aux autres.
+    desabonnerRef.current?.();
+    desabonnerRef.current = null;
   }, []);
 
   const attachInputs = useCallback(async (access: MIDIAccess, monitorAll = monitorAllInputsRef.current, sysexEnabled = false) => {
@@ -116,7 +142,7 @@ export function useWebMidi(
     // retire pas), seul son .state passe à 'disconnected' — filtrer par nom
     // seul laissait la pastille « connecté » allumée après débranchement.
     const inputs = [...access.inputs.values()].filter((input) => input.state === 'connected' && (monitorAll || isEp133MidiPort(input.name)));
-    const handler = (event: MIDIMessageEvent) => {
+    const handler = (event: EvenementMidiLu) => {
       const data = event.data;
       if (!data?.length) return;
       const bytes = Array.from(data);
@@ -179,8 +205,19 @@ export function useWebMidi(
     try {
       await Promise.all(inputs.map(async (input) => {
         if (input.connection !== 'open') await input.open();
-        input.onmidimessage = handler;
+        // L'ouverture du port reste utile ; l'attache passe par le repartiteur.
       }));
+
+      // Un seul auditeur, filtre sur les ports qui nous concernent. Le
+      // repartiteur diffuse toutes les entrees : c'est ici que le predicat
+      // d'origine reprend sa place.
+      desabonnerRef.current?.();
+      desabonnerRef.current = sAbonner(({ donnees, port, horodatage }) => {
+        if (!monitorAll && !isEp133MidiPort(port)) return;
+        // Meme forme qu'un MIDIMessageEvent : la logique de pads en dessous
+        // ne bouge pas d'une ligne.
+        handler({ data: donnees, target: { name: port }, timeStamp: horodatage });
+      });
       const inputNames = inputs.map((input) => input.name || 'Entrée MIDI');
       setState((current) => ({ ...current, status: `${sysexEnabled ? 'Connecté SysEx' : 'Connecté MIDI'} : ${inputNames.join(' + ')}`, connected: true, sysexEnabled, inputNames }));
     } catch (error) {

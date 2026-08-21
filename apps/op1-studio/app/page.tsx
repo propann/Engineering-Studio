@@ -1,6 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { sAbonner } from "@studio-hub/midi-dispatch";
+
+/**
+ * Ce que les gestionnaires MIDI de cette page lisent reellement d'un
+ * MIDIMessageEvent : le seul champ `data`. Nommer la forme plutot que de
+ * caster — un `as unknown as` a deja masque une interop impossible ici.
+ */
+type EvenementMidiLu = { data: Uint8Array | null };
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
@@ -425,7 +433,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
   const [projectName, setProjectName] = useState("Nouveau projet OP-1");
   const projectInputRef = useRef<HTMLInputElement>(null);
-  const midiHandler = useRef<((event: MIDIMessageEvent) => void) | null>(null);
+  const midiHandler = useRef<((event: EvenementMidiLu) => void) | null>(null);
+  /** Desabonnement du repartiteur pendant l'enregistrement MIDI. */
+  const desabonnerEnregistrementRef = useRef<(() => void) | null>(null);
   const midiInputRef = useRef<MidiInputLike | null>(null);
   const midiInputsRef = useRef<MidiInputLike[]>([]);
   const midiStartRef = useRef(0);
@@ -451,7 +461,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     if (!request) return;
     let disposed = false;
     let inputs: MidiInputLike[] = [];
-    const handler = (event: MIDIMessageEvent) => {
+    const handler = (event: EvenementMidiLu) => {
       if (event.data) setLastRawMidiIn([...event.data]);
       const message = decodeMidiNote(event.data);
       if (!message) return;
@@ -463,14 +473,19 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
         setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
       }
     };
-    void request().then((access) => {
+    // Abonnement au repartiteur, plutot qu'une ecriture directe.
+    //
+    // `inputs.forEach(p => p.onmidimessage = handler)` ecrasait le
+    // gestionnaire de tous les autres, et le nettoyage les remettait TOUS
+    // a null. Ouvrir le studio OP-1 rendait donc le rack muet, et le
+    // quitter coupait le MIDI de la page suivante.
+    const seDesabonner = sAbonner(({ donnees }) => {
       if (disposed) return;
-      inputs = [...access.inputs.values()];
-      inputs.forEach((port) => { port.onmidimessage = handler; });
-    }).catch(() => undefined);
+      handler({ data: donnees } as EvenementMidiLu);
+    });
     return () => {
       disposed = true;
-      inputs.forEach((port) => { port.onmidimessage = null; });
+      seDesabonner();
     };
   }, [recording]);
 
@@ -527,7 +542,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
     // Stop MIDI recording listeners if active
     if (midiInputsRef.current.length > 0) {
-      midiInputsRef.current.forEach((input) => { input.onmidimessage = null; });
+      // Se desabonner, jamais debrancher : les ports servent aussi au rack.
+      desabonnerEnregistrementRef.current?.();
+      desabonnerEnregistrementRef.current = null;
       midiHandler.current = null;
       midiInputRef.current = null;
       midiInputsRef.current = [];
@@ -739,7 +756,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             setMidiNotes(0);
             setMidiEvents([]);
             midiStartRef.current = performance.now();
-            const handler = (event: MIDIMessageEvent) => {
+            const handler = (event: EvenementMidiLu) => {
               const message = decodeMidiNote(event.data);
               if (!message) return;
               if (message.type === "note_on") {
@@ -755,7 +772,12 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             midiHandler.current = handler;
             midiInputRef.current = inputs[0];
             midiInputsRef.current = inputs;
-            inputs.forEach((port) => { port.onmidimessage = handler; });
+            // Abonnement au repartiteur. L'ecriture directe rendait muets le rack
+            // et les autres pages des le declenchement d'un enregistrement.
+            desabonnerEnregistrementRef.current?.();
+            desabonnerEnregistrementRef.current = sAbonner(({ donnees }) => {
+              handler({ data: donnees } as EvenementMidiLu);
+            });
           }
         }
       } catch {}
