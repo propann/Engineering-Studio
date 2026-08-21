@@ -19,6 +19,7 @@ import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSe
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
+import { construireChaineEffets } from "../core/audio/effets";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
   ajouterEtiquette,
@@ -362,6 +363,14 @@ export default function AudioPluginRack({
   const [fxEqLow, setFxEqLow] = useState<number>(0);
   const [fxEqMid, setFxEqMid] = useState<number>(0);
   const [fxEqHigh, setFxEqHigh] = useState<number>(0);
+  // Rack d'effets : saturation (module 8) et chorus (module 9). Tous a 0 par
+  // defaut — un rack qui sature des l'ouverture ferait croire a un defaut.
+  const [fxDriveMix, setFxDriveMix] = useState<number>(0);
+  const [fxDriveAmount, setFxDriveAmount] = useState<number>(40);
+  const [fxDriveMode, setFxDriveMode] = useState<"soft" | "fold">("soft");
+  const [fxChorusMix, setFxChorusMix] = useState<number>(0);
+  const [fxChorusRate, setFxChorusRate] = useState<number>(15);
+  const [fxChorusDepth, setFxChorusDepth] = useState<number>(4);
 
   const [masterDetune, setMasterDetune] = useState<number>(0);
 
@@ -485,6 +494,8 @@ export default function AudioPluginRack({
     masterDetune,
     fxDelayMix, fxDelayTime, fxDelayFeedback,
     fxEqLow, fxEqMid, fxEqHigh,
+    fxDriveMix, fxDriveAmount, fxDriveMode,
+    fxChorusMix, fxChorusRate, fxChorusDepth,
     plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
     braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
     ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
@@ -510,6 +521,8 @@ export default function AudioPluginRack({
       masterDetune,
       fxDelayMix, fxDelayTime, fxDelayFeedback,
       fxEqLow, fxEqMid, fxEqHigh,
+      fxDriveMix, fxDriveAmount, fxDriveMode,
+      fxChorusMix, fxChorusRate, fxChorusDepth,
       plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
       braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
       ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
@@ -1720,71 +1733,18 @@ export default function AudioPluginRack({
    * voix sur l'entree et la sortie sur sa destination, sans savoir ce qu'il y a
    * entre les deux.
    */
+  // La chaine d'effets vit maintenant dans core/audio/effets.ts — le rack
+  // d'effets, separe du rack de moteurs. Cette fonction n'est plus qu'une
+  // adaptation : elle prend les reglages du rack et appelle la chaine.
+  //
+  // Elle reste ici parce que le RENDU d'echantillon l'appelle avec un contexte
+  // hors-ligne. C'est ce qui garantit qu'un sample porte exactement les effets
+  // qu'on entend.
   const construireEffets = (
     ctx: BaseAudioContext,
     p: typeof paramsRef.current,
     now: number
-  ): { entree: AudioNode; sortie: AudioNode } => {
-    const entree = ctx.createGain();
-
-    // Egaliseur trois bandes. Un gain a 0 dB laisse passer sans rien changer :
-    // inutile de conditionner la construction, le cout d'un filtre neutre est
-    // negligeable et le graphe reste le meme dans tous les cas.
-    const grave = ctx.createBiquadFilter();
-    grave.type = "lowshelf";
-    grave.frequency.setValueAtTime(220, now);
-    grave.gain.setValueAtTime(p.fxEqLow, now);
-
-    const medium = ctx.createBiquadFilter();
-    medium.type = "peaking";
-    medium.frequency.setValueAtTime(1200, now);
-    medium.Q.setValueAtTime(0.9, now);
-    medium.gain.setValueAtTime(p.fxEqMid, now);
-
-    const aigu = ctx.createBiquadFilter();
-    aigu.type = "highshelf";
-    aigu.frequency.setValueAtTime(5200, now);
-    aigu.gain.setValueAtTime(p.fxEqHigh, now);
-
-    entree.connect(grave);
-    grave.connect(medium);
-    medium.connect(aigu);
-
-    const sortie = ctx.createGain();
-
-    // Delai avec reinjection. La voie directe passe toujours ; seule la voie
-    // retardee est dosee par le melange.
-    aigu.connect(sortie);
-
-    const melange = Math.max(0, Math.min(100, p.fxDelayMix)) / 100;
-    if (melange > 0) {
-      const retard = ctx.createDelay(2);
-      retard.delayTime.setValueAtTime(Math.max(0.01, Math.min(2, p.fxDelayTime / 1000)), now);
-
-      const reinjection = ctx.createGain();
-      // Borne a 0,85 : au-dela, la boucle diverge et sature indefiniment. Un
-      // curseur a 100 % ne doit pas pouvoir produire un larsen.
-      reinjection.gain.setValueAtTime(Math.min(0.85, Math.max(0, p.fxDelayFeedback / 100)), now);
-
-      // Amortir la reinjection evite l'accumulation d'aigus a chaque tour, qui
-      // rend les repetitions stridentes.
-      const amorti = ctx.createBiquadFilter();
-      amorti.type = "lowpass";
-      amorti.frequency.setValueAtTime(4800, now);
-
-      const dose = ctx.createGain();
-      dose.gain.setValueAtTime(melange, now);
-
-      aigu.connect(retard);
-      retard.connect(amorti);
-      amorti.connect(reinjection);
-      reinjection.connect(retard);
-      retard.connect(dose);
-      dose.connect(sortie);
-    }
-
-    return { entree, sortie };
-  };
+  ): { entree: AudioNode; sortie: AudioNode } => construireChaineEffets(ctx, p, now);
 
   // ===== FIN DES MOTEURS =====
   // Borne lue par AudioPluginRack.wiring.test.ts pour delimiter le code moteur.
@@ -2975,6 +2935,46 @@ export default function AudioPluginRack({
                 fabrique porte exactement les memes effets que ce qu'on entend. */}
             <div className="fx-globaux">
               <div className="fx-titre">🎛️ EFFETS GLOBAUX</div>
+              <div className="fx-groupe">
+                <span className="fx-groupe-nom">SATURATION</span>
+                <label>MIX {fxDriveMix}%
+                  <input type="range" min={0} max={100} value={fxDriveMix}
+                    onChange={(e) => updateParam("fxDriveMix", Number(e.target.value), setFxDriveMix)} />
+                </label>
+                <label>GAIN {fxDriveAmount}%
+                  <input type="range" min={0} max={100} value={fxDriveAmount} disabled={fxDriveMix === 0}
+                    onChange={(e) => updateParam("fxDriveAmount", Number(e.target.value), setFxDriveAmount)} />
+                </label>
+                <div className="fx-modes">
+                  {(["soft", "fold"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`fx-mode-btn ${fxDriveMode === m ? "actif" : ""}`}
+                      disabled={fxDriveMix === 0}
+                      onClick={() => updateParam("fxDriveMode", m, setFxDriveMode)}
+                      title={m === "soft" ? "Écrêtage doux, façon lampe" : "Repliement : le signal se replie au lieu d'écrêter"}
+                    >
+                      {m === "soft" ? "DOUX" : "REPLI"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="fx-groupe">
+                <span className="fx-groupe-nom">CHORUS</span>
+                <label>MIX {fxChorusMix}%
+                  <input type="range" min={0} max={100} value={fxChorusMix}
+                    onChange={(e) => updateParam("fxChorusMix", Number(e.target.value), setFxChorusMix)} />
+                </label>
+                <label>VITESSE {(fxChorusRate / 10).toFixed(1)} Hz
+                  <input type="range" min={1} max={80} value={fxChorusRate} disabled={fxChorusMix === 0}
+                    onChange={(e) => updateParam("fxChorusRate", Number(e.target.value), setFxChorusRate)} />
+                </label>
+                <label>PROFONDEUR {fxChorusDepth} ms
+                  <input type="range" min={0} max={10} value={fxChorusDepth} disabled={fxChorusMix === 0}
+                    onChange={(e) => updateParam("fxChorusDepth", Number(e.target.value), setFxChorusDepth)} />
+                </label>
+              </div>
               <div className="fx-groupe">
                 <span className="fx-groupe-nom">DELAY</span>
                 <label>MIX {fxDelayMix}%

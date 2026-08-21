@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
+const EFFETS = readFileSync(path.join(DIR, "..", "core", "audio", "effets.ts"), "utf-8");
 
 /**
  * Corps de construireVoix : la fonction qui fabrique reellement le son.
@@ -135,7 +136,12 @@ describe("cablage des parametres", () => {
   it("lit chaque parametre declare dans le moteur audio", () => {
     // L'invariant central. Un parametre absent d'ici est un curseur qui ne
     // produit aucun son.
-    const corps = moteurSansAffichage();
+    // Le corps du moteur PLUS le rack d'effets : depuis l'extraction de la
+    // chaine, les parametres fx sont lus dans core/audio/effets.ts. Les
+    // exempter en bloc aurait desarme le garde-fou pour douze parametres ;
+    // etendre ce qu'il lit le garde entier — un parametre lu nulle part
+    // echoue toujours.
+    const corps = moteurSansAffichage() + EFFETS;
     const inertes = parametres().filter((p) => !corps.includes(`p.${p}`));
     expect(inertes, `parametres sans effet sur le son : ${inertes.join(", ")}`).toEqual([]);
   });
@@ -340,29 +346,22 @@ describe("effets globaux", () => {
     expect(SOURCE).toContain("effets.sortie.connect(offline.destination)");
   });
 
-  it("borne la reinjection du delai", () => {
-    // Au-dela de 0,85 la boucle diverge et sature indefiniment. Un curseur a
-    // 100 % ne doit pas pouvoir produire un larsen.
-    expect(SOURCE).toMatch(/Math\.min\(0\.85, Math\.max\(0, p\.fxDelayFeedback \/ 100\)\)/);
+  it("delegue au rack d'effets plutot que de refaire la chaine", () => {
+    // La chaine vivait au milieu de ce fichier de 3900 lignes : la separation
+    // des trois racks n'existait que dans l'interface. Elle est maintenant
+    // dans le code, et ses invariants — reinjection bornee, temps de delai
+    // borne, voie directe — sont testes pour de vrai sur des fonctions pures
+    // par core/audio/effets.test.ts, au lieu d'etre lus dans le source.
+    expect(SOURCE).toContain('from "../core/audio/effets"');
+    expect(SOURCE).toContain("construireChaineEffets(ctx, p, now)");
   });
 
-  it("amortit la reinjection", () => {
-    // Sans filtre dans la boucle, les aigus s'accumulent a chaque tour et les
-    // repetitions deviennent stridentes.
-    const fx = SOURCE.slice(SOURCE.indexOf("const construireEffets"));
-    expect(fx.slice(0, fx.indexOf("return { entree, sortie }"))).toContain('amorti.type = "lowpass"');
-  });
-
-  it("borne le temps de delai a ce que le noeud accepte", () => {
-    // createDelay(2) fixe un maximum de 2 s : le depasser leve.
-    expect(SOURCE).toMatch(/Math\.min\(2, p\.fxDelayTime \/ 1000\)/);
-  });
-
-  it("laisse passer la voie directe", () => {
-    // Seule la voie retardee est dosee. Sans voie directe, un melange a 0 %
-    // rendrait le silence.
-    const fx = SOURCE.slice(SOURCE.indexOf("const construireEffets"));
-    expect(fx).toContain("aigu.connect(sortie)");
+  it("l'adaptation ne reintroduit aucune construction de noeud", () => {
+    // Le risque de la delegation : qu'on rajoute « juste un filtre » ici, hors
+    // du rack d'effets, et que le rendu hors ligne ne l'ait pas.
+    const i = SOURCE.indexOf("const construireEffets = (");
+    const bloc = SOURCE.slice(i, SOURCE.indexOf("construireChaineEffets(ctx, p, now)", i));
+    expect(bloc).not.toMatch(/ctx\.create/);
   });
 });
 
