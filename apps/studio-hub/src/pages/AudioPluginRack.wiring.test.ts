@@ -22,6 +22,7 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
 const EFFETS = readFileSync(path.join(DIR, "..", "core", "audio", "effets.ts"), "utf-8");
 const ENVELOPPE = readFileSync(path.join(DIR, "..", "core", "audio", "enveloppe.ts"), "utf-8");
+const LFO = readFileSync(path.join(DIR, "..", "core", "audio", "lfo.ts"), "utf-8");
 
 /**
  * Corps de construireVoix : la fonction qui fabrique reellement le son.
@@ -148,7 +149,7 @@ describe("cablage des parametres", () => {
     // exempter en bloc aurait desarme le garde-fou pour douze parametres ;
     // etendre ce qu'il lit le garde entier — un parametre lu nulle part
     // echoue toujours.
-    const corps = moteurSansAffichage() + EFFETS + ENVELOPPE;
+    const corps = moteurSansAffichage() + EFFETS + ENVELOPPE + LFO;
     const inertes = parametres().filter((p) => !corps.includes(`p.${p}`));
     expect(inertes, `parametres sans effet sur le son : ${inertes.join(", ")}`).toEqual([]);
   });
@@ -351,6 +352,20 @@ describe("effets globaux", () => {
     expect(SOURCE).toContain("env.connect(effets.entree)");
     expect(SOURCE).toContain("effets.sortie.connect(masterBusRef.current!)");
     expect(SOURCE).toContain("effets.sortie.connect(offline.destination)");
+  });
+
+  it("le LFO global est bien branche dans la voix", () => {
+    // Meme piege que pour l'enveloppe : le garde-fou « aucun parametre
+    // inerte » lit desormais la source du module LFO, donc `lfoRate` y
+    // parait utilise meme si le moteur ne l'appelle plus. Ce test verifie le
+    // LIEN, pas la presence du nom.
+    const corps = moteurAudio();
+    expect(corps).toContain("lfoActif(p)");
+    expect(corps).toContain("vitesseLfoHz(p, p.bpmHote)");
+    // Insere entre le gain et l'enveloppe : c'est le point par lequel les
+    // seize moteurs passent tous.
+    expect(corps).toContain("apresGain.connect(env)");
+    expect(corps).not.toContain("masterGain.connect(env)");
   });
 
   it("resout l'enveloppe depuis les parametres, sans constantes en dur", () => {

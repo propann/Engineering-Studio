@@ -22,7 +22,12 @@ import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/t
 import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
 import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
 import { lirePatchImporte } from "../core/audio/importPatch";
+import {
+  FILTRE_CENTRE_HZ, LFO_DEFAUT, amplitudeFiltre, lfoActif, profondeurTremolo,
+  vitesseLfoHz, type CibleLfo, type FormeLfo, type ParamsLfo,
+} from "../core/audio/lfo";
 import { PanneauEnveloppe } from "../racks/PanneauEnveloppe";
+import { PanneauLfo } from "../racks/PanneauLfo";
 import { EmplacementModule, SelecteurModule, type ModuleLabo } from "../racks/ModulesLabo";
 import { RackEffets } from "../racks/RackEffets";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
@@ -382,6 +387,16 @@ export default function AudioPluginRack({
   const [envDecay, setEnvDecay] = useState<number>(ENVELOPPE_DEFAUT.envDecay);
   const [envSustain, setEnvSustain] = useState<number>(ENVELOPPE_DEFAUT.envSustain);
   const [envRelease, setEnvRelease] = useState<number>(ENVELOPPE_DEFAUT.envRelease);
+
+  // LFO global (module 7). Plusieurs moteurs ont deja leur LFO interne ;
+  // celui-ci s'applique a TOUTES les voix. Inactif par defaut : ajouter le
+  // module ne doit pas changer le son des 91 patches d'usine.
+  const [lfoCible, setLfoCible] = useState<CibleLfo>(LFO_DEFAUT.lfoCible);
+  const [lfoForme, setLfoForme] = useState<FormeLfo>(LFO_DEFAUT.lfoForme);
+  const [lfoRate, setLfoRate] = useState<number>(LFO_DEFAUT.lfoRate);
+  const [lfoDepth, setLfoDepth] = useState<number>(LFO_DEFAUT.lfoDepth);
+  const [lfoSync, setLfoSync] = useState<boolean>(LFO_DEFAUT.lfoSync);
+  const [lfoDivision, setLfoDivision] = useState<Division>(LFO_DEFAUT.lfoDivision);
   // Rack d'effets : saturation (module 8) et chorus (module 9). Tous a 0 par
   // defaut — un rack qui sature des l'ouverture ferait croire a un defaut.
   const [fxDriveMix, setFxDriveMix] = useState<number>(0);
@@ -519,6 +534,7 @@ export default function AudioPluginRack({
     fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
     fxEqLow, fxEqMid, fxEqHigh,
     envAttack, envDecay, envSustain, envRelease,
+    lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, bpmHote,
     fxDriveMix, fxDriveAmount, fxDriveMode,
     fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
     plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
@@ -547,6 +563,7 @@ export default function AudioPluginRack({
       fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
       fxEqLow, fxEqMid, fxEqHigh,
       envAttack, envDecay, envSustain, envRelease,
+      lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, bpmHote,
       fxDriveMix, fxDriveAmount, fxDriveMode,
       fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
       plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
@@ -763,6 +780,19 @@ export default function AudioPluginRack({
   
   const appliquerParamEnveloppe = (nom: keyof ParamsEnveloppe, valeur: number) => {
     updateParam(nom, valeur, SETTERS_ENVELOPPE[nom]);
+  };
+  
+  const SETTERS_LFO: { [N in keyof ParamsLfo]: (v: ParamsLfo[N]) => void } = {
+    lfoCible: setLfoCible,
+    lfoForme: setLfoForme,
+    lfoRate: setLfoRate,
+    lfoDepth: setLfoDepth,
+    lfoSync: setLfoSync,
+    lfoDivision: setLfoDivision,
+  };
+  
+  const appliquerParamLfo = <N extends keyof ParamsLfo>(nom: N, valeur: ParamsLfo[N]) => {
+    updateParam(nom, valeur, SETTERS_LFO[nom] as (v: any) => void);
   };
 
   const updateParam = (key: string, val: any, setter: (v: any) => void) => {
@@ -1095,7 +1125,30 @@ export default function AudioPluginRack({
     const masterGain = ctx.createGain();
     const vol = (p.masterVolume / 100) * 0.45;
     masterGain.gain.setValueAtTime(vol, now);
-    masterGain.connect(env);
+    // ── LFO global (module 7) ─────────────────────────────────────────────
+    //
+    // Insere ICI, entre le gain et l'enveloppe : les seize moteurs passent tous
+    // par ce point. Une seule ligne suffit la ou moduler chaque moteur en aurait
+    // demande seize — et en aurait laisse un de cote sans qu'on le remarque.
+    let apresGain: AudioNode = masterGain;
+    if (lfoActif(p)) {
+      const vitesse = vitesseLfoHz(p, p.bpmHote);
+      if (p.lfoCible === "tremolo") {
+        // Proportionnel au volume, et borne sous lui : le LFO AJOUTE au gain.
+        // Un creux qui passe sous zero n'attenue pas, il INVERSE LA PHASE — et
+        // sur une superposition de patches, deux voix en opposition s'annulent.
+        attachLfo(ctx, masterGain.gain, vitesse, profondeurTremolo(p.lfoDepth) * vol, now, p.lfoForme);
+      } else {
+        const balaye = ctx.createBiquadFilter();
+        balaye.type = "lowpass";
+        balaye.frequency.setValueAtTime(FILTRE_CENTRE_HZ, now);
+        balaye.Q.setValueAtTime(4, now);
+        attachLfo(ctx, balaye.frequency, vitesse, amplitudeFiltre(p.lfoDepth), now, p.lfoForme);
+        masterGain.connect(balaye);
+        apresGain = balaye;
+      }
+    }
+    apresGain.connect(env);
 
     // Envoi vers la réverbération partagée. `amount` en 0-100.
     const sendToReverb = (source: AudioNode, amount: number) => {
@@ -3059,6 +3112,11 @@ export default function AudioPluginRack({
             <PanneauEnveloppe
               params={{ envAttack, envDecay, envSustain, envRelease }}
               onParam={appliquerParamEnveloppe}
+            />
+            <PanneauLfo
+              params={{ lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision }}
+              onParam={appliquerParamLfo}
+              bpmHote={bpmHote}
             />
             {/* Le rack d'effets rend sa propre interface. Elle vivait ici, dans le
                 ventre du rack de moteurs : la separation n'existait qu'a moitie. */}

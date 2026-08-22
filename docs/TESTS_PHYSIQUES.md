@@ -290,6 +290,29 @@ Bouton **📥 IMPORTER** à côté des trois exports.
       d'usine
 
 
+### LFO global
+Panneau LFO du Labo, à côté de l'enveloppe.
+
+- [ ] **CIBLE sur « — Aucun — » : le son est strictement celui d'avant.** Le
+      défaut ne module rien, sinon les 91 patches d'usine changeraient
+- [ ] **trémolo** : le volume pulse. À profondeur maximale, il ne doit
+      **jamais** se taire ni craquer — le creux reste au-dessus de zéro, sans
+      quoi le gain n'atténue pas mais **inverse la phase**
+- [ ] **superposition de patches + trémolo à fond** : c'est là que l'inversion
+      de phase s'entendrait — deux voix en opposition s'annulent
+- [ ] **filtre** : le balayage s'entend, et à profondeur maximale il ne coupe
+      **jamais** tout. Un trou de son au lieu d'un balayage signale que le
+      plancher a sauté
+- [ ] les quatre formes diffèrent : le carré saute, la dent de scie retombe
+- [ ] **SYNC** : le LFO se cale sur le tempo du studio, et la vitesse affichée
+      en Hz correspond à ce qu'on entend. Une noire à 120 BPM = 2 Hz
+- [ ] SYNC actif, le curseur VITESSE est grisé
+- [ ] **le LFO s'applique aux quinze moteurs**, pas seulement à ceux qui ont
+      déjà leur LFO interne — il est inséré entre le gain et l'enveloppe, là où
+      tous passent
+- [ ] **un échantillon fabriqué porte la modulation**
+
+
 ### Le rack d'effets — saturation et chorus
 Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
 

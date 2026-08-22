@@ -14,7 +14,7 @@
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
 | 6 | Step Sequencer | 🔴 |
-| 7 | LFO Generator | 🔴 |
+| 7 | LFO Generator | ✅ livré — trémolo et balayage de filtre, SYNC au tempo, global aux 15 moteurs |
 | 8 | Distortion Stack | 🟢 saturation douce et par repliement, dans le rack d'effets |
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
