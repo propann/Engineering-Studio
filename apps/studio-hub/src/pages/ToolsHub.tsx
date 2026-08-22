@@ -87,12 +87,6 @@ const tools: Tool[] = [
 
   // ── Cartes principales ────────────────────────────────────────────────
   {
-    id: "firmware-gallery", code: "FW-LAB", category: "MODS & OS OP-1", title: "⚙️ Galerie firmware OP-1",
-    text: "Catalogue des firmwares, thèmes et patchs graphiques. Le Lab et le compilateur s’ouvrent depuis la galerie.",
-    accent: "firmware-card", visual: "chip", status: "OUVRIR →",
-    action: { type: "page", page: "firmware-gallery" }, section: "op1", couleur: "#ff3a5d",
-  },
-  {
     id: "vault", code: "SAVE-ALL", category: "COFFRE", title: "💾 Sauvegarde",
     text: "Snapshots OP-1 et EP-133, vérification SHA-256 et restauration contrôlée.",
     accent: "save-card", visual: "grid", status: "OUVRIR →",
