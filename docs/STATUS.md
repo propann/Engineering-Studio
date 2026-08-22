@@ -19,7 +19,7 @@ les tests automatiques ne peuvent pas prouver.
 | Dépôt GitHub | Opérationnel, branche `main` |
 | Intégration continue | ✅ tourne sur `main`, la branche réellement déployée |
 | Déploiement Coolify | Opérationnel, HTTPS via le proxy |
-| Tests automatisés | ✅ Hub/packages ; le CI racine ne lance pas les suites autonomes des deux studios |
+| Tests automatisés | ✅ Hub/packages, OP-1 et EP-133 vérifiés par CI |
 | Profil local | ✅ récupérable depuis le dossier de travail |
 | Dossier de travail | ✅ mémorisé, permission vérifiée au rechargement |
 | Coffre — sauvegarde | ✅ validée à l'usage, dossiers vides compris |
@@ -64,7 +64,7 @@ comparer les empreintes — mais pas son orchestration.
 1. Ajouter des tests de démarrage avec localStorage vide.
 2. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS.
 3. Brancher les pages restantes sur le module profil partagé.
-4. Raccorder les suites autonomes au CI avec une installation reproductible.
+4. Conserver les installations des studios synchronisées avec leurs manifests.
 5. Auditer les états locaux indépendants des modules.
 6. Préparer un routage URL stable avant de rendre les pages partageables.
 
