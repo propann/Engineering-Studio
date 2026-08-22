@@ -20,13 +20,11 @@ const DocOP1 = lazy(() => import("./pages/DocOP1"));
 const DocEP133 = lazy(() => import("./pages/DocEP133"));
 const RhythmHero = lazy(() => import("./pages/RhythmHero"));
 const ImageEditorOP1 = lazy(() => import("./pages/ImageEditorOP1"));
-const FirmwareGallery = lazy(() => import("./pages/FirmwareGallery"));
 const FirmwareCompiler = lazy(() => import("./pages/FirmwareCompiler"));
 const FirmwareLab = lazy(() => import("./pages/FirmwareLab"));
 const ThemeEditor = lazy(() => import("./pages/ThemeEditor"));
 const ThemeProjectEditor = lazy(() => import("./pages/ThemeProjectEditor"));
 const AdvancedImageEditor = lazy(() => import("./pages/AdvancedImageEditor"));
-const SoundEditorHub = lazy(() => import("./pages/SoundEditorHub"));
 const SoundPatchCreator = lazy(() => import("./pages/SoundPatchCreator"));
 const AudioPluginRack = lazy(() => import("./pages/AudioPluginRack"));
 const SoundLibrary = lazy(() => import("./pages/SoundLibrary"));
@@ -50,12 +48,10 @@ type Page =
   | "rhythm-hero" 
   | "image-editor-op1" 
   | "firmware-lab"
-  | "firmware-gallery" 
   | "firmware-compiler"
   | "theme-editor" 
   | "theme-project"
   | "advanced-image"
-  | "sound-editor"
   | "sound-patch-creator"
   | "audio-plugin-rack"
   | "sound-library"
@@ -112,15 +108,12 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
     case "image-editor-op1":
       return <ImageEditorOP1 />;
     case "firmware-lab":
-    case "firmware-gallery":
     case "firmware-compiler":
     case "theme-editor":
     case "theme-project":
       return <FirmwareLab />;
     case "advanced-image":
       return <AdvancedImageEditor />;
-    case "sound-editor":
-      return <SoundEditorHub onClose={() => setCurrentPage("outils")} />;
     case "sound-patch-creator":
       return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
     case "midi-settings":

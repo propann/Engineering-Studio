@@ -78,7 +78,7 @@ describe("l'ouverture est portee par la donnee", () => {
 
   it("chaque type d'action est traite", () => {
     const corps = RACK.slice(RACK.indexOf("function ouvrir(tool: Tool)"));
-    for (const type of ["page", "groupe", "ancre", "editeur-son", "fiche"]) {
+    for (const type of ["page", "groupe", "ancre", "fiche"]) {
       expect(corps, `action « ${type} » non traitee`).toContain(`case "${type}":`);
     }
   });
@@ -100,17 +100,13 @@ describe("l'ouverture est portee par la donnee", () => {
   });
 });
 
-describe("les sections deviennent utilisables", () => {
-  it("les onglets sont rendus", () => {
-    // Declares depuis le debut, jamais affiches, et inutilisables tant que les
-    // vrais outils vivaient hors du tableau.
-    expect(RACK).toContain("sections.map(section");
-    expect(RACK).toContain("setActiveSection(section.id)");
+describe("navigation principale", () => {
+  it("conserve uniquement la TopBar", () => {
+    expect(RACK).not.toContain("hub-sections");
+    expect(RACK).not.toContain("setActiveSection");
   });
 
-  it("aucune section n'est vide", () => {
-    // Rebranchees telles quelles avant la fusion, « OP-1 STUDIO » et
-    // « EP-133 STUDIO » auraient affiche ZERO outil.
+  it("garde des cartes pour les deux studios", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
     const entrees = [...bloc.matchAll(/id: "([^"]+)"[\s\S]*?section: "(hub|op1|ep133)"/g)];
     const cartes = entrees.filter((m) => {
@@ -121,14 +117,6 @@ describe("les sections deviennent utilisables", () => {
     for (const section of ["hub", "op1", "ep133"]) {
       const n = cartes.filter((m) => m[2] === section).length;
       expect(n, `la section « ${section} » n'a aucune carte`).toBeGreaterThan(0);
-    }
-  });
-
-  it("les onglets ont un style", () => {
-    // Une classe posee sans regle CSS : le defaut que ni le typecheck ni le
-    // build ne voient.
-    for (const c of ["hub-sections", "hub-section-btn"]) {
-      expect(CSS, `.${c} sans regle`).toMatch(new RegExp(`\\.${c}[\\s,{:.]`));
     }
   });
 });
@@ -174,7 +162,7 @@ describe("le regroupement est une donnee", () => {
     // autres passent par le panneau.
     expect(RACK).toContain('action: { type: "groupe", groupe: "reglages" }');
     expect(RACK).toContain('action: { type: "groupe", groupe: "formation" }');
-    expect(RACK).toContain('action: { type: "editeur-son" }');
+    expect(RACK).toContain('action: { type: "page", page: "sound-library" }');
     expect(RACK).toContain('action: { type: "ancre", ancre: "hub-documentation" }');
     expect(RACK).toContain('<DocumentationShelf docs={membres("documentation")}');
   });
@@ -190,7 +178,7 @@ describe("ce que la fusion ne devait pas casser", () => {
   it("les destinations connues sont toujours atteignables", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
     for (const page of [
-      "studio-op1", "studio-ep133", "firmware-gallery", "firmware-lab", "backup-lab",
+      "studio-op1", "studio-ep133", "firmware-lab", "backup-lab",
       "audio-plugin-rack", "sound-library", "sound-editor", "image-editor-op1",
       "midi-settings", "op1-settings", "exercises", "rhythm-hero",
       "doc-op1", "doc-ep133", "documentation",

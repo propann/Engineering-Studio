@@ -5,9 +5,9 @@ import { DEFAULT_PROFILE_NAME, readProfileName } from "../core/profile";
 type PageId =
   | "landing" | "outils" | "profil" | "documentation" | "exercises"
   | "doc-op1" | "doc-ep133" | "studio-op1" | "studio-ep133"
-  | "rhythm-hero" | "image-editor-op1" | "firmware-lab" | "firmware-gallery"
+  | "rhythm-hero" | "image-editor-op1" | "firmware-lab"
   | "firmware-compiler" | "theme-editor" | "theme-project" | "advanced-image"
-  | "sound-editor" | "sound-patch-creator" | "audio-plugin-rack" | "sound-library"
+  | "sound-patch-creator" | "audio-plugin-rack" | "sound-library"
   | "midi-settings" | "op1-settings" | "backup-lab" | "orphan-pages";
 
 type Target = "OP-1" | "EP-133" | "Hub partagé" | "Aucun projet";
@@ -43,8 +43,6 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "firmware-lab", label: "Firmware Lab", description: "Préparation locale des mods OP-1.", target: "OP-1" }
 ,
-  { id: "firmware-gallery", label: "Galerie firmware", description: "Catalogue firmware et visuels OP-1.", target: "OP-1" }
-,
   { id: "firmware-compiler", label: "Compilateur firmware", description: "Préparation des paquets firmware.", target: "OP-1" }
 ,
   { id: "theme-editor", label: "Éditeur de thème", description: "Personnalisation visuelle OP-1.", target: "OP-1" }
@@ -52,8 +50,6 @@ const PAGE_REGISTRY: PageRecord[] = [
   { id: "theme-project", label: "Projet de thème", description: "Gestion des projets de thème.", target: "OP-1" }
 ,
   { id: "advanced-image", label: "Éditeur image avancé", description: "Édition avancée des visuels.", target: "Hub partagé" }
-,
-  { id: "sound-editor", label: "Éditeur sonore", description: "Bibliothèque et édition des sons.", target: "Hub partagé" }
 ,
   { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1" }
 ,
@@ -84,16 +80,14 @@ const PAGE_LINKS: Record<string, string[]> = {
   "studio-ep133": ["TopBar · EP-133 Studio", "Hub · EP-133 Studio", "Hub · Pattern & Song"],
   "rhythm-hero": ["Hub · Apprendre"],
   "image-editor-op1": ["Hub · Éditeur d’image"],
-  "firmware-lab": ["Hub · Galerie firmware"],
-  "firmware-gallery": ["Hub · Galerie firmware"],
+  "firmware-lab": ["Hub · Firmware Lab"],
   "firmware-compiler": ["Page manager"],
   "theme-editor": ["Page manager"],
   "theme-project": ["Page manager"],
   "advanced-image": ["Page manager"],
-  "sound-editor": ["TopBar · Sons", "Hub · Son"],
   "sound-patch-creator": ["Page manager"],
   "audio-plugin-rack": ["Hub · Labo création sonore"],
-  "sound-library": ["Hub · Bibliothèque sonore"],
+  "sound-library": ["TopBar · Bibliothèque sonore", "Hub · Bibliothèque sonore"],
   "midi-settings": ["Hub · Réglages"],
   "op1-settings": ["Hub · Réglages"],
   "backup-lab": ["Hub · Sauvegarde"],

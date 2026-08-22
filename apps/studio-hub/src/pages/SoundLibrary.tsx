@@ -3,6 +3,7 @@ import { TopBar } from "../components/TopBar";
 import { DEFAULT_PROFILE_NAME, readProfileName } from "../core/profile";
 import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { SoundLibraryPanel } from "../SoundLibraryPanel";
+import SoundEditorHub from "./SoundEditorHub";
 
 /**
  * Page « Bibliothèque sonore ».
@@ -25,6 +26,7 @@ import { SoundLibraryPanel } from "../SoundLibraryPanel";
 export default function SoundLibrary() {
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
   const [workspaceHandle, setWorkspaceHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [activeView, setActiveView] = useState<"library" | "editor">("library");
 
   useEffect(() => { setProfileName(readProfileName()); }, []);
 
@@ -46,16 +48,23 @@ export default function SoundLibrary() {
         <header className="sound-library-head">
           <h1>Bibliothèque sonore</h1>
           <p>
-            Catalogue commun aux deux machines : import, empreinte SHA‑256,
-            étiquettes, favoris et préparation. Les fichiers sont écrits dans
-            <code> shared/sounds/</code> de ton espace de travail.
+            Un point d’entrée unique pour cataloguer, préparer et ouvrir les sons
+            OP‑1 et EP‑133. Les formats et transferts restent propres à chaque machine.
           </p>
+          <nav className="sound-library-view-tabs" aria-label="Vues de la bibliothèque sonore">
+            <button type="button" className={activeView === "library" ? "is-active" : ""} onClick={() => setActiveView("library")}>Catalogue & stockage</button>
+            <button type="button" className={activeView === "editor" ? "is-active" : ""} onClick={() => setActiveView("editor")}>Éditeur & préparation</button>
+          </nav>
         </header>
-        <SoundLibraryPanel
-          workspaceHandle={workspaceHandle}
-          onOpenOp1={() => (window as any).navigateMaquette("studio-op1")}
-          onOpenEp133={() => (window as any).navigateMaquette("studio-ep133")}
-        />
+        {activeView === "library" ? (
+          <SoundLibraryPanel
+            workspaceHandle={workspaceHandle}
+            onOpenOp1={() => (window as any).navigateMaquette("studio-op1")}
+            onOpenEp133={() => (window as any).navigateMaquette("studio-ep133")}
+          />
+        ) : (
+          <SoundEditorHub profileName={profileName} enModule />
+        )}
       </main>
     </div>
   );
