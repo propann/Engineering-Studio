@@ -34,6 +34,32 @@ export function midiToFrequency(midiNote: number): number {
   return 440 * Math.pow(2, (midiNote - 69) / 12);
 }
 
+type PatchVoiceProfile = {
+  carrier: OscillatorType;
+  modRatio: number;
+  modIndex: number;
+  filterMultiplier: number;
+  detune: number;
+};
+
+/** Convertit le patch choisi dans le petit écran en paramètres réellement audibles. */
+function patchVoiceProfile(patch: string): PatchVoiceProfile {
+  const name = patch.toLowerCase();
+  if (name.includes("dx7") || name.includes("fm") || name.includes("bell")) {
+    return { carrier: "sine", modRatio: 3, modIndex: 5, filterMultiplier: 6, detune: 0.001 };
+  }
+  if (name.includes("saw") || name.includes("brass") || name.includes("acid")) {
+    return { carrier: "sawtooth", modRatio: 1.5, modIndex: 2.4, filterMultiplier: 4, detune: 0.003 };
+  }
+  if (name.includes("granular") || name.includes("cloud") || name.includes("modal")) {
+    return { carrier: "triangle", modRatio: 2.5, modIndex: 8, filterMultiplier: 8, detune: -0.002 };
+  }
+  if (name.includes("tape") || name.includes("dust")) {
+    return { carrier: "triangle", modRatio: 1.01, modIndex: 1.4, filterMultiplier: 2.8, detune: -0.004 };
+  }
+  return { carrier: "sine", modRatio: 2, modIndex: 3.5, filterMultiplier: 5, detune: 0.003 };
+}
+
 interface ActiveVoice {
   note: number;
   stop: (releaseTime?: number) => void;
@@ -163,13 +189,14 @@ class Op1SynthEngine {
         const modulator = ctx.createOscillator();
         const modGain = ctx.createGain();
 
-        carrier.type = "sine";
+        const patch = patchVoiceProfile(this.currentPatch);
+        carrier.type = patch.carrier;
         carrier.frequency.setValueAtTime(freq, now);
 
         modulator.type = "sine";
-        modulator.frequency.setValueAtTime(freq * 2, now); // Ratio 2:1 pour brillance
+        modulator.frequency.setValueAtTime(freq * patch.modRatio, now);
 
-        const modIndex = freq * 3.5 * velFactor;
+        const modIndex = freq * patch.modIndex * velFactor;
         modGain.gain.setValueAtTime(modIndex, now);
         modGain.gain.exponentialRampToValueAtTime(Math.max(1, modIndex * 0.15), now + 0.8);
 
@@ -311,14 +338,15 @@ class Op1SynthEngine {
         const osc2 = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
 
-        osc1.type = engine === "Voltage" ? "sawtooth" : engine === "Phase" ? "triangle" : "sawtooth";
+        const patch = patchVoiceProfile(this.currentPatch);
+        osc1.type = engine === "Voltage" ? "sawtooth" : engine === "Phase" ? "triangle" : patch.carrier;
         osc2.type = engine === "Digital" ? "square" : "sine";
 
         osc1.frequency.setValueAtTime(freq, now);
-        osc2.frequency.setValueAtTime(freq * 1.003, now); // Légère rondeur
+        osc2.frequency.setValueAtTime(freq * (1 + patch.detune), now);
 
         filter.type = "lowpass";
-        filter.frequency.setValueAtTime(Math.min(14000, freq * 5), now);
+        filter.frequency.setValueAtTime(Math.min(14000, freq * patch.filterMultiplier), now);
         filter.frequency.exponentialRampToValueAtTime(Math.max(100, freq * 1.8), now + 0.45);
         filter.Q.setValueAtTime(3.5, now);
 
