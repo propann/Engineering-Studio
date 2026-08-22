@@ -48,6 +48,7 @@ class Op1SynthEngine {
   private recordedChunks: Float32Array[] = [];
   private activeVoices = new Map<number, ActiveVoice>();
   private currentEngine: Op1EngineType = "FM";
+  private currentPatch = "Virtual Analog Saw Lead";
   private sampleRate = 44100;
 
   private initContext(): AudioContext {
@@ -89,15 +90,38 @@ class Op1SynthEngine {
     return this.ctx;
   }
 
+  /**
+   * Sélectionne un moteur OP-1 natif ou un moteur du rack Hub.
+   * Les identifiants du rack restent des identifiants UI stables et sont
+   * résolus vers le moteur local disponible ; aucun message machine n'est
+   * émis par cette sélection.
+   */
   public setEngine(engine: string) {
+    const rackToOp1: Record<string, Op1EngineType> = {
+      mi_plaits: "Digital", mi_braids: "Pulse", mi_rings: "String",
+      mi_clouds: "Phase", mi_elements: "Iter", dexed_fm: "FM",
+      surge_xt: "Voltage", zynaddsubfx: "DNA", helm: "Cluster",
+      fluidsynth: "Sampler", amsynth: "Voltage", amy_engine: "Iter",
+      pl_synth: "Pulse", open303: "Pulse", faust_dsp: "Digital",
+    };
+    const resolved = rackToOp1[engine] ?? engine;
     const validEngines: Op1EngineType[] = ["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"];
-    if (validEngines.includes(engine as Op1EngineType)) {
-      this.currentEngine = engine as Op1EngineType;
+    if (validEngines.includes(resolved as Op1EngineType)) {
+      this.currentEngine = resolved as Op1EngineType;
     }
   }
 
   public getEngine(): Op1EngineType {
     return this.currentEngine;
+  }
+
+  /** Le patch reste local au rack et influence la prochaine voix jouée. */
+  public setPatch(patch: string) {
+    this.currentPatch = patch.trim() || "Virtual Analog Saw Lead";
+  }
+
+  public getPatch(): string {
+    return this.currentPatch;
   }
 
   public setMasterVolume(val: number) {

@@ -693,21 +693,10 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           );
         })()}
 
-        {/* Témoin d'état central : Petit triangle vert de lecture et Petit rond rouge de REC */}
-        {recording ? (
-          <g className="op1-svg-transport-indicator" style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
-            <title>Enregistrement en cours (cliquer pour stopper)</title>
-            {/* Petit rond rouge REC avec anneau pulsant */}
-            <circle cx="160" cy="50" r="5.5" fill="#FF3A5D" stroke="#ffffff" strokeWidth="0.9" />
-            <circle cx="160" cy="50" r="8.5" fill="none" stroke="#FF3A5D" strokeWidth="1.2" opacity="0.8">
-              <animate attributeName="r" values="5.5;10;5.5" dur="1s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite" />
-            </circle>
-          </g>
-        ) : (transportPlaying || playing !== null) ? (
+        {/* Transport écran : lecture au centre, REC toujours visible juste dessous */}
+        {(transportPlaying || playing !== null) ? (
           <g className="op1-svg-transport-indicator" style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
             <title>Lecture en cours (cliquer pour pause)</title>
-            {/* Petit triangle vert de lecture */}
             <polygon points="154,43.5 168,50 154,56.5" fill="#00ED95" stroke="#ffffff" strokeWidth="0.8" />
           </g>
         ) : (
@@ -716,6 +705,15 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             <polygon points="154.5,44 167.5,50 154.5,56" fill="none" stroke="#ffffff" strokeWidth="1.2" />
           </g>
         )}
+        <g className="op1-svg-record-control" style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
+          <title>{recording ? "Enregistrement en cours (cliquer pour stopper)" : "Enregistrer"}</title>
+          <circle cx="160" cy="77" r="6.5" fill={recording ? "#FF3A5D" : "none"} stroke="#FF3A5D" strokeWidth="1.4" />
+          <circle cx="160" cy="77" r={recording ? 10 : 8.5} fill="none" stroke="#FF3A5D" strokeWidth="1" opacity={recording ? 0.8 : 0.55}>
+            {recording && <animate attributeName="r" values="6.5;11;6.5" dur="1s" repeatCount="indefinite" />}
+            {recording && <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite" />}
+          </circle>
+          <text x="171" y="79" fill="#FF3A5D" fontSize="4.5" fontFamily="monospace" fontWeight="700">REC</text>
+        </g>
 
         {/* Indicateur & Glissière de Volume Interactive (rouge TE) */}
         {(() => {
