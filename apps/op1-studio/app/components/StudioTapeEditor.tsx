@@ -379,14 +379,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       return;
     }
 
-    // 3. Clic tactile sur le numéro de piste en haut à gauche (Pistes 1-4) -> Cycler de piste
-    if (pt.x >= 4 && pt.x <= 36 && pt.y >= 2 && pt.y <= 33) {
-      const nextTrack = (selectedTrack + 1) % 4;
-      onSelectTrack(nextTrack);
-      onNotice?.(`Piste ${nextTrack + 1} sélectionnée.`);
-      return;
-    }
-
     // 4. Clic tactile sur le bouton PLAY / PAUSE au centre de l'écran (y=40..65)
     if (pt.x >= 144 && pt.x <= 176 && pt.y >= 40 && pt.y <= 65) {
       onToggleGlobalPlayback?.();
@@ -740,13 +732,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             </g>
           );
         })()}
-
-        {/* Numéro de piste interactif (cadre haut gauche, clic pour cycler 1..4) */}
-        <g style={{ cursor: "pointer" }}>
-          <title>Piste active (cliquer pour changer de piste 1..4)</title>
-          <rect x="6" y="3" width="28.082" height="28.081" fill="#121820" stroke="#fff" strokeWidth="1.5" rx="1.5" />
-          <TrackNumber index={selectedTrack} />
-        </g>
 
         {/* Badge REV */}
         {reversed && (
@@ -1187,6 +1172,36 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           />
         </g>
       </svg>
+
+      {/* Contrôles sortis de l’écran : la zone OLED reste réservée à l’affichage. */}
+      <div className="op1-screen-controls" aria-label="Contrôles de l’écran OP-1">
+        <div className="op1-screen-track-selector" role="group" aria-label="Sélection de piste">
+          <span className="op1-screen-control-label">PISTE</span>
+          {[0, 1, 2, 3].map((track) => (
+            <button
+              key={track}
+              type="button"
+              className={`op1-screen-track-button op1-screen-track-button-${track + 1} ${selectedTrack === track ? "is-selected" : ""}`}
+              onClick={() => { onSelectTrack(track); onNotice?.(`Piste ${track + 1} sélectionnée.`); }}
+              aria-pressed={selectedTrack === track}
+              title={`Sélectionner la piste ${track + 1}`}
+            >
+              {track + 1}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`op1-screen-record-button ${recording ? "is-recording" : ""}`}
+          onClick={() => onRecord?.()}
+          aria-pressed={recording}
+          title={recording ? "Arrêter l’enregistrement" : `Enregistrer sur la piste ${selectedTrack + 1}`}
+        >
+          <span className="op1-screen-record-dot" aria-hidden="true" />
+          {recording ? "ARRÊTER" : "ENREGISTRER"}
+          <small>Piste {selectedTrack + 1}</small>
+        </button>
+      </div>
 
       {/* ── Inputs fichiers invisibles (déclenchés via le menu de piste 1..4) ── */}
       <div style={{ display: "none" }}>
