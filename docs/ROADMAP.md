@@ -157,7 +157,7 @@ The Backup Lab becomes the first complete product workflow of the Hub. It is the
             length fails exactly the corrupted-same-size case.
       - Test infrastructure is now in place: vitest configured for studio-hub, `test`
         and `test:watch` scripts, test step wired into CI, verified inside the
-        `oven/bun` container the workflow uses. 515 tests currently pass.
+        `oven/bun` container the workflow uses. 515 tests passed at that point.
 - [~] Validate OP-1 and EP-133 flows with real hardware before declaring hardware support complete
       - [x] OP-1 Disk Mode read path validated on real hardware (2026-08-20): device mounted
             read-only, 66 files / 270 MB copied and compared byte-for-byte with `cmp`,
@@ -211,7 +211,7 @@ appeared on the roadmap.
 #### Tests
 - [x] vitest configured for studio-hub, scoped so ep133-studio keeps its own
       suites. CI runs it; verified inside the `oven/bun` container.
-- [x] 515 tests: DSP blocks, profile persistence, patch search, keyboard
+- [x] 515 tests at the time: DSP blocks, profile persistence, patch search, keyboard
       layout, MIDI control mapping, and a structural guard on the rack.
 - [x] Every group verified by sabotage — each deliberate break fails its own
       test and no other. A test that cannot fail proves nothing.

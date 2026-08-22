@@ -244,7 +244,7 @@ export default function ToolsHub(){
      <ToolGraphic type="chip"/>
      <small>MOTEURS SYNTHÉ</small>
      <h3>🔌 Rack Plugins & Moteurs Audio</h3>
-     <p>Dexed FM (DX7), Moog 24dB Ladder, TB-303 Acid, NES 8-Bit Chiptune et Karplus-Strong.</p>
+     <p>Quinze moteurs : la suite Mutable (Plaits, Braids, Rings, Clouds, Elements) et dix moteurs libres — Dexed FM, Surge XT, Helm, Open303 et les autres.</p>
      <div className="tool-status">OUVRIR →</div>
     </button>
 

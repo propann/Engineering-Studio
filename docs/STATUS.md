@@ -10,7 +10,7 @@ de la machine visée, écrits et relus pour vérification.
 
 Sept vérifications matérielles ont été faites, avec date et observation, dans
 [TESTS_PHYSIQUES.md](TESTS_PHYSIQUES.md) — c'est le document qui dit ce que les
-515 tests automatiques ne peuvent pas prouver.
+les tests automatiques ne peuvent pas prouver.
 
 ## Tableau de vérité
 

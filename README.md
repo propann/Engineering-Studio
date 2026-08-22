@@ -71,7 +71,7 @@ machine fait du fichier qu'on lui écrit.
 
 | | |
 |---|---|
-| 743 tests automatiques | ✅ verts, vérifiés par sabotage |
+| Suite de tests automatiques | ✅ verte, chaque garde-fou vérifié par sabotage |
 | Lecture de l'OP-1 (66 fichiers, comparés octet par octet) | ✅ sur matériel |
 | Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ sur matériel |
 | L'OP-1 relit son support après écriture externe | ✅ sur matériel |

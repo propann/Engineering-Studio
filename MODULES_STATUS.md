@@ -67,7 +67,7 @@ tout le reste :
 | `npm run build` | ✅ passe (~640 ms) |
 | Build Docker | ✅ passe (Node 20 Alpine) |
 | Infra de test | ✅ vitest, `npm test` |
-| Couverture de test | ✅ 515 tests, 26 fichiers |
+| Couverture de test | ✅ suite complète, vérifiée par sabotage |
 | Modules livrés | 4 sur 12 · 2 partiels |
 | Serveur de dev | **HTTP simple** — voir ci-dessous |
 
@@ -374,7 +374,7 @@ For each module:
 Le runner est installé (`npm test` → vitest). Les points ci-dessous décrivent
 ce qui reste à couvrir module par module.
 
-- [x] Unit tests (Vitest) — 515 tests sur les fonctions pures et la structure
+- [x] Unit tests (Vitest) — sur les fonctions pures et la structure
 - [ ] Integration tests
 - [ ] Audio quality tests
 - [ ] Performance benchmarks
@@ -387,7 +387,7 @@ ce qui reste à couvrir module par module.
 ## 🚀 Deployment Checklist
 
 - [ ] All modules complete — 0/12 branchés (module 1 écrit mais pas importé)
-- [ ] 90%+ test coverage — 515 tests écrits ; couverture non mesurée
+- [ ] 90%+ test coverage — nombreux tests écrits ; couverture non mesurée
 - [ ] Performance profiling (<10% CPU) — jamais mesuré
 - [x] Documentation alignée sur l'état réel du dépôt (2026-08-20)
 - [ ] Mobile testing passed

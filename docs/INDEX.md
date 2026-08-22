@@ -11,8 +11,11 @@ Ce dossier décrit l’état réel du dépôt propann/Engineering-Studio.
 5. [Données d’un nouvel utilisateur](guides/NEW_USER_DATA_MODEL.md)
 6. [État et prochaines étapes](STATUS.md)
 7. [Recherche moteurs audio et intégration du Rack](architecture/AUDIO_ENGINE_RESEARCH_AND_RACK_INTEGRATION_2026-08-20.md)
-8. [**Tests physiques**](TESTS_PHYSIQUES.md) — ce que les 515 tests automatiques
+8. [**Tests physiques**](TESTS_PHYSIQUES.md) — ce que les tests automatiques
    ne peuvent pas prouver : matériel branché, oreilles, ou les deux
+9. [**Analyse du rack principal**](ANALYSE_RACK_PRINCIPAL.md) — les vingt-neuf
+   entrées de la porte d'entrée, outil par outil : ce qu'elles promettent, ce
+   qu'elles ouvrent, et ce qui ne s'ouvre plus
 
 ## Organisation
 
