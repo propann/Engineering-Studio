@@ -2121,3 +2121,6 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .studio-keyboard-panel .mpanel-bar { min-height: 4px; padding: 2px 6px; justify-content: flex-end; background: #11191a; border-bottom: 1px solid #263333; }
 .studio-keyboard-panel .mpanel-bar > .mpanel-bar-btn:first-child,
 .studio-keyboard-panel .mpanel-bar > .mgrid-hint { display: none; }
+
+/* L'écran et le châssis sont continus : aucune barre de commandes texte entre les deux. */
+.studio-keyboard-panel .mpanel-bar { display: none !important; }
