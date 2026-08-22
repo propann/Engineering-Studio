@@ -2128,3 +2128,82 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 /* Palette du châssis OP-1 : gris clair matériel, couleurs réservées aux cercles et glyphes. */
 .studio-keyboard-panel { background: #d7dbd8; }
 .studio-keyboard-panel .studio-machine-panel { background: #d7dbd8; border-color: #9aa19d; color: #27302c; box-shadow: 0 4px 12px rgba(40,48,44,.18); }
+
+/* Console OP-1 : deux bandes de commandes, palette alignée sur la machine. */
+.op1-compact-console { display: flex; flex-direction: column; gap: 5px; }
+.op1-console-band {
+  min-height: 30px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #11191a;
+  border: 1px solid #2d3c3e;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+.op1-console-band .op1-compact-group { gap: 4px; }
+.op1-console-band-machine .op1-pill-btn {
+  background: #d7dbd8;
+  border-color: #9aa19d;
+  color: #172022;
+}
+.op1-console-band-machine .op1-pill-btn:hover {
+  background: #eef0ed;
+  border-color: #698eff;
+  color: #172022;
+}
+.op1-console-band-machine .op1-pill-btn.is-active {
+  background: #00ed95;
+  border-color: #00ed95;
+  color: #07130e;
+}
+.op1-console-band-machine .op1-pill-btn:nth-child(3) {
+  border-color: #698eff;
+}
+.op1-console-band-machine .op1-pill-btn:nth-child(3) .badge {
+  background: #698eff;
+  color: #07130e;
+}
+.op1-console-band-machine .op1-compact-brand strong { color: #f1f2ef; }
+.op1-console-band-machine .op1-compact-brand span { background: #00ed95; color: #07130e; }
+.op1-console-band-transport .op1-pill-btn {
+  background: #202b2c;
+  border-color: #435253;
+  color: #d7dbd8;
+}
+.op1-console-band-transport .op1-pill-btn:hover {
+  background: #2c3b3d;
+  border-color: #698eff;
+  color: #ffffff;
+}
+.op1-console-band-transport .op1-state-btn {
+  border-color: #ff9436;
+  color: #ffb56b;
+}
+.op1-console-band-transport .op1-state-btn.is-active {
+  background: #00ed95;
+  border-color: #00ed95;
+  color: #07130e;
+}
+.op1-console-band-transport .op1-state-btn.is-rev-active {
+  background: #ff9436;
+  border-color: #ff9436;
+  color: #231507;
+}
+.op1-console-band-transport .op1-tempo-box {
+  border-color: #ff9436;
+  color: #ffb56b;
+}
+.op1-console-project-info {
+  padding-left: 8px;
+  border-left: 1px solid #344446;
+  color: #94a3a8;
+  white-space: nowrap;
+}
+.op1-console-project-info strong { color: #f1f2ef; }
+@media (max-width: 900px) {
+  .op1-console-project-info { width: 100%; padding: 3px 0 0; border-left: 0; border-top: 1px solid #344446; }
+}
