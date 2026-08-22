@@ -896,55 +896,46 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const entries = Object.entries(sources).filter(([, source]) => Boolean(source));
     if (!entries.length) { onNotice("Chargez au moins une piste avant l'export Tape."); return; }
     try {
-      const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const soloed = solo !== null;
+      const sampleRate = 44100;
+      const tapeDuration = 360;
+      const context = new AudioContext();
+      const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({
+        index: Number(rawIndex),
+        buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()),
+      })));
+      await context.close();
+      const soloed = solo !== null;
       for (const { index, buffer } of decoded) {
         if (muted[index] || (soloed && solo !== index)) continue;
-        const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const offline = new OfflineAudioContext(2, Math.ceil(end * sampleRate), sampleRate); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); const rendered = await offline.startRendering(); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToAiffMono(rendered)); link.download = `track_${index + 1}.aif`; link.click(); URL.revokeObjectURL(link.href); await new Promise((resolve) => window.setTimeout(resolve, 120));
+        const offset = Math.max(0, Math.min(tapeDuration, clipOffsets[index] ?? 0));
+        const clipDuration = Math.min(tapeDuration - offset, clipEnds[index] ?? durations[index] ?? buffer.duration);
+        if (clipDuration <= 0) continue;
+        const fadeIn = Math.min(clipDuration, fadeIns[index] ?? 0);
+        const fadeOut = Math.min(clipDuration, fadeOuts[index] ?? 0);
+        const offline = new OfflineAudioContext(1, Math.ceil(tapeDuration * sampleRate), sampleRate);
+        const sourceNode = offline.createBufferSource();
+        const gainNode = offline.createGain();
+        sourceNode.buffer = buffer;
+        const level = gains[index] ?? 1;
+        gainNode.gain.setValueAtTime(fadeIn ? 0 : level, offset);
+        if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, offset + fadeIn);
+        if (fadeOut) {
+          gainNode.gain.setValueAtTime(level, Math.max(offset + fadeIn, offset + clipDuration - fadeOut));
+          gainNode.gain.linearRampToValueAtTime(0, offset + clipDuration);
+        }
+        sourceNode.connect(gainNode).connect(offline.destination);
+        sourceNode.start(offset);
+        sourceNode.stop(offset + clipDuration);
+        const rendered = await offline.startRendering();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(audioBufferToAiffMono(rendered));
+        link.download = `track_${index + 1}.aif`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
       }
-      onNotice("Stems Tape exportés : quatre fichiers AIFF mono (track_1.aif…track_4.aif), prêts pour validation.");
+      onNotice("Stems Tape exportés sur 6 minutes : positions et fades conservés. Validation locale requise avant transfert.");
     } catch { onNotice("L'export Tape a échoué. Vérifiez les fichiers audio locaux."); }
-  }
-
-  async function exportSingleTrack(index: number) {
-    const source = sources[index];
-    if (!source) {
-      onNotice(`La Piste ${index + 1} est vide, aucun fichier audio à exporter.`);
-      return;
-    }
-    try {
-      const sampleRate = 44100;
-      const context = new AudioContext();
-      const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer());
-      await context.close();
-
-      const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration);
-      const fadeIn = Math.min(end, fadeIns[index] ?? 0);
-      const fadeOut = Math.min(end, fadeOuts[index] ?? 0);
-      const offline = new OfflineAudioContext(1, Math.ceil(end * sampleRate), sampleRate);
-      const sourceNode = offline.createBufferSource();
-      const gainNode = offline.createGain();
-      sourceNode.buffer = buffer;
-      const level = gains[index] ?? 1;
-      gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0);
-      if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn);
-      if (fadeOut) {
-        gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut));
-        gainNode.gain.linearRampToValueAtTime(0, end);
-      }
-      sourceNode.connect(gainNode).connect(offline.destination);
-      sourceNode.start(0);
-      sourceNode.stop(end);
-
-      const rendered = await offline.startRendering();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(audioBufferToAiffMono(rendered));
-      link.download = `track_${index + 1}.aif`;
-      link.click();
-      URL.revokeObjectURL(link.href);
-      onNotice(`Piste ${index + 1} exportée : track_${index + 1}.aif (AIFF mono 44.1 kHz).`);
-    } catch {
-      onNotice(`Échec de l'export de la Piste ${index + 1}.`);
-    }
   }
 
   function clearTrack(index: number) {
@@ -990,10 +981,70 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const entries = Object.entries(sources).filter(([, source]) => Boolean(source));
     if (!entries.length) { onNotice("Chargez au moins une piste avant l'export Album."); return; }
     try {
-      const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const maxEnd = Math.min(360, Math.max(...decoded.map(({ index, buffer }) => clipEnds[index] ?? durations[index] ?? buffer.duration), 1)); const offline = new OfflineAudioContext(2, Math.ceil(maxEnd * sampleRate), sampleRate); const soloed = solo !== null;
-      decoded.forEach(({ index, buffer }) => { if (muted[index] || (soloed && solo !== index)) return; const end = Math.min(maxEnd, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); });
-      const rendered = await offline.startRendering(); const faceLength = 180; const downloads: string[] = []; for (let face = 0; face < 2; face += 1) { const start = face * faceLength; const length = Math.max(0, Math.min(faceLength, maxEnd - start)); const faceBuffer = new AudioBuffer({ length: Math.max(1, Math.ceil(length * sampleRate)), numberOfChannels: 2, sampleRate }); for (let channel = 0; channel < 2; channel += 1) faceBuffer.copyToChannel(rendered.getChannelData(channel).subarray(Math.ceil(start * sampleRate), Math.ceil(start * sampleRate) + faceBuffer.length), channel); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToAiffMono(faceBuffer)); link.download = `side_${face === 0 ? "a" : "b"}.aif`; link.click(); URL.revokeObjectURL(link.href); downloads.push(link.download); await new Promise((resolve) => window.setTimeout(resolve, 120)); }
-      const manifest = new Blob([JSON.stringify({ schema: "op1-album-export", version: 1, project: projectName, tempo, sample_rate: sampleRate, channels: 1, faces: downloads, source_tracks: entries.map(([rawIndex]) => Number(rawIndex) + 1) }, null, 2)], { type: "application/json" }); const manifestLink = document.createElement("a"); manifestLink.href = URL.createObjectURL(manifest); manifestLink.download = "album-manifest.json"; manifestLink.click(); URL.revokeObjectURL(manifestLink.href); onNotice("Album exporté : deux faces AIFF mono (side_a.aif, side_b.aif) et manifeste générés.");
+      const sampleRate = 44100;
+      const tapeDuration = 360;
+      const faceLength = 180;
+      const context = new AudioContext();
+      const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({
+        index: Number(rawIndex),
+        buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()),
+      })));
+      await context.close();
+      const soloed = solo !== null;
+      const maxEnd = Math.min(tapeDuration, Math.max(...decoded.map(({ index, buffer }) =>
+        Math.min(tapeDuration, (clipOffsets[index] ?? 0) + (clipEnds[index] ?? durations[index] ?? buffer.duration))), 1));
+      const offline = new OfflineAudioContext(2, Math.ceil(maxEnd * sampleRate), sampleRate);
+      decoded.forEach(({ index, buffer }) => {
+        if (muted[index] || (soloed && solo !== index)) return;
+        const offset = Math.max(0, Math.min(maxEnd, clipOffsets[index] ?? 0));
+        const clipDuration = Math.min(maxEnd - offset, clipEnds[index] ?? durations[index] ?? buffer.duration);
+        if (clipDuration <= 0) return;
+        const fadeIn = Math.min(clipDuration, fadeIns[index] ?? 0);
+        const fadeOut = Math.min(clipDuration, fadeOuts[index] ?? 0);
+        const sourceNode = offline.createBufferSource();
+        const gainNode = offline.createGain();
+        sourceNode.buffer = buffer;
+        const level = gains[index] ?? 1;
+        gainNode.gain.setValueAtTime(fadeIn ? 0 : level, offset);
+        if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, offset + fadeIn);
+        if (fadeOut) {
+          gainNode.gain.setValueAtTime(level, Math.max(offset + fadeIn, offset + clipDuration - fadeOut));
+          gainNode.gain.linearRampToValueAtTime(0, offset + clipDuration);
+        }
+        sourceNode.connect(gainNode).connect(offline.destination);
+        sourceNode.start(offset);
+        sourceNode.stop(offset + clipDuration);
+      });
+      const rendered = await offline.startRendering();
+      const downloads: string[] = [];
+      for (let face = 0; face < 2; face += 1) {
+        const start = face * faceLength;
+        const length = Math.max(0, Math.min(faceLength, maxEnd - start));
+        if (length <= 0) continue;
+        const faceBuffer = new AudioBuffer({ length: Math.ceil(length * sampleRate), numberOfChannels: 2, sampleRate });
+        const startFrame = Math.ceil(start * sampleRate);
+        for (let channel = 0; channel < 2; channel += 1) {
+          faceBuffer.copyToChannel(rendered.getChannelData(channel).subarray(startFrame, startFrame + faceBuffer.length), channel);
+        }
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(audioBufferToAiffMono(faceBuffer));
+        link.download = `side_${face === 0 ? "a" : "b"}.aif`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        downloads.push(link.download);
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
+      }
+      const manifest = new Blob([JSON.stringify({
+        schema: "op1-album-export", version: 1, project: projectName, tempo, sample_rate: sampleRate,
+        channels: 1, tape_seconds: tapeDuration, face_seconds: faceLength, faces: downloads,
+        source_tracks: entries.map(([rawIndex]) => Number(rawIndex) + 1),
+      }, null, 2)], { type: "application/json" });
+      const manifestLink = document.createElement("a");
+      manifestLink.href = URL.createObjectURL(manifest);
+      manifestLink.download = "album-manifest.json";
+      manifestLink.click();
+      URL.revokeObjectURL(manifestLink.href);
+      onNotice("Album exporté avec positions conservées. Validation locale requise avant transfert.");
     } catch { onNotice("L'export Album a échoué. Vérifiez les sources audio locales."); }
   }
 
@@ -1004,14 +1055,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   const barSec = (60 / Math.max(30, tempo)) * 4;
   const beatSec = barSec / 4;
+  const stepSec = barSec / 16;
 
   function snapToGrid(sec: number): number {
-    return Math.max(0, Math.min(360, Math.round(sec / beatSec) * beatSec));
+    return Math.max(0, Math.min(360, Math.round(sec / stepSec) * stepSec));
   }
 
   function setLoopInAtHead() {
     const snapped = snapToGrid(transportTime);
-    const newOut = Math.max(snapped + beatSec, loopOut);
+    const newOut = Math.max(snapped + stepSec, loopOut);
     setLoopIn(snapped);
     setLoopOut(newOut);
     onNotice(`Point IN fixé à ${snapped.toFixed(1)}s (calé tempo).`);
@@ -1019,7 +1071,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   function setLoopOutAtHead() {
     const snapped = snapToGrid(transportTime);
-    const newIn = Math.min(loopIn, Math.max(0, snapped - beatSec));
+    const newIn = Math.min(loopIn, Math.max(0, snapped - stepSec));
     setLoopIn(newIn);
     setLoopOut(snapped);
     onNotice(`Point OUT fixé à ${snapped.toFixed(1)}s (calé tempo).`);
