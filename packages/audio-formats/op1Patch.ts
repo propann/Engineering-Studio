@@ -71,8 +71,11 @@ function validateMetadata(metadata: Op1PatchMetadata): string[] {
         errors.push(`drum ${label} must contain 24 values when provided`);
       }
     }
-  } else if (metadata.base_freq !== undefined && (!Number.isFinite(metadata.base_freq) || metadata.base_freq <= 0)) {
-    errors.push("base_freq must be a positive number");
+  } else if (metadata.type !== "drum") {
+    const synth = metadata as Op1SynthPatchMetadata;
+    if (synth.base_freq !== undefined && (!Number.isFinite(synth.base_freq) || synth.base_freq <= 0)) {
+      errors.push("base_freq must be a positive number");
+    }
   }
   return errors;
 }
@@ -90,7 +93,7 @@ export function validateOp1PatchAiff(
   if (parsed && parsed.sampleRate !== 44100) errors.push("OP-1 patches must use 44.1 kHz");
   const durationSeconds = parsed ? parsed.frameCount / parsed.sampleRate : null;
   const maxSeconds = kind === "drum" ? OP1_AUDIO_LIMITS.drumMaxSeconds : OP1_AUDIO_LIMITS.synthMaxSeconds;
-  if (durationSeconds !== null && durationSeconds > maxSeconds + 1 / parsed.sampleRate) {
+  if (parsed && durationSeconds !== null && durationSeconds > maxSeconds + 1 / parsed.sampleRate) {
     errors.push(`${kind} patch exceeds the ${maxSeconds}s OP-1 limit`);
   }
   if (kind === "drum" && metadata.type !== "drum") errors.push("drum target requires metadata.type=drum");
@@ -102,7 +105,25 @@ export function validateOp1PatchAiff(
  * Ajoute un chunk APPL/op-1 à un AIFF valide. La fonction refuse tout fichier
  * non conforme et ne modifie jamais l'ArrayBuffer fourni.
  */
-export function encodeOp1PatchAiff(
+
+
+/** Lit le JSON du chunk APPL/op-1 sans extraire l'audio. */
+export function readOp1PatchJson(bytes: ArrayBuffer): Op1PatchMetadata | null {
+  const raw = new Uint8Array(bytes);
+  const view = new DataView(bytes);
+  for (let offset = 0; offset + 12 <= raw.length; offset += 2) {
+    if (raw[offset] !== 0x41 || raw[offset + 1] !== 0x50 || raw[offset + 2] !== 0x50 || raw[offset + 3] !== 0x4c) continue;
+    const length = view.getUint32(offset + 4, false);
+    if (length < 4 || offset + 8 + length > raw.length) continue;
+    const signature = String.fromCharCode(raw[offset + 8], raw[offset + 9], raw[offset + 10], raw[offset + 11]);
+    if (signature !== OP1_SIGNATURE) continue;
+    const payload = raw.slice(offset + 12, offset + 8 + length);
+    const end = payload.indexOf(0);
+    try { return JSON.parse(new TextDecoder().decode(end >= 0 ? payload.slice(0, end) : payload)) as Op1PatchMetadata; } catch { return null; }
+  }
+  return null;
+}
+\nexport function encodeOp1PatchAiff(
   audioAiff: ArrayBuffer,
   kind: Op1PatchKind,
   metadata: Op1PatchMetadata,
