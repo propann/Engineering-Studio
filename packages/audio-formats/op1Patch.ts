@@ -123,7 +123,8 @@ export function readOp1PatchJson(bytes: ArrayBuffer): Op1PatchMetadata | null {
   }
   return null;
 }
-\nexport function encodeOp1PatchAiff(
+
+export function encodeOp1PatchAiff(
   audioAiff: ArrayBuffer,
   kind: Op1PatchKind,
   metadata: Op1PatchMetadata,
