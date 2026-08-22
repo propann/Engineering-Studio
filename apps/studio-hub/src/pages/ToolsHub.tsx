@@ -152,12 +152,6 @@ const tools: Tool[] = [
     action: { type: "page", page: "studio-op1" }, section: "op1",
   },
   {
-    id: "pattern", code: "PAT-SONG", category: "STUDIO", title: "Pattern & Song Studio",
-    text: "Groupes A/B/C/D, patterns, scènes et positions Song EP-133.",
-    accent: "orange", visual: "grid", status: "OUVRIR →",
-    action: { type: "page", page: "studio-ep133" }, section: "ep133", nettoieUrl: true,
-  },
-  {
     id: "sample", code: "WAV-AIFF", category: "SON", title: "Éditeur de samples",
     text: "Waveform, trim, fondus et préparation des packs OP-1.",
     accent: "cyan", visual: "wave", status: "OUVRIR →",
