@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "../components/TopBar";
 import { readProfileName } from "../core/profile";
-import SoundEditorHub from "./SoundEditorHub";
 import "./outils.css";
 
 const Link = ({href, className, ...props}: {href: string; className: string; [key: string]: any}) => {
@@ -37,7 +36,6 @@ type Action =
   /** Fait defiler jusqu'a une ancre de la page. */
   | { type: "ancre"; ancre: string }
   /** Ouvre l'editeur sonore, qui n'est pas une page mais un panneau. */
-  | { type: "editeur-son" }
   /** Dernier recours : une fiche descriptive. Un outil qui en depend n'est pas encore branche. */
   | { type: "fiche" };
 
@@ -107,12 +105,11 @@ const tools: Tool[] = [
     action: { type: "page", page: "audio-plugin-rack" }, section: "hub", couleur: "#d9ff43",
   },
   {
-    id: "son", code: "SOUND", category: "AUDIO", title: "🎵 Son",
-    text: "Tape Studio, transferts, samples, bibliothèque sonore — tout pour créer et éditer.",
+    id: "son", code: "SOUND", category: "AUDIO", title: "🎵 Bibliothèque sonore",
+    text: "Catalogue, préparation, favoris, doublons et accès aux workflows OP-1 / EP-133.",
     accent: "sound-card", visual: "wave", status: "OUVRIR →",
-    action: { type: "editeur-son" }, section: "hub",
-  },
-  {
+    action: { type: "page", page: "sound-library" }, section: "hub",
+  },  {
     id: "reglages", code: "CONFIG", category: "CONFIGURATION", title: "⚙️ Réglages",
     text: "Synchronisation MIDI et arpégiateur, tests de machine, diagnostic système.",
     accent: "settings-card", visual: "sync", status: "OPTIONS",
@@ -135,12 +132,6 @@ const tools: Tool[] = [
     text: "Écrans et thèmes OP-1 au format exact 320 × 160.",
     accent: "purple", visual: "pixels", status: "OUVRIR →",
     action: { type: "page", page: "image-editor-op1" }, section: "hub",
-  },
-  {
-    id: "library", code: "SOUND-V1", category: "OUTIL DU HUB", title: "Bibliothèque sonore",
-    text: "Catalogue commun avec import, empreinte SHA-256, étiquettes et favoris.",
-    accent: "cyan", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "sound-library" }, section: "hub",
   },
   {
     id: "firmware", code: "FW-243", category: "OP-1", title: "Firmware Lab",
@@ -257,7 +248,6 @@ export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
  const [activeSection,setActiveSection]=useState<Section>("all");
  const [groupeOuvert,setGroupeOuvert]=useState<Groupe|null>(null);
- const [showSoundEditor,setShowSoundEditor]=useState(false);
  const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
  useEffect(()=>{ setProfileName(readProfileName()); },[]);
@@ -283,7 +273,6 @@ export default function ToolsHub(){
    case "page": naviguer(tool.action.page); return;
    case "groupe": setGroupeOuvert(tool.action.groupe); return;
    case "ancre": document.getElementById(tool.action.ancre)?.scrollIntoView({ behavior: "smooth", block: "start" }); return;
-   case "editeur-son": setShowSoundEditor(true); return;
    case "fiche": setSelected(tool); return;
   }
  }
@@ -319,8 +308,7 @@ export default function ToolsHub(){
    <DocumentationShelf docs={membres("documentation")} onSelectTool={ouvrir} />
   </section>
 
-  {showSoundEditor&&<SoundEditorHub profileName={profileName} onClose={()=>setShowSoundEditor(false)}/>}
-  {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
+    {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
   {groupeOuvert==="formation"&&<TrainingModal training={membres("formation")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
   {groupeOuvert==="reglages"&&<SettingsModal settings={membres("reglages")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
  </main>
