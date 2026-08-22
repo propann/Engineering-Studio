@@ -4103,3 +4103,53 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
 .temoin-midi--attente .temoin-midi-point { background: #c9a227; }
 .temoin-midi-note { color: #ecf3ff; font-variant-numeric: tabular-nums; }
 .temoin-midi-raison { color: #c9a9b0; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+/* ── Séquenceur pas à pas ───────────────────────────────────────────────── */
+.seq { display: grid; gap: 10px; margin-top: 18px; padding-top: 15px; border-top: 1px solid #30415d; }
+.seq__tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.seq__aide { color: #8e9db5; font-size: 11px; line-height: 1.5; }
+.seq__marche {
+  min-width: 110px; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+  color: #ecf3ff; background: #1c2b47; border: 1px solid #516c9f;
+  font: 800 12px ui-monospace, monospace;
+}
+.seq__marche:hover:not(:disabled) { background: #2b4270; }
+.seq__marche:disabled { cursor: not-allowed; opacity: .45; }
+.seq__marche.actif { color: #0d1a14; background: #6fe3b0; border-color: #6fe3b0; }
+.seq__reglages { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.seq__reglages > label { display: grid; gap: 4px; color: #8e9db5; font: 700 10px ui-monospace, monospace; letter-spacing: .05em; text-transform: uppercase; }
+.seq__reglages select, .seq-gamme__gamme, .seq-gamme__tonique {
+  padding: 6px 8px; border-radius: 5px; font-size: 12px;
+  color: #ecf3ff; background: #16213a; border: 1px solid #3d557f;
+}
+.seq-gamme { display: contents; }
+.seq-gamme__champ { display: grid; gap: 4px; color: #8e9db5; font: 700 10px ui-monospace, monospace; letter-spacing: .05em; text-transform: uppercase; }
+.seq-gamme__gamme { max-width: 210px; }
+.seq-gamme__tonique { width: 66px; }
+
+/* Une colonne par pas : la note au-dessus, le numéro en dessous. */
+.seq__grille { display: flex; flex-wrap: wrap; gap: 4px; }
+.seq__pas { display: grid; gap: 3px; justify-items: stretch; }
+.seq__note {
+  width: 62px; padding: 4px 3px; border-radius: 4px; cursor: pointer;
+  color: #ecf3ff; background: #16213a; border: 1px solid #3d557f;
+  font: 600 10px ui-monospace, monospace; text-align: center;
+}
+.seq__bascule {
+  padding: 5px 0; border-radius: 4px; cursor: pointer;
+  color: #8e9db5; background: #1a2438; border: 1px solid #2b3a58;
+  font: 700 9px ui-monospace, monospace; font-variant-numeric: tabular-nums;
+}
+.seq__bascule:hover { border-color: #6fe3b0; }
+/* Le pas en cours de lecture, pour suivre la phrase à l'œil. */
+.seq__pas.joue .seq__bascule { color: #0d1a14; background: #6fe3b0; border-color: #6fe3b0; }
+/* Éteint : la note reste écrite, elle n'est simplement pas jouée. */
+.seq__pas.eteint .seq__note, .seq__pas.eteint .seq__bascule { opacity: .35; }
+.seq__pas.vide .seq__note { color: #55647f; }
+.seq__pied { display: flex; gap: 8px; }
+.seq__action {
+  padding: 6px 12px; border-radius: 5px; cursor: pointer;
+  color: #8e9db5; background: #16213a; border: 1px solid #3d557f;
+  font: 600 10px ui-monospace, monospace;
+}
+.seq__action:hover { color: #ecf3ff; border-color: #516c9f; }

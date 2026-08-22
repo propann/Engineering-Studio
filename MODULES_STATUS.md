@@ -13,7 +13,7 @@
 | 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
-| 6 | Step Sequencer | 🔴 |
+| 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié |
 | 7 | LFO Generator | ✅ livré — trémolo et balayage de filtre, SYNC au tempo, global aux 15 moteurs |
 | 8 | Distortion Stack | 🟢 saturation douce et par repliement, dans le rack d'effets |
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |

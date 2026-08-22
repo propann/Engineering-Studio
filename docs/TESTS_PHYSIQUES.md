@@ -246,6 +246,27 @@ ce qui écoute : le rack de moteurs, l'OP‑1, l'EP‑133, les machines branché
 - [ ] une note jouée au clavier physique **et** arpégée ne se coupe pas
       elle-même (préfixes de voix distincts)
 
+### Séquenceur pas à pas
+Sous l'arpégiateur, dans le rack MIDI.
+
+- [ ] **la phrase part vers tout ce qui écoute** — le rack de moteurs, l'OP-1,
+      l'EP-133, les machines branchées
+- [ ] les quatre sens s'entendent. **Aller-retour ne rejoue pas les extrémités
+      deux fois** : sur 4 pas, on entend 1 2 3 4 3 2, pas 1 2 3 4 4 3 2 1
+- [ ] **éteindre un pas garde sa note** : le rallumer rejoue la même
+- [ ] un pas vide (—) fait un silence, pas une note à zéro
+- [ ] **changer de gamme pendant la lecture s'entend tout de suite.** Si ça
+      n'arrive qu'au clic suivant, le relevé des réglages ne fonctionne pas
+- [ ] passer de 16 pas à 8 puis revenir à 16 : **la fin de la phrase est
+      toujours là**
+- [ ] **aucune note suspendue** : arrêter, quitter la page, PANIC en pleine
+      lecture. La machine doit se taire à chaque fois
+- [ ] PANIC arrête l'arpégiateur **et** le séquenceur
+- [ ] transposer très haut tasse contre l'aigu, ça ne réapparaît pas en bas
+- [ ] arpégiateur et séquenceur **en même temps** : les deux jouent sans se
+      couper l'un l'autre
+
+
 ### Les 30 gammes et le sélecteur
 Menu **Gamme** du rack MIDI, groupé par familles.
 

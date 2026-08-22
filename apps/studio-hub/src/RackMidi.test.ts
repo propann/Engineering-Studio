@@ -36,6 +36,10 @@ const RACK = readFileSync(path.join(DIR, "pages", "AudioPluginRack.tsx"), "utf-8
 const CSS = readFileSync(path.join(DIR, "styles.css"), "utf-8");
 // L'interface du rack MIDI vit dans le paquet partage, comme celle du rack
 // d'effets vit dans racks/RackEffets.tsx : chaque rack porte la sienne.
+const SEQ_UI = readFileSync(
+  path.join(DIR, "..", "..", "..", "packages", "musique", "Sequenceur.tsx"),
+  "utf-8"
+);
 const ARP_UI = readFileSync(
   path.join(DIR, "..", "..", "..", "packages", "musique", "Arpegiateur.tsx"),
   "utf-8"
@@ -145,9 +149,15 @@ describe("aucune note suspendue", () => {
   it("le demontage relache directement sur les sorties", () => {
     // Au demontage, `broadcastNote` depend d'un etat React qui n'est plus la.
     // On ecrit sur les ports, sans intermediaire.
+    // Borne a l'EFFET, pas a une longueur fixe : ajouter le sequenceur a
+    // repousse `output.send` hors d'une fenetre de 800 caracteres, et le test
+    // est tombe sans qu'aucun defaut n'existe. Troisieme fois qu'une tranche
+    // de longueur fixe se retourne contre moi.
     const i = PANNEAU.indexOf("// Démontage : couper la minuterie");
     expect(i).toBeGreaterThan(-1);
-    const bloc = PANNEAU.slice(i, i + 800);
+    const fin = PANNEAU.indexOf("}, []);", i);
+    expect(fin, "fin de l'effet introuvable").toBeGreaterThan(i);
+    const bloc = PANNEAU.slice(i, fin + 7);
     expect(bloc).toContain("output.send([0x80, note, 0])");
     expect(bloc).toContain("}, []);");
   });
@@ -217,6 +227,89 @@ describe("interface", () => {
 
   it("les classes rendues ont une regle CSS", () => {
     for (const c of ["arp-panneau", "arp-tete", "arp-bouton", "arp-reglages", "arp-clavier", "arp-touche", "arp-pied"]) {
+      expect(CSS, `.${c} sans regle`).toMatch(new RegExp(`\\.${c}[\\s,{:.]`));
+    }
+  });
+});
+
+describe("le sequenceur, a cote de l'arpege", () => {
+  /**
+   * Les deux vivent dans le meme panneau parce qu'ils partagent l'horloge et
+   * les sorties — rien d'autre. L'arpege deroule ce qu'on TIENT, la sequence
+   * joue ce qu'on a ECRIT.
+   */
+  const corpsSeq = (entete: string) => {
+    const i = PANNEAU.indexOf(entete);
+    expect(i, `${entete} introuvable`).toBeGreaterThan(-1);
+    const j = PANNEAU.indexOf("\n  function ", i + entete.length);
+    return PANNEAU.slice(i, j < 0 ? PANNEAU.length : j);
+  };
+
+  it("utilise la logique pure, sans la reimplementer", () => {
+    expect(PANNEAU).toContain("pasAJouer(p.sequence, p.direction");
+    expect(PANNEAU).toContain('from "@studio-hub/musique"');
+  });
+
+  it("partage les divisions du delai et de l'arpege", () => {
+    expect(corpsSeq("function seqPas()")).toContain("dureeDivisionMs(p.bpm, p.division)");
+  });
+
+  it("lit ses reglages dans un releve, pas dans la portee capturee", () => {
+    // Une minuterie capture le tour de rendu qui l'a creee : sans releve,
+    // changer de gamme en cours de lecture ne s'entendrait qu'au prochain
+    // rendu declenche par autre chose.
+    expect(corpsSeq("function seqPas()")).toContain("seqParamsRef.current");
+  });
+
+  it("chaque pas relache le precedent", () => {
+    expect(corpsSeq("function seqPas()")).toContain("seqRelacher();");
+  });
+
+  it("l'arret coupe la minuterie ET relache", () => {
+    const bloc = corpsSeq("function seqArreter()");
+    expect(bloc).toContain("clearTimeout(seqTimerRef.current)");
+    expect(bloc).toContain("seqRelacher();");
+  });
+
+  it("PANIC arrete aussi le sequenceur", () => {
+    // Un PANIC qui laisse une minuterie tourner renverrait des notes juste
+    // apres avoir tout coupe.
+    const bloc = corpsSeq("function panic()");
+    expect(bloc).toContain("seqRunningRef.current = false");
+    expect(bloc).toContain("clearTimeout(seqTimerRef.current)");
+  });
+
+  it("le demontage relache la note du sequenceur aussi", () => {
+    // On verifie que la note ENTRE dans ce qu'on relache, pas que son nom
+    // apparaisse : `seqSonnanteRef.current = null` suffisait a satisfaire un
+    // premier jet, alors meme que la note n'etait plus coupee. Sixieme
+    // variante du meme piege — chercher un nom la ou il faut chercher un
+    // emploi.
+    const i = PANNEAU.indexOf("// Démontage : couper la minuterie");
+    const bloc = PANNEAU.slice(i, PANNEAU.indexOf("}, []);", i));
+    expect(bloc).toMatch(/\[\.\.\.arpSoundingRef\.current, seqSonnanteRef\.current\]/);
+    expect(bloc).toContain("for (const note of suspendues)");
+  });
+
+  it("l'interface n'a aucun etat interne", () => {
+    // La sequence vit chez l'hote, la ou la minuterie la lit. Deux copies
+    // divergeraient au premier pas joue.
+    expect(SEQ_UI).not.toContain("useState");
+    expect(SEQ_UI).not.toContain("useRef");
+  });
+
+  it("l'interface ne touche ni au MIDI ni a l'horloge", () => {
+    expect(SEQ_UI).not.toContain("setTimeout");
+    expect(SEQ_UI).not.toContain("broadcastNote");
+    expect(SEQ_UI).not.toContain("requestMIDIAccess");
+  });
+
+  it("elle reutilise le selecteur de gamme au lieu d'un menu de plus", () => {
+    expect(SEQ_UI).toMatch(/<SelecteurGamme[\s/>]/);
+  });
+
+  it("les classes rendues ont une regle CSS", () => {
+    for (const c of ["seq", "seq__grille", "seq__pas", "seq__note", "seq__bascule", "seq__marche"]) {
       expect(CSS, `.${c} sans regle`).toMatch(new RegExp(`\\.${c}[\\s,{:.]`));
     }
   });

@@ -6,3 +6,5 @@ export type { ProprietesSelecteurGamme } from "./SelecteurGamme";
 export { Arpegiateur } from "./Arpegiateur";
 export type { ProprietesArpegiateur } from "./Arpegiateur";
 export * from "./sequenceur";
+export { Sequenceur } from "./Sequenceur";
+export type { ProprietesSequenceur } from "./Sequenceur";

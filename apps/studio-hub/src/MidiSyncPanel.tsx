@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
 import { sAbonner } from "@studio-hub/midi-dispatch";
 import {
-  Arpegiateur,
+  Arpegiateur, Sequenceur,
   pasArpege, quantifier, type Gamme, type Motif,
+  basculerPas, ecrirePas, pasAJouer, redimensionner, remplirAuHasard, sequenceVide,
+  type Direction, type Pas,
 } from "@studio-hub/musique";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "./core/audio/tempo";
 
@@ -82,6 +84,28 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   // de l'arpégiateur, et celui qui oblige à débrancher pour s'en sortir.
   const arpSoundingRef = useRef<number[]>([]);
   const arpEnabledRef = useRef(false);
+  // ── Sequenceur pas a pas ───────────────────────────────────────────────
+  //
+  // A cote de l'arpegiateur et non a sa place : l'arpege deroule ce qu'on
+  // TIENT, la sequence joue ce qu'on a ECRIT. Les deux partagent l'horloge et
+  // les sorties de ce panneau, rien d'autre.
+  const [seqSequence, setSeqSequence] = useState<Pas[]>(() => sequenceVide(16));
+  const [seqLongueur, setSeqLongueur] = useState(16);
+  const [seqDirection, setSeqDirection] = useState<Direction>("avant");
+  const [seqDivision, setSeqDivision] = useState<Division>("1/8");
+  const [seqGamme, setSeqGamme] = useState<Gamme>("pentatonique_mineure");
+  const [seqTonique, setSeqTonique] = useState(60);
+  const [seqEnMarche, setSeqEnMarche] = useState(false);
+  const [seqPasCourant, setSeqPasCourant] = useState<number | null>(null);
+  const seqTimerRef = useRef<number | undefined>(undefined);
+  const seqCompteurRef = useRef(0);
+  const seqRunningRef = useRef(false);
+  // Ce qui sonne, pour pouvoir le couper. Meme raison que l'arpege : sans ce
+  // releve, tout arret laisse une note suspendue sur la machine.
+  const seqSonnanteRef = useRef<number | null>(null);
+  // Les reglages lus DANS la minuterie, pas dans la portee capturee.
+  const seqParamsRef = useRef({ sequence: seqSequence, direction: seqDirection, division: seqDivision, gamme: seqGamme, tonique: seqTonique, bpm });
+  seqParamsRef.current = { sequence: seqSequence, direction: seqDirection, division: seqDivision, gamme: seqGamme, tonique: seqTonique, bpm };
   // Les réglages lus DANS la minuterie. Une minuterie capture la portée de
   // son tour de rendu : sans ce relevé, changer le tempo ou le motif ne
   // prendrait effet qu'au prochain re-rendu déclenché par autre chose.
@@ -265,7 +289,14 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       arpRunningRef.current = false;
       if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
       arpTimerRef.current = undefined;
-      for (const note of arpSoundingRef.current) {
+      seqRunningRef.current = false;
+    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
+    seqTimerRef.current = undefined;
+    const suspendues = seqSonnanteRef.current === null
+      ? arpSoundingRef.current
+      : [...arpSoundingRef.current, seqSonnanteRef.current];
+    seqSonnanteRef.current = null;
+    for (const note of suspendues) {
         outputsRef.current.forEach(({ output }) => {
           try { output.send([0x80, note, 0]); } catch { /* la machine peut avoir disparu */ }
         });
@@ -274,6 +305,65 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     };
   }, []);
   
+  // ── Moteur du sequenceur ───────────────────────────────────────────────
+
+  function seqRelacher() {
+    const note = seqSonnanteRef.current;
+    seqSonnanteRef.current = null;
+    if (note !== null) broadcastNote("note-off", note, 0);
+  }
+
+  function seqPas() {
+    if (!seqRunningRef.current) return;
+    const p = seqParamsRef.current;
+    const attente = dureeDivisionMs(p.bpm, p.division);
+
+    // La note precedente est coupee ICI, au debut du pas suivant : les pas sont
+    // donc lies, sans deuxieme minuterie pour la duree de note.
+    seqRelacher();
+
+    const index = p.sequence.length
+      ? ((Math.floor(seqCompteurRef.current) % p.sequence.length) + p.sequence.length) % p.sequence.length
+      : 0;
+    const aJouer = pasAJouer(p.sequence, p.direction, seqCompteurRef.current, p.gamme, p.tonique);
+    // On affiche l'index REELLEMENT parcouru, pas le compteur : en arriere ou
+    // en aller-retour, les deux ne coincident pas.
+    setSeqPasCourant(p.direction === "avant" ? index : null);
+    seqCompteurRef.current += 1;
+
+    if (aJouer) {
+      broadcastNote("note-on", aJouer.note, aJouer.velocite);
+      seqSonnanteRef.current = aJouer.note;
+    }
+
+    seqTimerRef.current = window.setTimeout(seqPas, attente);
+  }
+
+  function seqArreter() {
+    seqRunningRef.current = false;
+    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
+    seqTimerRef.current = undefined;
+    seqRelacher();
+    setSeqPasCourant(null);
+  }
+
+  function seqBasculer() {
+    if (seqEnMarche) {
+      setSeqEnMarche(false);
+      seqArreter();
+      setStatus("Sequenceur arrete.");
+      return;
+    }
+    if (!hasDestination()) {
+      noDestinationStatus();
+      return;
+    }
+    setSeqEnMarche(true);
+    seqRunningRef.current = true;
+    seqCompteurRef.current = 0;
+    setStatus("Sequenceur en marche : la phrase part vers tout ce qui ecoute.");
+    seqPas();
+  }
   function arpRelacherSonnantes() {
     for (const note of arpSoundingRef.current) broadcastNote("note-off", note, 0);
     arpSoundingRef.current = [];
@@ -304,6 +394,14 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   }
   
   function arpArreter() {
+    // Le sequenceur aussi : un PANIC qui laisse une minuterie tourner
+    // renverrait des notes juste apres avoir tout coupe.
+    seqRunningRef.current = false;
+    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
+    seqTimerRef.current = undefined;
+    seqSonnanteRef.current = null;
+    setSeqEnMarche(false);
+    setSeqPasCourant(null);
     arpRunningRef.current = false;
     if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
     arpTimerRef.current = undefined;
@@ -346,6 +444,14 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   function panic() {
     // L'arpégiateur d'abord : un PANIC qui laisse la minuterie tourner
     // renverrait des notes juste après avoir tout coupé.
+    // Le sequenceur aussi : un PANIC qui laisse une minuterie tourner
+    // renverrait des notes juste apres avoir tout coupe.
+    seqRunningRef.current = false;
+    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
+    seqTimerRef.current = undefined;
+    seqSonnanteRef.current = null;
+    setSeqEnMarche(false);
+    setSeqPasCourant(null);
     arpRunningRef.current = false;
     if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
     arpTimerRef.current = undefined;
@@ -539,6 +645,31 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             notesTenues={arpNotes}
             onBasculerNote={arpBasculerNote}
             onToutRelacher={arpToutRelacher}
+          />
+          {/* Le sequenceur partage l'horloge et les sorties de ce panneau, rien
+              d'autre. L'arpege deroule ce qu'on tient ; lui joue ce qu'on a ecrit. */}
+          <Sequenceur
+            sequence={seqSequence}
+            onSequence={setSeqSequence}
+            pasCourant={seqPasCourant}
+            enMarche={seqEnMarche}
+            onMarche={seqBasculer}
+            pret={hasDestination()}
+            longueur={seqLongueur}
+            onLongueur={(n) => { setSeqLongueur(n); setSeqSequence((s) => redimensionner(s, n)); }}
+            direction={seqDirection}
+            onDirection={setSeqDirection}
+            division={seqDivision}
+            onDivision={setSeqDivision}
+            gamme={seqGamme}
+            onGamme={setSeqGamme}
+            tonique={seqTonique}
+            onTonique={setSeqTonique}
+            onEcrire={(index, note) => setSeqSequence((s) => ecrirePas(s, index, note, seqGamme, seqTonique))}
+            onBasculer={(index) => setSeqSequence((s) => basculerPas(s, index))}
+            onRemplir={() => setSeqSequence(remplirAuHasard(seqLongueur, seqGamme, seqTonique))}
+            onEffacer={() => setSeqSequence(sequenceVide(seqLongueur))}
+            prefixe="seq"
           />
         </div>
       </div>
