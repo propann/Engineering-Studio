@@ -2031,3 +2031,59 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   .op1-screen-patch-columns { grid-template-columns: 1fr; }
   .op1-screen-engine-column { border-right: 0; border-bottom: 1px solid #26353c; }
 }
+
+/* Écran interne tactile : la cassette reste visible, réduite sur la gauche. */
+.tape-editor-screen.is-screen-menu-open > svg {
+  width: 49% !important;
+  transform: scale(.96);
+  transform-origin: left top;
+}
+.tape-editor-screen.is-screen-menu-open > .op1-screen-patch-menu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  width: 47%;
+  max-height: calc(100% - 16px);
+  min-height: 0;
+  overflow: auto;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .45);
+}
+.tape-editor-screen.is-screen-menu-open .op1-screen-patch-columns {
+  min-height: 0;
+}
+.op1-svg-transport-indicator {
+  display: none;
+}
+.op1-screen-play-button {
+  min-width: 104px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #00ed95;
+  background: #10241d;
+  border: 1px solid #00ed95;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-play-button:hover,
+.op1-screen-play-button:focus-visible,
+.op1-screen-play-button.is-playing {
+  color: #06130e;
+  background: #00ed95;
+}
+.op1-screen-play-button span {
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .tape-editor-screen.is-screen-menu-open > svg {
+    width: 42% !important;
+  }
+  .tape-editor-screen.is-screen-menu-open > .op1-screen-patch-menu {
+    width: 54%;
+  }
+}
