@@ -58,7 +58,7 @@ function validateMetadata(metadata: Op1PatchMetadata): string[] {
 
   if (metadata.type === "drum") {
     const drum = metadata as Op1DrumPatchMetadata;
-    if (drum.start.length !== 24 || drum.end.length !== 24) {
+    if (!Array.isArray(drum.start) || !Array.isArray(drum.end) || drum.start.length !== 24 || drum.end.length !== 24) {
       errors.push("drum patches require exactly 24 start/end markers");
     }
     for (const [label, values] of [["start", drum.start], ["end", drum.end]] as const) {
