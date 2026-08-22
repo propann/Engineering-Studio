@@ -93,6 +93,7 @@ export interface StudioTapeEditorProps {
   machineMode?: "synth" | "drum" | "tape";
   onMachineModeChange?: (mode: "synth" | "drum" | "tape") => void;
   soundMenuOpen?: boolean;
+  onSoundMenuOpen?: (slot: number) => void;
   onSoundMenuClose?: () => void;
   rackMenuOpen?: boolean;
   onRackMenuClose?: () => void;
@@ -126,7 +127,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
-    machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
+    machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuOpen, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
@@ -1232,7 +1233,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           transform="translate(257 145)"
           style={{ cursor: "pointer" }}
           onPointerDown={(event) => event.stopPropagation()}
-          onClick={(event) => { event.stopPropagation(); cycleRackEngine(1); }}
+          onClick={(event) => { event.stopPropagation(); onSoundMenuOpen?.(soundSlot); }}
           onWheel={(event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -1271,7 +1272,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
                   ))}
                 </section>
                 <section className="op1-screen-patch-column" aria-label="Patches du moteur">
-                  <strong>PATCHES · BLEU</strong>
+                  <strong>PATCHES · VERT</strong>
                   {RACK_PATCHES.map((patch) => (
                     <button key={patch} type="button" className={selectedPatch === patch ? "is-active" : ""} onClick={() => { onPatchChange?.(patch); onNotice?.("Patch " + selectedEngine + " " + patch + " chargé."); }}>
                       <span>{patch}</span><small>{selectedEngine}</small>
