@@ -19,6 +19,7 @@ import { useRef, useState, type MutableRefObject } from "react";
 const RACK_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
 const RACK_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
 const RACK_EFFECTS = ["ADSR", "LFO", "Delay", "EQ", "Arpeggiator", "Step Sequencer", "Chorus", "Distortion"] as const;
+const MACHINE_MODES = ["synth", "drum", "tape"] as const;
 import { TrackContextMenu } from "./TrackContextMenu";
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
@@ -88,6 +89,7 @@ export interface StudioTapeEditorProps {
   onSeek: (time: number) => void;
   onNotice?: (msg: string) => void;
   machineMode?: "synth" | "drum" | "tape";
+  onMachineModeChange?: (mode: "synth" | "drum" | "tape") => void;
   soundMenuOpen?: boolean;
   onSoundMenuClose?: () => void;
   rackMenuOpen?: boolean;
@@ -121,7 +123,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
-    machineMode = "synth", soundMenuOpen = false, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
+    machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
@@ -132,6 +134,14 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     x: number;
     y: number;
   } | null>(null);
+  const [modeSelectorHover, setModeSelectorHover] = useState(false);
+
+  function cycleMachineMode(direction: 1 | -1) {
+    const current = MACHINE_MODES.indexOf(machineMode);
+    const next = MACHINE_MODES[(current + direction + MACHINE_MODES.length) % MACHINE_MODES.length];
+    onMachineModeChange?.(next);
+    onNotice?.(`Mode OP-1 : ${next === "synth" ? "SYNTH" : next === "drum" ? "DRUM" : "TAPE"}.`);
+  }
 
   const dragRef = useRef<{
     kind: "clip" | "playhead" | "volume" | "scrub" | "loopIn" | "loopOut" | "overviewScrub";
@@ -581,10 +591,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       >
         {/* Fond */}
         <rect width={SVG_W} height={SVG_H} fill="#0c1011" />
-        <text x="10" y="13" fill="#00ED95" fontFamily="monospace" fontSize="5.5" fontWeight="700" letterSpacing="0.5">
-          {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
-        </text>
-
+        {/* Le mode est sélectionné depuis le bas de l'écran, comme un contrôle tactile. */}
         {/* ── Partie statique : chemin du ruban ──────────────────────────── */}
         <g opacity="0.5" stroke="#656579" strokeWidth="1.5" fill="none">
           <path d="M85.445,105.977c0.098-2.271,0.708-4.422,1.719-6.312" />
@@ -1177,6 +1184,30 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             style={{ cursor: "pointer" }}
           />
         </g>
+        {/* Sélecteur tactile de mode : survol = cadre, molette = mode suivant/précédent. */}
+        <g
+          className={`op1-screen-mode-selector${modeSelectorHover ? " is-hovered" : ""}`}
+          transform="translate(5 145)"
+          style={{ cursor: "pointer" }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); cycleMachineMode(1); }}
+          onWheel={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cycleMachineMode(event.deltaY >= 0 ? 1 : -1);
+          }}
+          onMouseEnter={() => setModeSelectorHover(true)}
+          onMouseLeave={() => setModeSelectorHover(false)}
+          role="button"
+          aria-label="Changer le mode OP-1 à la molette"
+        >
+          <rect x="0" y="0" width="58" height="12" rx="2" fill={modeSelectorHover ? "#18252b" : "#101719"} stroke={modeSelectorHover ? "#00ED95" : "#314047"} strokeWidth={modeSelectorHover ? "1" : "0.7"} />
+          <text x="4" y="8" fill="#00ED95" fontFamily="monospace" fontSize="4.6" fontWeight="700">
+            {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
+          </text>
+          <text x="53" y="8" textAnchor="end" fill="#698EFF" fontFamily="monospace" fontSize="5" fontWeight="700">◀▶</text>
+        </g>
+
       </svg>
 
       </>
