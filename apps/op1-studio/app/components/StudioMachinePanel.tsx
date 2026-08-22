@@ -90,7 +90,6 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
   ] },
   { label: "Bande", entries: [
     { id: "transport-play", label: "Lecture", visual: "play", note: "" },
-    { id: "transport-rec", label: "Enregistr.", visual: "rec", note: "" },
     { id: "transport-stop", label: "Stop", visual: "stop", note: "" },
     { id: "tape-split", label: "Split", visual: "split", note: "" },
     { id: "tape-drop", label: "Drop", visual: "drop", note: "" },
@@ -1206,6 +1205,9 @@ export function StudioMachinePanel({
             })}
 
             {!notesOnly && transBlocks.map((b, i) => {
+              // L'enregistrement est piloté par le REC de l'écran simulé et
+              // la piste active ; ne pas dupliquer un bouton REC ici.
+              if (i === 1) return null;
               const key = `trans-${i}`;
               const binding = learnedMap[key];
               const def7B = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
