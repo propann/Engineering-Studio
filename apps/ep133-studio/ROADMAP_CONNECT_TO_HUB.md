@@ -2,7 +2,7 @@
 
 > **DOCUMENT HISTORIQUE — spécification de raccord initiale.** La feuille de
 > route active du monorepo est
-> [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../docs/ROADMAP_ACTIVE_2026-08-16.md).
+> [`../../docs/ROADMAP.md`](../../docs/ROADMAP.md).
 
 **For**: Development Team working on EP-133  
 **Purpose**: Guide how to connect EP-133 Studio to Studio Hub  
@@ -16,7 +16,7 @@
 > entraînement et le compteur de snapshots sont maintenant livrés côté Hub ;
 > les stores partagés et les écritures matérielles restent ouverts.
 
-La source de décision actuelle est [`../../docs/ROADMAP_ACTIVE_2026-08-16.md`](../../docs/ROADMAP_ACTIVE_2026-08-16.md).
+La source de décision actuelle est [`../../docs/ROADMAP.md`](../../docs/ROADMAP.md).
 
 ### Validation locale ajoutée le 16 août 2026
 

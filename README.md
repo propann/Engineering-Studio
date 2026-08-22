@@ -77,7 +77,7 @@ machine fait du fichier qu'on lui écrit.
 | L'OP-1 relit son support après écriture externe | ✅ sur matériel |
 | MIDI vers l'OP-1 et l'EP-133 | ✅ sur matériel |
 | Restauration par l'application, de bout en bout | ⬜ protocole prêt, non exécuté |
-| Les trois racks, à l'oreille | ⬜ 98 essais consignés, à faire |
+| Les trois racks, à l'oreille | ⬜ tout est consigné, essai par essai |
 
 Ce qui reste à valider est listé, essai par essai, dans
 [docs/TESTS_PHYSIQUES.md](docs/TESTS_PHYSIQUES.md) — avec, pour chacun, ce que

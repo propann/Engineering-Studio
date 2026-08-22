@@ -55,7 +55,7 @@ apps/studio-hub/
 │   │   └── audio-rack-06..12/        ⬜ non créés
 │   │
 │   ├── pages/
-│   │   ├── AudioPluginRack.tsx      ✅ Composant principal (~2990 lignes)
+│   │   ├── AudioPluginRack.tsx      ✅ Composant principal
 │   │   └── ProfileCreator.tsx       ✅ Fiche personnage + sélecteur de dossier
 │   │
 │   └── docs/

@@ -18,6 +18,27 @@ import { ORDRE_MOTIFS } from "./arpege";
  */
 
 const RACINE = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+
+/**
+ * Les documents qui decrivent le PRESENT du depot.
+ *
+ * Les entrees datees de la feuille de route en sont exclues : « 515 tests
+ * passaient a ce moment-la » est un fait historique, pas une affirmation sur
+ * l'etat courant. C'est le present qui rouille.
+ */
+const VIVANTS = [
+  "README.md",
+  "MODULES_STATUS.md",
+  "AUDIO_RACK_README.md",
+  "docs/STATUS.md",
+  "docs/TESTS_PHYSIQUES.md",
+  "docs/INDEX.md",
+  "docs/ANALYSE_RACK_PRINCIPAL.md",
+  "AUDIO_RACK_README.md",
+  "docs/backup/CONTRAT_INTEGRATION.md",
+  "docs/backup/PROTOCOLE_VALIDATION_RESTAURATION.md",
+  ];
+
 const lire = (p: string) => readFileSync(path.join(RACINE, p), "utf-8");
 
 const DOCS = [
@@ -66,15 +87,6 @@ describe("aucun compte de tests fige dans la doc vivante", () => {
    * passaient a ce moment-la » est un fait historique, pas une affirmation sur
    * le present. C'est le present qui rouille.
    */
-  const VIVANTS = [
-    "README.md",
-    "MODULES_STATUS.md",
-    "AUDIO_RACK_README.md",
-    "docs/STATUS.md",
-    "docs/TESTS_PHYSIQUES.md",
-    "docs/INDEX.md",
-    "docs/ANALYSE_RACK_PRINCIPAL.md",
-  ];
 
   it("aucun document vivant n'annonce un nombre de tests", () => {
     for (const doc of VIVANTS) {
@@ -87,6 +99,47 @@ describe("aucun compte de tests fige dans la doc vivante", () => {
         // donc pas pour la formulation francaise qu'elle visait.
         if (/[aà] ce moment|at the time|[aà] l'[ée]poque|\d{4}-\d{2}-\d{2}/i.test(contexte)) continue;
         expect.fail(`${doc} fige « ${m[0]} » : ce nombre change a chaque commit`);
+      }
+    }
+  });
+});
+
+describe("aucun compte volatil fige dans la doc vivante", () => {
+  /**
+   * Meme raison que pour les tests : ces nombres bougent a chaque ajout, et
+   * une doc qui les fige devient fausse sans que rien ne le signale.
+   *
+   * Trouves en une seule passe : « 98 essais » pour 127, « ~2990 lignes »
+   * pour 4098, « 515 tests » pour plus de huit cents. Trois fichiers
+   * differents, tous exacts le jour ou ils ont ete ecrits.
+   */
+  const VOLATILS = [
+    { motif: /(\d{2,4})\s+essais/g, quoi: "essais physiques" },
+  ];
+
+  /**
+   * Le compte de LIGNES a ete essaye, puis retire.
+   *
+   * Il tirait surtout sur du texte legitime : « 389 lignes du
+   * SynthEngineDrawer » decrit un fichier SUPPRIME, dont la taille ne peut
+   * plus rouiller ; « 159 lignes » et « 263 lignes » etaient exacts.
+   *
+   * Il a quand meme servi une fois — c'est en le lisant qu'on a vu que
+   * MODULES_STATUS annoncait deux fichiers « a trancher » qui etaient
+   * supprimes depuis. Mais un garde-fou qui se declenche surtout a tort finit
+   * par etre desactive : celui-ci vise donc ce qui rouille vraiment.
+   */
+
+  it("aucun document vivant ne fige un compte qui bouge", () => {
+    for (const doc of VIVANTS) {
+      const texte = lire(doc);
+      for (const { motif, quoi } of VOLATILS) {
+        for (const m of texte.matchAll(motif)) {
+          const contexte = texte.slice(Math.max(0, m.index! - 120), m.index! + 120);
+          // Tolere une formulation explicitement datee, comme pour les tests.
+          if (/[aà] ce moment|at the time|[aà] l'[ée]poque|\d{4}-\d{2}-\d{2}|au\nmoment/i.test(contexte)) continue;
+          expect.fail(`${doc} fige « ${m[0]} » (${quoi}) : ce nombre change`);
+        }
       }
     }
   });

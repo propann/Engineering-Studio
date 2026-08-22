@@ -77,7 +77,7 @@ d'usine personnalisés et quantification binaire de notes. Les modifications
 de `OP1_vdk.ldr`, le déchiffrement, l'OTP, l'ECC, le flash et le bootloader sont
 de la recherche uniquement ou sont exclus.
 
-Lire [docs/FIRMWARE_MOD_CATALOG.md](docs/FIRMWARE_MOD_CATALOG.md) avant de
+Lire `docs/FIRMWARE_MOD_CATALOG.md` *(à écrire)* avant de
 proposer un nouveau bouton ou une nouvelle option.
 
 ## Dépôt local universel

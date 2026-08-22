@@ -32,6 +32,9 @@ lui, ne sert presque plus.
 
 ## Constat 1 — le tableau de 19 outils en affiche **un seul**
 
+> Constat du 2026-08-22 au matin. La fusion du même jour l'a résolu : les
+> cartes sont devenues des entrées, et le tableau en compte désormais 26.
+
 `ToolsHub.tsx:110-111` filtre le tableau avant de le rendre :
 
 ```ts

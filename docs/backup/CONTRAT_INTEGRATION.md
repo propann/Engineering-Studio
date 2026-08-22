@@ -191,7 +191,8 @@ c'est arrivé une fois dans cette session.
 
 ## Tester
 
-515 tests, sur des fonctions pures exportées et sur la structure du source.
+Les tests portent sur des fonctions pures exportées et sur la structure du
+source.
 Aucun test de rendu React.
 
 ```bash

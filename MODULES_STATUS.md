@@ -112,11 +112,13 @@ Voir `docs/FOLDER_PICKER.md`.
 > une recherche testée qui ne pouvait rien trouver, à côté de 91 patches
 > d'usine qu'on ne pouvait que faire défiler.
 >
-> `PatchSearchEngine` est maintenant appelé directement par
-> `AudioPluginRack.tsx` sur les listes réelles. **Restent en doublon sans
-> consommateur** : `PatchSearchModule.tsx` (429 lignes) et
-> `audioRackStore.ts` (470 lignes) — à trancher, l'interface relevant de
-> l'autre terrain (cf. `docs/backup/CONTRAT_INTEGRATION.md`).
+> `PatchSearchEngine` est appelé directement par `AudioPluginRack.tsx` sur les
+> listes réelles.
+>
+> `PatchSearchModule.tsx` et `audioRackStore.ts`, qui restaient en doublon sans
+> consommateur, ont été **supprimés** — ils cherchaient dans un store parallèle
+> que rien n'alimentait : une clef `localStorage` différente de celle du rack,
+> donc toujours vide.
 
 **Description**: Search and filter patches by name, tag, engine, category. Favorite/recent features.
 

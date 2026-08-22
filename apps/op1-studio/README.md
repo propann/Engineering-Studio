@@ -9,7 +9,6 @@ sons, un studio quatre pistes, du MIDI, et un module d'entraînement au
 clavier. Elle préfère montrer exactement ce qu'elle s'apprête à faire plutôt
 que d'appuyer très fort sur un bouton magique.
 
-![OP-1 Studio](docs/assets/op1-studio-mark.svg)
 
 > [!IMPORTANT]
 > Projet communautaire indépendant, sans affiliation avec Teenage
@@ -21,16 +20,15 @@ que d'appuyer très fort sur un bouton magique.
 Captures prises le 14 août 2026 sur `npm run dev`, prototype interactif
 sans machine connectée (bandeau « NO DEVICE » visible sur l'accueil).
 
-![Accueil — l'atelier OP-1](docs/assets/screenshots/accueil.jpg)
 
 | Fenêtre | Aperçu | Ce qu'on y voit |
 |---|---|---|
-| **Studio · Tape & Album** | ![Studio](docs/assets/screenshots/studio.jpg) | quatre pistes façon bande OP‑1, transport commun, formes d'onde réelles, piano‑roll MIDI éditable et quantifiable, rendu WAV offline, export Stems/Album en AIFF mono |
-| **Sons** | ![Sons](docs/assets/screenshots/sons.jpg) | bibliothèque en deux colonnes (machine / ordinateur), cinq catégories réelles, forme d'onde avec marqueurs de patch, tri et favoris, conversion locale vers AIFF prête pour la machine |
-| **Exercices** | ![Exercices](docs/assets/screenshots/exercices.jpg) | écran de notes qui tombent façon Guitar Hero, quatre modes (Drumkit / Mélodie / Accord / Morceau importé en MIDI), jugement note/timing avec score et progression locale |
-| **Firmware** | ![Firmware](docs/assets/screenshots/firmware.jpg) | plan en quatre étapes (Source → Mods → Contrôles → Export), catalogue de mods par catégorie avec vignette, checklist « plan sécurisé », jamais d'écriture automatique sur la machine |
-| **Images** | ![Images](docs/assets/screenshots/images.jpg) | créateur de dessin original 320×160 (palette machine), tri des 61 écrans SVG du firmware par catégorie et confiance, mode thème global, éditeur pixel local |
-| **Sauvegardes** | ![Sauvegardes](docs/assets/screenshots/sauvegardes.jpg) | inventaire d'un volume Disk mode réel (65 fichiers, 269 Mo sur la machine de test), manifeste vérifié, Time Capsule Pistes séparée du firmware/samples |
+| **Studio · Tape & Album** |  | quatre pistes façon bande OP‑1, transport commun, formes d'onde réelles, piano‑roll MIDI éditable et quantifiable, rendu WAV offline, export Stems/Album en AIFF mono |
+| **Sons** |  | bibliothèque en deux colonnes (machine / ordinateur), cinq catégories réelles, forme d'onde avec marqueurs de patch, tri et favoris, conversion locale vers AIFF prête pour la machine |
+| **Exercices** |  | écran de notes qui tombent façon Guitar Hero, quatre modes (Drumkit / Mélodie / Accord / Morceau importé en MIDI), jugement note/timing avec score et progression locale |
+| **Firmware** |  | plan en quatre étapes (Source → Mods → Contrôles → Export), catalogue de mods par catégorie avec vignette, checklist « plan sécurisé », jamais d'écriture automatique sur la machine |
+| **Images** |  | créateur de dessin original 320×160 (palette machine), tri des 61 écrans SVG du firmware par catégorie et confiance, mode thème global, éditeur pixel local |
+| **Sauvegardes** |  | inventaire d'un volume Disk mode réel (65 fichiers, 269 Mo sur la machine de test), manifeste vérifié, Time Capsule Pistes séparée du firmware/samples |
 
 ## Ce qui est déjà là
 
@@ -44,7 +42,7 @@ sans machine connectée (bandeau « NO DEVICE » visible sur l'accueil).
   destructive avant export de patch, un créateur de dessin original
   (canevas 320×160, palette machine) évite tout import de contenu tiers, et
   un mode thème recolore d'un coup toutes les fenêtres compatibles. Voir
-  [`docs/OP1_IMAGE_BIBLE.md`](docs/OP1_IMAGE_BIBLE.md).
+  `docs/OP1_IMAGE_BIBLE.md` *(à écrire)*.
 - **Bibliothèque Sons** : oracle audio WAV et AIFF+patch OP‑1 en lecture
   seule (marqueurs de patch matérialisés sur la forme d'onde), préflight
   durée/canaux/profondeur/écrêtage, conversion locale vers AIFF mono
@@ -65,7 +63,7 @@ sans machine connectée (bandeau « NO DEVICE » visible sur l'accueil).
   de routage audio quand le navigateur expose l'OP‑1 comme interface audio.
 
 Le détail de ce qui est livré, en cours ou encore à l'état d'idée est tenu à
-jour dans [docs/ROADMAP.md](docs/ROADMAP.md), avec le même niveau
+jour dans [docs/ROADMAP.md](../../docs/ROADMAP.md), avec le même niveau
 d'exigence : rien n'est marqué « livré » sans un test ou une vérification
 qui l'accompagne.
 
@@ -75,7 +73,7 @@ Les opérations sensibles restent explicites. Les bridges locaux préparent,
 valident et produisent des manifestes ; l'interface ne prétend pas avoir
 écrit sur la machine quand elle ne l'a pas fait. Autrement dit : le bouton
 ne porte pas de cape. Le détail complet de cette politique pour le firmware
-est dans [docs/FIRMWARE_SAFETY.md](docs/FIRMWARE_SAFETY.md).
+est dans `docs/FIRMWARE_SAFETY.md` *(à écrire)*.
 
 ## Démarrage
 
@@ -175,17 +173,17 @@ Les études techniques les plus denses sont consolidées en deux
 « bibles » — un seul document à lire avant de démarrer un chantier
 plutôt que de relire chaque étude séparément :
 
-- [`docs/OP1_FIRMWARE_BIBLE.md`](docs/OP1_FIRMWARE_BIBLE.md) — conteneur
+- `docs/OP1_FIRMWARE_BIBLE.md` *(à écrire)* — conteneur
   `.op1`, base de données d'usine, moteurs/effets/LFO/séquenceurs, format
   patch, boutons machine ↔ champs JSON, comportement Tape, modes de
   connexion, catalogue de mods, avec pour chaque fait ce qui est déjà codé,
   codable maintenant ou hors périmètre.
-- [`docs/OP1_IMAGE_BIBLE.md`](docs/OP1_IMAGE_BIBLE.md) — inventaire complet
+- `docs/OP1_IMAGE_BIBLE.md` *(à écrire)* — inventaire complet
   des 61 écrans SVG, palette exacte de la machine, patrons visuels
   réutilisables pour un éditeur de moteur, dictionnaire de codenames.
 
-Voir aussi [docs/ROADMAP.md](docs/ROADMAP.md) et
-[docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) pour l'état de livraison
+Voir aussi [docs/ROADMAP.md](../../docs/ROADMAP.md) et
+[docs/STATUS.md](../../docs/STATUS.md) pour l'état de livraison
 détaillé et les limites connues.
 
 ## Feuille de route
@@ -201,7 +199,7 @@ détaillé et les limites connues.
    contrôle de compatibilité avant export) ;
 5. combos et touches d'effet dans le module Exercices.
 
-Voir [docs/ROADMAP.md](docs/ROADMAP.md) pour le détail complet, jalon par
+Voir [docs/ROADMAP.md](../../docs/ROADMAP.md) pour le détail complet, jalon par
 jalon.
 
 ## Contribuer
