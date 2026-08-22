@@ -138,12 +138,20 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     y: number;
   } | null>(null);
   const [modeSelectorHover, setModeSelectorHover] = useState(false);
+  const [engineSelectorHover, setEngineSelectorHover] = useState(false);
 
   function cycleMachineMode(direction: 1 | -1) {
     const current = MACHINE_MODES.indexOf(machineMode);
     const next = MACHINE_MODES[(current + direction + MACHINE_MODES.length) % MACHINE_MODES.length];
     onMachineModeChange?.(next);
     onNotice?.(`Mode OP-1 : ${next === "synth" ? "SYNTH" : next === "drum" ? "DRUM" : "TAPE"}.`);
+  }
+
+  function cycleRackEngine(direction: 1 | -1) {
+    const current = RACK_ENGINES.indexOf(selectedEngine as typeof RACK_ENGINES[number]);
+    const next = RACK_ENGINES[(Math.max(0, current) + direction + RACK_ENGINES.length) % RACK_ENGINES.length];
+    onEngineChange?.(next);
+    onNotice?.(`Moteur audio : ${next}.`);
   }
 
   const dragRef = useRef<{
@@ -1217,6 +1225,28 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           <text x="4" y="8" fill="#00ED95" fontFamily="monospace" fontSize="4.6" fontWeight="700">
             {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
           </text>
+          <text x="53" y="8" textAnchor="end" fill="#698EFF" fontFamily="monospace" fontSize="5" fontWeight="700">◀▶</text>
+        </g>
+
+        <g
+          className={`op1-screen-engine-selector${engineSelectorHover ? " is-hovered" : ""}`}
+          transform="translate(257 145)"
+          style={{ cursor: "pointer" }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); cycleRackEngine(1); }}
+          onWheel={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cycleRackEngine(event.deltaY >= 0 ? 1 : -1);
+          }}
+          onMouseEnter={() => setEngineSelectorHover(true)}
+          onMouseLeave={() => setEngineSelectorHover(false)}
+          role="button"
+          aria-label="Choisir le moteur audio du rack à la molette"
+        >
+          <rect x="0" y="0" width="58" height="12" rx="2" fill={engineSelectorHover ? "#172235" : "#101719"} stroke={engineSelectorHover ? "#698EFF" : "#314047"} strokeWidth={engineSelectorHover ? "1" : "0.7"} />
+          <text x="4" y="4.5" fill="#698EFF" fontFamily="monospace" fontSize="3.2" fontWeight="700">ENGINE</text>
+          <text x="4" y="9.2" fill="#DFD9FF" fontFamily="monospace" fontSize="4.2" fontWeight="700">{selectedEngine}</text>
           <text x="53" y="8" textAnchor="end" fill="#698EFF" fontFamily="monospace" fontSize="5" fontWeight="700">◀▶</text>
         </g>
 
