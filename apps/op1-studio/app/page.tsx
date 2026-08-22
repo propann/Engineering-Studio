@@ -505,10 +505,16 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     }
   }
 
-  // Synchronisation du moteur audio OP-1 actif
+  // Synchronisation du moteur audio OP-1 actif : les identifiants du
+  // rack (mi_plaits, dexed_fm, etc.) sont résolus localement par le moteur.
+  // La sélection reste strictement dans le navigateur : aucun transfert USB
+  // ou écriture sur la machine n'est déclenché ici.
   useEffect(() => {
     op1AudioEngine.setEngine(selectedEngine);
   }, [selectedEngine]);
+  useEffect(() => {
+    op1AudioEngine.setPatch(selectedPatch);
+  }, [selectedPatch]);
 
   // L'OP-1 expose deux ports MIDI sous Windows. Le retour visuel et sonore du clone
   // reste actif même quand aucune capture n'est en cours.
