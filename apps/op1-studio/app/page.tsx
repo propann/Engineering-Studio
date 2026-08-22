@@ -406,6 +406,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [solo, setSolo] = useState<number | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
   const [tempo, setTempo] = useState(90);
+  const [midiClockBpm, setMidiClockBpm] = useState<number | null>(null);
+  const [midiClockTick, setMidiClockTick] = useState(0);
+  const midiClockTickRef = useRef(0);
+  const midiClockLastQuarterRef = useRef<number | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordingStartPos, setRecordingStartPos] = useState(0);
   const recordingRef = useRef(false);
@@ -556,7 +560,30 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     let disposed = false;
     let inputs: MidiInputLike[] = [];
     const handler = (event: EvenementMidiLu) => {
-      if (event.data) setLastRawMidiIn([...event.data]);
+      if (event.data) {
+        setLastRawMidiIn([...event.data]);
+        const status = event.data[0] & 0xff;
+        if (status === 0xfa) {
+          midiClockTickRef.current = 0;
+          midiClockLastQuarterRef.current = performance.now();
+          setMidiClockTick(0);
+        } else if (status === 0xf8) {
+          midiClockTickRef.current += 1;
+          const tick = midiClockTickRef.current;
+          setMidiClockTick(tick);
+          if (tick % 24 === 0) {
+            const now = performance.now();
+            const previous = midiClockLastQuarterRef.current;
+            if (previous !== null) {
+              const measured = 60000 / Math.max(1, now - previous);
+              if (measured >= 20 && measured <= 300) setMidiClockBpm(measured);
+            }
+            midiClockLastQuarterRef.current = now;
+          }
+        } else if (status === 0xfc) {
+          setMidiClockBpm(null);
+        }
+      }
       const message = decodeMidiNote(event.data);
       if (!message) return;
       if (message.type === "note_on") {
@@ -1609,6 +1636,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
               setLoopOut(outSec);
             }}
             tempo={tempo}
+            midiClockBpm={midiClockBpm}
+            midiClockTick={midiClockTick}
             volume={masterVolume}
             onVolumeChange={setMasterVolume}
             audioRefs={audioRefs}
