@@ -76,6 +76,55 @@ jobs:
         with:
           sarif_file: trivy-source-results.sarif
 
+
+  studio-op1:
+    name: OP-1 Studio Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: apps/op1-studio/package.json
+      - name: Link private workspace packages
+        working-directory: apps/op1-studio
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.dependencies['@studio-hub/audio-bridge']='file:../../packages/audio-bridge'; p.dependencies['@studio-hub/midi-bridge']='file:../../packages/midi-bridge'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');"
+      - name: Install dependencies
+        working-directory: apps/op1-studio
+        run: npm install --package-lock=false --ignore-scripts
+      - name: Type check
+        working-directory: apps/op1-studio
+        run: npm run typecheck
+      - name: Test
+        working-directory: apps/op1-studio
+        run: npm run test
+
+  studio-ep133:
+    name: EP-133 Studio Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+          cache-dependency-path: apps/ep133-studio/package.json
+      - name: Link private workspace packages
+        working-directory: apps/ep133-studio
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.dependencies['@studio-hub/audio-bridge']='file:../../packages/audio-bridge'; p.dependencies['@studio-hub/midi-bridge']='file:../../packages/midi-bridge'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');"
+      - name: Install dependencies
+        working-directory: apps/ep133-studio
+        run: npm install --package-lock=false --ignore-scripts
+      - name: Type check
+        working-directory: apps/ep133-studio
+        run: npm run typecheck
+      - name: Test
+        working-directory: apps/ep133-studio
+        run: npm run test
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
