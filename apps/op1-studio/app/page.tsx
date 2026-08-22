@@ -1469,7 +1469,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
           </div>
 
           {/* Côté droit ligne 1 : Nom du projet & infos */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#94a3b8" }}>
+          <div className="op1-console-project-info" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px" }}>
             <span>Projet : <strong style={{ color: "#f1f5f9" }}>{projectName}</strong></span>
           </div>
         </div>
