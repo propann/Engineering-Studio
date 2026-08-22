@@ -448,6 +448,7 @@ export function StudioMachinePanel({
   onRecord,
   onModeChange,
   onOpenSoundMenu,
+  onOpenRackMenu,
   onSoundMenuEncoder,
   onSendMidi,
   notesOnly = false,
@@ -464,6 +465,7 @@ export function StudioMachinePanel({
   onRecord?: () => void;
   onModeChange?: (mode: Op1MachineMode) => void;
   onOpenSoundMenu?: (slot: number) => void;
+  onOpenRackMenu?: () => void;
   /** Navigation des colonnes du menu par encodeur : 0=moteur, 1=patch. */
   onSoundMenuEncoder?: (encoder: number, delta: number) => void;
   onSendMidi: (data: number[]) => void;
@@ -842,6 +844,7 @@ export function StudioMachinePanel({
           if (modeChange) onModeChange?.(modeChange);
           const soundSlot = soundSlotFromControl(binding.realId);
           if (soundSlot) onOpenSoundMenu?.(soundSlot);
+          if (binding.realId === "sequencer") onOpenRackMenu?.();
         }
         break; // un seul bouton peut correspondre à un message donné
       }
@@ -1153,6 +1156,7 @@ export function StudioMachinePanel({
                     if (modeChange) onModeChange?.(modeChange);
                     const soundSlot = soundSlotFromControl(fnRealId);
                     if (soundSlot) soundLongPressRef.current = window.setTimeout(() => onOpenSoundMenu?.(soundSlot), 500);
+                    if (fnRealId === "sequencer") onOpenRackMenu?.();
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
                   onPointerUp={() => { if (soundLongPressRef.current !== null) { window.clearTimeout(soundLongPressRef.current); soundLongPressRef.current = null; } setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; }); }}
