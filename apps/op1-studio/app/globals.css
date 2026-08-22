@@ -2124,3 +2124,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 
 /* L'écran et le châssis sont continus : aucune barre de commandes texte entre les deux. */
 .studio-keyboard-panel .mpanel-bar { display: none !important; }
+
+/* Palette du châssis OP-1 : gris clair matériel, couleurs réservées aux cercles et glyphes. */
+.studio-keyboard-panel { background: #d7dbd8; }
+.studio-keyboard-panel .studio-machine-panel { background: #d7dbd8; border-color: #9aa19d; color: #27302c; box-shadow: 0 4px 12px rgba(40,48,44,.18); }

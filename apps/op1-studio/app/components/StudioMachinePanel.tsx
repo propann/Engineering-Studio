@@ -990,7 +990,7 @@ export function StudioMachinePanel({
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
-            <rect x={0} y={0} width={COLS} height={ROWS} fill="#ffffff" />
+            <rect x={0} y={0} width={COLS} height={ROWS} fill="#d7dbd8" />
 
             {whiteBlocks.map((b, i) => {
               const note = WHITE_NOTES[i] ?? (60 + i);
@@ -1007,14 +1007,14 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isDown ? "#c9c2eb" : "#DFD9FF"}
+                    fill={isDown ? "#d4d8d5" : "#f1f2ef"}
                     stroke="#8f89aa" strokeWidth={.06}
                   />
                   <rect
                     x={b.col + b.w*.22} y={b.row + b.h*.25}
                     width={b.w*.56} height={b.h*.45}
                     rx={b.w*.28}
-                    fill={isDown?"#b8b0d9":"#f5f2ff"}
+                    fill={isDown?"#c5cbc7":"#fbfcfa"}
                     stroke="#aaa2c5" strokeWidth={.04}
                   />
                   <text x={b.col+b.w/2} y={b.row+b.h*.16}
@@ -1025,7 +1025,7 @@ export function StudioMachinePanel({
                   {/* Touche du clavier ordinateur correspondante. */}
                   <text x={b.col+b.w/2} y={b.row+b.h-.42}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.42} fill="#8b86a8" fontFamily="monospace" fontWeight="700">
+                    fontSize={.42} fill="#68706c" fontFamily="monospace" fontWeight="700">
                     {labelForCode(WHITE_KEY_CODES[i])}
                   </text>
                 </g>
@@ -1171,11 +1171,11 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isFnDown ? "#f2f4ef" : fnButtonColor}
+                    fill={isFnDown ? "#ffffff" : "#e4e6e4"}
                     stroke={dragOverKey === key ? "#ffffff" : binding ? "#267c65" : (isPickTarget ? "#ffffff" : fnButtonColor)}
                     strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#ffffff" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#ffffff" : "#d6d9d6"} stroke="#9da39f" strokeWidth={.04}/>
                   {fnSoundNumber
                     ? <text x={b.col+b.w/2} y={b.row+b.h*.42} textAnchor="middle" dominantBaseline="central"
                         fontSize={Math.min(b.w,b.h)*.36} fill="#171a1b" fontFamily="monospace" fontWeight="900">{fnSoundNumber}</text>
@@ -1228,11 +1228,11 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isTransDown ? "#f2f4ef" : transButtonColor}
+                    fill={isTransDown ? "#ffffff" : "#e4e6e4"}
                     stroke={dragOverKey === key ? "#ffffff" : binding ? "#267c65" : (isPickTarget ? "#ffffff" : transButtonColor)}
                     strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#ffffff" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#ffffff" : "#d6d9d6"} stroke="#9da39f" strokeWidth={.04}/>
                   {transVisual
                     ? <EmbeddedGlyph visual={transVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
                     : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#FF3A5D"/>
