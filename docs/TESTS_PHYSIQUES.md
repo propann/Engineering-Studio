@@ -262,6 +262,12 @@ Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
       intact, cette voie est coupée
 - [ ] le RETOUR du flanger n'apparaît **que** pour le flanger, et à fond il
       siffle sans diverger
+- [ ] **le délai à 4 prises ne diverge pas, RETOUR à fond.** C'est l'invariant
+      qui compte : seule la première prise réinjecte. Si toutes bouclaient, le
+      gain de boucle serait multiplié par quatre et le plafond ne protégerait
+      plus rien
+- [ ] à 4 prises, le son ne sature pas — les niveaux sont compensés
+- [ ] ÉCART à 0 % : on n'entend qu'un seul écho, comme à une prise
 - [ ] **profondeur à fond, le chorus ne se tait jamais par intermittence.**
       C'est la borne qui empêche le temps de délai de passer négatif
 - [ ] vitesse à fond : c'est encore un chorus, pas un vibrato

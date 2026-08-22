@@ -363,6 +363,10 @@ export default function AudioPluginRack({
   }, [delaySync, bpmHote, delayDivision]);
   const [fxDelayTime, setFxDelayTime] = useState<number>(280);
   const [fxDelayFeedback, setFxDelayFeedback] = useState<number>(35);
+  // Delai multi-prises. Une prise par defaut : c'est le delai simple d'avant,
+  // et ajouter le reglage ne doit pas changer le son des patches existants.
+  const [fxDelayTaps, setFxDelayTaps] = useState<number>(1);
+  const [fxDelaySpread, setFxDelaySpread] = useState<number>(50);
   const [fxEqLow, setFxEqLow] = useState<number>(0);
   const [fxEqMid, setFxEqMid] = useState<number>(0);
   const [fxEqHigh, setFxEqHigh] = useState<number>(0);
@@ -506,7 +510,7 @@ export default function AudioPluginRack({
     activeEngine,
     masterVolume,
     masterDetune,
-    fxDelayMix, fxDelayTime, fxDelayFeedback,
+    fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
     fxEqLow, fxEqMid, fxEqHigh,
     envAttack, envDecay, envSustain, envRelease,
     fxDriveMix, fxDriveAmount, fxDriveMode,
@@ -534,7 +538,7 @@ export default function AudioPluginRack({
       activeEngine,
       masterVolume,
       masterDetune,
-      fxDelayMix, fxDelayTime, fxDelayFeedback,
+      fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
       fxEqLow, fxEqMid, fxEqHigh,
       envAttack, envDecay, envSustain, envRelease,
       fxDriveMix, fxDriveAmount, fxDriveMode,
@@ -736,6 +740,8 @@ export default function AudioPluginRack({
     fxDelayMix: setFxDelayMix,
     fxDelayTime: setFxDelayTime,
     fxDelayFeedback: setFxDelayFeedback,
+    fxDelayTaps: setFxDelayTaps,
+    fxDelaySpread: setFxDelaySpread,
   };
 
   const appliquerParamEffet = <N extends keyof ParamsEffets>(nom: N, valeur: ParamsEffets[N]) => {
@@ -3003,7 +3009,7 @@ export default function AudioPluginRack({
               fxDriveMix, fxDriveAmount, fxDriveMode,
               fxEqLow, fxEqMid, fxEqHigh,
               fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
-              fxDelayMix, fxDelayTime, fxDelayFeedback,
+              fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
             }}
               onParam={appliquerParamEffet}
               delaySync={delaySync}

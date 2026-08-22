@@ -154,6 +154,16 @@ export function RackEffets({
           <input type="range" min={0} max={100} value={params.fxDelayFeedback}
             onChange={(e) => onParam("fxDelayFeedback", Number(e.target.value))} />
         </label>
+        <label>PRISES {params.fxDelayTaps}
+          <input type="range" min={1} max={4} step={1} value={params.fxDelayTaps}
+            onChange={(e) => onParam("fxDelayTaps", Number(e.target.value))} />
+        </label>
+        {params.fxDelayTaps > 1 && (
+          <label>ÉCART {params.fxDelaySpread}%
+            <input type="range" min={0} max={100} step={5} value={params.fxDelaySpread}
+              onChange={(e) => onParam("fxDelaySpread", Number(e.target.value))} />
+          </label>
+        )}
       </div>
       <div className="fx-groupe">
         <span className="fx-groupe-nom">ÉGALISEUR</span>

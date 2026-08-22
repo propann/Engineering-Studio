@@ -33,10 +33,56 @@ export type ParamsEffets = {
   fxDelayMix: number;      // %
   fxDelayTime: number;     // ms
   fxDelayFeedback: number; // %
+  fxDelayTaps: number;     // nombre de prises, 1 = délai simple
+  fxDelaySpread: number;   // % — écart entre prises, 0 = toutes au même temps
 };
 
 /** Plafond de réinjection. Au-delà, la boucle diverge et sature indéfiniment. */
 export const REINJECTION_MAX = 0.85;
+
+/** Nombre maximal de prises. Au-delà, elles se confondent en réverbération. */
+export const TAPS_MAX = 4;
+
+/**
+ * Temps des prises d'un délai multi-prises.
+ *
+ * Chaque prise est un délai distinct, réparti entre le temps de base et son
+ * multiple selon l'écart. À écart nul toutes les prises tombent sur le même
+ * temps — ce qui n'ajoute rien, juste du gain : d'où le repli sur une prise.
+ *
+ * Les prises sont **décroissantes en niveau** : la plus lointaine est la plus
+ * faible, sinon l'écho serait plus fort que la source.
+ */
+export function tempsDesPrises(msBase: number, prises: number, ecartPourcent: number): number[] {
+  const n = Math.max(1, Math.min(TAPS_MAX, Math.floor(prises) || 1));
+  const base = tempsRetardSec(msBase);
+  // Raccourci, pas un comportement : avec une seule prise le calcul général
+  // donne `base × (1 + 0 × écart)` = `base`. Vérifié par sabotage — retirer
+  // cette ligne ne change aucun résultat. Elle reste pour dire l'intention.
+  if (n === 1) return [base];
+  const ecart = Number.isFinite(ecartPourcent)
+    ? Math.max(0, Math.min(100, ecartPourcent)) / 100
+    : 0;
+  if (ecart === 0) return [base];
+  return Array.from({ length: n }, (_, i) => {
+    // La première prise reste au temps de base ; les suivantes s'en éloignent
+    // proportionnellement, sans jamais dépasser ce que le nœud accepte.
+    const facteur = 1 + (i * ecart);
+    return Math.max(0.01, Math.min(2, base * facteur));
+  });
+}
+
+/**
+ * Niveau d'une prise, décroissant.
+ *
+ * Compensé par le nombre de prises : quatre prises à plein niveau feraient
+ * quatre fois le gain d'une seule, et satureraient le bus.
+ */
+export function niveauPrise(index: number, total: number): number {
+  const n = Math.max(1, total);
+  const i = Math.max(0, Math.min(n - 1, index));
+  return Math.pow(0.7, i) / Math.sqrt(n);
+}
 
 /** Amortissement de la boucle de délai, en Hz. */
 export const AMORTI_HZ = 4800;
@@ -269,27 +315,43 @@ export function construireChaineEffets(
 
   const doseDelai = melange(p.fxDelayMix);
   if (doseDelai > 0) {
-    const retard = ctx.createDelay(2);
-    retard.delayTime.setValueAtTime(tempsRetardSec(p.fxDelayTime), now);
-
-    const retour = ctx.createGain();
-    retour.gain.setValueAtTime(reinjection(p.fxDelayFeedback), now);
-
-    // Amortir la réinjection évite l'accumulation d'aigus à chaque tour, qui
-    // rend les répétitions stridentes.
-    const amorti = ctx.createBiquadFilter();
-    amorti.type = "lowpass";
-    amorti.frequency.setValueAtTime(AMORTI_HZ, now);
-
     const dose = ctx.createGain();
     dose.gain.setValueAtTime(doseDelai, now);
-
-    courant.connect(retard);
-    retard.connect(amorti);
-    amorti.connect(retour);
-    retour.connect(retard);
-    retard.connect(dose);
     dose.connect(sortie);
+
+    const temps = tempsDesPrises(p.fxDelayTime, p.fxDelayTaps, p.fxDelaySpread);
+
+    // La réinjection ne boucle que sur la PREMIÈRE prise. La brancher sur
+    // toutes multiplierait le gain de boucle par le nombre de prises : le
+    // plafond de 0,85 ne protégerait plus rien et quatre prises
+    // divergeraient là où une seule tenait.
+    temps.forEach((t, i) => {
+      const retard = ctx.createDelay(2);
+      retard.delayTime.setValueAtTime(t, now);
+
+      const niveau = ctx.createGain();
+      niveau.gain.setValueAtTime(niveauPrise(i, temps.length), now);
+
+      courant.connect(retard);
+
+      if (i === 0) {
+        const retour = ctx.createGain();
+        retour.gain.setValueAtTime(reinjection(p.fxDelayFeedback), now);
+
+        // Amortir la réinjection évite l'accumulation d'aigus à chaque tour,
+        // qui rend les répétitions stridentes.
+        const amorti = ctx.createBiquadFilter();
+        amorti.type = "lowpass";
+        amorti.frequency.setValueAtTime(AMORTI_HZ, now);
+
+        retard.connect(amorti);
+        amorti.connect(retour);
+        retour.connect(retard);
+      }
+
+      retard.connect(niveau);
+      niveau.connect(dose);
+    });
   }
 
   return { entree, sortie };

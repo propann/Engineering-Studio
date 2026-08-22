@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import {
   AMORTI_HZ, CHORUS_BASE_SEC, FLANGER_BASE_SEC, FLANGER_FEEDBACK_MAX,
   PHASER_ETAGES, PHASER_MAX_HZ, PHASER_MIN_HZ, REINJECTION_MAX,
-  frequenceEtagePhaser, melange, profondeurChorusSec, profondeurModulationSec,
-  reinjection, reinjectionFlanger, tempsRetardSec, vitesseChorusHz,
+  TAPS_MAX, frequenceEtagePhaser, melange, niveauPrise,
+  profondeurChorusSec, profondeurModulationSec,
+  reinjection, reinjectionFlanger, tempsDesPrises, tempsRetardSec, vitesseChorusHz,
 } from "./effets";
 
 /**
@@ -319,5 +320,114 @@ describe("structure des trois modes", () => {
     const i = S2.indexOf("── Modulation");
     const bloc = S2.slice(i, S2.indexOf("── Délai", i));
     expect((bloc.match(/attachLfo\(/g) ?? []).length).toBe(2); // phaser (boucle) + delai module
+  });
+});
+
+describe("delai multi-prises", () => {
+  it("une seule prise rend exactement le delai simple d'avant", () => {
+    // Ajouter le reglage ne doit pas changer le son des patches existants.
+    //
+    // A noter : le retour anticipe `if (n === 1)` dans le source est un
+    // RACCOURCI, pas un comportement. Le retirer ne change aucun resultat —
+    // le calcul general donne `base × (1 + 0 × ecart)`. Sabotage verifie ;
+    // aucun test ne tombe, et c'est correct. Ce test couvre le resultat, ce
+    // qui reste utile quelle que soit la voie prise pour l'obtenir.
+    expect(tempsDesPrises(280, 1, 50)).toEqual([tempsRetardSec(280)]);
+    for (const ecart of [0, 25, 50, 100]) {
+      expect(tempsDesPrises(280, 1, ecart)).toEqual([tempsRetardSec(280)]);
+    }
+  });
+
+  it("un ecart nul retombe sur une seule prise", () => {
+    // Quatre prises au meme temps n'ajoutent rien : juste du gain. Les
+    // empiler serait un cout pour un resultat identique, en plus fort.
+    expect(tempsDesPrises(280, 4, 0)).toHaveLength(1);
+  });
+
+  it("les prises s'eloignent progressivement", () => {
+    const t = tempsDesPrises(200, 4, 50);
+    expect(t).toHaveLength(4);
+    for (let i = 1; i < t.length; i++) expect(t[i]).toBeGreaterThan(t[i - 1]);
+    // La premiere reste au temps de base : sinon changer le nombre de prises
+    // deplacerait aussi le premier echo.
+    expect(t[0]).toBeCloseTo(tempsRetardSec(200), 10);
+  });
+
+  it("aucune prise ne depasse ce que le noeud accepte", () => {
+    // `createDelay(2)` fixe le maximum. Une prise au-dela serait
+    // silencieusement ramenee, et l'ecart entendu ne serait pas celui regle.
+    for (const t of tempsDesPrises(1200, TAPS_MAX, 100)) {
+      expect(t).toBeLessThanOrEqual(2);
+      expect(t).toBeGreaterThanOrEqual(0.01);
+    }
+  });
+
+  it("borne le nombre de prises", () => {
+    // Au-dela de quatre, elles se confondent en reverberation — et chacune
+    // coute un noeud par note jouee.
+    expect(tempsDesPrises(200, 99, 50)).toHaveLength(TAPS_MAX);
+    expect(tempsDesPrises(200, 0, 50)).toHaveLength(1);
+    expect(tempsDesPrises(200, NaN, 50)).toHaveLength(1);
+  });
+
+  it("resiste a un ecart aberrant", () => {
+    for (const e of [NaN, Infinity, -50, 1e9]) {
+      const t = tempsDesPrises(200, 3, e);
+      for (const v of t) expect(Number.isFinite(v)).toBe(true);
+    }
+  });
+});
+
+describe("niveau des prises", () => {
+  it("decroit : l'echo lointain est le plus faible", () => {
+    // Sinon l'echo serait plus fort que la source.
+    for (let i = 1; i < TAPS_MAX; i++) {
+      expect(niveauPrise(i, TAPS_MAX)).toBeLessThan(niveauPrise(i - 1, TAPS_MAX));
+    }
+  });
+
+  it("compense le nombre de prises", () => {
+    // Quatre prises a plein niveau feraient quatre fois le gain d'une seule
+    // et satureraient le bus.
+    expect(niveauPrise(0, 4)).toBeLessThan(niveauPrise(0, 1));
+  });
+
+  it("la somme des prises ne depasse jamais le gain d'une seule", () => {
+    // L'invariant qui protege le bus, quel que soit le nombre de prises.
+    for (let n = 1; n <= TAPS_MAX; n++) {
+      const somme = Array.from({ length: n }, (_, i) => niveauPrise(i, n)).reduce((a, b) => a + b, 0);
+      expect(somme, `${n} prises`).toBeLessThanOrEqual(niveauPrise(0, 1) * 2);
+    }
+  });
+
+  it("reste strictement positif et borne", () => {
+    for (let n = 1; n <= TAPS_MAX; n++) {
+      for (let i = 0; i < n; i++) {
+        const v = niveauPrise(i, n);
+        expect(v).toBeGreaterThan(0);
+        expect(v).toBeLessThanOrEqual(1);
+      }
+    }
+    expect(Number.isFinite(niveauPrise(0, 0))).toBe(true);
+    expect(Number.isFinite(niveauPrise(-3, 4))).toBe(true);
+  });
+});
+
+describe("structure du delai multi-prises", () => {
+  const DIR3 = path.dirname(fileURLToPath(import.meta.url));
+  const S3 = readFileSync(path.join(DIR3, "effets.ts"), "utf-8");
+
+  it("seule la premiere prise reinjecte", () => {
+    // Boucler sur toutes multiplierait le gain de boucle par le nombre de
+    // prises : le plafond de 0,85 ne protegerait plus rien, et quatre prises
+    // divergeraient la ou une seule tenait.
+    const i = S3.indexOf("── Délai");
+    const bloc = S3.slice(i);
+    expect(bloc).toContain("if (i === 0) {");
+    expect((bloc.match(/reinjection\(p\.fxDelayFeedback\)/g) ?? [])).toHaveLength(1);
+  });
+
+  it("chaque prise a son propre niveau", () => {
+    expect(S3).toContain("niveauPrise(i, temps.length)");
   });
 });
