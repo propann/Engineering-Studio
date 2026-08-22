@@ -108,7 +108,7 @@ describe("navigation principale", () => {
 
   it("garde des cartes pour les deux studios", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
-    const entrees = [...bloc.matchAll(/id: "([^"]+)"[\\s\\S]*?section: "(hub|op1|ep133)"/g)];
+    const entrees = [...bloc.matchAll(/id: "([^"]+)"[\s\S]*?section: "(hub|op1|ep133)"/g)];
     const cartes = entrees.filter((m) => {
       const suite = bloc.slice(m.index!, m.index! + 900);
       const fin = suite.indexOf("\n  },");
