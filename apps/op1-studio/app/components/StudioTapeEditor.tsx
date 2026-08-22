@@ -16,8 +16,8 @@
  */
 import { useRef, useState, type MutableRefObject } from "react";
 
-const SCREEN_ENGINES = ["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"] as const;
-const SCREEN_PATCHES = ["Classic 01", "Deep Sub", "Soft Ambient", "Punchy Lead", "Metallic Bell", "Cosmic Warp"] as const;
+const RACK_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
+const RACK_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
 import { TrackContextMenu } from "./TrackContextMenu";
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
@@ -87,6 +87,9 @@ export interface StudioTapeEditorProps {
   onSeek: (time: number) => void;
   onNotice?: (msg: string) => void;
   machineMode?: "synth" | "drum" | "tape";
+  soundMenuOpen?: boolean;
+  onSoundMenuClose?: () => void;
+  soundSlot?: number;
   selectedEngine?: string;
   selectedPatch?: string;
   onEngineChange?: (engine: string) => void;
@@ -115,13 +118,12 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
-    machineMode = "synth", selectedEngine = "FM", selectedPatch = "Classic 01", onEngineChange, onPatchChange,
+    machineMode = "synth", soundMenuOpen = false, onSoundMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const fileInputsRef = useRef<Record<number, HTMLInputElement | null>>({});
-  const [screenMenuOpen, setScreenMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     trackIndex: number;
     x: number;
@@ -546,7 +548,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   }
 
   return (
-    <div className={`tape-editor-screen ${screenMenuOpen ? "is-screen-menu-open" : ""}`} style={{ position: "relative" }}>
+    <div className={`tape-editor-screen ${soundMenuOpen ? "is-screen-menu-open" : ""}`} style={{ position: "relative" }}>
 
       {/* Éléments audio cachés */}
       <div style={{ display: "none" }}>
@@ -1178,16 +1180,16 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
 
       </>
 
-      {screenMenuOpen && (
+      {soundMenuOpen && (
         <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
           <div className="op1-screen-patch-menu-head">
-            <span>OP-1 · SOUND</span>
+            <span>OP-1 · SOUND {soundSlot} · {machineMode.toUpperCase()}</span>
             <button type="button" onClick={() => setScreenMenuOpen(false)} aria-label="Fermer le menu son">×</button>
           </div>
           <div className="op1-screen-patch-columns">
             <section className="op1-screen-engine-column" aria-label="Moteurs audio">
               <strong>MOTEURS</strong>
-              {SCREEN_ENGINES.map((engine) => (
+              {RACK_ENGINES.map((engine) => (
                 <button key={engine} type="button" className={selectedEngine === engine ? "is-active" : ""} onClick={() => { onEngineChange?.(engine); onNotice?.("Moteur " + engine + " sélectionné."); }}>
                   <span>{engine}</span><small>{selectedEngine === engine ? "ACTIF" : "MOTEUR"}</small>
                 </button>
@@ -1195,7 +1197,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             </section>
             <section className="op1-screen-patch-column" aria-label="Patches">
               <strong>PATCHES</strong>
-              {SCREEN_PATCHES.map((patch) => (
+              {RACK_PATCHES.map((patch) => (
                 <button key={patch} type="button" className={selectedPatch === patch ? "is-active" : ""} onClick={() => { onPatchChange?.(patch); onNotice?.("Patch " + selectedEngine + " " + patch + " chargé."); }}>
                   <span>{patch}</span><small>{selectedEngine}</small>
                 </button>
@@ -1233,9 +1235,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           <span className="op1-screen-record-dot" aria-hidden="true" />
           {recording ? "ARRÊTER" : "ENREGISTRER"}
           <small>Piste {selectedTrack + 1}</small>
-        </button>
-        <button type="button" className="op1-screen-menu-button" onClick={() => setScreenMenuOpen((open) => !open)} aria-expanded={screenMenuOpen}>
-          {screenMenuOpen ? "RETOUR K7" : "MENU SON"}
         </button>
       </div>
 
