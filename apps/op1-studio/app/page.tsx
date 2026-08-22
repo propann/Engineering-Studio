@@ -424,6 +424,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState<string>("FM");
+  const [selectedPatch, setSelectedPatch] = useState<string>("Classic 01");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
@@ -511,7 +512,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }, [sources]);
 
   function projectData() {
-    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null } };
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { engine: selectedEngine, patch: selectedPatch } };
   }
 
   function saveProject() {
@@ -1452,6 +1453,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             }}
             onSeek={seekTransport}
             onNotice={onNotice}
+            selectedEngine={selectedEngine}
+            selectedPatch={selectedPatch}
+            onEngineChange={setSelectedEngine}
+            onPatchChange={setSelectedPatch}
             reversed={reversed}
             onExportTrack={exportSingleTrack}
             onClearTrack={clearTrack}

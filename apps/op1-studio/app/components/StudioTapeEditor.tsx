@@ -15,6 +15,9 @@
  *   tape x0    : 5.467  tape x1 : 311.398
  */
 import { useRef, useState, type MutableRefObject } from "react";
+
+const SCREEN_ENGINES = ["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"] as const;
+const SCREEN_PATCHES = ["Classic 01", "Deep Sub", "Soft Ambient", "Punchy Lead", "Metallic Bell", "Cosmic Warp"] as const;
 import { TrackContextMenu } from "./TrackContextMenu";
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
@@ -41,16 +44,6 @@ function formatPos(sec: number) {
   const s = Math.floor(sec % 60);
   const t = Math.floor((sec % 1) * 10);
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${t}`;
-}
-
-// ── Chiffres 1-4 (boîte trackno, extrait tape.svg) ────────────────────────────
-function TrackNumber({ index }: { index: number }) {
-  switch (index) {
-    case 0: return <line x1="20.342" y1="9.378" x2="20.342" y2="24.367" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    case 1: return <path d="M13.222,14.443c0-2.797,2.266-5.065,5.063-5.065h3.927c2.77,0,5.011,2.197,5.011,4.964c0,2.242-1.263,3.985-3.511,4.778l-10.487,4.5v0.752h14.238" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    case 2: return <path d="M12.846,13.237c0-2.132,1.73-3.859,3.862-3.859h7.312c2.106,0,3.814,1.676,3.814,3.782c0,2.11-1.708,3.713-3.814,3.713h-6.678h6.678c2.106,0,3.814,1.604,3.814,3.712c0,2.107-1.708,3.784-3.814,3.784h-7.312c-2.133,0-3.862-1.728-3.862-3.862" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    default: return <polyline points="27.444,19.596 12.844,19.596 12.844,18.862 23.065,9.374 23.792,9.374 23.792,23.971" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-  }
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -93,6 +86,10 @@ export interface StudioTapeEditorProps {
   onSelectTrack: (index: number) => void;
   onSeek: (time: number) => void;
   onNotice?: (msg: string) => void;
+  selectedEngine?: string;
+  selectedPatch?: string;
+  onEngineChange?: (engine: string) => void;
+  onPatchChange?: (patch: string) => void;
   onExportTrack?: (index: number) => void;
   onClearTrack?: (index: number) => void;
   onEditTrim?: (index: number) => void;
@@ -117,11 +114,13 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
+    selectedEngine = "FM", selectedPatch = "Classic 01", onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
   const svgRef = useRef<SVGSVGElement>(null);
   const fileInputsRef = useRef<Record<number, HTMLInputElement | null>>({});
+  const [screenMenuOpen, setScreenMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     trackIndex: number;
     x: number;
@@ -379,14 +378,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       return;
     }
 
-    // 3. Clic tactile sur le numéro de piste en haut à gauche (Pistes 1-4) -> Cycler de piste
-    if (pt.x >= 4 && pt.x <= 36 && pt.y >= 2 && pt.y <= 33) {
-      const nextTrack = (selectedTrack + 1) % 4;
-      onSelectTrack(nextTrack);
-      onNotice?.(`Piste ${nextTrack + 1} sélectionnée.`);
-      return;
-    }
-
     // 4. Clic tactile sur le bouton PLAY / PAUSE au centre de l'écran (y=40..65)
     if (pt.x >= 144 && pt.x <= 176 && pt.y >= 40 && pt.y <= 65) {
       onToggleGlobalPlayback?.();
@@ -554,7 +545,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   }
 
   return (
-    <div className="tape-editor-screen" style={{ position: "relative" }}>
+    <div className={`tape-editor-screen ${screenMenuOpen ? "is-screen-menu-open" : ""}`} style={{ position: "relative" }}>
 
       {/* Éléments audio cachés */}
       <div style={{ display: "none" }}>
@@ -570,7 +561,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         ))}
       </div>
 
-      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
+      {!screenMenuOpen && (<>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
@@ -740,13 +731,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             </g>
           );
         })()}
-
-        {/* Numéro de piste interactif (cadre haut gauche, clic pour cycler 1..4) */}
-        <g style={{ cursor: "pointer" }}>
-          <title>Piste active (cliquer pour changer de piste 1..4)</title>
-          <rect x="6" y="3" width="28.082" height="28.081" fill="#121820" stroke="#fff" strokeWidth="1.5" rx="1.5" />
-          <TrackNumber index={selectedTrack} />
-        </g>
 
         {/* Badge REV */}
         {reversed && (
@@ -1187,6 +1171,69 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           />
         </g>
       </svg>
+
+      </>)}
+
+      {screenMenuOpen && (
+        <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
+          <div className="op1-screen-patch-menu-head">
+            <span>OP-1 · SOUND</span>
+            <button type="button" onClick={() => setScreenMenuOpen(false)} aria-label="Fermer le menu son">×</button>
+          </div>
+          <div className="op1-screen-patch-columns">
+            <section className="op1-screen-engine-column" aria-label="Moteurs audio">
+              <strong>MOTEURS</strong>
+              {SCREEN_ENGINES.map((engine) => (
+                <button key={engine} type="button" className={selectedEngine === engine ? "is-active" : ""} onClick={() => { onEngineChange?.(engine); onNotice?.("Moteur " + engine + " sélectionné."); }}>
+                  <span>{engine}</span><small>{selectedEngine === engine ? "ACTIF" : "MOTEUR"}</small>
+                </button>
+              ))}
+            </section>
+            <section className="op1-screen-patch-column" aria-label="Patches">
+              <strong>PATCHES</strong>
+              {SCREEN_PATCHES.map((patch) => (
+                <button key={patch} type="button" className={selectedPatch === patch ? "is-active" : ""} onClick={() => { onPatchChange?.(patch); onNotice?.("Patch " + selectedEngine + " " + patch + " chargé."); }}>
+                  <span>{patch}</span><small>{selectedEngine}</small>
+                </button>
+              ))}
+            </section>
+          </div>
+          <div className="op1-screen-patch-menu-foot">Clavier et MIDI utilisent le moteur actif · {selectedEngine} / {selectedPatch}</div>
+        </div>
+      )}
+
+      {/* Contrôles sortis de l’écran : la zone OLED reste réservée à l’affichage. */}
+      <div className="op1-screen-controls" aria-label="Contrôles de l’écran OP-1">
+        <div className="op1-screen-track-selector" role="group" aria-label="Sélection de piste">
+          <span className="op1-screen-control-label">PISTE</span>
+          {[0, 1, 2, 3].map((track) => (
+            <button
+              key={track}
+              type="button"
+              className={`op1-screen-track-button op1-screen-track-button-${track + 1} ${selectedTrack === track ? "is-selected" : ""}`}
+              onClick={() => { onSelectTrack(track); onNotice?.(`Piste ${track + 1} sélectionnée.`); }}
+              aria-pressed={selectedTrack === track}
+              title={`Sélectionner la piste ${track + 1}`}
+            >
+              {track + 1}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`op1-screen-record-button ${recording ? "is-recording" : ""}`}
+          onClick={() => onRecord?.()}
+          aria-pressed={recording}
+          title={recording ? "Arrêter l’enregistrement" : `Enregistrer sur la piste ${selectedTrack + 1}`}
+        >
+          <span className="op1-screen-record-dot" aria-hidden="true" />
+          {recording ? "ARRÊTER" : "ENREGISTRER"}
+          <small>Piste {selectedTrack + 1}</small>
+        </button>
+        <button type="button" className="op1-screen-menu-button" onClick={() => setScreenMenuOpen((open) => !open)} aria-expanded={screenMenuOpen}>
+          {screenMenuOpen ? "RETOUR K7" : "MENU SON"}
+        </button>
+      </div>
 
       {/* ── Inputs fichiers invisibles (déclenchés via le menu de piste 1..4) ── */}
       <div style={{ display: "none" }}>

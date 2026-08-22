@@ -1823,3 +1823,211 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+
+/* Contrôles physiques sortis de l’écran OLED : accès direct, lisible et tactile. */
+.op1-screen-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #11171b;
+  border: 1px solid #263139;
+  border-top: 0;
+}
+.op1-screen-track-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.op1-screen-control-label {
+  margin-right: 3px;
+  color: #71808b;
+  font: 700 9px var(--font-geist-mono), monospace;
+  letter-spacing: .12em;
+}
+.op1-screen-track-button {
+  width: 30px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #cbd5e1;
+  background: #1b242b;
+  border: 1px solid #34424c;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 12px var(--font-geist-mono), monospace;
+}
+.op1-screen-track-button:hover,
+.op1-screen-track-button:focus-visible {
+  border-color: #fff;
+  transform: translateY(-1px);
+}
+.op1-screen-track-button.is-selected {
+  color: #0b1014;
+  border-color: currentColor;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12);
+}
+.op1-screen-track-button-1.is-selected { background: #698eff; color: #08101e; }
+.op1-screen-track-button-2.is-selected { background: #00ed95; color: #06130e; }
+.op1-screen-track-button-3.is-selected { background: #dfd9ff; color: #181329; }
+.op1-screen-track-button-4.is-selected { background: #ff3a5d; color: #21060d; }
+.op1-screen-record-button {
+  min-width: 148px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #fff;
+  background: #8d1e32;
+  border: 1px solid #ff3a5d;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-record-button:hover,
+.op1-screen-record-button:focus-visible,
+.op1-screen-record-button.is-recording {
+  background: #ff3a5d;
+  color: #21060d;
+  box-shadow: 0 0 14px rgba(255,58,93,.28);
+}
+.op1-screen-record-button small {
+  color: inherit;
+  opacity: .78;
+  font: 700 8px var(--font-geist-mono), monospace;
+  letter-spacing: 0;
+}
+.op1-screen-record-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  background: #ff3a5d;
+  border: 1px solid #fff;
+  border-radius: 50%;
+}
+.op1-screen-record-button.is-recording .op1-screen-record-dot {
+  animation: pulse 1s infinite;
+}
+@media (max-width: 560px) {
+  .op1-screen-controls { align-items: stretch; flex-direction: column; }
+  .op1-screen-track-selector { justify-content: center; }
+  .op1-screen-record-button { width: 100%; }
+}
+
+
+/* Menu interne OP-1 : la cassette laisse place à l'écran de sélection machine. */
+.op1-screen-patch-menu {
+  min-height: clamp(220px, 24vw, 360px);
+  color: #dce8e3;
+  background: #090f13;
+  border: 1px solid #26353c;
+  font-family: var(--font-geist-mono), monospace;
+}
+.op1-screen-patch-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  color: #d8e5df;
+  background: #111b21;
+  border-bottom: 1px solid #26353c;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.op1-screen-patch-menu-head button {
+  width: 24px;
+  height: 24px;
+  color: #d8e5df;
+  background: transparent;
+  border: 1px solid #40515b;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.op1-screen-patch-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 190px;
+}
+.op1-screen-engine-column,
+.op1-screen-patch-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+.op1-screen-engine-column { background: rgba(76, 172, 225, .08); border-right: 1px solid #26353c; }
+.op1-screen-patch-column { background: rgba(41, 190, 135, .08); }
+.op1-screen-engine-column > strong,
+.op1-screen-patch-column > strong {
+  margin-bottom: 3px;
+  font-size: 9px;
+  letter-spacing: .13em;
+}
+.op1-screen-engine-column > strong { color: #4cace1; }
+.op1-screen-patch-column > strong { color: #29be87; }
+.op1-screen-engine-column button,
+.op1-screen-patch-column button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 26px;
+  padding: 5px 7px;
+  color: #b9c7c2;
+  background: rgba(6, 12, 16, .72);
+  border: 1px solid #26353c;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  font: 700 10px var(--font-geist-mono), monospace;
+}
+.op1-screen-engine-column button small,
+.op1-screen-patch-column button small {
+  color: #6f8189;
+  font-size: 8px;
+}
+.op1-screen-engine-column button:hover,
+.op1-screen-engine-column button.is-active {
+  color: #07131a;
+  background: #4cace1;
+  border-color: #8bd5ff;
+}
+.op1-screen-patch-column button:hover,
+.op1-screen-patch-column button.is-active {
+  color: #06130e;
+  background: #29be87;
+  border-color: #8cf0c1;
+}
+.op1-screen-patch-menu-foot {
+  padding: 7px 10px;
+  color: #70818a;
+  border-top: 1px solid #26353c;
+  font-size: 9px;
+}
+.op1-screen-menu-button {
+  min-height: 32px;
+  padding: 0 12px;
+  color: #8bd5ff;
+  background: #102432;
+  border: 1px solid #4cace1;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .05em;
+}
+.op1-screen-menu-button:hover,
+.op1-screen-menu-button[aria-expanded="true"] {
+  color: #06131a;
+  background: #4cace1;
+}
+@media (max-width: 560px) {
+  .op1-screen-patch-columns { grid-template-columns: 1fr; }
+  .op1-screen-engine-column { border-right: 0; border-bottom: 1px solid #26353c; }
+}
