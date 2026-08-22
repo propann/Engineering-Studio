@@ -1,17 +1,18 @@
 # 🔄 Team Sync - Studio Hub Integration Status
 
 **For**: All team members and other agents  
-**Date**: 2026-08-16  
-**Subject**: Parcours Hub hors machine validés — documentation recalée
+**Date**: 2026-08-22  
+**Subject**: Synchronisation de `main` — OP‑1, EP‑133, persistance et documentation
 
-> La consolidation de phase 3 décrite plus bas est historique. La source de
-> vérité est [`docs/ROADMAP_ACTIVE_2026-08-16.md`](ROADMAP.md).
+### Mise à jour actuelle — 2026-08-22
+
+La source de vérité est le code de `main`, la CI et `docs/STATUS.md`. Le bloc historique ci-dessous est conservé pour mémoire et ne décrit pas les derniers parcours OP‑1.
 
 ---
 
 ## 🎯 Executive Summary (2 Minutes Read)
 
-La branche `integration/studio-hub` réunit le Hub, OP‑1 Studio et EP‑133 Studio.
+La branche `main` réunit le Hub, OP‑1 Studio et EP‑133 Studio.
 Les contrôles produit actuellement validés sont :
 
 ✅ **13 scénarios E2E Hub** et 8 cartes d’outils passent, dont le transport MIDI virtuel et la propagation aux studios  
@@ -22,7 +23,11 @@ Les contrôles produit actuellement validés sont :
 ✅ **Stats Hub, retrait avant écriture et archivage/restauration locale** : parcours validés  
 ✅ **Typecheck et builds** Hub, OP‑1 et EP‑133 passent  
 
-⚠️ **MIDI matériel, écritures contrôlées et gros volumes** : encore ouverts
+⚠️ **Restauration orchestrée par l’application vers une machine** : encore ouverte ; les formats, plans et garde-fous existent, mais l’écriture automatique reste désactivée.
+
+✅ **OP‑1 Studio récent** : quatre pistes, REC piste active, écran/racks tactiles, clavier/couleurs machine, bibliothèque de samples sauvegardés et autosauvegarde locale après actualisation.
+
+✅ **Séparation machine** : le niveau de sécurité est commun, mais les formats et protocoles restent propres à l’OP‑1 et à l’EP‑133.
 
 ---
 

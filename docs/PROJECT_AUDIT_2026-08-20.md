@@ -5,6 +5,20 @@ Dépôt : propann/Engineering-Studio
 Branche de référence : main
 Nature : audit du code et de la documentation, sans prétendre certifier le matériel
 
+> Document historique arrêté au **2026-08-20**. Les changements livrés après cet audit sont suivis dans `docs/STATUS.md`, `docs/ROADMAP.md` et `docs/TEAM_SYNC.md`.
+
+## Addendum de synchronisation — 2026-08-22
+
+Depuis cet audit, `main` contient notamment :
+
+- le clone OP‑1 tactile avec écran Tape, quatre pistes, REC lié à la piste active et commandes regroupées au-dessus du clavier ;
+- le clavier virtuel recoloré selon la machine, avec séparateurs orange et bande supérieure masquée ;
+- la préécoute et le chargement des samples sauvegardés sur la piste active ;
+- la persistance locale des métadonnées et des sources audio après actualisation ;
+- une idée Strudel documentée hors du studio OP‑1, sans intégration active.
+
+Ces ajouts ne valent pas validation matérielle du transfert. La règle reste : formats et tests propres à chaque machine, aucune écriture machine implicite.
+
 ## Résumé honnête
 
 Engineering Studio est un monorepo React/TypeScript/Vite qui rassemble un Hub

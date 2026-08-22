@@ -2,6 +2,10 @@
 
 Ce dossier décrit l’état réel du dépôt propann/Engineering-Studio.
 
+## État synchronisé
+
+Dernière synchronisation documentaire : **2026-08-22**, sur `main`. Les dernières fonctions OP‑1 livrées sont décrites dans [STATUS.md](STATUS.md) et [OP1_MANUAL_REFERENCE.md](OP1_MANUAL_REFERENCE.md) : quatre pistes, écran tactile, bibliothèque de samples sauvegardés et persistance locale après actualisation.
+
 ## À lire en premier
 
 1. [Vue d’ensemble du projet](PROJECT_AUDIT_2026-08-20.md)

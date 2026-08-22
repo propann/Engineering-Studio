@@ -1,3 +1,5 @@
+> ⚠️ Document historique du **2026-08-19**. Il ne décrit pas l’état courant du dépôt. Pour les versions et commandes réellement utilisées, voir `README.md`, `docs/STATUS.md` et la CI `.github/workflows/deploy.yml`.
+
 # 📋 Version Synchronization Report - 2026-08-19
 
 ## ✅ Problem Identified & FIXED!
