@@ -215,7 +215,7 @@ ce qui écoute : le rack de moteurs, l'OP‑1, l'EP‑133, les machines branché
 - [ ] une note jouée au clavier physique **et** arpégée ne se coupe pas
       elle-même (préfixes de voix distincts)
 
-### Les 29 gammes et le sélecteur
+### Les 30 gammes et le sélecteur
 Menu **Gamme** du rack MIDI, groupé par familles.
 
 - [ ] les sept familles apparaissent comme des groupes dans le menu

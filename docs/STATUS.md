@@ -30,7 +30,7 @@ Sept vérifications matérielles ont été faites, avec date et observation, dan
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | 🔶 delay et égaliseur ; ADSR et arpégiateur à faire |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
-| Rack MIDI (arpégiateur, 29 gammes) | ✅ |
+| Rack MIDI (arpégiateur, 30 gammes) | ✅ |
 | Rack d'effets (saturation, chorus) | ✅ |
 | Chaque rack porte son interface | ✅ verrouillé par test |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |

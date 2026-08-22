@@ -12,7 +12,7 @@
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 4 prises, SYNC au tempo, seule la première réinjecte |
 | 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
-| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 29 gammes, 6 motifs |
+| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
 | 6 | Step Sequencer | 🔴 |
 | 7 | LFO Generator | 🔴 |
 | 8 | Distortion Stack | 🟢 saturation douce et par repliement, dans le rack d'effets |
@@ -37,7 +37,7 @@ tout le reste :
   « Afficher Rack Audio » côté OP‑1. Le panneau OP‑1 part replié : le rack monte
   un AudioContext et pose ses écouteurs clavier sur `window`.
 - **Trois racks, trois métiers — et chacun porte son interface.** Le **rack
-  MIDI** produit les notes (arpégiateur, 29 gammes, `packages/musique`). Le
+  MIDI** produit les notes (arpégiateur, 30 gammes, `packages/musique`). Le
   **rack de moteurs** en fait du son. Le **rack d'effets** le traite
   (`core/audio/effets.ts` pour la chaîne, `racks/RackEffets.tsx` pour ses
   commandes). C'est ce qui décide de l'emplacement d'une fonction : un
