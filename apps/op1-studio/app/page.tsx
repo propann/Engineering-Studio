@@ -495,61 +495,6 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   const [sampleLibraryOpen, setSampleLibraryOpen] = useState(false);
   const [autosaveReady, setAutosaveReady] = useState(false);
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const raw = localStorage.getItem(OP1_AUTOSAVE_KEY);
-        const saved = raw ? JSON.parse(raw) as AutosaveSnapshot : null;
-        if (!saved || saved.version !== 1 || cancelled) { setAutosaveReady(true); return; }
-        setProjectName(saved.projectName ?? "Nouveau projet OP-1");
-        setFiles(saved.files ?? {});
-        setSourceRefs(saved.sourceRefs ?? {});
-        setDurations(saved.durations ?? {});
-        setClipEnds(saved.clipEnds ?? {});
-        setClipOffsets(saved.clipOffsets ?? {});
-        setFadeIns(saved.fadeIns ?? {});
-        setFadeOuts(saved.fadeOuts ?? {});
-        setMuted(saved.muted ?? {});
-        setGains(saved.gains ?? {});
-        setSolo(typeof saved.solo === "number" ? saved.solo : null);
-        setSelectedTrack(saved.selectedTrack ?? 0);
-        setTempo(saved.tempo ?? 90);
-        setLoopIn(saved.loopIn ?? 0);
-        setLoopOut(saved.loopOut ?? 16);
-        setLooping(Boolean(saved.looping));
-        setReversed(Boolean(saved.reversed));
-        setMidiEvents(saved.midiEvents ?? []);
-        const restoredSources: Record<number, string> = {};
-        for (const index of [0, 1, 2, 3]) {
-          const blob = await readOp1AutosaveAudio(index);
-          if (blob) restoredSources[index] = URL.createObjectURL(blob);
-        }
-        if (!cancelled) setSources(restoredSources);
-      } catch {
-        // Une sauvegarde absente ou invalide est ignorée sans bloquer l'interface.
-      } finally {
-        if (!cancelled) setAutosaveReady(true);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  useEffect(() => {
-    if (!autosaveReady) return;
-    const snapshot: AutosaveSnapshot = {
-      version: 1, projectName, files, sourceRefs, durations, clipEnds, clipOffsets,
-      fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut,
-      looping, reversed, screenScale, midiEvents,
-    };
-    try { localStorage.setItem(OP1_AUTOSAVE_KEY, JSON.stringify(snapshot)); } catch { /* quota locale atteinte */ }
-  }, [autosaveReady, projectName, files, sourceRefs, durations, clipEnds, clipOffsets, fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut, looping, reversed, screenScale, midiEvents]);
-
-  useEffect(() => {
-    if (!autosaveReady) return;
-    Object.entries(sources).forEach(([rawIndex, source]) => { void saveOp1AutosaveAudio(Number(rawIndex), source); });
-  }, [autosaveReady, sources]);
-
-  useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("op1-studio-view-config-v1") ?? "{}") as { screenScale?: number };
       if (typeof saved.screenScale === "number") setScreenScale(Math.max(0.5, Math.min(1, saved.screenScale)));
@@ -608,6 +553,62 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   const [lastRawMidiIn, setLastRawMidiIn] = useState<number[] | null>(null);
   const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
   const [projectName, setProjectName] = useState("Nouveau projet OP-1");
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const raw = localStorage.getItem(OP1_AUTOSAVE_KEY);
+        const saved = raw ? JSON.parse(raw) as AutosaveSnapshot : null;
+        if (!saved || saved.version !== 1 || cancelled) { setAutosaveReady(true); return; }
+        setProjectName(saved.projectName ?? "Nouveau projet OP-1");
+        setFiles(saved.files ?? {});
+        setSourceRefs(saved.sourceRefs ?? {});
+        setDurations(saved.durations ?? {});
+        setClipEnds(saved.clipEnds ?? {});
+        setClipOffsets(saved.clipOffsets ?? {});
+        setFadeIns(saved.fadeIns ?? {});
+        setFadeOuts(saved.fadeOuts ?? {});
+        setMuted(saved.muted ?? {});
+        setGains(saved.gains ?? {});
+        setSolo(typeof saved.solo === "number" ? saved.solo : null);
+        setSelectedTrack(saved.selectedTrack ?? 0);
+        setTempo(saved.tempo ?? 90);
+        setLoopIn(saved.loopIn ?? 0);
+        setLoopOut(saved.loopOut ?? 16);
+        setLooping(Boolean(saved.looping));
+        setReversed(Boolean(saved.reversed));
+        setMidiEvents(saved.midiEvents ?? []);
+        const restoredSources: Record<number, string> = {};
+        for (const index of [0, 1, 2, 3]) {
+          const blob = await readOp1AutosaveAudio(index);
+          if (blob) restoredSources[index] = URL.createObjectURL(blob);
+        }
+        if (!cancelled) setSources(restoredSources);
+      } catch {
+        // Une sauvegarde absente ou invalide est ignorée sans bloquer l'interface.
+      } finally {
+        if (!cancelled) setAutosaveReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    const snapshot: AutosaveSnapshot = {
+      version: 1, projectName, files, sourceRefs, durations, clipEnds, clipOffsets,
+      fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut,
+      looping, reversed, screenScale, midiEvents,
+    };
+    try { localStorage.setItem(OP1_AUTOSAVE_KEY, JSON.stringify(snapshot)); } catch { /* quota locale atteinte */ }
+  }, [autosaveReady, projectName, files, sourceRefs, durations, clipEnds, clipOffsets, fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut, looping, reversed, screenScale, midiEvents]);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    Object.entries(sources).forEach(([rawIndex, source]) => { void saveOp1AutosaveAudio(Number(rawIndex), source); });
+  }, [autosaveReady, sources]);
+
+
   const projectInputRef = useRef<HTMLInputElement>(null);
   const midiHandler = useRef<((event: EvenementMidiLu) => void) | null>(null);
   /** Desabonnement du repartiteur pendant l'enregistrement MIDI. */
