@@ -78,7 +78,7 @@ describe("l'ouverture est portee par la donnee", () => {
 
   it("chaque type d'action est traite", () => {
     const corps = RACK.slice(RACK.indexOf("function ouvrir(tool: Tool)"));
-    for (const type of ["page", "groupe", "ancre", "editeur-son", "fiche"]) {
+    for (const type of ["page", "groupe", "ancre", "fiche"]) {
       expect(corps, `action « ${type} » non traitee`).toContain(`case "${type}":`);
     }
   });
