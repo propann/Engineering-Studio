@@ -81,12 +81,6 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
     { id: "tape-split", label: "Split", visual: "split", note: "" },
     { id: "tape-drop", label: "Drop", visual: "drop", note: "" },
     { id: "tape-join", label: "Join", visual: "join", note: "" },
-    // Sélection de piste (CC 11-14, capturés à la suite de MIXER le 18 août
-    // 2026 : « 1 2 3 4 la selection des track »).
-    { id: "track1", label: "Piste 1", visual: "fn", note: "" },
-    { id: "track2", label: "Piste 2", visual: "fn", note: "" },
-    { id: "track3", label: "Piste 3", visual: "fn", note: "" },
-    { id: "track4", label: "Piste 4", visual: "fn", note: "" },
   ] },
   { label: "Audio", entries: [
     { id: "micin", label: "MIC/LINE", visual: "mic", note: "" },
@@ -218,14 +212,6 @@ function tEncoderPushDigit(id: string): { digit: string; color: string } | null 
   const match = /^t([1-4])-push$/.exec(id);
   return match ? { digit: match[1], color: T_ENCODER_COLORS[Number(match[1]) - 1] } : null;
 }
-/** Boutons de sélection de piste (Piste 1-4, CC 11-14) : même traitement
- * gros-chiffre que les encodeurs, en vert (couleur "fn" générique) puisque
- * ce sont des boutons verts, pas des encodeurs colorés. */
-function trackDigit(id: string): { digit: string; color: string } | null {
-  const match = /^track([1-4])$/.exec(id);
-  return match ? { digit: match[1], color: CONTROL_GLYPH_COLORS.fn } : null;
-}
-
 /** Formes seules, coordonnées 0-18 — réutilisées telles quelles par
  * `ControlGlyph` (liste de référence) et `EmbeddedGlyph` (incrustées dans un
  * bouton du clavier construit, 14 août 2026 : « on remplace la pastille de
