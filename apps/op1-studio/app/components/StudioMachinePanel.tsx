@@ -983,9 +983,9 @@ export function StudioMachinePanel({
             </div>
             <div className="midi-journal-list">
               {midiLog.length === 0 && <span className="control-ref-note">Aucun message pour l&apos;instant — jouez une touche ou branchez l&apos;OP-1 en mode contrôleur.</span>}
-              {/* slice(0, 1) n'affichait qu'un seul message : ce n'est pas un journal.
-                  Le tampon en garde 300, autant en montrer une page. */}
-              {[...midiLog].reverse().slice(0, 40).map((entry) => (
+              {/* Le tampon complet reste disponible au téléchargement ; la fenêtre
+                  n'affiche que les trois derniers messages pour rester compacte. */}
+              {[...midiLog].reverse().slice(0, 3).map((entry) => (
                 <div key={entry.id} className={`midi-journal-row midi-journal-${entry.dir}`}>
                   <span className="midi-journal-dir">{entry.dir === "in" ? "↓ IN" : "↑ OUT"}</span>
                   <span className="midi-journal-hex">{hexBytes(entry.data)}</span>
