@@ -71,7 +71,7 @@ machine fait du fichier qu'on lui écrit.
 
 | | |
 |---|---|
-| Suite de tests automatiques | ✅ Hub/packages + OP-1 + EP-133 vérifiés par CI |
+| Suite de tests automatiques | 🔶 CI commune de sécurité + contrôles natifs séparés OP-1 / EP-133 ; validation complète en cours |
 | Lecture de l'OP-1 (66 fichiers, comparés octet par octet) | ✅ sur matériel |
 | Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ sur matériel |
 | L'OP-1 relit son support après écriture externe | ✅ sur matériel |
@@ -118,6 +118,10 @@ Engineering-Studio/
 Le build racine utilise `apps/studio-hub` comme racine Vite et sert le résultat
 sur le port 3000. Les deux studios sont **intégrés au Hub**, pas déployés comme
 services séparés.
+
+Les deux studios ne partagent pas leur système machine. L'OP-1 utilise ses formats AIFF, ses patches et son workflow de volume/MIDI ; l'EP-133 utilise ses projets, ses samples et son protocole MIDI/SysEx. Les paquets communs fournissent uniquement des primitives explicitement partagées ; ils ne valident ni ne simulent le transfert d'une autre machine.
+
+La sécurité est commune (CI sur les pull requests, typecheck, tests, Trivy, permissions minimales et sauvegardes avant écriture), tandis que les tests de format, conversion et transfert restent propres à chaque studio.
 
 > À savoir avant de toucher aux alias : le `vite.config.ts` qui construit est
 > celui de la **racine**. Un alias doit être déclaré à trois endroits —
