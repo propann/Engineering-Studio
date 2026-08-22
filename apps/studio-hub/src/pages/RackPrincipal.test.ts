@@ -174,7 +174,7 @@ describe("le regroupement est une donnee", () => {
     // autres passent par le panneau.
     expect(RACK).toContain('action: { type: "groupe", groupe: "reglages" }');
     expect(RACK).toContain('action: { type: "groupe", groupe: "formation" }');
-    expect(RACK).toContain('action: { type: "editeur-son" }');
+    expect(RACK).toContain('action: { type: "page", page: "sound-library" }');
     expect(RACK).toContain('action: { type: "ancre", ancre: "hub-documentation" }');
     expect(RACK).toContain('<DocumentationShelf docs={membres("documentation")}');
   });
