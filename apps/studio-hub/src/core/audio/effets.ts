@@ -25,9 +25,11 @@ export type ParamsEffets = {
   fxEqLow: number;         // dB
   fxEqMid: number;         // dB
   fxEqHigh: number;        // dB
-  fxChorusMix: number;     // %
-  fxChorusRate: number;    // Hz ×10 (curseur entier)
-  fxChorusDepth: number;   // millièmes de seconde
+  fxModMode: "chorus" | "flanger" | "phaser";
+  fxModMix: number;        // %
+  fxModRate: number;       // Hz ×10 (curseur entier)
+  fxModDepth: number;      // millièmes de seconde (chorus, flanger)
+  fxModFeedback: number;   // % — flanger seulement
   fxDelayMix: number;      // %
   fxDelayTime: number;     // ms
   fxDelayFeedback: number; // %
@@ -76,9 +78,64 @@ export function tempsRetardSec(ms: number): number {
  */
 export const CHORUS_BASE_SEC = 0.012;
 
+/**
+ * Délai central du flanger, dix fois plus court que celui du chorus.
+ *
+ * C'est toute la différence entre les deux : au-dessus de ~10 ms l'oreille
+ * entend deux sources (chorus), en dessous elle entend un filtre en peigne
+ * (flanger). Le même graphe, un ordre de grandeur d'écart.
+ */
+export const FLANGER_BASE_SEC = 0.0012;
+
+/** Réinjection maximale du flanger. Au-delà, le peigne devient un sifflement. */
+export const FLANGER_FEEDBACK_MAX = 0.75;
+
+/** Nombre d'étages du phaser. Quatre passe-tout = deux creux dans le spectre. */
+export const PHASER_ETAGES = 4;
+
+/** Bande balayée par le phaser, en Hz. */
+export const PHASER_MIN_HZ = 300;
+export const PHASER_MAX_HZ = 2600;
+
 export function profondeurChorusSec(millisecondes: number): number {
+  return profondeurModulationSec(millisecondes, "chorus");
+}
+
+/**
+ * Profondeur de modulation, bornée sous le délai central du mode.
+ *
+ * Plus profonde, elle rendrait le temps de délai négatif — le nœud revient
+ * alors à zéro et l'effet se tait par intermittence, ce qui s'entend comme un
+ * défaut de son et non de réglage. Le flanger a un délai central dix fois plus
+ * court : sa marge l'est aussi.
+ */
+export function profondeurModulationSec(
+  millisecondes: number,
+  mode: "chorus" | "flanger" | "phaser"
+): number {
   if (!Number.isFinite(millisecondes)) return 0;
-  return Math.max(0, Math.min(CHORUS_BASE_SEC * 0.9, millisecondes / 1000));
+  const base = mode === "flanger" ? FLANGER_BASE_SEC : CHORUS_BASE_SEC;
+  return Math.max(0, Math.min(base * 0.9, millisecondes / 1000));
+}
+
+/** Réinjection du flanger, bornée sous 1 comme celle du délai. */
+export function reinjectionFlanger(pourcent: number): number {
+  if (!Number.isFinite(pourcent)) return 0;
+  return Math.min(FLANGER_FEEDBACK_MAX, Math.max(0, pourcent / 100));
+}
+
+/**
+ * Fréquence centrale d'un étage de phaser.
+ *
+ * Les étages sont répartis géométriquement et non linéairement : l'oreille
+ * entend les fréquences en rapports, pas en écarts. Quatre étages également
+ * espacés en Hz mettraient trois creux dans les aigus et un seul en bas.
+ */
+export function frequenceEtagePhaser(index: number, total = PHASER_ETAGES): number {
+  const n = Math.max(1, total);
+  const i = Math.max(0, Math.min(n - 1, index));
+  const ratio = n === 1 ? 0 : i / (n - 1);
+  return PHASER_MIN_HZ * Math.pow(PHASER_MAX_HZ / PHASER_MIN_HZ, ratio);
 }
 
 /** Vitesse de chorus en Hz. Le curseur est un entier, d'où le facteur 10. */
@@ -150,19 +207,57 @@ export function construireChaineEffets(
   medium.connect(aigu);
   let courant: AudioNode = aigu;
 
-  // ── Chorus ────────────────────────────────────────────────────────────
-  const doseChorus = melange(p.fxChorusMix);
-  if (doseChorus > 0) {
-    const retardMod = ctx.createDelay(0.1);
-    retardMod.delayTime.setValueAtTime(CHORUS_BASE_SEC, now);
-    attachLfo(ctx, retardMod.delayTime, vitesseChorusHz(p.fxChorusRate), profondeurChorusSec(p.fxChorusDepth), now);
-
+  // ── Modulation : chorus, flanger ou phaser ───────────────────────────
+  // Les trois partagent un LFO et une voie parallèle dosée. Ce qui les
+  // sépare tient en peu de choses : le chorus et le flanger modulent un
+  // délai — dix fois plus court pour le flanger, d'où le peigne au lieu du
+  // dédoublement — et le phaser module des filtres passe-tout.
+  const doseMod = melange(p.fxModMix);
+  if (doseMod > 0) {
+    const vitesse = vitesseChorusHz(p.fxModRate);
     const dose = ctx.createGain();
-    dose.gain.setValueAtTime(doseChorus, now);
+    dose.gain.setValueAtTime(doseMod, now);
     const somme = ctx.createGain();
 
-    courant.connect(retardMod);
-    retardMod.connect(dose);
+    if (p.fxModMode === "phaser") {
+      // Quatre passe-tout en série, balayés ensemble. Un passe-tout ne change
+      // pas l'amplitude : c'est la SOMME avec le signal direct qui creuse le
+      // spectre. Sans la voie directe, un phaser est inaudible.
+      let etage: AudioNode = courant;
+      for (let i = 0; i < PHASER_ETAGES; i++) {
+        const filtre = ctx.createBiquadFilter();
+        filtre.type = "allpass";
+        const centre = frequenceEtagePhaser(i);
+        filtre.frequency.setValueAtTime(centre, now);
+        filtre.Q.setValueAtTime(0.7, now);
+        // La profondeur balaie une fraction de la fréquence centrale : un
+        // balayage en Hz constant serait imperceptible en haut du spectre et
+        // ferait sortir les étages du bas sous zéro.
+        attachLfo(ctx, filtre.frequency, vitesse, centre * 0.6, now);
+        etage.connect(filtre);
+        etage = filtre;
+      }
+      etage.connect(dose);
+    } else {
+      const base = p.fxModMode === "flanger" ? FLANGER_BASE_SEC : CHORUS_BASE_SEC;
+      const retardMod = ctx.createDelay(0.1);
+      retardMod.delayTime.setValueAtTime(base, now);
+      attachLfo(ctx, retardMod.delayTime, vitesse, profondeurModulationSec(p.fxModDepth, p.fxModMode), now);
+
+      courant.connect(retardMod);
+
+      if (p.fxModMode === "flanger") {
+        // La réinjection est ce qui donne au flanger son creusement : sans
+        // elle, il n'est qu'un chorus très court.
+        const retour = ctx.createGain();
+        retour.gain.setValueAtTime(reinjectionFlanger(p.fxModFeedback), now);
+        retardMod.connect(retour);
+        retour.connect(retardMod);
+      }
+
+      retardMod.connect(dose);
+    }
+
     dose.connect(somme);
     courant.connect(somme);
     courant = somme;

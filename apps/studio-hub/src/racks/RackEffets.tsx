@@ -2,6 +2,19 @@ import { ORDRE_DIVISIONS, type Division } from "../core/audio/tempo";
 import type { ParamsEffets } from "../core/audio/effets";
 
 /**
+ * Ce que chaque mode fait, en une phrase.
+ *
+ * Les trois partagent le meme graphe : sans explication, le choix entre eux
+ * releve du tatonnement.
+ */
+const MODULATION_NOM = { chorus: "CHORUS", flanger: "FLANGER", phaser: "PHASER" } as const;
+const MODULATION_AIDE = {
+  chorus: "Delai long module : on entend deux sources, l'ensemble s'epaissit",
+  flanger: "Delai tres court reinjecte : filtre en peigne, effet de souffle metallique",
+  phaser: "Filtres passe-tout balayes : creux mouvants dans le spectre",
+} as const;
+
+/**
  * Le rack d'effets — son interface.
  *
  * Chaque rack porte son interface dans son ventre. Celle-ci vivait au milieu du
@@ -18,7 +31,12 @@ import type { ParamsEffets } from "../core/audio/effets";
  */
 export type ProprietesRackEffets = {
   params: ParamsEffets;
-  onParam: (nom: keyof ParamsEffets, valeur: number | "soft" | "fold") => void;
+  /**
+   * Un seul rappel. Le type de la valeur est DERIVE du type des reglages :
+   * enumerer « number | "soft" | "fold" » a la main obligeait a y penser a
+   * chaque effet ajoute, et le mode de modulation l'a montre.
+   */
+  onParam: <N extends keyof ParamsEffets>(nom: N, valeur: ParamsEffets[N]) => void;
   /** Synchronisation du délai sur le tempo de l'hôte. */
   delaySync: boolean;
   onDelaySync: (actif: boolean) => void;
@@ -65,19 +83,41 @@ export function RackEffets({
         </div>
       </div>
       <div className="fx-groupe">
-        <span className="fx-groupe-nom">CHORUS</span>
-        <label>MIX {params.fxChorusMix}%
-          <input type="range" min={0} max={100} value={params.fxChorusMix}
-            onChange={(e) => onParam("fxChorusMix", Number(e.target.value))} />
+        <span className="fx-groupe-nom">MODULATION</span>
+        <div className="fx-modes">
+          {(["chorus", "flanger", "phaser"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              className={`fx-mode-btn ${params.fxModMode === m ? "actif" : ""}`}
+              disabled={params.fxModMix === 0}
+              onClick={() => onParam("fxModMode", m)}
+              title={MODULATION_AIDE[m]}
+            >
+              {MODULATION_NOM[m]}
+            </button>
+          ))}
+        </div>
+        <label>MIX {params.fxModMix}%
+          <input type="range" min={0} max={100} value={params.fxModMix}
+            onChange={(e) => onParam("fxModMix", Number(e.target.value))} />
         </label>
-        <label>VITESSE {(params.fxChorusRate / 10).toFixed(1)} Hz
-          <input type="range" min={1} max={80} value={params.fxChorusRate} disabled={params.fxChorusMix === 0}
-            onChange={(e) => onParam("fxChorusRate", Number(e.target.value))} />
+        <label>VITESSE {(params.fxModRate / 10).toFixed(1)} Hz
+          <input type="range" min={1} max={80} value={params.fxModRate} disabled={params.fxModMix === 0}
+            onChange={(e) => onParam("fxModRate", Number(e.target.value))} />
         </label>
-        <label>PROFONDEUR {params.fxChorusDepth} ms
-          <input type="range" min={0} max={10} value={params.fxChorusDepth} disabled={params.fxChorusMix === 0}
-            onChange={(e) => onParam("fxChorusDepth", Number(e.target.value))} />
-        </label>
+        {params.fxModMode !== "phaser" && (
+          <label>PROFONDEUR {params.fxModDepth} ms
+            <input type="range" min={0} max={10} value={params.fxModDepth} disabled={params.fxModMix === 0}
+              onChange={(e) => onParam("fxModDepth", Number(e.target.value))} />
+          </label>
+        )}
+        {params.fxModMode === "flanger" && (
+          <label>RETOUR {params.fxModFeedback}%
+            <input type="range" min={0} max={100} value={params.fxModFeedback} disabled={params.fxModMix === 0}
+              onChange={(e) => onParam("fxModFeedback", Number(e.target.value))} />
+          </label>
+        )}
       </div>
       <div className="fx-groupe">
         <span className="fx-groupe-nom">DELAY</span>

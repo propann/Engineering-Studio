@@ -377,9 +377,14 @@ export default function AudioPluginRack({
   const [fxDriveMix, setFxDriveMix] = useState<number>(0);
   const [fxDriveAmount, setFxDriveAmount] = useState<number>(40);
   const [fxDriveMode, setFxDriveMode] = useState<"soft" | "fold">("soft");
-  const [fxChorusMix, setFxChorusMix] = useState<number>(0);
-  const [fxChorusRate, setFxChorusRate] = useState<number>(15);
-  const [fxChorusDepth, setFxChorusDepth] = useState<number>(4);
+  const [fxModMix, setFxModMix] = useState<number>(0);
+  const [fxModRate, setFxModRate] = useState<number>(15);
+  const [fxModDepth, setFxModDepth] = useState<number>(4);
+  // Le mode decide de ce que la modulation fait : chorus (delai long, on
+  // entend deux sources), flanger (delai dix fois plus court, peigne), phaser
+  // (passe-tout balayes). Meme LFO, meme voie doses.
+  const [fxModMode, setFxModMode] = useState<"chorus" | "flanger" | "phaser">("chorus");
+  const [fxModFeedback, setFxModFeedback] = useState<number>(45);
 
   const [masterDetune, setMasterDetune] = useState<number>(0);
 
@@ -505,7 +510,7 @@ export default function AudioPluginRack({
     fxEqLow, fxEqMid, fxEqHigh,
     envAttack, envDecay, envSustain, envRelease,
     fxDriveMix, fxDriveAmount, fxDriveMode,
-    fxChorusMix, fxChorusRate, fxChorusDepth,
+    fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
     plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
     braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
     ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
@@ -533,7 +538,7 @@ export default function AudioPluginRack({
       fxEqLow, fxEqMid, fxEqHigh,
       envAttack, envDecay, envSustain, envRelease,
       fxDriveMix, fxDriveAmount, fxDriveMode,
-      fxChorusMix, fxChorusRate, fxChorusDepth,
+      fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
       plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
       braidsModel, braidsColor, braidsTimbre, braidsBitDepth,
       ringsResonatorMode, ringsDamping, ringsStructure, ringsBrightness, ringsPosition, ringsPolyphony,
@@ -723,15 +728,17 @@ export default function AudioPluginRack({
     fxEqLow: setFxEqLow,
     fxEqMid: setFxEqMid,
     fxEqHigh: setFxEqHigh,
-    fxChorusMix: setFxChorusMix,
-    fxChorusRate: setFxChorusRate,
-    fxChorusDepth: setFxChorusDepth,
+    fxModMix: setFxModMix,
+    fxModRate: setFxModRate,
+    fxModDepth: setFxModDepth,
+    fxModMode: setFxModMode,
+    fxModFeedback: setFxModFeedback,
     fxDelayMix: setFxDelayMix,
     fxDelayTime: setFxDelayTime,
     fxDelayFeedback: setFxDelayFeedback,
   };
 
-  const appliquerParamEffet = (nom: keyof ParamsEffets, valeur: number | "soft" | "fold") => {
+  const appliquerParamEffet = <N extends keyof ParamsEffets>(nom: N, valeur: ParamsEffets[N]) => {
     updateParam(nom, valeur, SETTERS_EFFETS[nom]);
   };
   const SETTERS_ENVELOPPE: Record<keyof ParamsEnveloppe, (v: number) => void> = {
@@ -2995,7 +3002,7 @@ export default function AudioPluginRack({
             <RackEffets params={{
               fxDriveMix, fxDriveAmount, fxDriveMode,
               fxEqLow, fxEqMid, fxEqHigh,
-              fxChorusMix, fxChorusRate, fxChorusDepth,
+              fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
               fxDelayMix, fxDelayTime, fxDelayFeedback,
             }}
               onParam={appliquerParamEffet}

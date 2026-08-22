@@ -28,7 +28,7 @@ describe("le rack d'effets porte son interface", () => {
   });
 
   it("rend les quatre familles d'effets", () => {
-    for (const nom of ["SATURATION", "ÉGALISEUR", "CHORUS", "DELAY"]) {
+    for (const nom of ["SATURATION", "ÉGALISEUR", "MODULATION", "DELAY"]) {
       expect(UI, `${nom} absent de l'interface`).toContain(nom);
     }
   });
@@ -57,7 +57,7 @@ describe("controle, pas autonomie", () => {
 
   it("lit toutes ses valeurs dans ses proprietes", () => {
     // Une valeur lue ailleurs serait un fil qui traverse la frontiere.
-    for (const nom of ["fxDriveMix", "fxEqLow", "fxChorusMix", "fxDelayTime"]) {
+    for (const nom of ["fxDriveMix", "fxEqLow", "fxModMix", "fxModMode", "fxDelayTime"]) {
       expect(UI, `${nom} n'est pas lu dans params`).toContain(`params.${nom}`);
     }
   });

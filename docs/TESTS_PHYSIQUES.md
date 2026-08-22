@@ -252,7 +252,16 @@ Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
       progressivement, **REPLI** replie le signal — beaucoup plus agressif
 - [ ] mélange à 0 % : le son est **strictement** celui d'avant. La voie directe
       passe toujours
-- [ ] le chorus épaissit sans désaccorder franchement
+- [ ] **les trois modes de modulation sonnent différemment.** CHORUS épaissit
+      sans désaccorder ; FLANGER fait un souffle métallique qui balaie ;
+      PHASER creuse des trous mouvants. S'ils se ressemblent, c'est le délai
+      central qui n'a pas changé — c'est toute la différence entre chorus et
+      flanger, un ordre de grandeur
+- [ ] **le PHASER s'entend.** Un passe-tout ne change pas l'amplitude : c'est
+      la somme avec la voie directe qui creuse. Si le phaser laisse le son
+      intact, cette voie est coupée
+- [ ] le RETOUR du flanger n'apparaît **que** pour le flanger, et à fond il
+      siffle sans diverger
 - [ ] **profondeur à fond, le chorus ne se tait jamais par intermittence.**
       C'est la borne qui empêche le temps de délai de passer négatif
 - [ ] vitesse à fond : c'est encore un chorus, pas un vibrato

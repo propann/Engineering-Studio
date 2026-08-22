@@ -3,8 +3,10 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  AMORTI_HZ, CHORUS_BASE_SEC, REINJECTION_MAX,
-  melange, profondeurChorusSec, reinjection, tempsRetardSec, vitesseChorusHz,
+  AMORTI_HZ, CHORUS_BASE_SEC, FLANGER_BASE_SEC, FLANGER_FEEDBACK_MAX,
+  PHASER_ETAGES, PHASER_MAX_HZ, PHASER_MIN_HZ, REINJECTION_MAX,
+  frequenceEtagePhaser, melange, profondeurChorusSec, profondeurModulationSec,
+  reinjection, reinjectionFlanger, tempsRetardSec, vitesseChorusHz,
 } from "./effets";
 
 /**
@@ -149,7 +151,7 @@ describe("structure de la chaine", () => {
   const DIR = path.dirname(fileURLToPath(import.meta.url));
   const SRC = readFileSync(path.join(DIR, "effets.ts"), "utf-8");
 
-  it("l'ordre est saturation → egaliseur → chorus → delai", () => {
+  it("l'ordre est saturation → egaliseur → modulation → delai", () => {
     // Ordre d'un pedalier, et il n'est pas arbitraire : egaliser APRES la
     // saturation permet de dompter les aigus qu'elle cree. L'inverse
     // egaliserait un signal que la saturation ecraserait ensuite.
@@ -162,8 +164,8 @@ describe("structure de la chaine", () => {
       return i;
     };
     expect(rang("── Saturation")).toBeLessThan(rang("── Égaliseur"));
-    expect(rang("── Égaliseur")).toBeLessThan(rang("── Chorus"));
-    expect(rang("── Chorus")).toBeLessThan(rang("── Délai"));
+    expect(rang("── Égaliseur")).toBeLessThan(rang("── Modulation"));
+    expect(rang("── Modulation")).toBeLessThan(rang("── Délai"));
   });
 
   it("amortit la boucle de reinjection", () => {
@@ -188,10 +190,134 @@ describe("structure de la chaine", () => {
     expect(SRC).not.toContain("ctx.destination");
   });
 
-  it("saturation et chorus sont contournes quand leur melange est nul", () => {
+  it("saturation et modulation sont contournees quand leur melange est nul", () => {
     // Construire un WaveShaper et un LFO inutiles a chaque note couterait
     // pour rien — et le LFO tournerait indefiniment.
     expect(SRC).toContain("if (doseDrive > 0 && p.fxDriveAmount > 0)");
-    expect(SRC).toContain("if (doseChorus > 0)");
+    expect(SRC).toContain("if (doseMod > 0)");
+  });
+});
+
+describe("flanger", () => {
+  it("son delai central est bien plus court que celui du chorus", () => {
+    // C'est TOUTE la difference entre les deux. Au-dessus de ~10 ms l'oreille
+    // entend deux sources ; en dessous, un filtre en peigne. Meme graphe, un
+    // ordre de grandeur d'ecart. Rapprocher les deux valeurs ferait sonner le
+    // flanger comme un chorus, sans qu'aucun type ne s'en plaigne.
+    expect(FLANGER_BASE_SEC).toBeLessThan(CHORUS_BASE_SEC / 5);
+    expect(FLANGER_BASE_SEC).toBeGreaterThan(0);
+  });
+
+  it("sa profondeur reste sous SON delai de base, pas celui du chorus", () => {
+    // Le piege : reutiliser la marge du chorus donnerait une profondeur dix
+    // fois trop grande, un temps de delai negatif, et un flanger qui se tait
+    // par intermittence.
+    for (const ms of [0, 1, 5, 10, 1000]) {
+      expect(profondeurModulationSec(ms, "flanger")).toBeLessThan(FLANGER_BASE_SEC);
+    }
+  });
+
+  it("le chorus garde sa marge a lui", () => {
+    for (const ms of [0, 1, 5, 10, 1000]) {
+      expect(profondeurModulationSec(ms, "chorus")).toBeLessThan(CHORUS_BASE_SEC);
+    }
+    expect(profondeurModulationSec(4, "chorus")).toBe(profondeurChorusSec(4));
+  });
+
+  it("la profondeur du chorus depasse celle du flanger, a reglage egal", () => {
+    // Sinon les deux modes sonneraient pareil au meme reglage.
+    expect(profondeurModulationSec(10, "chorus")).toBeGreaterThan(
+      profondeurModulationSec(10, "flanger")
+    );
+  });
+
+  it("sa reinjection reste strictement sous 1", () => {
+    // Comme celle du delai : au-dela, le peigne devient un sifflement qui ne
+    // s'arrete plus.
+    for (let pct = 0; pct <= 200; pct += 5) {
+      expect(reinjectionFlanger(pct)).toBeLessThan(1);
+    }
+    expect(reinjectionFlanger(100)).toBe(FLANGER_FEEDBACK_MAX);
+    expect(reinjectionFlanger(-30)).toBe(0);
+    expect(reinjectionFlanger(NaN)).toBe(0);
+  });
+});
+
+describe("phaser", () => {
+  it("repartit ses etages geometriquement, pas lineairement", () => {
+    // L'oreille entend les frequences en RAPPORTS, pas en ecarts. Quatre
+    // etages egalement espaces en Hz mettraient trois creux dans les aigus et
+    // un seul en bas.
+    const f = Array.from({ length: PHASER_ETAGES }, (_, i) => frequenceEtagePhaser(i));
+    const rapports = f.slice(1).map((v, i) => v / f[i]);
+    for (const r of rapports) expect(r).toBeCloseTo(rapports[0], 6);
+  });
+
+  it("couvre exactement la bande annoncee", () => {
+    expect(frequenceEtagePhaser(0)).toBeCloseTo(PHASER_MIN_HZ, 6);
+    expect(frequenceEtagePhaser(PHASER_ETAGES - 1)).toBeCloseTo(PHASER_MAX_HZ, 6);
+  });
+
+  it("monte a chaque etage", () => {
+    for (let i = 1; i < PHASER_ETAGES; i++) {
+      expect(frequenceEtagePhaser(i)).toBeGreaterThan(frequenceEtagePhaser(i - 1));
+    }
+  });
+
+  it("borne un index hors plage plutot que de rendre NaN", () => {
+    // Une frequence NaN traverse `setValueAtTime` sans lever et rend l'etage
+    // muet — defaut silencieux.
+    expect(frequenceEtagePhaser(-5)).toBeCloseTo(PHASER_MIN_HZ, 6);
+    expect(frequenceEtagePhaser(999)).toBeCloseTo(PHASER_MAX_HZ, 6);
+  });
+
+  it("un seul etage ne divise pas par zero", () => {
+    // `i / (n - 1)` avec n = 1 donne une division par zero.
+    expect(Number.isFinite(frequenceEtagePhaser(0, 1))).toBe(true);
+  });
+
+  it("reste dans une bande ou les creux s'entendent", () => {
+    // Trop bas, le creux passe sous le fondamental ; trop haut, il n'y a plus
+    // grand-chose a creuser.
+    expect(PHASER_MIN_HZ).toBeGreaterThanOrEqual(100);
+    expect(PHASER_MAX_HZ).toBeLessThanOrEqual(6000);
+    expect(PHASER_ETAGES).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("structure des trois modes", () => {
+  const DIR2 = path.dirname(fileURLToPath(import.meta.url));
+  const S2 = readFileSync(path.join(DIR2, "effets.ts"), "utf-8");
+
+  it("le phaser somme avec la voie directe", () => {
+    // Un passe-tout ne change pas l'amplitude : c'est la SOMME avec le signal
+    // direct qui creuse le spectre. Sans voie directe, le phaser est inaudible
+    // — il laisserait passer le son intact.
+    const i = S2.indexOf('=== "phaser"');
+    expect(i).toBeGreaterThan(-1);
+    const j = S2.indexOf("── Délai", i);
+    expect(S2.slice(i, j)).toContain("courant.connect(somme);");
+  });
+
+  it("seul le flanger reinjecte", () => {
+    // La reinjection est ce qui lui donne son creusement. L'ajouter au chorus
+    // en ferait un flanger long, donc un autre effet.
+    //
+    // Le test verifie l'EXCLUSIVITE, pas la presence. Un premier jet cherchait
+    // seulement `p.fxModMode === "flanger"` quelque part : un `|| true`
+    // ajoute au garde passait inapercu, et les trois modes reinjectaient.
+    expect(S2).toContain("reinjectionFlanger(p.fxModFeedback)");
+    const lignes = S2.split("\n");
+    const garde = lignes.find((l) => l.includes('p.fxModMode === "flanger"') && l.includes("if ("));
+    expect(garde, "garde du flanger introuvable").toBeTruthy();
+    expect(garde!.trim()).toBe('if (p.fxModMode === "flanger") {');
+  });
+
+  it("les trois partagent un seul LFO par voie", () => {
+    // Deux LFO desynchronises sur la meme voie donneraient un battement
+    // parasite.
+    const i = S2.indexOf("── Modulation");
+    const bloc = S2.slice(i, S2.indexOf("── Délai", i));
+    expect((bloc.match(/attachLfo\(/g) ?? []).length).toBe(2); // phaser (boucle) + delai module
   });
 });
