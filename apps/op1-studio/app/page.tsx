@@ -13,8 +13,27 @@ import AudioPluginRack from "../../studio-hub/src/pages/AudioPluginRack";
  */
 type EvenementMidiLu = { data: Uint8Array | null };
 
-const SOUND_MENU_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
-const SOUND_MENU_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
+import { MidiKeyboardOptionsBar, DEFAULT_MIDI_KEYBOARD_OPTIONS, type MidiKeyboardOptions } from "./components/MidiKeyboardOptionsBar";
+import {
+  RACK_ENGINES_METAS,
+  RACK_ENGINE_IDS,
+  getPatchesForEngine,
+  getEngineMeta,
+  type EngineId,
+} from "./lib/soundEnginesData";
+import { quantifier, pasArpege, type Gamme, type Motif } from "../../../packages/musique";
+
+const SOUND_MENU_ENGINES = RACK_ENGINE_IDS;
+const SOUND_MENU_PATCHES = [
+  "Virtual Analog Saw Lead",
+  "CS-80 Brass Lead",
+  "Granular Cloud Burst",
+  "Modal Texture",
+  "DX7 Glass Bell",
+  "Hybrid Wavetable",
+  "Acid Sequence",
+  "Tape Dust",
+] as const;
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
@@ -26,6 +45,7 @@ import { HomeHub } from "./components/HomeHub";
 import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
 import { Op1PixelEditor } from "./components/Op1PixelEditor";
 import { ExercisePanel } from "./components/ExercisePanel";
+import { GameGuitarHeroPanel } from "./components/GameGuitarHeroPanel";
 import { BackupPanel } from "./components/BackupPanel";
 import { SoundsPanel } from "./components/SoundsPanel";
 import { ServiceHub } from "./components/ServiceHub";
@@ -507,8 +527,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   // il n'a rien a faire a l'ecran tant qu'on ne le demande pas, et ses
   // ecouteurs clavier sont poses sur `window`.
   const [rackFolded, setRackFolded] = useState(true);
-  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | null>(null);
-  const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | null>(null);
+  const [midiOptions, setMidiOptions] = useState<MidiKeyboardOptions>(DEFAULT_MIDI_KEYBOARD_OPTIONS);
+  const [showMidiOptions, setShowMidiOptions] = useState(true);
+  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | "guitar_hero" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | "tools" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState<string>("mi_plaits");
   const [selectedPatch, setSelectedPatch] = useState<string>("Virtual Analog Saw Lead");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
@@ -668,14 +690,28 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
     if (!soundMenuOpen || !delta) return;
     if (encoder === 0) {
       setSelectedEngine((current) => {
-        const index = Math.max(0, SOUND_MENU_ENGINES.indexOf(current as typeof SOUND_MENU_ENGINES[number]));
-        return SOUND_MENU_ENGINES[(index + (delta > 0 ? 1 : -1) + SOUND_MENU_ENGINES.length) % SOUND_MENU_ENGINES.length];
+        const index = Math.max(0, RACK_ENGINE_IDS.indexOf(current as EngineId));
+        const nextIndex = (index + (delta > 0 ? 1 : -1) + RACK_ENGINE_IDS.length) % RACK_ENGINE_IDS.length;
+        const nextEngine = RACK_ENGINE_IDS[nextIndex];
+        const patches = getPatchesForEngine(nextEngine);
+        if (patches.length > 0) {
+          setSelectedPatch(patches[0].name);
+        }
+        const meta = getEngineMeta(nextEngine);
+        onNotice(`🔵 Moteur sélectionné (T1) : ${meta?.label ?? nextEngine}`);
+        return nextEngine;
       });
     }
     if (encoder === 1) {
       setSelectedPatch((current) => {
-        const index = Math.max(0, SOUND_MENU_PATCHES.indexOf(current as typeof SOUND_MENU_PATCHES[number]));
-        return SOUND_MENU_PATCHES[(index + (delta > 0 ? 1 : -1) + SOUND_MENU_PATCHES.length) % SOUND_MENU_PATCHES.length];
+        const patches = getPatchesForEngine(selectedEngine);
+        if (patches.length === 0) return current;
+        const patchNames = patches.map((p) => p.name);
+        const index = Math.max(0, patchNames.indexOf(current));
+        const nextIndex = (index + (delta > 0 ? 1 : -1) + patchNames.length) % patchNames.length;
+        const nextPatch = patchNames[nextIndex];
+        onNotice(`🟢 Patch sélectionné (T2) : ${nextPatch}`);
+        return nextPatch;
       });
     }
   }
@@ -690,6 +726,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   useEffect(() => {
     op1AudioEngine.setPatch(selectedPatch);
   }, [selectedPatch]);
+
+  const midiOptionsRef = useRef(midiOptions);
+  useEffect(() => {
+    midiOptionsRef.current = midiOptions;
+  }, [midiOptions]);
+
+  function transformMidiNote(inputNote: number): number {
+    const opts = midiOptionsRef.current;
+    let n = inputNote;
+    if (opts.scaleEnabled) {
+      n = quantifier(n, opts.scaleRoot, opts.scaleType as Gamme);
+    }
+    return Math.max(0, Math.min(127, n + opts.octaveShift * 12 + opts.transpose));
+  }
 
   // L'OP-1 expose deux ports MIDI sous Windows. Le retour visuel et sonore du clone
   // reste actif même quand aucune capture n'est en cours.
@@ -726,12 +776,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
       }
       const message = decodeMidiNote(event.data);
       if (!message) return;
+      const note = transformMidiNote(message.note);
       if (message.type === "note_on") {
-        op1AudioEngine.triggerNoteOn(message.note, message.velocity || 100);
-        setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
+        op1AudioEngine.triggerNoteOn(note, message.velocity || 100);
+        setPressedMidiNotes((current) => current.includes(note) ? current : [...current, note]);
       } else {
-        op1AudioEngine.triggerNoteOff(message.note);
-        setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
+        op1AudioEngine.triggerNoteOff(note);
+        setPressedMidiNotes((current) => current.filter((n) => n !== note));
       }
     };
     // Abonnement au repartiteur, plutot qu'une ecriture directe.
@@ -1515,6 +1566,88 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               <span className="badge">{selectedEngine}</span>
             </button>
 
+            {/* Menu Hub Outils (Dropdown) contenant le bouton Apprendre */}
+            <div className="op1-pro-menu-group">
+              <button
+                type="button"
+                className={`op1-pill-btn ${activeDropdown === "tools" || activeModal === "guitar_hero" ? "is-active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === "tools" ? null : "tools");
+                }}
+                title="Accéder au Hub Outils : Apprentissage, Exercices, Finger Drumming et Fiche de Personnage"
+                style={{
+                  borderColor: "rgba(56, 189, 248, 0.4)",
+                  color: "#38bdf8",
+                  background: activeDropdown === "tools" ? "rgba(56, 189, 248, 0.2)" : "rgba(56, 189, 248, 0.08)",
+                }}
+              >
+                <span>🛠️</span>
+                <span>Hub Outils</span>
+                <span style={{ fontSize: "8px" }}>▼</span>
+              </button>
+
+              {activeDropdown === "tools" && (
+                <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()} style={{ minWidth: "230px" }}>
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("guitar_hero");
+                      setActiveDropdown(null);
+                    }}
+                    style={{
+                      background: "rgba(255, 58, 93, 0.12)",
+                      border: "1px solid rgba(255, 58, 93, 0.3)",
+                      borderRadius: "6px",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span style={{ fontSize: "16px" }}>🎓</span>
+                    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                      <strong style={{ color: "#FF3A5D", fontSize: "11px" }}>Apprendre & Arcade OP-1</strong>
+                      <small style={{ fontSize: "9px", color: "#94a3b8" }}>Mélodies, accords, finger drumming & RPG</small>
+                    </div>
+                  </button>
+
+                  <div style={{ height: "1px", background: "#232b33", margin: "4px 0" }} />
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setSampleLibraryOpen(true);
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🌊 Samples & Banque de sons</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("engines");
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🎹 Moteurs & Patchs Son</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("tracks");
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🎚️ Console de Mixage 4 Pistes</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             <button
               type="button"
               className={`op1-pill-btn ${sampleLibraryOpen ? "is-active" : ""}`}
@@ -1629,16 +1762,19 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
 
               {activeDropdown === "view" && (
                 <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
                     <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setRackFolded(!rackFolded); setActiveDropdown(null); }}>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setShowMidiOptions(!showMidiOptions); setActiveDropdown(null); }}>
+                    <span>{showMidiOptions ? "🎹 Masquer Barre MIDI / Arp" : "🎹 Afficher Barre MIDI / Arp"}</span>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setRackFolded(!rackFolded); setActiveDropdown(null); }}>
                     <span>{rackFolded ? "▲ Afficher Rack Audio" : "▼ Replier Rack Audio"}</span>
                   </button>
-                  </button>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
                     <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
                   </button>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
                     <span>{reversed ? "🔄 Sens Normal Bande" : "🔄 Inverser Bande (Tape Invert)"}</span>
                   </button>
                 </div>
@@ -1795,6 +1931,14 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             >
               <span>🎹 Clavier</span>
             </button>
+            <button
+              type="button"
+              className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
+              onClick={() => setShowMidiOptions(!showMidiOptions)}
+              title="Afficher ou masquer les options de jeu MIDI, gammes et arpégiateur"
+            >
+              <span>⚙️ MIDI / Arp</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1879,9 +2023,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
         </div>
       )}
 
-      {/* ── Panneau Clavier OP-1 (Châssis matériel & encodeurs) ── */}
+      {/* ── Panneau Clavier OP-1 (Châssis matériel & encodeurs) + Options MIDI ── */}
       {!keyboardFolded && (
-        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "12px" }}>
+        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <MidiKeyboardOptionsBar
+            options={midiOptions}
+            onChange={(next) => setMidiOptions((prev) => ({ ...prev, ...next }))}
+            isOpen={showMidiOptions}
+            onToggleOpen={() => setShowMidiOptions((v) => !v)}
+          />
           <StudioMachinePanel
             pressedNotes={pressedMidiNotes}
             mode={studioMode}
@@ -2018,17 +2168,22 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MODAL DRAWER : MOTEURS DE SYNTHÈSE ET SONS OP-1
+          MODAL DRAWER : MOTEURS DE SYNTHÈSE ET SONS OP-1 (2 COLONNES BLEU/VERT)
           S'affiche à la demande via les menus ou boutons d'accès
          ══════════════════════════════════════════════════════════════════════ */}
       {activeModal === "engines" && (
         <div className="op1-pro-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="op1-pro-modal-content" style={{ maxWidth: "780px" }} onClick={(e) => e.stopPropagation()}>
+          <div className="op1-pro-modal-content" style={{ maxWidth: "860px" }} onClick={(e) => e.stopPropagation()}>
             <div className="op1-pro-modal-header">
-              <strong>
-                <Icon name="wave" size={18} />
-                Moteurs Sonores & Banque de Patchs OP-1
-              </strong>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <strong style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f1f5f9" }}>
+                  <Icon name="wave" size={18} />
+                  Navigateur de Moteurs & Patchs OP-1
+                </strong>
+                <span style={{ fontSize: "11px", color: "#698EFF", background: "rgba(105, 142, 255, 0.15)", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                  Actif : {selectedEngine} · {selectedPatch}
+                </span>
+              </div>
               <button
                 type="button"
                 className="op1-pro-modal-close"
@@ -2040,111 +2195,187 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             </div>
 
             <div className="op1-pro-modal-body">
-              {/* Choix du Moteur */}
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", display: "block", marginBottom: "8px", fontWeight: "bold" }}>
-                  Sélection du moteur actif (Synth & Drum)
-                </label>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"].map((engine) => (
-                    <button
-                      key={engine}
-                      onClick={() => {
-                        setSelectedEngine(engine);
-                        onNotice(`Moteur sonore sélectionné : ${engine}`);
-                      }}
-                      style={{
-                        padding: "6px 14px",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        borderRadius: "6px",
-                        border: selectedEngine === engine ? "1px solid #29be87" : "1px solid #28333e",
-                        background: selectedEngine === engine ? "#29be87" : "#1a2128",
-                        color: selectedEngine === engine ? "#0f1215" : "#cbd5e1",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease"
-                      }}
-                    >
-                      {engine}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Catégories de patchs */}
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", display: "block", marginBottom: "8px", fontWeight: "bold" }}>
-                  Catégorie de son
-                </label>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {["Synth", "Drum", "Bass", "Lead", "Pad", "Keys", "FX"].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedSoundCategory(cat)}
-                      style={{
-                        padding: "5px 12px",
-                        fontSize: "11px",
-                        borderRadius: "5px",
-                        border: selectedSoundCategory === cat ? "1px solid #4cace1" : "1px solid #28333e",
-                        background: selectedSoundCategory === cat ? "rgba(76, 172, 225, 0.2)" : "#181f26",
-                        color: selectedSoundCategory === cat ? "#4cace1" : "#94a3b8",
-                        cursor: "pointer"
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Liste des Presets */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px" }}>
-                {[
-                  { name: `${selectedEngine} Classic 01`, category: selectedSoundCategory },
-                  { name: `${selectedEngine} Deep Sub`, category: "Bass" },
-                  { name: `${selectedEngine} Soft Ambient`, category: "Pad" },
-                  { name: `${selectedEngine} Punchy Lead`, category: "Lead" },
-                  { name: `${selectedEngine} Metallic Bell`, category: "Keys" },
-                  { name: `${selectedEngine} Cosmic Warp`, category: "FX" },
-                ].map((preset, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: "10px 12px",
-                      background: "#181e24",
-                      border: "1px solid #2a3540",
-                      borderRadius: "6px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center"
-                    }}
-                  >
-                    <div>
-                      <strong style={{ display: "block", fontSize: "12px", color: "#f1f5f9" }}>{preset.name}</strong>
-                      <small style={{ fontSize: "10px", color: "#64748b" }}>{selectedEngine} · {preset.category}</small>
-                    </div>
-                    <button
-                      onClick={() => {
-                        onNotice(`Patch "${preset.name}" chargé sur l'OP-1 !`);
-                        setActiveModal(null);
-                      }}
-                      style={{
-                        padding: "4px 10px",
-                        fontSize: "11px",
-                        fontWeight: "bold",
-                        background: "#29be87",
-                        color: "#0f1215",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      LOAD
-                    </button>
+              {/* Disposition 2 colonnes fidèle aux potentiomètres Bleu (T1) et Vert (T2) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", minHeight: "360px" }}>
+                
+                {/* Colonne 1 : 🔵 Moteurs de Son (Potentiomètre Bleu T1) */}
+                <div style={{ display: "flex", flexDirection: "column", background: "#131920", border: "1px solid rgba(105, 142, 255, 0.3)", borderRadius: "8px", padding: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", paddingBottom: "8px", borderBottom: "1px solid rgba(105, 142, 255, 0.2)" }}>
+                    <strong style={{ color: "#698EFF", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🔵</span> MOTEURS AUDIO (Encodeur Bleu T1)
+                    </strong>
+                    <span style={{ fontSize: "10px", color: "#64748b" }}>{RACK_ENGINES_METAS.length} moteurs</span>
                   </div>
-                ))}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "320px", paddingRight: "4px" }}>
+                    {RACK_ENGINES_METAS.map((meta) => {
+                      const isActive = selectedEngine === meta.id;
+                      return (
+                        <button
+                          key={meta.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEngine(meta.id);
+                            const patches = getPatchesForEngine(meta.id);
+                            if (patches.length > 0) {
+                              setSelectedPatch(patches[0].name);
+                            }
+                            onNotice(`Moteur sonore : ${meta.label} (${meta.type})`);
+                          }}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: isActive ? "1px solid #698EFF" : "1px solid #1e293b",
+                            background: isActive ? "rgba(105, 142, 255, 0.2)" : "#18212c",
+                            color: isActive ? "#ffffff" : "#cbd5e1",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "all 0.15s ease"
+                          }}
+                          title={meta.description}
+                        >
+                          <div>
+                            <div style={{ fontWeight: isActive ? 700 : 600, fontSize: "12px" }}>{meta.label}</div>
+                            <div style={{ fontSize: "9.5px", color: isActive ? "#93c5fd" : "#64748b" }}>{meta.description}</div>
+                          </div>
+                          <div style={{
+                            fontSize: "9px",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            fontWeight: 700,
+                            background: isActive ? "#698EFF" : "#223247",
+                            color: isActive ? "#0f172a" : "#94a3b8"
+                          }}>
+                            {meta.type.toUpperCase()}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Colonne 2 : 🟢 Patchs du Moteur (Potentiomètre Vert T2) */}
+                <div style={{ display: "flex", flexDirection: "column", background: "#131920", border: "1px solid rgba(0, 237, 149, 0.3)", borderRadius: "8px", padding: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", paddingBottom: "8px", borderBottom: "1px solid rgba(0, 237, 149, 0.2)" }}>
+                    <strong style={{ color: "#00ED95", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🟢</span> PATCHS DU MOTEUR (Encodeur Vert T2)
+                    </strong>
+                    <span style={{ fontSize: "10px", color: "#64748b" }}>
+                      {getPatchesForEngine(selectedEngine).length} patchs
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "320px", paddingRight: "4px" }}>
+                    {getPatchesForEngine(selectedEngine).map((patch) => {
+                      const isActive = selectedPatch === patch.name;
+                      return (
+                        <div
+                          key={patch.name}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: isActive ? "1px solid #00ED95" : "1px solid #1e293b",
+                            background: isActive ? "rgba(0, 237, 149, 0.15)" : "#18212c",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: isActive ? 700 : 600, fontSize: "12px", color: isActive ? "#ffffff" : "#cbd5e1" }}>
+                              {patch.name}
+                            </div>
+                            <div style={{ fontSize: "9.5px", color: isActive ? "#86efac" : "#64748b" }}>
+                              {patch.description} · <span style={{ textTransform: "uppercase", opacity: 0.8 }}>{patch.category}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPatch(patch.name);
+                              onNotice(`Patch "${patch.name}" chargé sur l'OP-1 !`);
+                              setActiveModal(null);
+                            }}
+                            style={{
+                              padding: "4px 10px",
+                              fontSize: "10.5px",
+                              fontWeight: 700,
+                              background: isActive ? "#00ED95" : "#1e293b",
+                              color: isActive ? "#0f172a" : "#00ED95",
+                              border: "1px solid #00ED95",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            {isActive ? "ACTIF" : "CHARGER"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             </div>
+
+            <div className="op1-pro-modal-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderTop: "1px solid #232c34", fontSize: "11px", color: "#64748b" }}>
+              <span>
+                🔵 Encodeur T1 : Parcourt les moteurs · 🟢 Encodeur T2 : Parcourt les patchs
+              </span>
+              <button
+                type="button"
+                className="op1-pill-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Game Guitar Hero OP-1 (Plein écran immersif avec Clavier et Écran Simulateur OLED) */}
+      {activeModal === "guitar_hero" && (
+        <div
+          className="op1-pro-modal-backdrop"
+          onClick={() => setActiveModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(5, 7, 10, 0.88)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            className="op1-guitar-hero-modal-window"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "1160px",
+              maxHeight: "96vh",
+              overflowY: "auto",
+              backgroundColor: "#0d1117",
+              border: "1px solid #2d3748",
+              borderRadius: "14px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 58, 93, 0.15)",
+              padding: "16px",
+            }}
+          >
+            <GameGuitarHeroPanel
+              onClose={() => setActiveModal(null)}
+              onNotice={onNotice}
+              onSendMidi={onSendMidi}
+            />
           </div>
         </div>
       )}

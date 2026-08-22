@@ -15,12 +15,17 @@
  *   tape x0    : 5.467  tape x1 : 311.398
  */
 import { useRef, useState, type MutableRefObject } from "react";
+import {
+  RACK_ENGINES_METAS,
+  RACK_ENGINE_IDS,
+  getPatchesForEngine,
+  getEngineMeta,
+  type EngineId,
+} from "../lib/soundEnginesData";
+import { TrackContextMenu } from "./TrackContextMenu";
 
-const RACK_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
-const RACK_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
 const RACK_EFFECTS = ["ADSR", "LFO", "Delay", "EQ", "Arpeggiator", "Step Sequencer", "Chorus", "Distortion"] as const;
 const MACHINE_MODES = ["synth", "drum", "tape"] as const;
-import { TrackContextMenu } from "./TrackContextMenu";
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
 const SVG_W = 320;
@@ -127,7 +132,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
-    machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuOpen, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
+    machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuOpen, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = "Virtual Analog Saw Lead", onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
@@ -149,9 +154,13 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   }
 
   function cycleRackEngine(direction: 1 | -1) {
-    const current = RACK_ENGINES.indexOf(selectedEngine as typeof RACK_ENGINES[number]);
-    const next = RACK_ENGINES[(Math.max(0, current) + direction + RACK_ENGINES.length) % RACK_ENGINES.length];
+    const current = RACK_ENGINE_IDS.indexOf(selectedEngine as EngineId);
+    const next = RACK_ENGINE_IDS[(Math.max(0, current) + direction + RACK_ENGINE_IDS.length) % RACK_ENGINE_IDS.length];
     onEngineChange?.(next);
+    const patches = getPatchesForEngine(next);
+    if (patches.length > 0) {
+      onPatchChange?.(patches[0].name);
+    }
     onNotice?.(`Moteur audio : ${next}.`);
   }
 
@@ -1257,43 +1266,119 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       {(soundMenuOpen || rackMenuOpen) && (
         <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
           <div className="op1-screen-patch-menu-head">
-            <span>{soundMenuOpen ? ("OP-1 · SOUND " + soundSlot + " · " + machineMode.toUpperCase()) : "OP-1 · RACK FX"}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontWeight: 800, color: "#698EFF" }}>
+                {soundMenuOpen ? `OP-1 · SOUND ${soundSlot} · ${machineMode.toUpperCase()}` : "OP-1 · RACK FX & SEQUENCER"}
+              </span>
+              {soundMenuOpen && (
+                <span style={{ fontSize: "10px", color: "#a5b4fc", background: "rgba(105, 142, 255, 0.15)", padding: "2px 6px", borderRadius: "4px" }}>
+                  Moteur Actif : <strong style={{ color: "#fff" }}>{selectedEngine}</strong>
+                </span>
+              )}
+            </div>
             <button type="button" onClick={() => { onSoundMenuClose?.(); onRackMenuClose?.(); }} aria-label="Fermer le menu">×</button>
           </div>
           <div className="op1-screen-patch-columns">
             {soundMenuOpen ? (
               <>
                 <section className="op1-screen-engine-column" aria-label="Moteurs audio du rack">
-                  <strong>MOTEURS · BLEU</strong>
-                  {RACK_ENGINES.map((engine) => (
-                    <button key={engine} type="button" className={selectedEngine === engine ? "is-active" : ""} onClick={() => { onEngineChange?.(engine); onNotice?.("Moteur " + engine + " sélectionné."); }}>
-                      <span>{engine}</span><small>{selectedEngine === engine ? "ACTIF" : "RACK"}</small>
-                    </button>
-                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <strong style={{ color: "#698EFF" }}>🔵 MOTEURS · POTENTIOMÈTRE BLEU</strong>
+                    <span style={{ fontSize: "9px", color: "#64748b" }}>{RACK_ENGINES_METAS.length} moteurs</span>
+                  </div>
+                  {RACK_ENGINES_METAS.map((meta) => {
+                    const isActive = selectedEngine === meta.id;
+                    return (
+                      <button
+                        key={meta.id}
+                        type="button"
+                        className={isActive ? "is-active" : ""}
+                        onClick={() => {
+                          onEngineChange?.(meta.id);
+                          const patches = getPatchesForEngine(meta.id);
+                          if (patches.length > 0) {
+                            onPatchChange?.(patches[0].name);
+                          }
+                          onNotice?.(`Moteur sonore : ${meta.label} (${meta.type})`);
+                        }}
+                        title={meta.description}
+                      >
+                        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                          <span>{meta.label}</span>
+                          <span style={{ fontSize: "9px", opacity: 0.7 }}>[{meta.type}]</span>
+                        </span>
+                        <small>{isActive ? "ACTIF" : meta.id}</small>
+                      </button>
+                    );
+                  })}
                 </section>
+
                 <section className="op1-screen-patch-column" aria-label="Patches du moteur">
-                  <strong>PATCHES · VERT</strong>
-                  {RACK_PATCHES.map((patch) => (
-                    <button key={patch} type="button" className={selectedPatch === patch ? "is-active" : ""} onClick={() => { onPatchChange?.(patch); onNotice?.("Patch " + selectedEngine + " " + patch + " chargé."); }}>
-                      <span>{patch}</span><small>{selectedEngine}</small>
-                    </button>
-                  ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <strong style={{ color: "#00ED95" }}>🟢 PATCHS · POTENTIOMÈTRE VERT</strong>
+                    <span style={{ fontSize: "9px", color: "#64748b" }}>
+                      {getPatchesForEngine(selectedEngine).length} patchs ({selectedEngine})
+                    </span>
+                  </div>
+                  {getPatchesForEngine(selectedEngine).map((patch) => {
+                    const isActive = selectedPatch === patch.name;
+                    return (
+                      <button
+                        key={patch.name}
+                        type="button"
+                        className={isActive ? "is-active" : ""}
+                        onClick={() => {
+                          onPatchChange?.(patch.name);
+                          onNotice?.(`Patch chargé : ${patch.name} (${selectedEngine})`);
+                        }}
+                        title={patch.description}
+                      >
+                        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
+                          <span style={{ fontWeight: isActive ? 700 : 500 }}>{patch.name}</span>
+                          <span style={{ fontSize: "8.5px", color: isActive ? "#0f172a" : "#64748b" }}>{patch.description}</span>
+                        </span>
+                        <small style={{
+                          background: isActive ? "#0f172a" : "#1e293b",
+                          color: isActive ? "#00ED95" : "#94a3b8",
+                          padding: "1px 5px",
+                          borderRadius: "3px",
+                          fontWeight: 700
+                        }}>
+                          {patch.category.toUpperCase()}
+                        </small>
+                      </button>
+                    );
+                  })}
                 </section>
               </>
             ) : (
               <>
                 <section className="op1-screen-engine-column" aria-label="Modules du rack">
-                  <strong>RACK · BLEU</strong>
-                  {RACK_ENGINES.map((engine) => <button key={engine} type="button" onClick={() => onNotice?.("Rack " + engine + " prêt.")}><span>{engine}</span><small>MODULE</small></button>)}
+                  <strong style={{ color: "#698EFF" }}>🔵 RACK MODULES · BLEU</strong>
+                  {RACK_ENGINES_METAS.map((meta) => (
+                    <button key={meta.id} type="button" onClick={() => onNotice?.(`Module ${meta.label} prêt.`)}>
+                      <span>{meta.label}</span>
+                      <small>{meta.type}</small>
+                    </button>
+                  ))}
                 </section>
                 <section className="op1-screen-patch-column" aria-label="Effets du rack">
-                  <strong>EFFETS · BLEU</strong>
-                  {RACK_EFFECTS.map((effect) => <button key={effect} type="button" onClick={() => onNotice?.("Effet " + effect + " sélectionné.")}><span>{effect}</span><small>RACK</small></button>)}
+                  <strong style={{ color: "#00ED95" }}>🟢 EFFETS · VERT</strong>
+                  {RACK_EFFECTS.map((effect) => (
+                    <button key={effect} type="button" onClick={() => onNotice?.(`Effet ${effect} sélectionné.`)}>
+                      <span>{effect}</span>
+                      <small>RACK FX</small>
+                    </button>
+                  ))}
                 </section>
               </>
             )}
           </div>
-          <div className="op1-screen-patch-menu-foot">{soundMenuOpen ? ("SOUND " + soundSlot + "/8 · encodeur bleu = moteur · encodeur vert = patch") : "SEQUENCER · effets du rack · aucun transfert machine"}</div>
+          <div className="op1-screen-patch-menu-foot">
+            {soundMenuOpen
+              ? `SOUND ${soundSlot}/8 · 🔵 Encodeur Bleu (T1) = Moteur (${RACK_ENGINES_METAS.length}) · 🟢 Encodeur Vert (T2) = Patch (${getPatchesForEngine(selectedEngine).length}) · Clic direct supporté`
+              : "SEQUENCER & FX · Effets et modulation du rack · Aucun transfert machine requis"}
+          </div>
         </div>
       )}
 

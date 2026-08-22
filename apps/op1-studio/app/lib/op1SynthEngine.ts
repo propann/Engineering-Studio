@@ -401,6 +401,16 @@ class Op1SynthEngine {
   }
 
   /**
+   * Joue une note de durée déterminée (utile pour les démos, exercices et clics de prévisualisation)
+   */
+  public playNote(note: number, velocity = 100, duration = 0.3) {
+    this.triggerNoteOn(note, velocity);
+    window.setTimeout(() => {
+      this.triggerNoteOff(note);
+    }, Math.max(50, duration * 1000));
+  }
+
+  /**
    * Moteur Drum OP-1 (Kick, Snare, Hi-Hat, Tom, etc.)
    */
   public triggerDrum(drumType: "kick" | "snare" | "hat" | "open" | "clap" | "tom" | number, velocity = 100) {
