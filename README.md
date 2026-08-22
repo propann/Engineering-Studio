@@ -71,7 +71,7 @@ machine fait du fichier qu'on lui écrit.
 
 | | |
 |---|---|
-| Suite de tests automatiques | ✅ verte, chaque garde-fou vérifié par sabotage |
+| Suite de tests automatiques | ✅ Hub/packages vérifiés par CI ; les studios autonomes ont encore leurs commandes propres |
 | Lecture de l'OP-1 (66 fichiers, comparés octet par octet) | ✅ sur matériel |
 | Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ sur matériel |
 | L'OP-1 relit son support après écriture externe | ✅ sur matériel |
