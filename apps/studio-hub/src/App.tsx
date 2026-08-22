@@ -20,7 +20,6 @@ const DocOP1 = lazy(() => import("./pages/DocOP1"));
 const DocEP133 = lazy(() => import("./pages/DocEP133"));
 const RhythmHero = lazy(() => import("./pages/RhythmHero"));
 const ImageEditorOP1 = lazy(() => import("./pages/ImageEditorOP1"));
-const FirmwareGallery = lazy(() => import("./pages/FirmwareGallery"));
 const FirmwareCompiler = lazy(() => import("./pages/FirmwareCompiler"));
 const FirmwareLab = lazy(() => import("./pages/FirmwareLab"));
 const ThemeEditor = lazy(() => import("./pages/ThemeEditor"));
@@ -49,7 +48,6 @@ type Page =
   | "rhythm-hero" 
   | "image-editor-op1" 
   | "firmware-lab"
-  | "firmware-gallery" 
   | "firmware-compiler"
   | "theme-editor" 
   | "theme-project"
@@ -110,7 +108,6 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
     case "image-editor-op1":
       return <ImageEditorOP1 />;
     case "firmware-lab":
-    case "firmware-gallery":
     case "firmware-compiler":
     case "theme-editor":
     case "theme-project":
