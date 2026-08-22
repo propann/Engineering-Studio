@@ -436,6 +436,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [selectedPatch, setSelectedPatch] = useState<string>("Classic 01");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
   const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
+  const [soundMenuOpen, setSoundMenuOpen] = useState(false);
+  const [soundSlot, setSoundSlot] = useState(1);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -471,6 +473,11 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     if (mode === "drum") setSelectedEngine("Drum");
     if (mode === "synth" && selectedEngine === "Drum") setSelectedEngine("FM");
     onNotice(`Mode OP-1 : ${mode === "synth" ? "SYNTH" : mode === "drum" ? "DRUM" : "TAPE"}.`);
+  }
+
+  function openOp1SoundMenu(slot: number) {
+    setSoundSlot(Math.max(1, Math.min(8, slot)));
+    setSoundMenuOpen(true);
   }
 
   // Synchronisation du moteur audio OP-1 actif
@@ -1564,6 +1571,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onSeek={seekTransport}
             onNotice={onNotice}
             machineMode={machineMode}
+            soundMenuOpen={soundMenuOpen}
+            soundSlot={soundSlot}
+            onSoundMenuClose={() => setSoundMenuOpen(false)}
             selectedEngine={selectedEngine}
             selectedPatch={selectedPatch}
             onEngineChange={setSelectedEngine}
@@ -1592,6 +1602,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onTogglePlayback={toggleGlobalPlayback}
             onRecord={toggleTapeRecording}
             onModeChange={setOp1MachineMode}
+            onOpenSoundMenu={openOp1SoundMenu}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />
