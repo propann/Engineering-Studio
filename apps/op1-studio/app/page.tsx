@@ -12,6 +12,9 @@ import AudioPluginRack from "../../studio-hub/src/pages/AudioPluginRack";
  * caster — un `as unknown as` a deja masque une interop impossible ici.
  */
 type EvenementMidiLu = { data: Uint8Array | null };
+
+const SOUND_MENU_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
+const SOUND_MENU_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
@@ -478,6 +481,22 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   function openOp1SoundMenu(slot: number) {
     setSoundSlot(Math.max(1, Math.min(8, slot)));
     setSoundMenuOpen(true);
+  }
+
+  function navigateOp1SoundMenu(encoder: number, delta: number) {
+    if (!soundMenuOpen || !delta) return;
+    if (encoder === 0) {
+      setSelectedEngine((current) => {
+        const index = Math.max(0, SOUND_MENU_ENGINES.indexOf(current as typeof SOUND_MENU_ENGINES[number]));
+        return SOUND_MENU_ENGINES[(index + (delta > 0 ? 1 : -1) + SOUND_MENU_ENGINES.length) % SOUND_MENU_ENGINES.length];
+      });
+    }
+    if (encoder === 1) {
+      setSelectedPatch((current) => {
+        const index = Math.max(0, SOUND_MENU_PATCHES.indexOf(current as typeof SOUND_MENU_PATCHES[number]));
+        return SOUND_MENU_PATCHES[(index + (delta > 0 ? 1 : -1) + SOUND_MENU_PATCHES.length) % SOUND_MENU_PATCHES.length];
+      });
+    }
   }
 
   // Synchronisation du moteur audio OP-1 actif
@@ -1603,6 +1622,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onRecord={toggleTapeRecording}
             onModeChange={setOp1MachineMode}
             onOpenSoundMenu={openOp1SoundMenu}
+            onSoundMenuEncoder={navigateOp1SoundMenu}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />
