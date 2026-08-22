@@ -33,6 +33,7 @@ import { StudioModeHeader } from "./components/StudioModeHeader";
 import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
+import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
 import { StudioTrackList } from "./components/StudioTrackList";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
@@ -388,7 +389,7 @@ function audioBufferToAiffMono(buffer: AudioBuffer): Blob {
   return new Blob([encodeAiffPcm16(mono, 1, buffer.sampleRate)], { type: "audio/aiff" });
 }
 
-function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
+function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void; libraryHandle?: FileSystemDirectoryHandle | null }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   const [files, setFiles] = useState<Record<number, string>>({});
   const [sources, setSources] = useState<Record<number, string>>({});
@@ -424,6 +425,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [screenFolded, setScreenFolded] = useState(false);
   const [screenScale, setScreenScale] = useState(1);
   const [keyboardFolded, setKeyboardFolded] = useState(false);
+  const [sampleLibraryOpen, setSampleLibraryOpen] = useState(false);
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("op1-studio-view-config-v1") ?? "{}") as { screenScale?: number };
@@ -1294,6 +1296,30 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   return (
     <div className="tool-body tape-editor" onClick={() => { if (activeDropdown) setActiveDropdown(null); }}>
 
+      {sampleLibraryOpen && (
+        <div className="op1-sample-library-drawer" role="dialog" aria-modal="true" aria-label="Samples sauvegardés">
+          <div className="op1-sample-library-drawer-head">
+            <div><strong>SAMPLES SAUVEGARDÉS</strong><small>Préécouter puis charger sur la piste active · local uniquement</small></div>
+            <button type="button" onClick={() => setSampleLibraryOpen(false)} aria-label="Fermer la bibliothèque">×</button>
+          </div>
+          <SoundLibraryIndex
+            libraryHandle={libraryHandle}
+            onUseSample={({ name, file, duration }) => {
+              const source = URL.createObjectURL(file);
+              setFiles((current) => ({ ...current, [selectedTrack]: name }));
+              setSources((current) => ({ ...current, [selectedTrack]: source }));
+              setSourceRefs((current) => ({ ...current, [selectedTrack]: { path: name, status: "linked" } }));
+              setDurations((current) => ({ ...current, [selectedTrack]: duration ?? 0 }));
+              setClipEnds((current) => ({ ...current, [selectedTrack]: duration ?? 0 }));
+              setWaveformPeaks((current) => ({ ...current, [selectedTrack]: [] }));
+              setPlaying(null);
+              setSampleLibraryOpen(false);
+              onNotice(`${name} chargé sur ${tracks[selectedTrack]} depuis les sauvegardes locales.`);
+            }}
+          />
+        </div>
+      )}
+
       {/* ── CONSOLE DE CONTRÔLE COMPACTE OP-1 STUDIO (Hauteur optimisée) ── */}
       <div className="op1-compact-console">
         {/* Ligne 1 : Navigation, Modals & Menus déroulants */}
@@ -1349,6 +1375,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
               <Icon name="wave" size={12} />
               <span>Moteur</span>
               <span className="badge">{selectedEngine}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`op1-pill-btn ${sampleLibraryOpen ? "is-active" : ""}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSampleLibraryOpen((current) => !current);
+                setActiveDropdown(null);
+              }}
+              title="Préécouter et charger un sample sauvegardé sur la piste active"
+            >
+              <Icon name="wave" size={12} />
+              <span>Samples sauvegardés</span>
             </button>
 
             {/* Menu 3 : Projet & Exports (Dropdown) */}
@@ -2222,6 +2262,7 @@ export default function Home() {
         onNotice={setNotice}
         onConnectMidi={connectMidiDevice}
         onSendMidi={(data) => midiOutputRef.current?.send?.(data)}
+        libraryHandle={sharedSoundLibraryHandle}
       />
     </main>
   );
