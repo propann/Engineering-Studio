@@ -137,13 +137,13 @@ const tools: Tool[] = [
     id: "sample", code: "WAV-AIFF", category: "SON", title: "Éditeur de samples",
     text: "Waveform, trim, fondus et préparation des packs OP-1.",
     accent: "cyan", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "sound-editor" }, section: "op1", groupe: "son",
+    action: { type: "page", page: "sound-library" }, section: "op1", groupe: "son",
   },
   {
     id: "sounds", code: "PAD-64", category: "SON", title: "Sons & transferts EP-133",
     text: "Banques, réglages de pads, clone et transferts préparés.",
     accent: "orange", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "sound-editor" }, section: "ep133", groupe: "son",
+    action: { type: "page", page: "sound-library" }, section: "ep133", groupe: "son",
   },
 
   // ── Membres du groupe « Réglages » ────────────────────────────────────
