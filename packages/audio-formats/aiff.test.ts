@@ -273,3 +273,13 @@ describe("isAiffFormat et getAiffMetadata", () => {
     expect(getAiffMetadata(new ArrayBuffer(4))).toBeNull();
   });
 });
+
+
+describe("parseAiffFormat — entrées malformées", () => {
+  it("rejette un chunk dont la longueur dépasse le tampon", () => {
+    const bytes = new Uint8Array(20);
+    bytes.set([70, 79, 82, 77, 0, 0, 0, 12, 65, 73, 70, 70, 67, 79, 77, 77, 255, 255, 255, 255]);
+    expect(() => parseAiffFormat(bytes.buffer)).not.toThrow();
+    expect(parseAiffFormat(bytes.buffer)).toBeNull();
+  });
+});
