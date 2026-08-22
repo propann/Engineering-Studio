@@ -649,6 +649,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
     setSoundMenuOpen(false);
     setRackMenuOpen(true);
   }
+  
+  function saveOp1SoundSlot(slot: number) {
+    const target = Math.max(1, Math.min(8, slot));
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      saved[String(target)] = { engine: selectedEngine, patch: selectedPatch };
+      localStorage.setItem(PATCH_PROFILE_KEY, JSON.stringify(saved));
+      setSoundSlot(target);
+      onNotice(`Patch ${selectedPatch} sauvegardé dans le slot ${target}/8 (local uniquement).`);
+    } catch {
+      onNotice("Impossible de sauvegarder le patch localement.");
+    }
+  }
 
   function navigateOp1SoundMenu(encoder: number, delta: number) {
     if (!soundMenuOpen || !delta) return;
@@ -1844,6 +1858,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             machineMode={machineMode}
             onMachineModeChange={setOp1MachineMode}
             soundMenuOpen={soundMenuOpen}
+            onSoundMenuOpen={openOp1SoundMenu}
             soundSlot={soundSlot}
             onSoundMenuClose={() => setSoundMenuOpen(false)}
             rackMenuOpen={rackMenuOpen}
@@ -1878,6 +1893,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             onRecord={toggleTapeRecording}
             onModeChange={setOp1MachineMode}
             onOpenSoundMenu={openOp1SoundMenu}
+            onSaveSoundSlot={saveOp1SoundSlot}
             onOpenRackMenu={openOp1RackMenu}
             onSoundMenuEncoder={navigateOp1SoundMenu}
             onSendMidi={onSendMidi}
