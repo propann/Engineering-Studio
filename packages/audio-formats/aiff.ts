@@ -26,7 +26,8 @@ interface AiffChunk {
   length: number;
 }
 
-function readChunks(view: DataView, from: number, to: number): AiffChunk[] {
+function readChunks(view: DataView, from: number, to: number): AiffChunk[] | null {
+  if (from < 0 || to > view.byteLength || from > to) return null;
   const chunks: AiffChunk[] = [];
   let offset = from;
   while (offset + 8 <= to) {
@@ -37,10 +38,13 @@ function readChunks(view: DataView, from: number, to: number): AiffChunk[] {
       view.getUint8(offset + 3)
     );
     const length = view.getUint32(offset + 4, false); // AIFF est big-endian
+    const end = offset + 8 + length;
+    const paddedEnd = end + (length % 2);
+    if (end > to || paddedEnd > to) return null;
     chunks.push({ id, start: offset + 8, length });
-    offset += 8 + length + (length % 2); // chunks alignés sur 2 octets, comme RIFF
+    offset = paddedEnd;
   }
-  return chunks;
+  return offset === to ? chunks : null;
 }
 
 /** IEEE 754 80 bits étendu (format historique Motorola/SANE utilisé par `COMM.sampleRate`). */
@@ -77,21 +81,25 @@ export function parseAiffFormat(bytes: ArrayBuffer): ParsedAiffFormat | null {
   if (form !== "FORM" || (aiff !== "AIFF" && aiff !== "AIFC")) return null;
 
   const chunks = readChunks(view, 12, bytes.byteLength);
+  if (!chunks) return null;
   const comm = chunks.find((chunk) => chunk.id === "COMM");
   const ssnd = chunks.find((chunk) => chunk.id === "SSND");
   const appl = chunks.find((chunk) => chunk.id === "APPL");
   if (!comm || !ssnd || comm.length < 18) return null;
 
+  if (comm.start < 0 || comm.start + comm.length > bytes.byteLength || comm.length < 18) return null;
   const channels = view.getInt16(comm.start, false);
   const bitDepth = view.getInt16(comm.start + 6, false);
   const sampleRate = Math.round(readExtended80(view, comm.start + 8));
-  if (!channels || !sampleRate || bitDepth <= 0 || bitDepth > 32) return null;
+  if (channels <= 0 || channels > 32 || !Number.isFinite(sampleRate) || sampleRate <= 0 || sampleRate > 384000) return null;
+  if (![8, 16, 24, 32].includes(bitDepth)) return null;
 
   const bytesPerSample = Math.ceil(bitDepth / 8);
   const bytesPerFrame = channels * bytesPerSample;
   // SSND porte `offset`(4)+`blockSize`(4) avant les échantillons.
+  if (ssnd.length < 8 || ssnd.start + ssnd.length > bytes.byteLength) return null;
   const dataStart = ssnd.start + 8;
-  const dataLength = Math.min(ssnd.length - 8, bytes.byteLength - dataStart);
+  const dataLength = ssnd.length - 8;
   const frameCount = bytesPerFrame > 0 ? Math.floor(dataLength / bytesPerFrame) : 0;
   const maxCode = Math.pow(2, bitDepth - 1) - 1;
 
