@@ -21,6 +21,7 @@ import { describe, expect, it } from "vitest";
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
 const EFFETS = readFileSync(path.join(DIR, "..", "core", "audio", "effets.ts"), "utf-8");
+const ENVELOPPE = readFileSync(path.join(DIR, "..", "core", "audio", "enveloppe.ts"), "utf-8");
 
 /**
  * Corps de construireVoix : la fonction qui fabrique reellement le son.
@@ -136,12 +137,13 @@ describe("cablage des parametres", () => {
   it("lit chaque parametre declare dans le moteur audio", () => {
     // L'invariant central. Un parametre absent d'ici est un curseur qui ne
     // produit aucun son.
-    // Le corps du moteur PLUS le rack d'effets : depuis l'extraction de la
+    // Le corps du moteur PLUS les modules qui lisent des parametres : le rack
+    // d'effets et l'enveloppe. Depuis l'extraction de la
     // chaine, les parametres fx sont lus dans core/audio/effets.ts. Les
     // exempter en bloc aurait desarme le garde-fou pour douze parametres ;
     // etendre ce qu'il lit le garde entier — un parametre lu nulle part
     // echoue toujours.
-    const corps = moteurSansAffichage() + EFFETS;
+    const corps = moteurSansAffichage() + EFFETS + ENVELOPPE;
     const inertes = parametres().filter((p) => !corps.includes(`p.${p}`));
     expect(inertes, `parametres sans effet sur le son : ${inertes.join(", ")}`).toEqual([]);
   });
@@ -344,6 +346,19 @@ describe("effets globaux", () => {
     expect(SOURCE).toContain("env.connect(effets.entree)");
     expect(SOURCE).toContain("effets.sortie.connect(masterBusRef.current!)");
     expect(SOURCE).toContain("effets.sortie.connect(offline.destination)");
+  });
+
+  it("resout l'enveloppe depuis les parametres, sans constantes en dur", () => {
+    // Ce test manquait, et son absence etait un trou reel : le garde-fou
+    // « aucun parametre inerte » lit desormais la source du module
+    // d'enveloppe, donc `envAttack` y paraissait utilise meme apres avoir
+    // remis des constantes en dur dans le moteur. Un sabotage l'a montre —
+    // remplacer resoudreEnveloppe par les quatre valeurs d'origine ne faisait
+    // tomber aucun test.
+    expect(SOURCE).toContain("resoudreEnveloppe(p)");
+    const corps = moteurAudio();
+    expect(corps).not.toMatch(/const ATTACK = 0\.\d+/);
+    expect(corps).not.toMatch(/const SUSTAIN = 0\.\d+/);
   });
 
   it("delegue au rack d'effets plutot que de refaire la chaine", () => {

@@ -228,6 +228,23 @@ Menu **Gamme** du rack MIDI, groupé par familles.
 - [ ] changer de tonique déplace bien la gamme entière
 
 
+### Enveloppe ADSR
+Panneau ENVELOPPE du rack de moteurs.
+
+- [ ] **les 91 patches d'usine sonnent comme avant.** Les défauts reproduisent
+      exactement les valeurs câblées jusqu'ici ; si un patch connu sonne
+      différemment, la valeur par défaut a bougé
+- [ ] attaque longue : la note monte progressivement, sans clic au départ
+- [ ] **maintien à 0 % : la note s'éteint après le déclin, sans erreur.** C'est
+      la borne qui compte — les rampes sont exponentielles et le nœud refuse
+      zéro. Une exception ici serait au premier appui sur une touche
+- [ ] relâchement long : la queue se prolonge après le lâcher de touche
+- [ ] attaque, déclin et relâchement à 0 : **aucun clic**. Une rampe de durée
+      nulle remet le gain d'un coup, ce que l'enveloppe existe pour éviter
+- [ ] **un échantillon fabriqué porte l'enveloppe réglée** — pas celle par
+      défaut
+
+
 ### Le rack d'effets — saturation et chorus
 Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
 

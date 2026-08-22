@@ -11,7 +11,7 @@
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
 | 2 | Multi-Tap Delay | 🟡 délai simple + SYNC au tempo, pas encore multi-prises |
 | 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
-| 4 | ADSR Envelope | 🟡 l'enveloppe existe, les commandes non |
+| 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 11 gammes, 6 motifs |
 | 6 | Step Sequencer | 🔴 |
 | 7 | LFO Generator | 🔴 |

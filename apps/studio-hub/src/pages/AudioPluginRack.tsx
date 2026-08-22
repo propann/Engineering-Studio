@@ -20,6 +20,8 @@ import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@stu
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
 import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
+import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
+import { PanneauEnveloppe } from "../racks/PanneauEnveloppe";
 import { RackEffets } from "../racks/RackEffets";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
@@ -364,6 +366,12 @@ export default function AudioPluginRack({
   const [fxEqLow, setFxEqLow] = useState<number>(0);
   const [fxEqMid, setFxEqMid] = useState<number>(0);
   const [fxEqHigh, setFxEqHigh] = useState<number>(0);
+  // Enveloppe ADSR. Les defauts reproduisent exactement les valeurs cablees
+  // jusqu'ici : ajouter des curseurs ne doit pas changer le son des 91 patches.
+  const [envAttack, setEnvAttack] = useState<number>(ENVELOPPE_DEFAUT.envAttack);
+  const [envDecay, setEnvDecay] = useState<number>(ENVELOPPE_DEFAUT.envDecay);
+  const [envSustain, setEnvSustain] = useState<number>(ENVELOPPE_DEFAUT.envSustain);
+  const [envRelease, setEnvRelease] = useState<number>(ENVELOPPE_DEFAUT.envRelease);
   // Rack d'effets : saturation (module 8) et chorus (module 9). Tous a 0 par
   // defaut — un rack qui sature des l'ouverture ferait croire a un defaut.
   const [fxDriveMix, setFxDriveMix] = useState<number>(0);
@@ -495,6 +503,7 @@ export default function AudioPluginRack({
     masterDetune,
     fxDelayMix, fxDelayTime, fxDelayFeedback,
     fxEqLow, fxEqMid, fxEqHigh,
+    envAttack, envDecay, envSustain, envRelease,
     fxDriveMix, fxDriveAmount, fxDriveMode,
     fxChorusMix, fxChorusRate, fxChorusDepth,
     plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
@@ -522,6 +531,7 @@ export default function AudioPluginRack({
       masterDetune,
       fxDelayMix, fxDelayTime, fxDelayFeedback,
       fxEqLow, fxEqMid, fxEqHigh,
+      envAttack, envDecay, envSustain, envRelease,
       fxDriveMix, fxDriveAmount, fxDriveMode,
       fxChorusMix, fxChorusRate, fxChorusDepth,
       plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
@@ -723,6 +733,16 @@ export default function AudioPluginRack({
 
   const appliquerParamEffet = (nom: keyof ParamsEffets, valeur: number | "soft" | "fold") => {
     updateParam(nom, valeur, SETTERS_EFFETS[nom]);
+  };
+  const SETTERS_ENVELOPPE: Record<keyof ParamsEnveloppe, (v: number) => void> = {
+    envAttack: setEnvAttack,
+    envDecay: setEnvDecay,
+    envSustain: setEnvSustain,
+    envRelease: setEnvRelease,
+  };
+  
+  const appliquerParamEnveloppe = (nom: keyof ParamsEnveloppe, valeur: number) => {
+    updateParam(nom, valeur, SETTERS_ENVELOPPE[nom]);
   };
 
   const updateParam = (key: string, val: any, setter: (v: any) => void) => {
@@ -1043,10 +1063,9 @@ export default function AudioPluginRack({
     //
     // Les rampes sont exponentielles et ne passent jamais par zéro —
     // exponentialRampToValueAtTime rejette 0, d'où le plancher 0.0001.
-    const ATTACK = 0.008;
-    const DECAY = 0.12;
-    const SUSTAIN = 0.75;
-    const RELEASE = 0.22;
+    // Reglable depuis le panneau ENVELOPPE. `resoudreEnveloppe` garantit que
+    // rien ne vaut zero : les rampes sont exponentielles et le noeud leve.
+    const { ATTACK, DECAY, SUSTAIN, RELEASE } = resoudreEnveloppe(p);
 
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, now);
@@ -1848,7 +1867,10 @@ export default function AudioPluginRack({
     const sources: AudioScheduledSourceNode[] = [];
     let naturalEnd = now;
     let audibleEnd = now;
-    let enveloppe = { ATTACK: 0.008, DECAY: 0.12, SUSTAIN: 0.75, RELEASE: 0.22 };
+    // Repli si aucune couche n'est construite. Passe par resoudreEnveloppe
+    // plutot que par des valeurs recopiees : deux jeux de defauts finiraient
+    // par diverger, et le repli sonnerait autrement que le cas normal.
+    let enveloppe = resoudreEnveloppe(_p);
 
     for (const [index, jeu] of jeux.entries()) {
       // Une couche qui leve ne doit pas emporter les autres : une couche muette
@@ -2961,6 +2983,13 @@ export default function AudioPluginRack({
             {/* Effets globaux : appliques APRES les moteurs, donc a la superposition
                 entiere. Ils traversent le rendu hors ligne comme le jeu — un sample
                 fabrique porte exactement les memes effets que ce qu'on entend. */}
+            {/* L'enveloppe est du metier des moteurs : elle faconne la voix. Panneau
+                a part parce que ce fichier fait deja 3900 lignes, pas parce que ce
+                serait un quatrieme rack. */}
+            <PanneauEnveloppe
+              params={{ envAttack, envDecay, envSustain, envRelease }}
+              onParam={appliquerParamEnveloppe}
+            />
             {/* Le rack d'effets rend sa propre interface. Elle vivait ici, dans le
                 ventre du rack de moteurs : la separation n'existait qu'a moitie. */}
             <RackEffets params={{
