@@ -1297,7 +1297,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       {/* ── CONSOLE DE CONTRÔLE COMPACTE OP-1 STUDIO (Hauteur optimisée) ── */}
       <div className="op1-compact-console">
         {/* Ligne 1 : Navigation, Modals & Menus déroulants */}
-        <div className="op1-compact-row">
+        <div className="op1-compact-row op1-console-band op1-console-band-machine">
           <div className="op1-compact-group">
             <div className="op1-compact-brand">
               <strong>OP-1 STUDIO</strong>
@@ -1475,7 +1475,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
         </div>
 
         {/* Ligne 2 : Transport direct & Outils de boucle */}
-        <div className="op1-compact-row" style={{ paddingTop: "2px" }}>
+        <div className="op1-compact-row op1-console-band op1-console-band-transport" style={{ paddingTop: "2px" }}>
           {/* Groupe Transport compact */}
           <div className="op1-compact-group">
             <div className="op1-transport-cluster">
