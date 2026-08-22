@@ -22,6 +22,13 @@ Une création produite dans OP-1 Studio doit pouvoir devenir un fichier AIFF val
 
 L'OP-1 et l'EP-133 n'utilisent pas le même contrat. Le flux OP-1 reste AIFF / disque USB ; le flux EP-133 reste WAV / protocole propre à l'EP-133. Une conversion destinée à l'une ne doit pas être réutilisée automatiquement pour l'autre.
 
+## Fonctionnement livré dans le studio
+
+- Les samples sauvegardés sont préécoutables et chargeables localement sur la piste sélectionnée.
+- Les projets OP‑1 sont autosauvegardés dans la même origine ; cette persistance navigateur ne remplace pas un export `.op1studio.json` ni une sauvegarde de dossier.
+- Le chargement d’un sample dans le studio ne déclenche aucun transfert vers l’OP‑1.
+- Le pipeline reste strictement séparé de l’EP‑133 : même niveau de sécurité, formats et protocoles différents.
+
 ## Limites actuelles
 
 La validation logicielle garantit la structure et les contraintes connues, mais elle ne remplace pas une relecture sur un OP-1 physique. Le transfert natif devra être développé et testé séparément, avec une protection contre l'écrasement et un mode simulation par défaut.
