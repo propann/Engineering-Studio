@@ -5,6 +5,7 @@ const log = createLogger("SoundEditor");
 import { useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import "./sound-editor.css";
+import { useNotesMidi } from "../core/midi/useNotesMidi";
 
 type SoundMachine = "ep133" | "op1";
 type SoundOwner = "official" | "client";
@@ -533,6 +534,22 @@ export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE" }: { pro
     }
   };
 
+  /**
+   * Auditionner depuis la machine branchee.
+   *
+   * Cette page est un banc d'ecoute, pas un instrument : elle joue des SONS
+   * d'une liste, pas des notes a une hauteur. N'importe quelle touche rejoue
+   * donc le son SELECTIONNE — on garde les mains sur la machine pendant qu'on
+   * regle un trim.
+   *
+   * Mapper les notes sur les positions des listes serait arbitraire : la page
+   * en affiche quatre, filtrees, et le meme rang n'y designe pas le meme son.
+   *
+   * `selectSound` n'est pas reutilise ici : il remet le trim a zero et leve une
+   * notification. Jouer une gamme effacerait les reglages en cours.
+   */
+  useNotesMidi(() => playAudibleSound(selectedSound));
+  
   // Select Sound Item
   const selectSound = (sound: SoundItem) => {
     setSelectedSound(sound);

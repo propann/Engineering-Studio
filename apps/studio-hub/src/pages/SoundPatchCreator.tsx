@@ -5,6 +5,7 @@ const log = createLogger("SoundPatch");
 import { useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import "./sound-patch-creator.css";
+import { useNotesMidi } from "../core/midi/useNotesMidi";
 
 type MachineTarget = "op1" | "ep133";
 type Op1EngineType = "fm" | "dna" | "cluster" | "string" | "phase" | "digital" | "pulse";
@@ -63,7 +64,7 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
   };
 
   // PLAY REAL-TIME SYNTH SOUND VIA WEB AUDIO API
-  const playLiveSynthNote = (freq: number = 261.63) => {
+  const playLiveSynthNote = (freq: number = 261.63, silencieux = false) => {
     try {
       const ctx = getAudioContext();
       const now = ctx.currentTime;
@@ -140,12 +141,24 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
         osc.stop(now + attTime + decTime + relTime + 0.1);
       }
 
-      showToast(`🔊 LECTURE EN DIRECT : ${freq.toFixed(1)} Hz (${op1Engine.toUpperCase()})`);
+      // Muet pour les notes MIDI : jouer une gamme sur l'OP-1 leverait une
+      // notification par touche, ce qui masquerait la page entiere.
+      if (!silencieux) showToast(`🔊 LECTURE EN DIRECT : ${freq.toFixed(1)} Hz (${op1Engine.toUpperCase()})`);
     } catch (e) {
       log.error("Error playing Web Audio note:", e);
     }
   };
 
+  /**
+   * Jouable depuis la machine branchee.
+   *
+   * Cette page fabrique des patches : c'est precisement celle ou l'on veut
+   * essayer un reglage au clavier plutot qu'au pave tactile. La note s'arrete
+   * d'elle-meme — `osc.stop` est planifie a la construction — donc il n'y a
+   * aucun note-off a gerer.
+   */
+  useNotesMidi(({ frequence }) => playLiveSynthNote(frequence, true));
+  
   // DRAW SYNTH ENGINE / ADSR OSCILLOSCOPE
   useEffect(() => {
     const canvas = oscCanvasRef.current;

@@ -123,6 +123,32 @@ recherche.
 - [ ] les patches d'usine acceptent étoiles et étiquettes comme les patches
       perso — ce sont pourtant des constantes du source, d'où le stockage à part
 
+### Jouer l'OP-1 en mode contrôleur, partout
+L'OP-1 en **COM → T2 / CTRL**, branchée en USB. Le but : que la machine joue
+chaque surface du hub qui produit du son.
+
+- [ ] **Rack de moteurs** — le clavier de l'OP-1 joue les 15 moteurs
+- [ ] **Créateur de patch** (Édition & Création de Son) — le clavier joue la
+      synthèse FM en direct. **Aucune notification ne doit apparaître par
+      touche** : elles sont coupées pour les notes MIDI, sinon jouer une gamme
+      masquerait la page
+- [ ] **Éditeur sonore** — une touche rejoue le son sélectionné. C'est un banc
+      d'écoute, pas un instrument : la hauteur ne change rien, et **le trim en
+      cours ne doit pas être remis à zéro**
+- [ ] **Rack MIDI** — mode contrôleur actif, l'OP-1 choisit les notes de
+      l'arpège au lieu de les jouer
+- [ ] les deux studios reçoivent toujours le MIDI
+- [ ] **passer d'une page à l'autre dix fois, en jouant à chaque fois.** C'est
+      le test du répartiteur : `onmidimessage` est une propriété unique, et
+      une seule écriture directe rendrait toutes les autres pages muettes —
+      sans aucune erreur
+- [ ] **note-off déguisé** : tenir une touche longtemps puis relâcher. Si une
+      note reste tenue indéfiniment, c'est un `0x90` vélocité 0 pris pour un
+      note-on
+- [ ] l'horloge et les messages de contrôleur continu de l'OP-1 **ne déclenchent
+      aucune note** — la page ne doit pas jouer à chaque tic
+
+
 ### Le rack ouvert depuis le studio EP‑133
 Onglet **RACK** dans la barre de l'éditeur, à côté de PATTERNS et SONG.
 
