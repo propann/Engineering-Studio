@@ -7,7 +7,7 @@ type PageId =
   | "doc-op1" | "doc-ep133" | "studio-op1" | "studio-ep133"
   | "rhythm-hero" | "image-editor-op1" | "firmware-lab" | "firmware-gallery"
   | "firmware-compiler" | "theme-editor" | "theme-project" | "advanced-image"
-  | "sound-editor" | "sound-patch-creator" | "audio-plugin-rack" | "sound-library"
+  | "sound-patch-creator" | "audio-plugin-rack" | "sound-library"
   | "midi-settings" | "op1-settings" | "backup-lab" | "orphan-pages";
 
 type Target = "OP-1" | "EP-133" | "Hub partagé" | "Aucun projet";
