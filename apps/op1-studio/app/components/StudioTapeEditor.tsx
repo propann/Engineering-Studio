@@ -86,6 +86,7 @@ export interface StudioTapeEditorProps {
   onSelectTrack: (index: number) => void;
   onSeek: (time: number) => void;
   onNotice?: (msg: string) => void;
+  machineMode?: "synth" | "drum" | "tape";
   selectedEngine?: string;
   selectedPatch?: string;
   onEngineChange?: (engine: string) => void;
@@ -114,7 +115,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
-    selectedEngine = "FM", selectedPatch = "Classic 01", onEngineChange, onPatchChange,
+    machineMode = "synth", selectedEngine = "FM", selectedPatch = "Classic 01", onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
@@ -575,6 +576,9 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       >
         {/* Fond */}
         <rect width={SVG_W} height={SVG_H} fill="#0c1011" />
+        <text x="10" y="13" fill="#00ED95" fontFamily="monospace" fontSize="5.5" fontWeight="700" letterSpacing="0.5">
+          {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
+        </text>
 
         {/* ── Partie statique : chemin du ruban ──────────────────────────── */}
         <g opacity="0.5" stroke="#656579" strokeWidth="1.5" fill="none">
