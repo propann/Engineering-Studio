@@ -31,7 +31,6 @@ import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
 import { StudioTrackList } from "./components/StudioTrackList";
-import { StudioTransportPanel } from "./components/StudioTransportPanel";
 import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
@@ -1378,16 +1377,6 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             <div className="op1-transport-cluster">
               <button
                 type="button"
-                className="op1-play-btn"
-                onClick={toggleGlobalPlayback}
-                title="Lecture / Pause (Espace)"
-              >
-                <Icon name="wave" size={11} />
-                <span>PLAY</span>
-              </button>
-
-              <button
-                type="button"
                 className={`op1-rec-btn ${recording ? "is-recording" : ""}`}
                 onClick={toggleTapeRecording}
                 title="Enregistrement multi-pistes & MIDI"
@@ -1592,6 +1581,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             position={transportTime}
             files={files}
             onTogglePlayback={toggleGlobalPlayback}
+            onRecord={toggleTapeRecording}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />

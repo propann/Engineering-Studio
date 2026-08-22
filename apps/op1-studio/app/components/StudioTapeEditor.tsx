@@ -1204,16 +1204,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
 
       {/* Contrôles sortis de l’écran : la zone OLED reste réservée à l’affichage. */}
       <div className="op1-screen-controls" aria-label="Contrôles de l’écran OP-1">
-        <button
-        type="button"
-        className={`op1-screen-play-button ${transportPlaying || playing !== null ? "is-playing" : ""}`}
-        onClick={() => onToggleGlobalPlayback?.()}
-        aria-pressed={transportPlaying || playing !== null}
-        title={transportPlaying || playing !== null ? "Mettre en pause" : "Lire"}
-      >
-        <span aria-hidden="true">{transportPlaying || playing !== null ? "Ⅱ" : "▶"}</span>
-        {transportPlaying || playing !== null ? "PAUSE" : "LECTURE"}
-      </button>
       <div className="op1-screen-track-selector" role="group" aria-label="Sélection de piste">
           <span className="op1-screen-control-label">PISTE</span>
           {[0, 1, 2, 3].map((track) => (
