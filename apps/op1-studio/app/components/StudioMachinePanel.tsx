@@ -446,6 +446,8 @@ export function StudioMachinePanel({
   pressedNotes = [],
   onTogglePlayback,
   onRecord,
+  playing = false,
+  recording = false,
   onModeChange,
   onOpenSoundMenu,
   onOpenRackMenu,
@@ -458,6 +460,7 @@ export function StudioMachinePanel({
   pressedNotes?: number[];
   mode?: "clone" | "midi";
   playing?: boolean;
+  recording?: boolean;
   position?: number;
   files?: Record<number, string>;
   onTogglePlayback: () => void;
@@ -961,6 +964,7 @@ export function StudioMachinePanel({
         <div className="machine-layout-zone" style={{ aspectRatio: `${layoutWidth} / ${layoutHeight}` }}>
           <svg viewBox={layoutViewBox} preserveAspectRatio="xMidYMid meet"
             style={{ width:"100%", height:"100%", display:"block" }}
+            aria-label={recording ? "Clavier OP-1 — enregistrement" : playing ? "Clavier OP-1 — lecture" : "Clavier OP-1 — prêt"}
             onPointerUp={() => {
               const drag = encDrag.current;
               encDrag.current = null;
@@ -990,7 +994,14 @@ export function StudioMachinePanel({
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
-            <rect x={0} y={0} width={COLS} height={ROWS} fill="#d7dbd8" />
+            <defs>
+              <pattern id="op1KeyboardStatusGrid" width="2" height="2" patternUnits="userSpaceOnUse">
+                <rect width="2" height="2" fill="#050505" />
+                <path d="M 2 0 L 0 0 0 2" fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#FF9436"} strokeWidth=".12" opacity=".78" />
+              </pattern>
+            </defs>
+            <rect x={0} y={0} width={COLS} height={ROWS} fill="url(#op1KeyboardStatusGrid)" />
+            <rect x={0.2} y={0.2} width={COLS - 0.4} height={ROWS - 0.4} fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#FF9436"} strokeWidth=".35" opacity=".9" />
 
             {whiteBlocks.map((b, i) => {
               const note = WHITE_NOTES[i] ?? (60 + i);
