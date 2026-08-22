@@ -33,3 +33,11 @@ Le bouton **RETOUR K7** revient à l'affichage Tape complet.
 ## Limites de portée
 
 Cette note ne remplace pas le manuel constructeur. Elle décrit uniquement les comportements nécessaires au clone du projet. Les protocoles OP-1 et EP-133, leurs formats de fichiers et leurs systèmes de transfert restent traités séparément.
+
+
+## Configuration de l'interface
+
+Le clone possède une tirette **ÉCRAN** pour réduire ou agrandir l'affichage. La valeur peut descendre jusqu'à 50 %, ce qui permet de rapprocher la taille de l'écran de celle du clavier virtuel.
+
+La barre **CONFIG** du châssis permet d'associer les commandes virtuelles aux commandes MIDI de la machine. Ces associations sont conservées localement sur le disque du client via le stockage navigateur ; les réglages de vue, le moteur et le patch actifs sont également inclus dans la fiche projet exportée `.op1studio.json`.
+
