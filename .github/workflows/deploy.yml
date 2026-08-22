@@ -85,8 +85,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
-          cache: npm
-          cache-dependency-path: apps/op1-studio/package.json
       - name: Link private workspace packages
         working-directory: apps/op1-studio
         run: |
@@ -109,8 +107,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
-          cache: npm
-          cache-dependency-path: apps/ep133-studio/package.json
       - name: Link private workspace packages
         working-directory: apps/ep133-studio
         run: |
