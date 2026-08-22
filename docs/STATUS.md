@@ -19,7 +19,7 @@ les tests automatiques ne peuvent pas prouver.
 | Dépôt GitHub | Opérationnel, branche `main` |
 | Intégration continue | ✅ tourne sur `main`, la branche réellement déployée |
 | Déploiement Coolify | Opérationnel, HTTPS via le proxy |
-| Tests automatisés | ✅ Hub/packages, OP-1 et EP-133 vérifiés par CI |
+| Tests automatisés | 🔶 contrôles natifs séparés OP-1 / EP-133 en CI ; validation complète en cours |
 | Profil local | ✅ récupérable depuis le dossier de travail |
 | Dossier de travail | ✅ mémorisé, permission vérifiée au rechargement |
 | Coffre — sauvegarde | ✅ validée à l'usage, dossiers vides compris |
@@ -40,6 +40,8 @@ les tests automatiques ne peuvent pas prouver.
 **Ce qu'il ne faut pas déclarer validé** : la restauration *par l'application*
 vers une machine. Le mécanisme d'écriture l'est — écrire, démonter, relire,
 comparer les empreintes — mais pas son orchestration.
+
+**Contrat machine :** la CI partage le niveau de sécurité, pas le protocole matériel. Les contrôles OP-1 couvrent ses AIFF, patches, volume et MIDI ; les contrôles EP-133 couvrent ses projets, samples et échanges MIDI/SysEx. Un test de l'un ne constitue jamais une preuve pour l'autre.
 
 ## Derniers travaux
 
