@@ -1296,36 +1296,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         </div>
       )}
 
-      {/* Contrôles sortis de l’écran : la zone OLED reste réservée à l’affichage. */}
-      <div className="op1-screen-controls" aria-label="Contrôles de l’écran OP-1">
-      <div className="op1-screen-track-selector" role="group" aria-label="Sélection de piste">
-          <span className="op1-screen-control-label">PISTE</span>
-          {[0, 1, 2, 3].map((track) => (
-            <button
-              key={track}
-              type="button"
-              className={`op1-screen-track-button op1-screen-track-button-${track + 1} ${selectedTrack === track ? "is-selected" : ""}`}
-              onClick={() => { onSelectTrack(track); onNotice?.(`Piste ${track + 1} sélectionnée.`); }}
-              aria-pressed={selectedTrack === track}
-              title={`Sélectionner la piste ${track + 1}`}
-            >
-              {track + 1}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          className={`op1-screen-record-button ${recording ? "is-recording" : ""}`}
-          onClick={() => onRecord?.()}
-          aria-pressed={recording}
-          title={recording ? "Arrêter l’enregistrement" : `Enregistrer sur la piste ${selectedTrack + 1}`}
-        >
-          <span className="op1-screen-record-dot" aria-hidden="true" />
-          {recording ? "ARRÊTER" : "ENREGISTRER"}
-          <small>Piste {selectedTrack + 1}</small>
-        </button>
-      </div>
-
       {/* ── Inputs fichiers invisibles (déclenchés via le menu de piste 1..4) ── */}
       <div style={{ display: "none" }}>
         {[0, 1, 2, 3].map((i) => (
