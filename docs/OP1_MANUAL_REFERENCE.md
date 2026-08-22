@@ -30,6 +30,15 @@ Quand le bouton **MENU SON** est activé dans OP-1 Studio :
 
 Le bouton **RETOUR K7** revient à l'affichage Tape complet.
 
+## Fonctionnement effectivement livré dans le clone
+
+- Les quatre boutons **PISTE 1–4** sont regroupés dans la bande de transport supérieure ; ils pilotent la piste active.
+- Le bouton **REC** enregistre sur la piste sélectionnée et affiche son numéro.
+- La bibliothèque **Samples sauvegardés** permet de préécouter un fichier local puis de le charger sur la piste active.
+- Le projet et les sources audio sont autosauvegardés dans la même origine : métadonnées en `localStorage`, blobs audio en `IndexedDB`.
+- L’actualisation restaure les pistes et les sources lorsque le navigateur conserve le stockage local.
+- La bande de commandes située au-dessus du clavier est masquée pour garder le châssis proche de la machine de référence.
+
 ## Limites de portée
 
 Cette note ne remplace pas le manuel constructeur. Elle décrit uniquement les comportements nécessaires au clone du projet. Les protocoles OP-1 et EP-133, leurs formats de fichiers et leurs systèmes de transfert restent traités séparément.
