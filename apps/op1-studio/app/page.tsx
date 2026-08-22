@@ -440,6 +440,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
   const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
   const [soundMenuOpen, setSoundMenuOpen] = useState(false);
+  const [rackMenuOpen, setRackMenuOpen] = useState(false);
   const [soundSlot, setSoundSlot] = useState(1);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
@@ -481,6 +482,11 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   function openOp1SoundMenu(slot: number) {
     setSoundSlot(Math.max(1, Math.min(8, slot)));
     setSoundMenuOpen(true);
+  }
+
+  function openOp1RackMenu() {
+    setSoundMenuOpen(false);
+    setRackMenuOpen(true);
   }
 
   function navigateOp1SoundMenu(encoder: number, delta: number) {
@@ -1593,6 +1599,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             soundMenuOpen={soundMenuOpen}
             soundSlot={soundSlot}
             onSoundMenuClose={() => setSoundMenuOpen(false)}
+            rackMenuOpen={rackMenuOpen}
+            onRackMenuClose={() => setRackMenuOpen(false)}
             selectedEngine={selectedEngine}
             selectedPatch={selectedPatch}
             onEngineChange={setSelectedEngine}
@@ -1622,6 +1630,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onRecord={toggleTapeRecording}
             onModeChange={setOp1MachineMode}
             onOpenSoundMenu={openOp1SoundMenu}
+            onOpenRackMenu={openOp1RackMenu}
             onSoundMenuEncoder={navigateOp1SoundMenu}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
