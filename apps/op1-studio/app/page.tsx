@@ -435,13 +435,36 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [rackFolded, setRackFolded] = useState(true);
   const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | null>(null);
-  const [selectedEngine, setSelectedEngine] = useState<string>("FM");
-  const [selectedPatch, setSelectedPatch] = useState<string>("Classic 01");
+  const [selectedEngine, setSelectedEngine] = useState<string>("mi_plaits");
+  const [selectedPatch, setSelectedPatch] = useState<string>("Virtual Analog Saw Lead");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
   const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
   const [soundMenuOpen, setSoundMenuOpen] = useState(false);
   const [rackMenuOpen, setRackMenuOpen] = useState(false);
   const [soundSlot, setSoundSlot] = useState(1);
+  const patchProfileLoadedRef = useRef(false);
+  const PATCH_PROFILE_KEY = "op1-studio-user-patches-v1";
+  // Profil local de l'utilisateur : les 8 emplacements OP-1 sont conservés
+  // sur l'appareil, sans upload et sans écriture USB sur la machine.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      const slot = saved["1"];
+      if (slot?.engine) setSelectedEngine(slot.engine);
+      if (slot?.patch) setSelectedPatch(slot.patch);
+    } catch { /* profil absent ou stockage local indisponible */ }
+    patchProfileLoadedRef.current = true;
+  }, []);
+  useEffect(() => {
+    if (!patchProfileLoadedRef.current) return;
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      saved[String(soundSlot)] = { engine: selectedEngine, patch: selectedPatch };
+      localStorage.setItem(PATCH_PROFILE_KEY, JSON.stringify(saved));
+    } catch { /* stockage local indisponible */ }
+  }, [selectedEngine, selectedPatch, soundSlot]);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -480,7 +503,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }
 
   function openOp1SoundMenu(slot: number) {
-    setSoundSlot(Math.max(1, Math.min(8, slot)));
+    const nextSlot = Math.max(1, Math.min(8, slot));
+    setSoundSlot(nextSlot);
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      const savedSlot = saved[String(nextSlot)];
+      if (savedSlot?.engine) setSelectedEngine(savedSlot.engine);
+      if (savedSlot?.patch) setSelectedPatch(savedSlot.patch);
+    } catch { /* profil local absent */ }
     setSoundMenuOpen(true);
   }
 
