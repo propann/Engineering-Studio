@@ -2,6 +2,8 @@
 
 **Consolidated roadmap for Engineering-Studio**
 
+> Snapshot synchronisé le **2026-08-22** sur `main`. Les compteurs et dates des sections historiques ci-dessous sont conservés pour la traçabilité ; la section « Current implementation snapshot » fait foi pour les fonctionnalités récentes.
+
 ---
 
 ## 📋 Quick Links
@@ -15,6 +17,16 @@
 - **Getting Started**: See [STARTUP_GUIDE.md](guides/STARTUP_GUIDE.md)
 
 ---
+
+## Current implementation snapshot — 2026-08-22
+
+- ✅ OP‑1 Studio : clone tactile avec écran Tape, quatre pistes, transport, REC sur la piste active, sélection de mode et racks son/effets.
+- ✅ Interface machine : clavier aux couleurs OP‑1, séparateurs orange, cercles noirs, bande haute du clavier supprimée et commandes regroupées dans deux bandes supérieures.
+- ✅ MIDI : clavier virtuel et contrôles écran reliés aux événements MIDI OP‑1 ; tempo, mesures et horloge MIDI utilisent la même base temporelle.
+- ✅ Samples : bibliothèque locale avec préécoute et chargement d’un sample sauvegardé sur la piste active.
+- ✅ Persistance : métadonnées du projet en `localStorage`, sources audio en `IndexedDB`, restauration après actualisation dans la même origine.
+- ✅ Sécurité : fabrication locale et plans de transfert restent sans écriture machine (`machineWrite: false`) tant que le parcours complet n’est pas validé.
+- 🔮 Strudel : idée documentée dans la présente roadmap, hors interface OP‑1 pour l’instant.
 
 ## 🎯 Project Vision
 
@@ -794,7 +806,7 @@ The project applies orchestration principles to service architecture:
 
 ---
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-08-22  
 **Next Review**: 2026-08-25  
 **Owner**: Engineering Team
 
