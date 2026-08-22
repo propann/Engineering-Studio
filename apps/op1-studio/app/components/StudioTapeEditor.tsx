@@ -1183,11 +1183,11 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
 
       </>
 
-      {soundMenuOpen && (
+      {(soundMenuOpen || rackMenuOpen) && (
         <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
           <div className="op1-screen-patch-menu-head">
             <span>{soundMenuOpen ? ("OP-1 · SOUND " + soundSlot + " · " + machineMode.toUpperCase()) : "OP-1 · RACK FX"}</span>
-            <button type="button" onClick={() => setScreenMenuOpen(false)} aria-label="Fermer le menu son">×</button>
+            <button type="button" onClick={() => { onSoundMenuClose?.(); onRackMenuClose?.(); }} aria-label="Fermer le menu">×</button>
           </div>
           <div className="op1-screen-patch-columns">
             {soundMenuOpen ? (
