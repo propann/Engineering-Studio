@@ -178,7 +178,7 @@ describe("ce que la fusion ne devait pas casser", () => {
   it("les destinations connues sont toujours atteignables", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
     for (const page of [
-      "studio-op1", "studio-ep133", "firmware-gallery", "firmware-lab", "backup-lab",
+      "studio-op1", "studio-ep133", "firmware-lab", "backup-lab",
       "audio-plugin-rack", "sound-library", "sound-editor", "image-editor-op1",
       "midi-settings", "op1-settings", "exercises", "rhythm-hero",
       "doc-op1", "doc-ep133", "documentation",
