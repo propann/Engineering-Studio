@@ -12,3 +12,4 @@ export * from "./aiff.ts";
 export * from "./encode.ts";
 export * from "./machines.ts";
 export * from "./op1Patch.ts";
+export * from "./op1Pack.ts";
