@@ -150,10 +150,11 @@ const FN_STATIC_VISUAL: (ControlVisual | null)[] = [
   null, null, null, null, null, null, null, null,
   "seq", "shift", "plug", "help",
 ];
-// Index 0 = déjà câblé sur onTogglePlayback ; 1-2 affichés mais sans action
-// (aucune fonction d'enregistrement/stop implémentée côté clone pour l'instant).
-const TRANS_REAL_LABELS = ["Lecture / Pause", "Enregistrement", "Stop"];
-const TRANS_SHORT_LABELS = ["LEC", "ENR", "STO"];
+// Ordre physique du clavier virtuel : REC, LECTURE, STOP.
+// La REC de l'écran simulé reste la commande de référence pour l'enregistrement,
+// mais la touche REC du clavier virtuel appelle la même action.
+const TRANS_REAL_LABELS = ["Enregistrement", "Lecture / Pause", "Stop"];
+const TRANS_SHORT_LABELS = ["ENR", "LEC", "STO"];
 const TRANS_STATIC_VISUAL: ControlVisual[] = ["play", "rec", "stop"];
 
 // ── Association « touche réelle → bouton construit » (14 août 2026, fin
@@ -1249,9 +1250,8 @@ export function StudioMachinePanel({
             })}
 
             {!notesOnly && transBlocks.map((b, i) => {
-              // L'enregistrement est piloté par le REC de l'écran simulé et
-              // la piste active ; ne pas dupliquer un bouton REC ici.
-              if (i === 1) return null;
+              // Ordre du châssis : REC, LECTURE, STOP. Les trois touches
+              // restent visibles pour conserver la disposition physique.
               const key = `trans-${i}`;
               const binding = learnedMap[key];
               const def7B = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
@@ -1270,8 +1270,8 @@ export function StudioMachinePanel({
                     if (configOpen) { e.stopPropagation(); selectConfig("transport", i, transLabel); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedTrans(s => new Set(s).add(i));
-                    if (i === 0 || def7B?.id === "transport-play") onTogglePlayback();
-                    if (i === 1 || def7B?.id === "transport-rec") onRecord?.();
+                    if (i === 1 || def7B?.id === "transport-play") onTogglePlayback();
+                    if (i === 0 || def7B?.id === "transport-rec") onRecord?.();
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 52 + i, 100]), transLabel);
                   }}
                   onPointerUp={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
