@@ -561,7 +561,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         ))}
       </div>
 
-      {!screenMenuOpen && (<>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
+      <>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
