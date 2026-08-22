@@ -23,6 +23,7 @@ import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets"
 import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
 import { lirePatchImporte } from "../core/audio/importPatch";
 import { PanneauEnveloppe } from "../racks/PanneauEnveloppe";
+import { EmplacementModule, SelecteurModule, type ModuleLabo } from "../racks/ModulesLabo";
 import { RackEffets } from "../racks/RackEffets";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
@@ -373,6 +374,10 @@ export default function AudioPluginRack({
   const [fxEqHigh, setFxEqHigh] = useState<number>(0);
   // Enveloppe ADSR. Les defauts reproduisent exactement les valeurs cablees
   // jusqu'ici : ajouter des curseurs ne doit pas changer le son des 91 patches.
+  // Module affiche sous les moteurs. Le Labo reunit ce qui servait a fabriquer
+  // du son dans deux pages : les moteurs logiciels ici, la creation de patches
+  // pour les machines dans un module.
+  const [moduleLabo, setModuleLabo] = useState<ModuleLabo>("aucun");
   const [envAttack, setEnvAttack] = useState<number>(ENVELOPPE_DEFAUT.envAttack);
   const [envDecay, setEnvDecay] = useState<number>(ENVELOPPE_DEFAUT.envDecay);
   const [envSustain, setEnvSustain] = useState<number>(ENVELOPPE_DEFAUT.envSustain);
@@ -3037,6 +3042,8 @@ export default function AudioPluginRack({
                 />
               </div>
             </div>
+              {/* Emplacement de module : la moitie « Labo » de l'outil. */}
+              <SelecteurModule module={moduleLabo} onModule={setModuleLabo} />
           </header>
 
           {/* MAIN UNIFIED FRAME: OLED WAVEFORM + MASTER + EXPANDED CONTROLS */}
@@ -3995,6 +4002,9 @@ export default function AudioPluginRack({
 
           </div>
 
+          {/* Le module choisi, sous les commandes du moteur : on regle le son en
+              haut, on pioche un sample ou on prepare un patch machine en bas. */}
+          <EmplacementModule module={moduleLabo} />
         </section>
       </div>
 

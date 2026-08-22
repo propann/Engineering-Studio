@@ -76,6 +76,11 @@ function parametres(): string[] {
     // par construction. Son propre cablage est verrouille ailleurs, par
     // modules/audio-rack-01-patch-search/PatchSearchWiring.test.ts.
     "patchQuery",
+    // Emplacement de module du Labo : quel panneau s'affiche sous les
+    // moteurs. Aucun moteur ne le lit, et c'est correct — il ne decide
+    // de rien dans le son. Son cablage est verrouille par
+    // racks/ModulesLabo.test.ts.
+    "moduleLabo",
     // Synchronisation du delay sur le tempo du studio hote. Ces trois-la ne
     // sont lus par aucun moteur, et c'est correct : ils ne font que calculer
     // `fxDelayTime`, qui lui EST cable. Les inscrire ici plutot que de les

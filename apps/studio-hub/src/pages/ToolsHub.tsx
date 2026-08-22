@@ -218,33 +218,18 @@ export default function ToolsHub(){
      <div className="tool-status">OUVRIR →</div>
     </button>
     <button
-     className="utility-card sound-creator-card"
-     onClick={()=>{
-      (window as any).navigateMaquette("sound-patch-creator");
-     }}
-     title="Ouvrir le Créateur de Patches et Sound Design"
-     style={{ borderTop: "4px solid #00ed95" }}
-    >
-     <span>PATCH-BUILD</span>
-     <ToolGraphic type="wave"/>
-     <small>SOUND DESIGN</small>
-     <h3>🎛️ Édition & Création de Son</h3>
-     <p>Fabriquez et façonnez des patches OP-1 (moteurs synthé) et des réglages pads EP-133.</p>
-     <div className="tool-status">OUVRIR →</div>
-    </button>
-    <button
      className="utility-card audio-plugin-card"
      onClick={()=>{
       (window as any).navigateMaquette("audio-plugin-rack");
      }}
-     title="Ouvrir le Rack Moteurs Audio & Plugins"
+     title="Ouvrir le Labo : moteurs, effets, patches machine et bibliothèque"
      style={{ borderTop: "4px solid #d9ff43" }}
     >
-     <span>RACK-PLUGINS</span>
+     <span>LABO-SON</span>
      <ToolGraphic type="chip"/>
-     <small>MOTEURS SYNTHÉ</small>
-     <h3>🔌 Rack Plugins & Moteurs Audio</h3>
-     <p>Quinze moteurs : la suite Mutable (Plaits, Braids, Rings, Clouds, Elements) et dix moteurs libres — Dexed FM, Surge XT, Helm, Open303 et les autres.</p>
+     <small>CRÉATION SONORE</small>
+     <h3>🧪 Labo — création de son</h3>
+       <p>Tout pour fabriquer un son : quinze moteurs superposables, effets, enveloppe, patches OP-1 et EP-133, bibliothèque et fabrication d’échantillons.</p>
      <div className="tool-status">OUVRIR →</div>
     </button>
 

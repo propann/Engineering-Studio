@@ -1006,3 +1006,32 @@
 /* ── Import de patch ────────────────────────────────────────────────────── */
 .action-btn.import-btn { background: #1d3b34; border-color: #2f6b5c; color: #7fe3c4; }
 .action-btn.import-btn:hover { background: #244a41; border-color: #3f8b78; }
+
+/* ── Modules du Labo ────────────────────────────────────────────────────── */
+.labo-modules {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 10px 0 4px; padding: 8px 12px;
+  background: #101817; border: 1px solid #1e2b28; border-radius: 6px;
+}
+.labo-modules-champ { display: flex; align-items: center; gap: 8px; }
+.labo-modules-champ > span {
+  font: 700 9px ui-monospace, monospace; letter-spacing: .09em; color: #4e6b65;
+}
+.labo-modules select {
+  padding: 5px 8px; border-radius: 4px; cursor: pointer;
+  background: #16201f; border: 1px solid #2a3a36; color: #9fc4bc;
+  font: 600 11px ui-monospace, monospace;
+}
+.labo-modules-aide { color: #4e6b65; font: 400 10px ui-monospace, monospace; }
+.labo-emplacement {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid #1e2b28;
+}
+/* Le module est une page entiere rendue dans un cadre : on lui retire la
+   hauteur plein ecran qu'elle prend seule, sinon elle pousse tout le Labo. */
+.labo-emplacement .sound-patch-creator-page,
+.labo-emplacement .sound-editor-hub-page,
+.labo-emplacement .sound-library-panel { min-height: 0; height: auto; padding-top: 0; }
+.labo-chargement {
+  padding: 24px; text-align: center;
+  color: #4e6b65; font: 600 11px ui-monospace, monospace;
+}

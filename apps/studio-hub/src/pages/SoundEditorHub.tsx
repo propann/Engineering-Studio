@@ -70,7 +70,7 @@ const CLIENT_OP1_SOUNDS: SoundItem[] = [
   { id: "op1-c03", name: "Drum Kit Custom Vinyl", machine: "op1", owner: "client", category: "perc", format: "AIF + OP-1 JSON", sizeKb: 2150, durationSec: 12.0, tags: ["NOUVEAU MEMBRE", "Vinyl", "Drums"], seedWave: [0.9, 0.3, 0.75, 0.2, 0.8, 0.1] },
 ];
 
-export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE" }: { profileName?: string; onClose?: () => void }) {
+export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE", enModule = false }: { profileName?: string; onClose?: () => void; enModule?: boolean }) {
   // Studio View Mode (Space Saver): 4 Quadrants vs EP-133 Focus vs OP-1 Focus
   const [viewMode, setViewMode] = useState<StudioViewMode>("grid4");
 
@@ -597,7 +597,9 @@ export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE" }: { pro
 
   return (
     <main className="sound-editor-hub-page">
-      <TopBar activePage="sound-editor" profileName={profileName} />
+      {/* Meme motif que le rack et le createur de patch : la TopBar
+          demonterait le Labo au premier clic. */}
+      {!enModule && <TopBar activePage="sound-editor" profileName={profileName} />}
 
       {/* LEFT SLIDE-OUT DRAWER TRIGGER BUTTON (EP-133) */}
       <button

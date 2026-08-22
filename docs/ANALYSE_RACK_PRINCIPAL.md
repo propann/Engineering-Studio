@@ -4,7 +4,8 @@ Analyse du 2026-08-22. **Aucun code n'a été déplacé** : ce document prépare
 décision, il ne l'applique pas.
 
 Le rack principal est `apps/studio-hub/src/pages/ToolsHub.tsx` — 472 lignes
-à l'heure de l'analyse, **395 lignes** après le nettoyage du même soir.
+à l'heure de l'analyse, **380 lignes** après le nettoyage du même soir
+et la fusion des deux outils de création de son.
 C'est la porte d'entrée de l'atelier : c'est de là qu'on ouvre les studios, le
 rack audio, le coffre, le firmware, la documentation.
 

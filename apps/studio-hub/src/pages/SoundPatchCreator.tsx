@@ -10,7 +10,7 @@ import { useNotesMidi } from "../core/midi/useNotesMidi";
 type MachineTarget = "op1" | "ep133";
 type Op1EngineType = "fm" | "dna" | "cluster" | "string" | "phase" | "digital" | "pulse";
 
-export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onClose }: { profileName?: string; onClose?: () => void }) {
+export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onClose, enModule = false }: { profileName?: string; onClose?: () => void; enModule?: boolean }) {
   const [targetMachine, setTargetMachine] = useState<MachineTarget>("op1");
 
   // OP-1 SYNTH PATCH ENGINE PARAMETERS
@@ -275,9 +275,12 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
 
   return (
     <main className="sound-patch-creator-page">
-      <TopBar activePage="outils" profileName={profileName} />
+      {/* `enModule` retire la TopBar : elle appelle navigateMaquette et
+          demonterait le Labo au moindre clic. Meme motif que `enTiroir`
+          du rack, pour la meme raison. */}
+      {!enModule && <TopBar activePage="outils" profileName={profileName} />}
 
-      {onClose && (
+      {onClose && !enModule && (
         <button type="button" className="creator-back-btn" onClick={onClose}>
           ← Retour aux Outils
         </button>
