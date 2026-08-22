@@ -1823,3 +1823,97 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+
+/* Contrôles physiques sortis de l’écran OLED : accès direct, lisible et tactile. */
+.op1-screen-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #11171b;
+  border: 1px solid #263139;
+  border-top: 0;
+}
+.op1-screen-track-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.op1-screen-control-label {
+  margin-right: 3px;
+  color: #71808b;
+  font: 700 9px var(--font-geist-mono), monospace;
+  letter-spacing: .12em;
+}
+.op1-screen-track-button {
+  width: 30px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #cbd5e1;
+  background: #1b242b;
+  border: 1px solid #34424c;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 12px var(--font-geist-mono), monospace;
+}
+.op1-screen-track-button:hover,
+.op1-screen-track-button:focus-visible {
+  border-color: #fff;
+  transform: translateY(-1px);
+}
+.op1-screen-track-button.is-selected {
+  color: #0b1014;
+  border-color: currentColor;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12);
+}
+.op1-screen-track-button-1.is-selected { background: #698eff; color: #08101e; }
+.op1-screen-track-button-2.is-selected { background: #00ed95; color: #06130e; }
+.op1-screen-track-button-3.is-selected { background: #dfd9ff; color: #181329; }
+.op1-screen-track-button-4.is-selected { background: #ff3a5d; color: #21060d; }
+.op1-screen-record-button {
+  min-width: 148px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #fff;
+  background: #8d1e32;
+  border: 1px solid #ff3a5d;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-record-button:hover,
+.op1-screen-record-button:focus-visible,
+.op1-screen-record-button.is-recording {
+  background: #ff3a5d;
+  color: #21060d;
+  box-shadow: 0 0 14px rgba(255,58,93,.28);
+}
+.op1-screen-record-button small {
+  color: inherit;
+  opacity: .78;
+  font: 700 8px var(--font-geist-mono), monospace;
+  letter-spacing: 0;
+}
+.op1-screen-record-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  background: #ff3a5d;
+  border: 1px solid #fff;
+  border-radius: 50%;
+}
+.op1-screen-record-button.is-recording .op1-screen-record-dot {
+  animation: pulse 1s infinite;
+}
+@media (max-width: 560px) {
+  .op1-screen-controls { align-items: stretch; flex-direction: column; }
+  .op1-screen-track-selector { justify-content: center; }
+  .op1-screen-record-button { width: 100%; }
+}
