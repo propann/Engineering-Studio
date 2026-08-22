@@ -1691,6 +1691,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             pressedNotes={pressedMidiNotes}
             mode={studioMode}
             playing={transportPlaying}
+            recording={recording}
             position={transportTime}
             files={files}
             onTogglePlayback={toggleGlobalPlayback}
