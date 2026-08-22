@@ -26,7 +26,6 @@ const FirmwareLab = lazy(() => import("./pages/FirmwareLab"));
 const ThemeEditor = lazy(() => import("./pages/ThemeEditor"));
 const ThemeProjectEditor = lazy(() => import("./pages/ThemeProjectEditor"));
 const AdvancedImageEditor = lazy(() => import("./pages/AdvancedImageEditor"));
-const SoundEditorHub = lazy(() => import("./pages/SoundEditorHub"));
 const SoundPatchCreator = lazy(() => import("./pages/SoundPatchCreator"));
 const AudioPluginRack = lazy(() => import("./pages/AudioPluginRack"));
 const SoundLibrary = lazy(() => import("./pages/SoundLibrary"));
@@ -55,7 +54,6 @@ type Page =
   | "theme-editor" 
   | "theme-project"
   | "advanced-image"
-  | "sound-editor"
   | "sound-patch-creator"
   | "audio-plugin-rack"
   | "sound-library"
@@ -119,8 +117,6 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
       return <FirmwareLab />;
     case "advanced-image":
       return <AdvancedImageEditor />;
-    case "sound-editor":
-      return <SoundEditorHub onClose={() => setCurrentPage("outils")} />;
     case "sound-patch-creator":
       return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
     case "midi-settings":
