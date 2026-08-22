@@ -797,3 +797,15 @@ The project applies orchestration principles to service architecture:
 **Last Updated**: 2026-08-20  
 **Next Review**: 2026-08-25  
 **Owner**: Engineering Team
+
+
+## Idée à développer — rack Strudel (hors studio OP-1 pour l’instant)
+
+Statut : idée documentée, non activée dans l’interface actuelle.
+
+- Intégrer Strudel dans un rack séparé, sans modifier le workflow de création OP-1 tant que le socle audio n’est pas validé.
+- Prévoir une fenêtre d’édition du code Strudel avec sauvegarde locale des snippets et des presets.
+- Relier le rack à l’entrée MIDI et au moteur audio du Hub, avec synchronisation tempo/horloge contrôlée.
+- Définir ensuite les limites de sécurité : exécution locale isolée, arrêt immédiat, absence d’écriture sur la machine OP-1 par défaut.
+- Valider l’export et la compatibilité audio avant toute connexion de transfert matériel.
+
