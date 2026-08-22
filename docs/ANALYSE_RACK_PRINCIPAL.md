@@ -3,9 +3,10 @@
 Analyse du 2026-08-22. **Aucun code n'a été déplacé** : ce document prépare une
 décision, il ne l'applique pas.
 
-Le rack principal est `apps/studio-hub/src/pages/ToolsHub.tsx` — 472 lignes
-à l'heure de l'analyse, **380 lignes** après le nettoyage du même soir
-et la fusion des deux outils de création de son.
+Le rack principal est `apps/studio-hub/src/pages/ToolsHub.tsx`, **472 lignes au
+moment de l'analyse**. Les numéros de ligne cités ci-dessous valent pour cet
+état ; le fichier a été retravaillé le soir même (voir « Ce qui a été
+appliqué »).
 C'est la porte d'entrée de l'atelier : c'est de là qu'on ouvre les studios, le
 rack audio, le coffre, le firmware, la documentation.
 
@@ -280,16 +281,39 @@ champ `section` des dix-neuf outils.
 L'état actuel est le pire des deux : la donnée est maintenue et rien ne
 l'affiche.
 
-### 5. Fusionner les deux systèmes — *le vrai chantier*
+### 5. Fusionner les deux systèmes — ✅ **fait le 2026-08-22**
 
-Le seul qui règle la cause plutôt que les symptômes. Chaque carte devient une
-entrée du tableau ; le tableau devient la source unique. Le filtre de quinze
-exclusions disparaît de lui-même, les onglets redeviennent possibles, et une
-carte ne peut plus contredire les métadonnées de son propre outil.
+Le seul chantier qui réglait la cause plutôt que les symptômes.
 
-Coût réel, à faire à froid et par étapes. **À ne pas entreprendre avant les
-essais physiques de demain** : le rack principal est la porte d'entrée de tout,
-et le casser rendrait la machine inaccessible pendant les tests.
+Chaque carte est devenue une entrée du tableau ; le tableau est la source
+unique. Ce qui distinguait les neuf cartes écrites à la main tient en quatre
+champs : `action` (ce que fait un clic), `couleur`, `compteurDe`, et `image` —
+la photo de machine étant la seule chose que le rendu piloté par données ne
+savait pas faire.
+
+Ce qui a disparu **de lui-même**, sans être corrigé un par un :
+
+- le filtre à quatorze exclusions, qui n'existait que pour éviter le doublon
+  entre les deux systèmes ;
+- la cascade de quinze `if` d'`openTool`, et avec elle toute possibilité de
+  branche morte — l'action est portée par l'outil, il n'y a plus d'ordre à
+  respecter ;
+- deux fonctions, `machineTool` et `hubTool`, définies et jamais appelées, que
+  la fusion a mises à nu.
+
+Ce qui devient possible : **les onglets de section**, déclarés depuis le début
+et jamais rendus. Ils affichent maintenant HUB 8, OP-1 5, EP-133 2, TOUS 15 —
+aucune section vide, parce que chaque outil porte enfin la sienne.
+
+Et un détail visible : quatre cartes affichaient « 243 », la version du
+firmware OP-1. `chip` était le **repli** pour tout visuel non reconnu, et
+`grid` n'avait pas de rendu. Le repli est neutre désormais, et « 243 » ne
+reste que sur les deux cartes firmware, où il veut dire quelque chose.
+
+**Reste ouvert, et rendu visible par la fusion** : deux cartes mènent au
+firmware — la galerie et le Lab, vers deux pages différentes. La duplication
+existait, cachée dans les deux systèmes. C'est une question produit, pas
+technique.
 
 ### 6. Aligner deux descriptions tièdes — *quelques minutes*
 

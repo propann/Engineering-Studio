@@ -33,6 +33,7 @@ les tests automatiques ne peuvent pas prouver.
 | Rack MIDI (arpégiateur, 30 gammes) | ✅ |
 | Rack d'effets (saturation, chorus) | ✅ |
 | Chaque rack porte son interface | ✅ verrouillé par test |
+| Rack principal : une source unique | ✅ 2026-08-22, onglets de section rebranchés |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
 | EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
 

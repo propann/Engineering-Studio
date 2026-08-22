@@ -4,149 +4,240 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Le rack principal — constats de l'analyse du 2026-08-22.
+ * Le rack principal, apres la fusion des deux systemes.
  *
- * Ces tests ne corrigent rien : ils IMMOBILISENT ce que l'analyse a mesuré,
- * pour que le document de docs/ANALYSE_RACK_PRINCIPAL.md ne devienne pas faux
- * sans qu'on le sache. Un chiffre qui bouge fait tomber le test, et le
- * document se corrige avec.
+ * Il rendait un tableau de 19 outils ET neuf cartes ecrites a la main dans le
+ * JSX. Les deux produisaient exactement le meme balisage — l'un lisait des
+ * donnees, l'autre avait les valeurs recopiees. Presque tous les defauts
+ * releves par docs/ANALYSE_RACK_PRINCIPAL.md en decoulaient :
  *
- * C'est le meme principe que le test des comptes de gammes : le defaut trouve
- * ce soir etait quatre documents annoncant « 29 gammes » pour 30.
+ * - un filtre de QUATORZE exclusions, tenu a la main, pour eviter les doublons
+ *   entre les deux systemes ;
+ * - des onglets de section declares mais impossibles a rebrancher, parce que
+ *   les vrais outils vivaient dans les cartes, qui ignoraient les sections ;
+ * - une carte capable de contredire les metadonnees de son propre outil. C'est
+ *   arrive : celle du rack audio annoncait deux moteurs inexistants ;
+ * - un `openTool` en cascade de quinze `if`, ou deux branches n'etaient jamais
+ *   atteintes parce qu'un cas plus haut captait deja l'outil.
+ *
+ * Ces tests verrouillent la source unique. Sans eux, une carte ecrite a la
+ * main revient au premier « juste celle-la, elle est speciale ».
  */
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const RACK = readFileSync(path.join(DIR, "ToolsHub.tsx"), "utf-8");
 const TYPES = readFileSync(path.join(DIR, "..", "core", "types", "audio.ts"), "utf-8");
+const CSS = readFileSync(path.join(DIR, "outils.css"), "utf-8");
 const ANALYSE = readFileSync(path.join(DIR, "..", "..", "..", "..", "docs", "ANALYSE_RACK_PRINCIPAL.md"), "utf-8");
 
-const outils = () => [...RACK.slice(RACK.indexOf("const tools:Tool[]=["), RACK.indexOf("\nconst sections")).matchAll(/\{id:"([^"]+)"/g)].map((m) => m[1]);
+const outils = () =>
+  [...RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"))
+    .matchAll(/^\s{4}id: "([^"]+)"/gm)].map((m) => m[1]);
 
-describe("la carte du rack audio ne peut plus nommer de moteur inexistant", () => {
-  const MOTEURS = [...TYPES.slice(TYPES.indexOf("EnginePluginType ="), TYPES.indexOf(";", TYPES.indexOf("EnginePluginType ="))).matchAll(/"(\w+)"/g)].map((m) => m[1]);
-
-  it("les quinze moteurs sont bien la", () => {
-    expect(MOTEURS).toHaveLength(15);
+describe("une seule source", () => {
+  it("aucune carte n'est plus ecrite a la main", () => {
+    // L'invariant central. Une carte en dur peut contredire son propre outil,
+    // echappe aux sections, et oblige a l'exclure du filtre a la main.
+    const enDur = RACK.split("\n").filter((l) =>
+      /className="utility-card [a-z0-9-]+"/.test(l) && !l.includes("${tool.accent}")
+    );
+    expect(enDur, `cartes ecrites a la main : ${enDur.length}`).toEqual([]);
   });
 
-  it("la carte ne promet pas de moteur absent du rack", () => {
-    // Le defaut trouve : la carte annoncait « Moog 24dB Ladder » et
-    // « Karplus-Strong », mot pour mot le catalogue du SynthEngineDrawer
-    // supprime en aout. Le code etait parti, sa promesse etait restee — a la
-    // vue de tout le monde, sur la page d'accueil des outils.
-    const i = RACK.indexOf('navigateMaquette("audio-plugin-rack")');
+  it("le filtre d'exclusions a disparu", () => {
+    // Quatorze exclusions tenues a la main, dont la seule raison d'etre etait
+    // d'eviter le doublon entre les deux systemes.
+    expect(RACK).not.toContain('category !== "DOCUMENTATION"');
+    expect(RACK).not.toContain('t.id !== "vault"');
+  });
+
+  it("un seul composant rend toutes les cartes", () => {
+    expect(RACK).toContain("function CarteOutil(");
+    expect(RACK).toContain("<CarteOutil key={tool.id}");
+  });
+
+  it("la photo de machine est un champ, plus un cas particulier", () => {
+    // C'etait la SEULE chose que les cartes en dur savaient faire en plus.
+    expect(RACK).toMatch(/image\?: \{ src: string/);
+    expect(RACK).toContain("if (tool.image) {");
+  });
+});
+
+describe("l'ouverture est portee par la donnee", () => {
+  it("plus de cascade d'identifiants", () => {
+    // `openTool` testait quinze identifiants dans l'ordre. Deux branches
+    // n'etaient jamais atteintes — un lecteur cherchant « ou va Tape »
+    // trouvait la mauvaise reponse.
+    expect(RACK).not.toContain("function openTool(");
+    const i = RACK.indexOf("function ouvrir(tool: Tool)");
     expect(i).toBeGreaterThan(-1);
-    const carte = RACK.slice(i, RACK.indexOf("</button>", i));
+    const corps = RACK.slice(i, RACK.indexOf("\n }", i));
+    expect(corps).not.toContain('tool.id === "');
+    expect(corps).not.toContain('tool.id==="');
+  });
+
+  it("chaque type d'action est traite", () => {
+    const corps = RACK.slice(RACK.indexOf("function ouvrir(tool: Tool)"));
+    for (const type of ["page", "groupe", "ancre", "editeur-son", "fiche"]) {
+      expect(corps, `action « ${type} » non traitee`).toContain(`case "${type}":`);
+    }
+  });
+
+  it("chaque outil declare son action", () => {
+    // Sans action, un outil ouvrirait la fiche descriptive par defaut — le
+    // defaut qui avait laisse `library` inatteignable.
+    const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
+    const entrees = bloc.match(/^\s{4}id: "/gm) ?? [];
+    const actions = bloc.match(/^\s{4}action: \{/gm) ?? [];
+    expect(actions.length, "des outils sans action").toBe(entrees.length);
+  });
+
+  it("aucun outil ne depend de la fiche descriptive", () => {
+    // Elle reste comme dernier recours, mais un outil qui en depend n'est pas
+    // branche. C'etait le cas de `library`.
+    const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
+    expect(bloc).not.toContain('action: { type: "fiche" }');
+  });
+});
+
+describe("les sections deviennent utilisables", () => {
+  it("les onglets sont rendus", () => {
+    // Declares depuis le debut, jamais affiches, et inutilisables tant que les
+    // vrais outils vivaient hors du tableau.
+    expect(RACK).toContain("sections.map(section");
+    expect(RACK).toContain("setActiveSection(section.id)");
+  });
+
+  it("aucune section n'est vide", () => {
+    // Rebranchees telles quelles avant la fusion, « OP-1 STUDIO » et
+    // « EP-133 STUDIO » auraient affiche ZERO outil.
+    const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
+    const entrees = [...bloc.matchAll(/id: "([^"]+)"[\s\S]*?section: "(hub|op1|ep133)"/g)];
+    const cartes = entrees.filter((m) => {
+      const suite = bloc.slice(m.index!, m.index! + 900);
+      const fin = suite.indexOf("\n  },");
+      return !suite.slice(0, fin).includes("groupe:");
+    });
+    for (const section of ["hub", "op1", "ep133"]) {
+      const n = cartes.filter((m) => m[2] === section).length;
+      expect(n, `la section « ${section} » n'a aucune carte`).toBeGreaterThan(0);
+    }
+  });
+
+  it("les onglets ont un style", () => {
+    // Une classe posee sans regle CSS : le defaut que ni le typecheck ni le
+    // build ne voient.
+    for (const c of ["hub-sections", "hub-section-btn"]) {
+      expect(CSS, `.${c} sans regle`).toMatch(new RegExp(`\\.${c}[\\s,{:.]`));
+    }
+  });
+});
+
+describe("le regroupement est une donnee", () => {
+  it("les groupes sont derives du tableau, pas filtres a la main", () => {
+    expect(RACK).toContain("const membres = (groupe: Groupe) => tools.filter((t) => t.groupe === groupe);");
+    expect(RACK).not.toContain('tools.filter(t => t.category === "DOCUMENTATION")');
+  });
+
+  it("chaque groupe a exactement les membres attendus", () => {
+    /**
+     * Les identifiants, pas un seuil.
+     *
+     * Un premier jet exigeait « au moins deux membres » : retirer l'un des
+     * trois reglages en laissait deux, et le test restait vert sur un groupe
+     * ampute. Un seuil ne dit pas QUI manque.
+     *
+     * Un membre s'ecrit `groupe: "x",` (virgule finale) ; l'ouverture du
+     * groupe s'ecrit `groupe: "x" }` (accolade). C'est ce qui les distingue.
+     */
+    const ATTENDUS: Record<string, string[]> = {
+      reglages: ["midi", "op-settings", "machine-test"],
+      formation: ["op1-exercise", "rhythm"],
+      documentation: ["op1-docs", "ep-docs", "documentation", "app-guide"],
+      son: ["sample", "sounds"],
+    };
+    const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
+    for (const [groupe, attendus] of Object.entries(ATTENDUS)) {
+      const trouves = [...bloc.matchAll(/id: "([^"]+)"/g)]
+        .filter((m) => {
+          const entree = bloc.slice(m.index!, bloc.indexOf("\n  },", m.index!));
+          return entree.includes(`groupe: "${groupe}",`);
+        })
+        .map((m) => m[1]);
+      expect(trouves.sort(), `membres du groupe « ${groupe} »`).toEqual([...attendus].sort());
+    }
+  });
+
+  it("chaque groupe a une carte qui l'ouvre, ou un rendu propre", () => {
+    // « son » et « documentation » n'ouvrent pas un panneau de groupe : l'un
+    // ouvre l'editeur sonore, l'autre fait defiler vers l'etagere. Les deux
+    // autres passent par le panneau.
+    expect(RACK).toContain('action: { type: "groupe", groupe: "reglages" }');
+    expect(RACK).toContain('action: { type: "groupe", groupe: "formation" }');
+    expect(RACK).toContain('action: { type: "editeur-son" }');
+    expect(RACK).toContain('action: { type: "ancre", ancre: "hub-documentation" }');
+    expect(RACK).toContain('<DocumentationShelf docs={membres("documentation")}');
+  });
+
+  it("les compteurs comptent les membres reels", () => {
+    // La carte « Son » annoncait « 4 OUTILS » et en ouvrait un autre. Le
+    // compteur est desormais derive du groupe qu'il annonce.
+    expect(RACK).toContain("tool.compteurDe ? `${membres(tool.compteurDe).length}");
+  });
+});
+
+describe("ce que la fusion ne devait pas casser", () => {
+  it("les destinations connues sont toujours atteignables", () => {
+    const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
+    for (const page of [
+      "studio-op1", "studio-ep133", "firmware-gallery", "firmware-lab", "backup-lab",
+      "audio-plugin-rack", "sound-library", "sound-editor", "image-editor-op1",
+      "midi-settings", "op1-settings", "exercises", "rhythm-hero",
+      "doc-op1", "doc-ep133", "documentation",
+    ]) {
+      expect(bloc, `plus rien n'ouvre « ${page} »`).toContain(`page: "${page}"`);
+    }
+  });
+
+  it("le test machine EP-133 passe toujours son hubTool", () => {
+    // Le studio lit `?hubTool=machine-test` pour ouvrir le bon panneau.
+    expect(RACK).toContain("passeHubTool: true");
+    expect(RACK).toMatch(/window\.history\.replaceState\(null, "", `\?hubTool=\$\{tool\.id\}`\)/);
+  });
+
+  it("la carte du Labo ne promet pas de moteur absent du rack", () => {
+    // Elle annoncait « Moog 24dB Ladder » et « Karplus-Strong » — mot pour mot
+    // le catalogue d'un composant supprime en aout.
+    const moteurs = [...TYPES.slice(TYPES.indexOf("EnginePluginType ="), TYPES.indexOf(";", TYPES.indexOf("EnginePluginType ="))).matchAll(/"(\w+)"/g)].map((m) => m[1]);
+    expect(moteurs).toHaveLength(15);
+    const i = RACK.indexOf('id: "labo"');
+    const carte = RACK.slice(i, RACK.indexOf("\n  },", i));
     for (const disparu of ["Moog", "Ladder", "Karplus"]) {
-      expect(carte, `la carte nomme encore « ${disparu} »`).not.toContain(disparu);
+      expect(carte, `la carte du Labo nomme encore « ${disparu} »`).not.toContain(disparu);
     }
+  });
+
+  it("aucun identifiant n'est declare deux fois", () => {
+    const ids = outils();
+    expect(ids.length).toBeGreaterThan(20);
+    expect(new Set(ids).size, "un identifiant est declare deux fois").toBe(ids.length);
   });
 });
 
-describe("les constats chiffres de l'analyse restent vrais", () => {
-  it("le tableau compte toujours dix-neuf outils", () => {
-    expect(outils()).toHaveLength(19);
-    expect(ANALYSE).toContain("dix-neuf");
-  });
-
-  it("le filtre laisse passer image et library", () => {
-    // Constat 1. Le nombre a change ce soir : `library` a recu une route et
-    // rejoint le rendu. Le reste du tableau attend la fusion des deux
-    // systemes, remise a apres les essais physiques.
-    // L'INSTRUCTION entiere, et non une ligne : le filtre tient sur deux
-    // lignes, les exclusions etant sur la seconde. Cherchee par contenu et
-    // non par index — la suppression des modales mortes a decale le fichier,
-    // et un premier jet lisait `[110]` qui ne pointait plus sur rien.
-    const depart = RACK.indexOf("const filteredTools");
-    expect(depart, "declaration du filtre introuvable").toBeGreaterThan(-1);
-    const ligne = RACK.slice(depart, RACK.indexOf(";", depart));
-    expect(ligne).toContain("category !==");
-    const cats = new Set([...ligne.matchAll(/category !== "([^"]+)"/g)].map((m) => m[1]));
-    const ids = new Set([...ligne.matchAll(/id !== "([^"]+)"/g)].map((m) => m[1]));
-    const bloc = RACK.slice(RACK.indexOf("const tools:Tool[]=["), RACK.indexOf("\nconst sections"));
-    const restants = [...bloc.matchAll(/\{id:"([^"]+)",code:"[^"]*",category:"([^"]+)"/g)]
-      .filter(([, id, cat]) => !cats.has(cat) && !ids.has(id))
-      .map(([, id]) => id);
-    expect(restants.sort()).toEqual(["image", "library"]);
-  });
-
-  it("les onglets de section ne sont toujours pas branches", () => {
-    // Constat 2. Le jour ou quelqu'un les rebranche, ce test tombe — et
-    // c'est le bon moment pour verifier que deux onglets ne sont pas vides.
-    expect((RACK.match(/setActiveSection/g) ?? [])).toHaveLength(1);
-  });
-
-  it("les quatre modales inatteignables ont disparu", () => {
-    // Constat 3, corrige : leur etat etait declare, leur rendu ecrit, et leur
-    // declencheur n'existait pas. Supprimees plutot que branchees — rien
-    // n'indiquait qu'elles aient jamais ete atteignables.
-    // Bornes exigees : `showSoundEditor` contient `showSound`, et
-    // `SoundEditorHub` contient... rien de tout ca, mais un premier jet de ce
-    // test tombait sur le premier — il declarait mort un etat bien vivant.
-    for (const mort of ["showSave", "showSound", "showOP1Studio", "showEP133Studio",
-                        "SaveModal", "SoundModal", "StudioModal",
-                        "saveTools", "soundTools", "op1StudioTools", "ep133StudioTools"]) {
-      expect(RACK, `${mort} subsiste`).not.toMatch(new RegExp(`\\b${mort}\\b`));
-    }
-    // ...et ce qui reste vivant doit rester la, sinon ce test passerait aussi
-    // sur un fichier vide.
-    expect(RACK).toMatch(/\bshowSoundEditor\b/);
-    expect(RACK).toMatch(/\bSettingsModal\b/);
-    // Les deux qui marchent, pour que le test distingue « inatteignable » de
-    // « le fichier ne contient plus ces modales du tout ».
-    expect(RACK).toContain("setShowTraining(true)");
-    expect(RACK).toContain("setShowSettings(true)");
-  });
-
-  it("library a maintenant une route vers sa page", () => {
-    // Constat 4, corrige. Il retombait sur `setSelected()` — une modale
-    // purement descriptive — pendant que SoundLibraryPanel, qui importe,
-    // hache et ecrit sur le disque, n'etait monte nulle part.
-    const corps = RACK.slice(RACK.indexOf("function openTool(tool:Tool){"), RACK.indexOf("const scrollToDocumentation"));
-    expect(outils()).toContain("library");
-    expect(corps).toContain('tool.id==="library"');
-    expect(corps).toContain('navigateMaquette("sound-library")');
-  });
-
-  it("le panneau de bibliotheque est enfin monte quelque part", () => {
-    // Le defaut d'origine n'etait pas la route manquante mais le panneau
-    // orphelin : 263 lignes fonctionnelles que rien ne rendait.
-    const page = readFileSync(path.join(DIR, "SoundLibrary.tsx"), "utf-8");
-    expect(page).toContain("<SoundLibraryPanel");
-    expect(page).toContain("workspaceHandle={workspaceHandle}");
-    // La poignee revient d'IndexedDB, mais pas le droit de lire : l'adopter
-    // sans verifier afficherait une bibliotheque vide sous un espace
-    // « connecte ».
+describe("l'analyse reste raccrochee au code", () => {
+  it("presente sa taille comme un fait DATE, pas comme l'etat courant", () => {
+    // Un premier jet exigeait que l'analyse annonce la taille exacte du
+    // fichier : le test tombait a chaque modification, sans qu'aucun constat
+    // ne soit devenu faux. C'etait du bruit.
     //
-    // On vise l'APPEL et non le nom : un premier jet cherchait
-    // « hasStoredPermission », que la ligne d'import contient encore apres
-    // qu'on ait retire la verification. Le test passait sur du code sans garde.
-    expect(page).toMatch(/await hasStoredPermission\(handle, "readwrite"\)/);
-    expect(page).toMatch(/if \(![\s\S]{0,60}hasStoredPermission[\s\S]{0,40}\) return;/);
+    // L'analyse est un document date. Sa taille est un fait d'alors, et les
+    // numeros de ligne qu'elle cite ne valent que pour cet etat — c'est ce
+    // qu'elle doit dire.
+    expect(ANALYSE).toContain("au\nmoment de l'analyse");
+    expect(ANALYSE).toContain("Ce qui a été appliqué");
   });
 
-  it("le panneau ne nomme plus des pages qui n'existent plus", () => {
-    // Il disait « connecte l'espace maitre dans Coffre de l'atelier » — deux
-    // noms d'avant le travail sur les libelles. Un utilisateur qui cherche
-    // « Coffre de l'atelier » dans le rack principal ne le trouve pas.
-    const panneau = readFileSync(path.join(DIR, "..", "SoundLibraryPanel.tsx"), "utf-8");
-    expect(panneau).not.toContain("espace maître");
-    expect(panneau).not.toContain("Coffre de l’atelier");
-  });
-});
-
-describe("le document d'analyse reste raccroche au code", () => {
-  it("annonce la taille reelle du fichier", () => {
-    // Une analyse qui cite `:247` alors que le fichier a change n'aide plus
-    // personne. Si la taille bouge, les numeros de ligne aussi.
-    // `split("\n")` compte la chaine vide qui suit le dernier saut de ligne :
-    // un fichier de 472 lignes en rend 473. Mon premier jet comparait les deux
-    // directement et tombait sur son propre decalage.
-    const lignes = RACK.split("\n").length - 1;
-    expect(ANALYSE).toContain(`${lignes} lignes`);
-  });
-
-  it("nomme les quinze moteurs reels, pas cinq inventes", () => {
+  it("nomme les moteurs reels, pas cinq inventes", () => {
     for (const m of ["mi_plaits", "faust_dsp", "open303"]) {
       expect(ANALYSE, `${m} absent de l'analyse`).toContain(m);
     }

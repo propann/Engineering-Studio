@@ -28,7 +28,7 @@ const HUB = lire("pages/ToolsHub.tsx");
 describe("le hub ne propose plus qu'un outil de creation de son", () => {
   it("la carte s'appelle le Labo", () => {
     expect(HUB).toContain("🧪 Labo — création de son");
-    expect(HUB).toContain("LABO-SON");
+    expect(HUB).toContain('code: "LABO-SON"');
   });
 
   it("la carte « Edition & Creation de Son » a disparu", () => {
@@ -39,10 +39,15 @@ describe("le hub ne propose plus qu'un outil de creation de son", () => {
   });
 
   it("la carte ne promet que ce que le Labo fait", () => {
-    const i = HUB.indexOf('navigateMaquette("audio-plugin-rack")');
-    const carte = HUB.slice(i, HUB.indexOf("</button>", i));
+    // Depuis la fusion des deux systemes du rack principal, la carte n'est
+    // plus du JSX ecrit a la main : c'est une entree du tableau. On lit donc
+    // l'entree, pas le balisage.
+    const i = HUB.indexOf('id: "labo"');
+    expect(i, "l'outil « labo » a disparu du tableau").toBeGreaterThan(-1);
+    const entree = HUB.slice(i, HUB.indexOf("\n  },", i));
+    expect(entree).toContain('page: "audio-plugin-rack"');
     for (const promesse of ["moteurs", "effets", "OP-1", "EP-133"]) {
-      expect(carte, `la carte ne mentionne pas « ${promesse} »`).toContain(promesse);
+      expect(entree, `la carte ne mentionne pas « ${promesse} »`).toContain(promesse);
     }
   });
 });
