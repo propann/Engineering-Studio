@@ -435,6 +435,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [selectedEngine, setSelectedEngine] = useState<string>("FM");
   const [selectedPatch, setSelectedPatch] = useState<string>("Classic 01");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
+  const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -464,6 +465,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     autoMidiAttemptedRef.current = true;
     void onConnectMidi({ silent: true });
   }, [onConnectMidi]);
+
+  function setOp1MachineMode(mode: "synth" | "drum" | "tape") {
+    setMachineMode(mode);
+    if (mode === "drum") setSelectedEngine("Drum");
+    if (mode === "synth" && selectedEngine === "Drum") setSelectedEngine("FM");
+    onNotice(`Mode OP-1 : ${mode === "synth" ? "SYNTH" : mode === "drum" ? "DRUM" : "TAPE"}.`);
+  }
 
   // Synchronisation du moteur audio OP-1 actif
   useEffect(() => {
@@ -1555,6 +1563,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             }}
             onSeek={seekTransport}
             onNotice={onNotice}
+            machineMode={machineMode}
             selectedEngine={selectedEngine}
             selectedPatch={selectedPatch}
             onEngineChange={setSelectedEngine}
@@ -1582,6 +1591,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             files={files}
             onTogglePlayback={toggleGlobalPlayback}
             onRecord={toggleTapeRecording}
+            onModeChange={setOp1MachineMode}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />
