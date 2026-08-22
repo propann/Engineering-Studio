@@ -132,6 +132,18 @@ function applyFade(interleaved: Float32Array, channels: number, sampleRate: numb
  * documentée `[64,14,172,68,0,0,0,0,0,0]` (référence `op-patch-util`), et par
  * un aller-retour via le parseur AIFF existant.
  */
+function validatePcmArguments(samples: Float32Array, channels: number, sampleRate: number): void {
+  if (!Number.isInteger(channels) || channels <= 0 || channels > 32) {
+    throw new RangeError("channels must be an integer between 1 and 32");
+  }
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0 || sampleRate > 384000) {
+    throw new RangeError("sampleRate must be finite and between 1 and 384000 Hz");
+  }
+  if (samples.length % channels !== 0) {
+    throw new RangeError("samples length must be divisible by channels");
+  }
+}
+
 function writeExtended80(view: DataView, offset: number, value: number): void {
   if (!value) { for (let i = 0; i < 10; i += 1) view.setUint8(offset + i, 0); return; }
   const sign = value < 0 ? 0x8000 : 0;
@@ -154,6 +166,7 @@ function writeExtended80(view: DataView, offset: number, value: number): void {
  * tout le dépôt plutôt que deux implémentations qui pourraient diverger).
  */
 export function encodeAiffPcm16(samples: Float32Array, channels: number, sampleRate: number): ArrayBuffer {
+  validatePcmArguments(samples, channels, sampleRate);
   const dataLength = samples.length * 2;
   const totalLength = 54 + dataLength;
   const buffer = new ArrayBuffer(totalLength);
@@ -182,6 +195,7 @@ export function encodeAiffPcm16(samples: Float32Array, channels: number, sampleR
 
 /** Encode des trames Float32 interleaved en WAV PCM 16 bits, avec dither TPDF (bruit triangulaire ~1 LSB avant l'arrondi, pas une troncature sèche). Utile en aperçu/export générique — l'OP-1 lui-même veut de l'AIFF, voir `encodeAiffPcm16`. */
 export function encodeWavPcm16(samples: Float32Array, channels: number, sampleRate: number): ArrayBuffer {
+  validatePcmArguments(samples, channels, sampleRate);
   const dataLength = samples.length * 2;
   const buffer = new ArrayBuffer(44 + dataLength);
   const view = new DataView(buffer);
@@ -236,6 +250,9 @@ export interface ConversionResult {
  * rien : le tampon produit reste en mémoire côté appelant.
  */
 export function convertToOp1Audio(sourceBytes: ArrayBuffer, options: ConversionOptions = {}): ConversionResult | null {
+  if (options.targetChannels !== undefined && ![1, 2].includes(options.targetChannels)) return null;
+  if (options.targetSampleRate !== undefined &&
+      (!Number.isFinite(options.targetSampleRate) || options.targetSampleRate <= 0 || options.targetSampleRate > 384000)) return null;
   const extracted = extractInterleaved(sourceBytes);
   if (!extracted || !extracted.frameCount) return null;
 
