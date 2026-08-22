@@ -2087,3 +2087,30 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
     width: 54%;
   }
 }
+
+.op1-screen-scale-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 25px;
+  padding: 0 8px;
+  color: #8bd5ff;
+  background: #102432;
+  border: 1px solid #31566a;
+  border-radius: 4px;
+  font: 800 9px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-scale-control input {
+  width: 78px;
+  accent-color: #4cace1;
+  cursor: pointer;
+}
+.op1-screen-scale-control output {
+  min-width: 30px;
+  color: #dcecff;
+  text-align: right;
+}
+@media (max-width: 700px) {
+  .op1-screen-scale-control { order: 3; }
+}
