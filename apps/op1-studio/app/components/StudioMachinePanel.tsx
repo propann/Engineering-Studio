@@ -886,7 +886,7 @@ export function StudioMachinePanel({
                       onDragStart={() => { dragPayloadRef.current = { kind: "real", entry }; }}
                     >
                       {(() => {
-                        const bigDigit = tEncoderPushDigit(entry.id) ?? trackDigit(entry.id);
+                        const bigDigit = tEncoderPushDigit(entry.id);
                         return bigDigit
                           ? <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
                               <text x={9} y={9} textAnchor="middle" dominantBaseline="central" fontSize={14} fontFamily="monospace" fontWeight="700" fill={bigDigit.color}>{bigDigit.digit}</text>
