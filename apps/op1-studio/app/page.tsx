@@ -389,6 +389,73 @@ function audioBufferToAiffMono(buffer: AudioBuffer): Blob {
   return new Blob([encodeAiffPcm16(mono, 1, buffer.sampleRate)], { type: "audio/aiff" });
 }
 
+type AutosaveSnapshot = {
+  version: 1;
+  projectName: string;
+  files: Record<number, string>;
+  sourceRefs: Record<number, { path: string; status: "linked" | "reconnect" }>;
+  durations: Record<number, number>;
+  clipEnds: Record<number, number>;
+  clipOffsets: Record<number, number>;
+  fadeIns: Record<number, number>;
+  fadeOuts: Record<number, number>;
+  muted: Record<number, boolean>;
+  gains: Record<number, number>;
+  solo: number | null;
+  selectedTrack: number;
+  tempo: number;
+  loopIn: number;
+  loopOut: number;
+  looping: boolean;
+  reversed: boolean;
+  screenScale: number;
+  midiEvents: MidiEvent[];
+};
+
+const OP1_AUTOSAVE_KEY = "op1-studio-autosave-v1";
+const OP1_AUTOSAVE_DB = "op1-studio-autosave";
+const OP1_AUTOSAVE_STORE = "audio";
+
+function openOp1AutosaveDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(OP1_AUTOSAVE_DB, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(OP1_AUTOSAVE_STORE);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveOp1AutosaveAudio(index: number, source: string) {
+  try {
+    const response = await fetch(source);
+    const blob = await response.blob();
+    const db = await openOp1AutosaveDb();
+    await new Promise<void>((resolve, reject) => {
+      const request = db.transaction(OP1_AUTOSAVE_STORE, "readwrite").objectStore(OP1_AUTOSAVE_STORE).put(blob, String(index));
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+  } catch {
+    // Une source temporaire ou un navigateur sans IndexedDB ne bloque pas le studio.
+  }
+}
+
+async function readOp1AutosaveAudio(index: number): Promise<Blob | null> {
+  try {
+    const db = await openOp1AutosaveDb();
+    const blob = await new Promise<Blob | undefined>((resolve, reject) => {
+      const request = db.transaction(OP1_AUTOSAVE_STORE, "readonly").objectStore(OP1_AUTOSAVE_STORE).get(String(index));
+      request.onsuccess = () => resolve(request.result as Blob | undefined);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return blob ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void; libraryHandle?: FileSystemDirectoryHandle | null }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   const [files, setFiles] = useState<Record<number, string>>({});
@@ -426,6 +493,62 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   const [screenScale, setScreenScale] = useState(1);
   const [keyboardFolded, setKeyboardFolded] = useState(false);
   const [sampleLibraryOpen, setSampleLibraryOpen] = useState(false);
+  const [autosaveReady, setAutosaveReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const raw = localStorage.getItem(OP1_AUTOSAVE_KEY);
+        const saved = raw ? JSON.parse(raw) as AutosaveSnapshot : null;
+        if (!saved || saved.version !== 1 || cancelled) { setAutosaveReady(true); return; }
+        setProjectName(saved.projectName ?? "Nouveau projet OP-1");
+        setFiles(saved.files ?? {});
+        setSourceRefs(saved.sourceRefs ?? {});
+        setDurations(saved.durations ?? {});
+        setClipEnds(saved.clipEnds ?? {});
+        setClipOffsets(saved.clipOffsets ?? {});
+        setFadeIns(saved.fadeIns ?? {});
+        setFadeOuts(saved.fadeOuts ?? {});
+        setMuted(saved.muted ?? {});
+        setGains(saved.gains ?? {});
+        setSolo(typeof saved.solo === "number" ? saved.solo : null);
+        setSelectedTrack(saved.selectedTrack ?? 0);
+        setTempo(saved.tempo ?? 90);
+        setLoopIn(saved.loopIn ?? 0);
+        setLoopOut(saved.loopOut ?? 16);
+        setLooping(Boolean(saved.looping));
+        setReversed(Boolean(saved.reversed));
+        setMidiEvents(saved.midiEvents ?? []);
+        const restoredSources: Record<number, string> = {};
+        for (const index of [0, 1, 2, 3]) {
+          const blob = await readOp1AutosaveAudio(index);
+          if (blob) restoredSources[index] = URL.createObjectURL(blob);
+        }
+        if (!cancelled) setSources(restoredSources);
+      } catch {
+        // Une sauvegarde absente ou invalide est ignorée sans bloquer l'interface.
+      } finally {
+        if (!cancelled) setAutosaveReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    const snapshot: AutosaveSnapshot = {
+      version: 1, projectName, files, sourceRefs, durations, clipEnds, clipOffsets,
+      fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut,
+      looping, reversed, screenScale, midiEvents,
+    };
+    try { localStorage.setItem(OP1_AUTOSAVE_KEY, JSON.stringify(snapshot)); } catch { /* quota locale atteinte */ }
+  }, [autosaveReady, projectName, files, sourceRefs, durations, clipEnds, clipOffsets, fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut, looping, reversed, screenScale, midiEvents]);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    Object.entries(sources).forEach(([rawIndex, source]) => { void saveOp1AutosaveAudio(Number(rawIndex), source); });
+  }, [autosaveReady, sources]);
+
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("op1-studio-view-config-v1") ?? "{}") as { screenScale?: number };
