@@ -92,7 +92,9 @@ jobs:
         run: npm run typecheck
       - name: Test
         working-directory: apps/op1-studio
-        run: npm run test
+        # `npm test` appelle `vinext build`, mais ce dépôt ne fournit pas d'index.html :
+        # les tests Node ci-dessous sont la suite réellement maintenue de ce studio.
+        run: node --test tests/rendered-html.test.mjs tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs
 
   studio-ep133:
     name: EP-133 Studio Checks
