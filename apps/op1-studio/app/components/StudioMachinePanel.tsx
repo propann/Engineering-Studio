@@ -26,6 +26,15 @@ import {
   type OP1ButtonDef, type ControlVisual,
 } from "../lib/op1Buttons7B";
 
+type Op1MachineMode = "synth" | "drum" | "tape";
+
+function machineModeFromControl(id: string): Op1MachineMode | null {
+  if (id === "synth") return "synth";
+  if (id === "drum") return "drum";
+  if (id === "tape-mode") return "tape";
+  return null;
+}
+
 function midiNoteName(note: number) {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return `${names[note % 12]}${Math.floor(note / 12) - 1}`;
@@ -432,6 +441,7 @@ export function StudioMachinePanel({
   pressedNotes = [],
   onTogglePlayback,
   onRecord,
+  onModeChange,
   onSendMidi,
   notesOnly = false,
   onPressedChange,
@@ -445,6 +455,7 @@ export function StudioMachinePanel({
   onTogglePlayback: () => void;
   /** Même action que REC sur l’écran simulé OP-1. */
   onRecord?: () => void;
+  onModeChange?: (mode: Op1MachineMode) => void;
   onSendMidi: (data: number[]) => void;
   onConnectMidi?: () => void;
   /** Zoome sur les touches note (blanches/noires) seulement, encodeurs/
@@ -814,6 +825,10 @@ export function StudioMachinePanel({
         // après association, Lecture et REC déclenchent le même handler.
         if (type === "trans" && idx === 0) onTogglePlayback();
         if (type === "trans" && idx === 1) onRecord?.();
+        if (type === "fn") {
+          const modeChange = machineModeFromControl(binding.realId);
+          if (modeChange) onModeChange?.(modeChange);
+        }
         break; // un seul bouton peut correspondre à un message donné
       }
 
@@ -1119,6 +1134,8 @@ export function StudioMachinePanel({
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedFn(s => new Set(s).add(i));
                     setLastFn(i);
+                    const modeChange = machineModeFromControl(fnRealId);
+                    if (modeChange) onModeChange?.(modeChange);
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
                   onPointerUp={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
