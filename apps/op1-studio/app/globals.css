@@ -2207,3 +2207,43 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 @media (max-width: 900px) {
   .op1-console-project-info { width: 100%; padding: 3px 0 0; border-left: 0; border-top: 1px solid #344446; }
 }
+
+/* Sélection de piste déplacée dans la bande de transport : aucun contrôle entre l'écran et le clavier. */
+.op1-track-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 26px;
+  padding: 2px 4px;
+  background: #11191a;
+  border: 1px solid #435253;
+  border-radius: 4px;
+}
+.op1-track-selector-label {
+  padding: 0 3px;
+  color: #ff9436;
+  font: 800 8px var(--font-geist-mono), monospace;
+  letter-spacing: .1em;
+}
+.op1-track-select-btn {
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  color: #172022;
+  background: #d7dbd8;
+  border: 1px solid #9aa19d;
+  border-radius: 3px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+}
+.op1-track-select-btn:hover,
+.op1-track-select-btn:focus-visible {
+  filter: brightness(1.08);
+  outline: 1px solid #ffffff;
+  outline-offset: 1px;
+}
+.op1-track-select-btn-1.is-selected { background: #698eff; border-color: #698eff; }
+.op1-track-select-btn-2.is-selected { background: #00ed95; border-color: #00ed95; }
+.op1-track-select-btn-3.is-selected { background: #dfd9ff; border-color: #dfd9ff; }
+.op1-track-select-btn-4.is-selected { background: #ff3a5d; border-color: #ff3a5d; }
+.op1-console-band-transport .op1-rec-btn { min-width: 72px; }
