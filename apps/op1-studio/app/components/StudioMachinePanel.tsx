@@ -448,6 +448,7 @@ export function StudioMachinePanel({
   onRecord,
   onModeChange,
   onOpenSoundMenu,
+  onSoundMenuEncoder,
   onSendMidi,
   notesOnly = false,
   onPressedChange,
@@ -463,6 +464,8 @@ export function StudioMachinePanel({
   onRecord?: () => void;
   onModeChange?: (mode: Op1MachineMode) => void;
   onOpenSoundMenu?: (slot: number) => void;
+  /** Navigation des colonnes du menu par encodeur : 0=moteur, 1=patch. */
+  onSoundMenuEncoder?: (encoder: number, delta: number) => void;
   onSendMidi: (data: number[]) => void;
   onConnectMidi?: () => void;
   /** Zoome sur les touches note (blanches/noires) seulement, encodeurs/
@@ -833,6 +836,7 @@ export function StudioMachinePanel({
         // après association, Lecture et REC déclenchent le même handler.
         if (type === "trans" && idx === 0) onTogglePlayback();
         if (type === "trans" && idx === 1) onRecord?.();
+        if (type === "enc" && idx <= 1) onSoundMenuEncoder?.(idx, lastRawMidiIn[2] - 64);
         if (type === "fn") {
           const modeChange = machineModeFromControl(binding.realId);
           if (modeChange) onModeChange?.(modeChange);
@@ -977,8 +981,9 @@ export function StudioMachinePanel({
               const v = Math.max(0, Math.min(127, startV + delta));
               setEncVals(arr => arr.map((x,i) => i===idx ? v : x));
               setLastEnc({ idx, v });
-              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               const role = encRoles[idx];
+              if (role && !role.isVolume && (role.tIndex === 0 || role.tIndex === 1)) onSoundMenuEncoder?.(role.tIndex, delta);
+              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
