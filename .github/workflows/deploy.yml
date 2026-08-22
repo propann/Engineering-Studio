@@ -32,7 +32,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -51,6 +51,77 @@ jobs:
       - name: Verify production build
         run: bun run build
 
+
+  security-scan-source:
+    name: Source Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan repository with Trivy
+        run: |
+          docker run --rm             -v "${GITHUB_WORKSPACE}:/repo"             aquasec/trivy:0.56.2             fs /repo             --scanners vuln,secret,misconfig             --format sarif             --output /repo/trivy-source-results.sarif             --severity CRITICAL,HIGH             --ignore-unfixed
+      - name: Upload source scan
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-source-results.sarif
+
+
+  studio-op1:
+    name: OP-1 Studio Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Install root dependencies for shared sources
+        run: npm install --package-lock=false --ignore-scripts
+      - name: Link private workspace packages
+        working-directory: apps/op1-studio
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.dependencies['@studio-hub/audio-bridge']='file:../../packages/audio-bridge'; p.dependencies['@studio-hub/midi-bridge']='file:../../packages/midi-bridge'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');"
+      - name: Install dependencies
+        working-directory: apps/op1-studio
+        run: npm install --package-lock=false --ignore-scripts ../../packages/audio-bridge ../../packages/audio-formats ../../packages/fs-handles ../../packages/midi-bridge ../../packages/midi-dispatch ../../packages/musique
+      - name: Type check
+        working-directory: apps/op1-studio
+        run: npm run typecheck
+      - name: Test OP-1 native contracts
+        working-directory: apps/op1-studio
+        # Ces contrats couvrent l'audio, les patches et le MIDI propres à l'OP-1.
+        # Le test rendered-html reste bloqué séparément tant que le build Vinext
+        # ne produit pas dist/server/index.js ; on ne transforme pas ce manque
+        # d'artefact en validation fictive du transfert OP-1.
+        run: node --experimental-strip-types --test tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs
+
+  studio-ep133:
+    name: EP-133 Studio Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+      - name: Install root dependencies for shared sources
+        run: npm install --package-lock=false --ignore-scripts
+      - name: Link private workspace packages
+        working-directory: apps/ep133-studio
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.dependencies['@studio-hub/audio-bridge']='file:../../packages/audio-bridge'; p.dependencies['@studio-hub/midi-bridge']='file:../../packages/midi-bridge'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');"
+      - name: Install dependencies
+        working-directory: apps/ep133-studio
+        run: npm install --package-lock=false --ignore-scripts ../../packages/audio-bridge ../../packages/audio-formats ../../packages/fs-handles ../../packages/midi-bridge ../../packages/midi-dispatch ../../packages/musique
+      - name: Type check
+        working-directory: apps/ep133-studio
+        run: npm run typecheck
+      - name: Test
+        working-directory: apps/ep133-studio
+        run: npm run test
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
@@ -63,7 +134,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set image tag
         id: image
@@ -79,18 +150,18 @@ jobs:
           echo "tag-latest=ghcr.io/${depot}:latest" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v6
         with:
           context: .
           # Construire partout, ne PUBLIER que depuis main.
@@ -128,17 +199,24 @@ jobs:
     # droit manquant.
     permissions:
       contents: read
+      packages: read
       security-events: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Login to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ needs.build.outputs.image-tag }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+        run: |
+          mkdir -p "${RUNNER_TEMP}/trivy"
+          docker run --rm             -v "${RUNNER_TEMP}/trivy:/out"             aquasec/trivy:0.56.2             image "${{ needs.build.outputs.image-tag }}"             --format sarif             --output /out/trivy-results.sarif             --severity CRITICAL,HIGH             --ignore-unfixed
+          cp "${RUNNER_TEMP}/trivy/trivy-results.sarif" trivy-results.sarif
 
       # v3 obligatoire : les versions 1 et 2 de l'action CodeQL sont depreciees
       # depuis janvier 2025 et echouent desormais.

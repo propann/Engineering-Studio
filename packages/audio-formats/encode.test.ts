@@ -241,3 +241,21 @@ describe("convertToOp1Audio", () => {
     expect(() => convertToOp1Audio(bruit.buffer)).not.toThrow();
   });
 });
+
+
+describe("encodeurs — validation des paramètres", () => {
+  it("refuse les canaux incohérents", () => {
+    expect(() => encodeAiffPcm16(new Float32Array([0, 1, 2]), 2, 44100)).toThrow(RangeError);
+    expect(() => encodeWavPcm16(new Float32Array([0, 1, 2]), 2, 44100)).toThrow(RangeError);
+  });
+
+  it("refuse une fréquence invalide", () => {
+    expect(() => encodeAiffPcm16(new Float32Array(0), 1, 0)).toThrow(RangeError);
+    expect(() => encodeWavPcm16(new Float32Array(0), 1, Number.NaN)).toThrow(RangeError);
+  });
+
+  it("refuse une conversion cible invalide", () => {
+    expect(convertToOp1Audio(new ArrayBuffer(0), { targetSampleRate: 0 })).toBeNull();
+    expect(convertToOp1Audio(new ArrayBuffer(0), { targetChannels: 3 as 1 | 2 })).toBeNull();
+  });
+});

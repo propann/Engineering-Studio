@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -20,7 +24,30 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ],
+      "@studio-hub/audio-bridge": [
+        "../../packages/audio-bridge/index.ts"
+      ],
+      "@studio-hub/audio-formats": [
+        "../../packages/audio-formats/index.ts"
+      ],
+      "@studio-hub/fs-handles": [
+        "../../packages/fs-handles/index.ts"
+      ],
+      "@studio-hub/midi-bridge": [
+        "../../packages/midi-bridge/index.ts"
+      ],
+      "@studio-hub/midi-dispatch": [
+        "../../packages/midi-dispatch/index.ts"
+      ],
+      "@studio-hub/musique": [
+        "../../packages/musique/index.ts"
+      ],
+      "@studio-hub/core/*": [
+        "../studio-hub/src/core/*"
+      ]
     }
   },
   "include": [
@@ -31,5 +58,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }
