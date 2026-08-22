@@ -34,6 +34,8 @@ const STUDIO_PAGES: StudioPage[] = [
   { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI des machines.", target: "Hub partagé" },
   { id: "op1-settings", label: "Réglages OP-1", description: "Configuration de la connexion OP-1.", target: "OP-1" },
   { id: "backup-lab", label: "Backup Lab", description: "Sauvegarde locale des deux machines.", target: "Hub partagé" },
+  { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue commun : import, empreinte SHA-256, étiquettes et favoris.", target: "Hub partagé" },
+  { id: "orphan-pages", label: "Recensement des pages", description: "Cette page : l’inventaire de toutes les pages et leur cible.", target: "Hub partagé" },
 ];
 
 const TARGET_CLASS: Record<ProjectTarget, string> = {

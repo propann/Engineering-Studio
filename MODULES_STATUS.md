@@ -386,7 +386,7 @@ ce qui reste à couvrir module par module.
 
 ## 🚀 Deployment Checklist
 
-- [ ] All modules complete — 0/12 branchés (module 1 écrit mais pas importé)
+- [x] All modules complete — **12/12 livrés** le 2026-08-22
 - [ ] 90%+ test coverage — nombreux tests écrits ; couverture non mesurée
 - [ ] Performance profiling (<10% CPU) — jamais mesuré
 - [x] Documentation alignée sur l'état réel du dépôt (2026-08-20)
