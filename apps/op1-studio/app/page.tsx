@@ -938,6 +938,52 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     } catch { onNotice("L'export Tape a échoué. Vérifiez les fichiers audio locaux."); }
   }
 
+  async function exportSingleTrack(index: number) {
+    const source = sources[index];
+    if (!source) {
+      onNotice(`La Piste ${index + 1} est vide, aucun fichier audio à exporter.`);
+      return;
+    }
+    try {
+      const sampleRate = 44100;
+      const tapeDuration = 360;
+      const context = new AudioContext();
+      const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer());
+      await context.close();
+      const offset = Math.max(0, Math.min(tapeDuration, clipOffsets[index] ?? 0));
+      const clipDuration = Math.min(tapeDuration - offset, clipEnds[index] ?? durations[index] ?? buffer.duration);
+      if (clipDuration <= 0) {
+        onNotice(`La Piste ${index + 1} ne contient aucune durée exportable.`);
+        return;
+      }
+      const fadeIn = Math.min(clipDuration, fadeIns[index] ?? 0);
+      const fadeOut = Math.min(clipDuration, fadeOuts[index] ?? 0);
+      const offline = new OfflineAudioContext(1, Math.ceil(tapeDuration * sampleRate), sampleRate);
+      const sourceNode = offline.createBufferSource();
+      const gainNode = offline.createGain();
+      sourceNode.buffer = buffer;
+      const level = gains[index] ?? 1;
+      gainNode.gain.setValueAtTime(fadeIn ? 0 : level, offset);
+      if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, offset + fadeIn);
+      if (fadeOut) {
+        gainNode.gain.setValueAtTime(level, Math.max(offset + fadeIn, offset + clipDuration - fadeOut));
+        gainNode.gain.linearRampToValueAtTime(0, offset + clipDuration);
+      }
+      sourceNode.connect(gainNode).connect(offline.destination);
+      sourceNode.start(offset);
+      sourceNode.stop(offset + clipDuration);
+      const rendered = await offline.startRendering();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(audioBufferToAiffMono(rendered));
+      link.download = `track_${index + 1}.aif`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      onNotice(`Piste ${index + 1} exportée avec sa position : track_${index + 1}.aif (AIFF mono 44.1 kHz).`);
+    } catch {
+      onNotice(`Échec de l'export de la Piste ${index + 1}.`);
+    }
+  }
+
   function clearTrack(index: number) {
     setFiles((prev) => {
       const next = { ...prev };
