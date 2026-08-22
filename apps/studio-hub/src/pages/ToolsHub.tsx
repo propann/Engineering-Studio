@@ -219,16 +219,8 @@ const cartes = (section: Section) =>
 
 const membres = (groupe: Groupe) => tools.filter((t) => t.groupe === groupe);
 
-const sections:Array<{id:Section;label:string;emoji:string}> = [
- {id:"hub",label:"HUB CENTRAL",emoji:"🔗"},
- {id:"op1",label:"OP-1 STUDIO",emoji:"🎹"},
- {id:"ep133",label:"EP-133 STUDIO",emoji:"🥁"},
- {id:"all",label:"TOUS LES OUTILS",emoji:"📦"},
-];
-
 export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
- const [activeSection,setActiveSection]=useState<Section>("all");
  const [groupeOuvert,setGroupeOuvert]=useState<Groupe|null>(null);
  const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
@@ -259,7 +251,7 @@ export default function ToolsHub(){
   }
  }
 
- const visibles = cartes(activeSection);
+ const visibles = cartes("all");
 
  return <main className="hub-page">
   <TopBar activePage="outils" profileName={profileName} onDocClick={scrollToDocumentation}/>
@@ -267,19 +259,6 @@ export default function ToolsHub(){
   {/* Les onglets de section : declares depuis le debut, jamais rendus, et
       inutilisables tant que les vrais outils vivaient dans des cartes ecrites
       a la main. Ils ont un sens maintenant que chaque outil porte sa section. */}
-  <nav className="hub-sections" aria-label="Filtrer les outils">
-   {sections.map(section => (
-    <button
-     key={section.id}
-     type="button"
-     className={`hub-section-btn ${activeSection === section.id ? "actif" : ""}`}
-     onClick={()=>setActiveSection(section.id)}
-    >
-     <span aria-hidden="true">{section.emoji}</span> {section.label}
-     <small>{cartes(section.id).length}</small>
-    </button>
-   ))}
-  </nav>
 
   <section className="tools-section-organized" aria-label="Outils organisés">
    <div className="utility-grid">
