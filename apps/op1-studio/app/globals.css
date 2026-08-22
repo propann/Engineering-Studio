@@ -1917,3 +1917,117 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   .op1-screen-track-selector { justify-content: center; }
   .op1-screen-record-button { width: 100%; }
 }
+
+
+/* Menu interne OP-1 : la cassette laisse place à l'écran de sélection machine. */
+.op1-screen-patch-menu {
+  min-height: clamp(220px, 24vw, 360px);
+  color: #dce8e3;
+  background: #090f13;
+  border: 1px solid #26353c;
+  font-family: var(--font-geist-mono), monospace;
+}
+.op1-screen-patch-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  color: #d8e5df;
+  background: #111b21;
+  border-bottom: 1px solid #26353c;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.op1-screen-patch-menu-head button {
+  width: 24px;
+  height: 24px;
+  color: #d8e5df;
+  background: transparent;
+  border: 1px solid #40515b;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.op1-screen-patch-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 190px;
+}
+.op1-screen-engine-column,
+.op1-screen-patch-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+.op1-screen-engine-column { background: rgba(76, 172, 225, .08); border-right: 1px solid #26353c; }
+.op1-screen-patch-column { background: rgba(41, 190, 135, .08); }
+.op1-screen-engine-column > strong,
+.op1-screen-patch-column > strong {
+  margin-bottom: 3px;
+  font-size: 9px;
+  letter-spacing: .13em;
+}
+.op1-screen-engine-column > strong { color: #4cace1; }
+.op1-screen-patch-column > strong { color: #29be87; }
+.op1-screen-engine-column button,
+.op1-screen-patch-column button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 26px;
+  padding: 5px 7px;
+  color: #b9c7c2;
+  background: rgba(6, 12, 16, .72);
+  border: 1px solid #26353c;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  font: 700 10px var(--font-geist-mono), monospace;
+}
+.op1-screen-engine-column button small,
+.op1-screen-patch-column button small {
+  color: #6f8189;
+  font-size: 8px;
+}
+.op1-screen-engine-column button:hover,
+.op1-screen-engine-column button.is-active {
+  color: #07131a;
+  background: #4cace1;
+  border-color: #8bd5ff;
+}
+.op1-screen-patch-column button:hover,
+.op1-screen-patch-column button.is-active {
+  color: #06130e;
+  background: #29be87;
+  border-color: #8cf0c1;
+}
+.op1-screen-patch-menu-foot {
+  padding: 7px 10px;
+  color: #70818a;
+  border-top: 1px solid #26353c;
+  font-size: 9px;
+}
+.op1-screen-menu-button {
+  min-height: 32px;
+  padding: 0 12px;
+  color: #8bd5ff;
+  background: #102432;
+  border: 1px solid #4cace1;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .05em;
+}
+.op1-screen-menu-button:hover,
+.op1-screen-menu-button[aria-expanded="true"] {
+  color: #06131a;
+  background: #4cace1;
+}
+@media (max-width: 560px) {
+  .op1-screen-patch-columns { grid-template-columns: 1fr; }
+  .op1-screen-engine-column { border-right: 0; border-bottom: 1px solid #26353c; }
+}
