@@ -2279,3 +2279,68 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   font: 800 8px var(--font-geist-mono), monospace;
 }
 .sound-use-sample:hover { background: #8fffd2; border-color: #8fffd2; }
+
+
+/* Transport visible du clavier MIDI virtuel et verrouillage de configuration locale. */
+.virtual-keyboard-transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 8px;
+  color: #91a09c;
+  background: #11191a;
+  border-bottom: 1px solid #263333;
+  font: 700 9px var(--font-geist-mono), monospace;
+}
+.virtual-keyboard-play {
+  min-width: 84px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #06130e;
+  background: #00ed95;
+  border: 1px solid #00ed95;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 9px var(--font-geist-mono), monospace;
+}
+.virtual-keyboard-play:hover,
+.virtual-keyboard-play:focus-visible,
+.virtual-keyboard-play.is-playing {
+  color: #06130e;
+  background: #8fffd2;
+  border-color: #8fffd2;
+}
+.machine-config-lock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  color: #52645b;
+  background: #eef4ef;
+  border-bottom: 1px solid #d6e2d9;
+  font: 8px var(--font-geist-mono), monospace;
+}
+.machine-config-lock-row button {
+  min-height: 22px;
+  padding: 0 8px;
+  color: #07130e;
+  background: #00ed95;
+  border: 1px solid #00ed95;
+  border-radius: 3px;
+  cursor: pointer;
+  font: 800 8px var(--font-geist-mono), monospace;
+}
+.machine-config-lock-row button:hover,
+.machine-config-lock-row button:focus-visible {
+  background: #8fffd2;
+  border-color: #8fffd2;
+}
+@media (max-width: 560px) {
+  .virtual-keyboard-transport { align-items: flex-start; flex-direction: column; }
+  .machine-config-lock-row { align-items: flex-start; flex-direction: column; }
+}

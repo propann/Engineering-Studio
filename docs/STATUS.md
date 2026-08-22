@@ -83,3 +83,10 @@ Ne pas utiliser « Production Ready » pour l’ensemble du produit tant que les
 tests automatisés, les parcours navigateur et la validation matérielle ne sont
 pas documentés. Dire plutôt : « Hub local fonctionnel, intégration matérielle
 en cours ».
+
+
+### Dernier alignement OP-1 Studio
+
+- Clavier MIDI virtuel : bouton LECTURE/PAUSE visible et relié au transport existant.
+- Configuration MIDI locale : enveloppe versionnée, sauvegardée côté client, avec verrouillage explicite après validation.
+- Journal MIDI : affichage limité aux 3 messages les plus récents ; le tampon diagnostic reste téléchargeable.

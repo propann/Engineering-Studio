@@ -50,3 +50,10 @@ Le clone possède une tirette **ÉCRAN** pour réduire ou agrandir l'affichage. 
 
 La barre **CONFIG** du châssis permet d'associer les commandes virtuelles aux commandes MIDI de la machine. Ces associations sont conservées localement sur le disque du client via le stockage navigateur ; les réglages de vue, le moteur et le patch actifs sont également inclus dans la fiche projet exportée `.op1studio.json`.
 
+
+## Clavier MIDI virtuel et configuration locale
+
+- Le bouton **LECTURE/PAUSE** est visible directement sous le clavier MIDI virtuel et réutilise le transport du studio.
+- La configuration des associations MIDI est enregistrée localement dans une enveloppe versionnée (op1-studio-control-config, version 1).
+- **Figer la configuration** désactive l'apprentissage et les modifications accidentelles ; le déverrouillage demande une action explicite.
+- La fenêtre de configuration affiche seulement les trois derniers messages du journal MIDI. Le tampon complet reste téléchargeable pour le diagnostic.

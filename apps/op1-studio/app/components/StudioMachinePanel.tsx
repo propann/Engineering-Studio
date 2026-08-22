@@ -166,13 +166,20 @@ const TRANS_STATIC_VISUAL: ControlVisual[] = ["play", "rec", "stop"];
 // clavier construit, pas une donnée machine).
 type LearnedBinding = { realId: string; realLabel: string; visual: ControlVisual; midi: number[] };
 type LearnedMap = Record<string, LearnedBinding>;
+type PersistedControlConfig = { schema: "op1-studio-control-config"; version: 1; frozen: boolean; bindings: LearnedMap };
 const LEARNED_MAP_KEY = "op1-studio-control-map-v1";
-function loadLearnedMapSync(): LearnedMap {
+function loadControlConfigSync(): { bindings: LearnedMap; frozen: boolean } {
   try {
-    if (typeof window === "undefined") return {};
+    if (typeof window === "undefined") return { bindings: {}, frozen: false };
     const raw = localStorage.getItem(LEARNED_MAP_KEY);
-    return raw ? (JSON.parse(raw) as LearnedMap) : {};
-  } catch { return {}; }
+    if (!raw) return { bindings: {}, frozen: false };
+    const parsed = JSON.parse(raw) as Partial<PersistedControlConfig> & LearnedMap;
+    if (parsed.schema === "op1-studio-control-config" && parsed.bindings) {
+      return { bindings: parsed.bindings, frozen: Boolean(parsed.frozen) };
+    }
+    const bindings = parsed as LearnedMap;
+    return { bindings, frozen: Object.keys(bindings).length > 0 };
+  } catch { return { bindings: {}, frozen: false }; }
 }
 
 // ── Journal MIDI (14 août 2026) ─────────────────────────────────────────
@@ -571,7 +578,22 @@ export function StudioMachinePanel({
   }
 
   function selectConfig(type: string, index: number, label: string) {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour la modifier."); return; }
     setConfigTarget({ type, index, label });
+  }
+
+  function toggleConfigFrozen() {
+    if (controlConfigFrozen) {
+      if (window.confirm("Déverrouiller la configuration du clavier pour la modifier ?")) {
+        setControlConfigFrozen(false);
+        setLearnFeedback("Configuration déverrouillée pour modification.");
+      }
+      return;
+    }
+    setControlConfigFrozen(true);
+    setConfigTarget(null);
+    setLearnStep(null); setLearnReal(null); setLearnVirtual(null); setLearnBaseline(null);
+    setLearnFeedback("Configuration figée sur cet appareil.");
   }
 
   // Joue les touches note construites depuis le clavier ordinateur. Ignoré
@@ -681,13 +703,14 @@ export function StudioMachinePanel({
   }
 
   // ── Procédure d'association touche réelle → bouton construit ───────────
-  const [learnedMap, setLearnedMap] = useState<LearnedMap>(() => loadLearnedMapSync());
+  const [learnedMap, setLearnedMap] = useState<LearnedMap>(() => loadControlConfigSync().bindings);
+  const [controlConfigFrozen, setControlConfigFrozen] = useState(() => loadControlConfigSync().frozen);
   const [controlSearch, setControlSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
   useEffect(() => {
-    try { localStorage.setItem(LEARNED_MAP_KEY, JSON.stringify(learnedMap)); } catch { /* stockage indisponible (navigation privée) : tant pis, pas bloquant */ }
-  }, [learnedMap]);
+    try { const saved: PersistedControlConfig = { schema: "op1-studio-control-config", version: 1, frozen: controlConfigFrozen, bindings: learnedMap }; localStorage.setItem(LEARNED_MAP_KEY, JSON.stringify(saved)); } catch { /* stockage indisponible (navigation privée) : tant pis, pas bloquant */ }
+  }, [learnedMap, controlConfigFrozen]);
   const [learnStep, setLearnStep] = useState<"pick-virtual" | "listen-machine" | null>(null);
   const [learnReal, setLearnReal] = useState<ControlRefEntry | null>(null);
   const [learnVirtual, setLearnVirtual] = useState<{ key: string; label: string } | null>(null);
@@ -695,6 +718,7 @@ export function StudioMachinePanel({
   const [learnFeedback, setLearnFeedback] = useState<string | null>(null);
 
   function applyOfficial7BMapping() {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour appliquer le mapping officiel."); return; }
     const newMap: LearnedMap = {};
     fnBlocks.forEach((b, i) => {
       const def = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
@@ -723,6 +747,7 @@ export function StudioMachinePanel({
   }
 
   function startLearn(entry: ControlRefEntry) {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour apprendre une association."); return; }
     setLearnReal(entry);
     setLearnVirtual(null);
     setLearnFeedback(null);
@@ -750,6 +775,7 @@ export function StudioMachinePanel({
   const dragPayloadRef = useRef<DragPayload | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   function handleDropOnVirtual(type: string, index: number, fallbackLabel: string) {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour déplacer une association."); return; }
     const payload = dragPayloadRef.current;
     dragPayloadRef.current = null;
     setDragOverKey(null);
@@ -870,11 +896,19 @@ export function StudioMachinePanel({
           ▼ clavier
         </button>
         {panelOpen && <button className={`mpanel-bar-btn${configOpen ? " is-active" : ""}`} onClick={() => { setConfigOpen(v => !v); setConfigTarget(null); }}>
-          {configOpen ? "fermer config" : "config"}
+          {controlConfigFrozen ? "config figée" : configOpen ? "fermer config" : "config"}
         </button>}
         <span className="mgrid-hint">{validated.length} blocs</span>
         <span className="mgrid-hint">clavier ordinateur : ZXCVBNM,./ QWER (+ SDGHJL;23 5)</span>
         {configOpen && <span className="mgrid-feedback" aria-live="polite">{lastPlayed}</span>}
+      </div>
+
+      <div className="virtual-keyboard-transport" aria-label="Transport du clavier MIDI virtuel">
+        <button type="button" className={`virtual-keyboard-play${playing ? " is-playing" : ""}`} onClick={onTogglePlayback} aria-pressed={playing}>
+          <span aria-hidden="true">{playing ? "❚❚" : "▶"}</span>
+          {playing ? "PAUSE" : "LECTURE"}
+        </button>
+        <span>Clavier MIDI virtuel · {controlConfigFrozen ? "configuration figée" : "configuration locale"}</span>
       </div>
 
       {panelOpen && configOpen && (
@@ -894,6 +928,11 @@ export function StudioMachinePanel({
               <small>Cliquez un autre contrôle pour le configurer.</small>
             </> : learnFeedback ? <strong className="control-learn-done">✓ {learnFeedback}</strong>
               : <small>Cliquez un bouton virtuel, une note ou un potentiomètre — ou une touche de la liste à droite pour l&apos;associer à un bouton du clavier construit.</small>}
+          </div>
+
+          <div className="machine-config-lock-row">
+            <span>{controlConfigFrozen ? "Configuration enregistrée et figée sur cet appareil." : "Configuration modifiable puis enregistrable sur cet appareil."}</span>
+            <button type="button" onClick={toggleConfigFrozen}>{controlConfigFrozen ? "Déverrouiller" : "Figer la configuration"}</button>
           </div>
 
           <div className="control-reference" aria-label="Liste complète des touches de la machine">
@@ -944,9 +983,9 @@ export function StudioMachinePanel({
             </div>
             <div className="midi-journal-list">
               {midiLog.length === 0 && <span className="control-ref-note">Aucun message pour l&apos;instant — jouez une touche ou branchez l&apos;OP-1 en mode contrôleur.</span>}
-              {/* slice(0, 1) n'affichait qu'un seul message : ce n'est pas un journal.
-                  Le tampon en garde 300, autant en montrer une page. */}
-              {[...midiLog].reverse().slice(0, 40).map((entry) => (
+              {/* Le tampon complet reste disponible au téléchargement ; la fenêtre
+                  n'affiche que les trois derniers messages pour rester compacte. */}
+              {[...midiLog].reverse().slice(0, 3).map((entry) => (
                 <div key={entry.id} className={`midi-journal-row midi-journal-${entry.dir}`}>
                   <span className="midi-journal-dir">{entry.dir === "in" ? "↓ IN" : "↑ OUT"}</span>
                   <span className="midi-journal-hex">{hexBytes(entry.data)}</span>
