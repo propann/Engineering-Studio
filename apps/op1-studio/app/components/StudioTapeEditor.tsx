@@ -43,16 +43,6 @@ function formatPos(sec: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${t}`;
 }
 
-// ── Chiffres 1-4 (boîte trackno, extrait tape.svg) ────────────────────────────
-function TrackNumber({ index }: { index: number }) {
-  switch (index) {
-    case 0: return <line x1="20.342" y1="9.378" x2="20.342" y2="24.367" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    case 1: return <path d="M13.222,14.443c0-2.797,2.266-5.065,5.063-5.065h3.927c2.77,0,5.011,2.197,5.011,4.964c0,2.242-1.263,3.985-3.511,4.778l-10.487,4.5v0.752h14.238" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    case 2: return <path d="M12.846,13.237c0-2.132,1.73-3.859,3.862-3.859h7.312c2.106,0,3.814,1.676,3.814,3.782c0,2.11-1.708,3.713-3.814,3.713h-6.678h6.678c2.106,0,3.814,1.604,3.814,3.712c0,2.107-1.708,3.784-3.814,3.784h-7.312c-2.133,0-3.862-1.728-3.862-3.862" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    default: return <polyline points="27.444,19.596 12.844,19.596 12.844,18.862 23.065,9.374 23.792,9.374 23.792,23.971" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-  }
-}
-
 // ── Props ─────────────────────────────────────────────────────────────────────
 export interface StudioTapeEditorProps {
   tracks: string[];
