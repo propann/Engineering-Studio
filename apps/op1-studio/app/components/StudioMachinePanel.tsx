@@ -990,7 +990,7 @@ export function StudioMachinePanel({
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
-            <rect x={0} y={0} width={COLS} height={ROWS} fill="#ffffff" />
+            <rect x={0} y={0} width={COLS} height={ROWS} fill="#d7dbd8" />
 
             {whiteBlocks.map((b, i) => {
               const note = WHITE_NOTES[i] ?? (60 + i);
