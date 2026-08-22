@@ -2247,3 +2247,5 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .op1-track-select-btn-3.is-selected { background: #dfd9ff; border-color: #dfd9ff; }
 .op1-track-select-btn-4.is-selected { background: #ff3a5d; border-color: #ff3a5d; }
 .op1-console-band-transport .op1-rec-btn { min-width: 72px; }
+
+/* CI sync: console layout verified on pull request. */
