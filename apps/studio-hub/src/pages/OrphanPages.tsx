@@ -53,8 +53,6 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "advanced-image", label: "Éditeur image avancé", description: "Édition avancée des visuels.", target: "Hub partagé" }
 ,
-  { id: "sound-editor", label: "Éditeur sonore", description: "Bibliothèque et édition des sons.", target: "Hub partagé" }
-,
   { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1" }
 ,
   { id: "audio-plugin-rack", label: "Audio Plugin Rack", description: "Rack audio applicatif partagé.", target: "Hub partagé" }
@@ -90,10 +88,9 @@ const PAGE_LINKS: Record<string, string[]> = {
   "theme-editor": ["Page manager"],
   "theme-project": ["Page manager"],
   "advanced-image": ["Page manager"],
-  "sound-editor": ["TopBar · Sons", "Hub · Son"],
   "sound-patch-creator": ["Page manager"],
   "audio-plugin-rack": ["Hub · Labo création sonore"],
-  "sound-library": ["Hub · Bibliothèque sonore"],
+  "sound-library": ["TopBar · Bibliothèque sonore", "Hub · Bibliothèque sonore"],
   "midi-settings": ["Hub · Réglages"],
   "op1-settings": ["Hub · Réglages"],
   "backup-lab": ["Hub · Sauvegarde"],
