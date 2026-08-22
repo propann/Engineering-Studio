@@ -164,4 +164,4 @@ export function suggestNormalizationGainDb(peak: number): number {
 }
 
 // Logger utility for all applications
-export { createLogger, globalLogger, default as Logger } from './logger';
+export { createLogger, globalLogger, default as Logger } from './logger.ts';
