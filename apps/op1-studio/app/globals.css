@@ -2247,3 +2247,35 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 .op1-track-select-btn-3.is-selected { background: #dfd9ff; border-color: #dfd9ff; }
 .op1-track-select-btn-4.is-selected { background: #ff3a5d; border-color: #ff3a5d; }
 .op1-console-band-transport .op1-rec-btn { min-width: 72px; }
+
+/* Bibliothèque de samples sauvegardés ouverte depuis la console OP-1. */
+.op1-sample-library-drawer {
+  margin: 8px 0 10px;
+  padding: 8px;
+  background: #11191a;
+  border: 1px solid #435253;
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.28);
+}
+.op1-sample-library-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 4px 8px;
+  color: #d7dbd8;
+}
+.op1-sample-library-drawer-head div { display: flex; flex-direction: column; gap: 3px; }
+.op1-sample-library-drawer-head strong { color: #00ed95; font: 800 10px var(--font-geist-mono), monospace; letter-spacing: .08em; }
+.op1-sample-library-drawer-head small { color: #91a09c; font: 9px var(--font-geist-mono), monospace; }
+.op1-sample-library-drawer-head > button {
+  width: 26px; height: 26px; color: #d7dbd8; background: #202b2c;
+  border: 1px solid #435253; border-radius: 4px; cursor: pointer; font-size: 17px;
+}
+.op1-sample-library-drawer .sound-library-index { margin-top: 0; }
+.sound-use-sample {
+  min-height: 20px; padding: 0 6px; color: #07130e; background: #00ed95;
+  border: 1px solid #00ed95; border-radius: 3px; cursor: pointer;
+  font: 800 8px var(--font-geist-mono), monospace;
+}
+.sound-use-sample:hover { background: #8fffd2; border-color: #8fffd2; }

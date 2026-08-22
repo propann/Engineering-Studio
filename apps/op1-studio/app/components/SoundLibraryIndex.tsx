@@ -26,6 +26,7 @@ type SoundAsset = {
   /** Patch OP-1 lu depuis le chunk APPL/op-1 (AIFF seulement) — voir app/lib/aiffPatchOracle.ts. */
   patch?: Op1PatchData | null;
   markers?: DrumMarker[] | null;
+  file?: File;
 };
 
 function effectiveDuration(asset: SoundAsset): number | null {
@@ -113,7 +114,7 @@ async function collectSharedAudio(directory: LibraryDirectory, prefix = ""): Pro
   return result;
 }
 
-export function SoundLibraryIndex({ libraryHandle }: { libraryHandle?: FileSystemDirectoryHandle | null }) {
+export function SoundLibraryIndex({ libraryHandle, onUseSample }: { libraryHandle?: FileSystemDirectoryHandle | null; onUseSample?: (sample: { name: string; file: File; duration: number | null }) => void }) {
   const [assets, setAssets] = useState(initialAssets);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | SoundKind>("all");
@@ -138,7 +139,7 @@ export function SoundLibraryIndex({ libraryHandle }: { libraryHandle?: FileSyste
           const url = URL.createObjectURL(item.file);
           objectUrlsRef.current.add(url);
           const inspected = await inspectFile(item.file).catch(() => ({ duration: 0, peaks: [], patch: null, markers: null }));
-          sharedAssets.push({ id: `hub-${item.path}`, name: item.name, kind: "synth", origin: "ORDINATEUR", duration: inspected.duration || null, status: statusFor("synth", inspected.duration || null), favorite: false, peaks: inspected.peaks, patch: inspected.patch, markers: inspected.markers, url, shared: true });
+          sharedAssets.push({ id: `hub-${item.path}`, name: item.name, kind: "synth", origin: "ORDINATEUR", duration: inspected.duration || null, status: statusFor("synth", inspected.duration || null), favorite: false, peaks: inspected.peaks, patch: inspected.patch, markers: inspected.markers, url, file: item.file, shared: true });
         }
         if (!cancelled) { setAssets([...sharedAssets, ...initialAssets]); setSharedStatus(`${sharedAssets.length} fichier${sharedAssets.length > 1 ? "s" : ""} du workspace Hub`); }
       } catch {
@@ -167,7 +168,7 @@ export function SoundLibraryIndex({ libraryHandle }: { libraryHandle?: FileSyste
     const imported = Array.from(files).map((file) => {
       const url = URL.createObjectURL(file);
       objectUrlsRef.current.add(url);
-      return { id: `${file.name}-${file.lastModified}`, name: file.name, kind: "synth" as const, origin: "ORDINATEUR" as const, duration: null, status: "A VERIFIER" as const, favorite: false, url };
+      return { id: `${file.name}-${file.lastModified}`, name: file.name, kind: "synth" as const, origin: "ORDINATEUR" as const, duration: null, status: "A VERIFIER" as const, favorite: false, url, file };
     });
     setAssets((current) => [...imported, ...current]);
     imported.forEach((asset, index) => {
@@ -212,6 +213,7 @@ export function SoundLibraryIndex({ libraryHandle }: { libraryHandle?: FileSyste
             <div className="sound-library-card" key={asset.id}>
               <div className="sound-library-name-line">
                 <button type="button" className="sound-preview" disabled={!asset.url} aria-label={`Écouter ${asset.name}`} onClick={() => preview(asset)}>▶</button>
+                {asset.file && onUseSample && <button type="button" className="sound-use-sample" onClick={() => onUseSample({ name: asset.name, file: asset.file as File, duration: asset.duration })}>UTILISER</button>}
                 <strong>{asset.name}</strong>
                 {asset.patch && <small className="sound-patch-badge">{asset.patch.type}</small>}
                 <button type="button" className={`sound-favorite ${asset.favorite ? "is-active" : ""}`} aria-label={`${asset.favorite ? "Retirer" : "Ajouter"} ${asset.name} des favoris`} onClick={() => toggleFavorite(asset.id)}>★</button>
