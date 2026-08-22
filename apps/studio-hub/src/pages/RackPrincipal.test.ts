@@ -100,19 +100,15 @@ describe("l'ouverture est portee par la donnee", () => {
   });
 });
 
-describe("les sections deviennent utilisables", () => {
-  it("les onglets sont rendus", () => {
-    // Declares depuis le debut, jamais affiches, et inutilisables tant que les
-    // vrais outils vivaient hors du tableau.
-    expect(RACK).toContain("sections.map(section");
-    expect(RACK).toContain("setActiveSection(section.id)");
+describe("navigation principale", () => {
+  it("conserve uniquement la TopBar", () => {
+    expect(RACK).not.toContain("hub-sections");
+    expect(RACK).not.toContain("setActiveSection");
   });
 
-  it("aucune section n'est vide", () => {
-    // Rebranchees telles quelles avant la fusion, « OP-1 STUDIO » et
-    // « EP-133 STUDIO » auraient affiche ZERO outil.
+  it("garde des cartes pour les deux studios", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
-    const entrees = [...bloc.matchAll(/id: "([^"]+)"[\s\S]*?section: "(hub|op1|ep133)"/g)];
+    const entrees = [...bloc.matchAll(/id: "([^"]+)"[\\s\\S]*?section: "(hub|op1|ep133)"/g)];
     const cartes = entrees.filter((m) => {
       const suite = bloc.slice(m.index!, m.index! + 900);
       const fin = suite.indexOf("\n  },");
@@ -121,14 +117,6 @@ describe("les sections deviennent utilisables", () => {
     for (const section of ["hub", "op1", "ep133"]) {
       const n = cartes.filter((m) => m[2] === section).length;
       expect(n, `la section « ${section} » n'a aucune carte`).toBeGreaterThan(0);
-    }
-  });
-
-  it("les onglets ont un style", () => {
-    // Une classe posee sans regle CSS : le defaut que ni le typecheck ni le
-    // build ne voient.
-    for (const c of ["hub-sections", "hub-section-btn"]) {
-      expect(CSS, `.${c} sans regle`).toMatch(new RegExp(`\\.${c}[\\s,{:.]`));
     }
   });
 });
