@@ -11,7 +11,7 @@
  * - Ne casse et ne modifie JAMAIS le clavier d'origine (StudioMachinePanel), assurant l'isolation totale du code.
  */
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   loadKeyboardLayout,
   loadKeyboardLayoutSync,
@@ -26,9 +26,6 @@ import {
 import { op1AudioEngine } from "../lib/op1SynthEngine";
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-function midiNoteName(note: number) {
-  return `${NOTE_NAMES[note % 12]}${Math.floor(note / 12) - 1}`;
-}
 
 const WHITE_KEY_CODES = ["KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash", "KeyQ", "KeyW", "KeyE", "KeyR"];
 const BLACK_KEY_CODES = ["KeyS", "KeyD", "KeyG", "KeyH", "KeyJ", "KeyL", "Semicolon", "Digit2", "Digit3", "Digit5"];
@@ -86,10 +83,15 @@ export function GameGuitarHeroKeyboard({
     onPressedChange?.(pressed);
   }, [pressed, onPressedChange]);
 
+  useEffect(() => {
+    op1AudioEngine.setEngine(soundEngine);
+    op1AudioEngine.setPatch(soundPatch);
+  }, [soundEngine, soundPatch]);
+
   const { white: whiteBlocks, black: blackBlocks } = sortKeyBlocks(validated);
   const bounds = layoutBounds([...whiteBlocks, ...blackBlocks], COLS, ROWS);
 
-  function noteOn(note: number) {
+  const noteOn = useCallback((note: number) => {
     setPressed((s) => new Set(s).add(note));
     if (!gameMuted) {
       op1AudioEngine.triggerNoteOn(note, 110);
@@ -97,9 +99,9 @@ export function GameGuitarHeroKeyboard({
     if (onSendMidi) {
       onSendMidi([0x90, Math.max(0, Math.min(127, note)), 100]);
     }
-  }
+  }, [gameMuted, onSendMidi]);
 
-  function noteOff(note: number) {
+  const noteOff = useCallback((note: number) => {
     setPressed((s) => {
       const ns = new Set(s);
       ns.delete(note);
@@ -109,7 +111,7 @@ export function GameGuitarHeroKeyboard({
     if (onSendMidi) {
       onSendMidi([0x80, Math.max(0, Math.min(127, note)), 0]);
     }
-  }
+  }, [onSendMidi]);
 
   // Raccourcis clavier physique ordinateur (AZERTY / QWERTY)
   useEffect(() => {
@@ -147,7 +149,7 @@ export function GameGuitarHeroKeyboard({
       window.removeEventListener("keyup", onKeyUp);
       heldKeys.clear();
     };
-  }, [whiteBlocks.length, blackBlocks.length, gameMuted]);
+  }, [noteOff, noteOn]);
 
   return (
     <div

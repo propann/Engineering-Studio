@@ -1,9 +1,11 @@
-import { createLogger } from "@studio-hub/audio-bridge";
-const log = createLogger("FirmwareLab");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createLogger } from "@studio-hub/audio-bridge";
 import { TopBar } from "../components/TopBar";
+import { sanitizeSvg } from "../../../op1-studio/app/lib/sanitizeSvg";
+
+const log = createLogger("FirmwareLab");
 
 // ── Types ──
 type FirmwareCategory = "tape" | "album" | "synth" | "mixer" | "system";
@@ -42,15 +44,16 @@ export interface ThemePreset {
   previewColor: string;
 }
 
-export interface CompilationReport {
-  startTime: number;
-  endTime: number;
+export interface PreparationReport {
+  createdAt: string;
   totalAssets: number;
   modifiedAssets: number;
   appliedTheme?: string;
-  hash: string;
-  status: "success" | "warning" | "error";
+  planSha256: string;
+  status: "prepared";
+  warnings: string[];
   logs: string[];
+  plan: Record<string, unknown>;
 }
 
 // ── Thèmes prédéfinis prêts à l'emploi ──
@@ -141,7 +144,7 @@ const OP1_COLOR_PALETTE = [
 
 export default function FirmwareLab() {
   const [profileName] = useState("NOUVEAU MEMBRE");
-  const [notice, setNotice] = useState("⚡ Lab Firmware OP-1 prêt : édition, thèmes & repaquetage");
+  const [notice, setNotice] = useState("⚡ Lab Firmware OP-1 prêt : édition, thèmes et préparation locale");
   const [activeTab, setActiveTab] = useState<"repack" | "theme" | "shared" | "gallery">("repack");
 
   // ── Modèles & Manifeste Stock ──
@@ -161,11 +164,10 @@ export default function FirmwareLab() {
   const [sharedDrawings, setSharedDrawings] = useState<SharedDrawing[]>([]);
   const [importStatus, setImportStatus] = useState<string>("");
 
-  // ── Compilateur / Repackaging ──
-  const [compiling, setCompiling] = useState(false);
-  const [compileProgress, setCompileProgress] = useState(0);
-  const [compileLogs, setCompileLogs] = useState<string[]>([]);
-  const [lastReport, setLastReport] = useState<CompilationReport | null>(null);
+  // ── Préparation du plan local ──
+  const [preparing, setPreparing] = useState(false);
+  const [preparationLogs, setPreparationLogs] = useState<string[]>([]);
+  const [lastReport, setLastReport] = useState<PreparationReport | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -310,12 +312,17 @@ export default function FirmwareLab() {
             setImportStatus("⚠️ Le fichier JSON ne contient pas de cartographie de couleurs 'colorMap'.");
           }
         } else if (file.name.endsWith(".svg")) {
-          // Importation SVG directe vers le dossier commun
+          const safeSvg = sanitizeSvg(content);
+          if (!safeSvg) {
+            setImportStatus("❌ SVG refusé : contenu invalide ou éléments non autorisés.");
+            return;
+          }
+          // Importation SVG contrôlée vers le dossier commun
           const newDrawing: SharedDrawing = {
             id: `imported-${Date.now()}`,
             title: file.name.replace(".svg", ""),
             category: selectedCategory || "system",
-            svgContent: content,
+            svgContent: safeSvg,
             updatedAt: new Date().toISOString()
           };
           const updated = [...sharedDrawings, newDrawing];
@@ -342,86 +349,82 @@ export default function FirmwareLab() {
     }
   };
 
-  // Lancer le Repaquetage & la Compilation complète du Firmware
-  const startFirmwareCompilation = async () => {
-    setCompiling(true);
-    setCompileProgress(0);
-    setCompileLogs([]);
-    const logs: string[] = [];
+  async function sha256Text(value: string) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
 
-    const addLog = (msg: string) => {
-      const time = new Date().toLocaleTimeString();
-      const line = `[${time}] ${msg}`;
-      logs.push(line);
-      setCompileLogs((prev) => [...prev, line]);
-    };
-
-    addLog("🚀 Démarrage du repaquetage firmware OP-1...");
-    setCompileProgress(10);
-
-    await new Promise((r) => setTimeout(r, 300));
-    addLog(`📦 Analyse du manifeste stock (${manifest?.assetCount || 120} écrans identifiés)`);
-    setCompileProgress(30);
-
-    await new Promise((r) => setTimeout(r, 400));
-    addLog(`🎨 Application du thème de couleur actif sur les écrans vectoriels...`);
-    setCompileProgress(55);
-
-    await new Promise((r) => setTimeout(r, 350));
-    addLog(`📂 Intégration des ${sharedDrawings.length} éléments personnalisés du dossier commun`);
-    setCompileProgress(75);
-
-    await new Promise((r) => setTimeout(r, 400));
-    addLog("🔒 Vérification des sommes de contrôle SHA-256 et alignement binaire");
-    setCompileProgress(90);
-
-    await new Promise((r) => setTimeout(r, 300));
-    const generatedHash = Math.random().toString(36).substring(2, 10).toUpperCase();
-    addLog(`✅ Repaquetage accompli avec succès ! Empreinte : TE-FW-${generatedHash}`);
-    setCompileProgress(100);
-
-    const report: CompilationReport = {
-      startTime: Date.now() - 1750,
-      endTime: Date.now(),
-      totalAssets: manifest?.assetCount || 120,
-      modifiedAssets: sharedDrawings.length + Object.keys(customColorMap).length,
-      appliedTheme: PRESET_THEMES.find((t) => t.id === activeThemeId)?.name || themeNameInput,
-      hash: `TE-FW-${generatedHash}`,
-      status: "success",
-      logs
-    };
-
-    setLastReport(report);
-    setCompiling(false);
-    setNotice("✅ Firmware repaqueté et prêt pour l'exportation local / machine !");
+  // Prépare un plan contrôlable par le futur pont local. Aucun firmware
+  // binaire n'est fabriqué dans le navigateur et aucun accès machine n'est
+  // revendiqué ici.
+  const prepareFirmwarePlan = async () => {
+    setPreparing(true);
+    setPreparationLogs([]);
+    try {
+      const drawings = sharedDrawings
+        .map((drawing) => ({ ...drawing, svgContent: sanitizeSvg(drawing.svgContent) }))
+        .filter((drawing) => drawing.svgContent);
+      const rejectedCount = sharedDrawings.length - drawings.length;
+      const appliedTheme = PRESET_THEMES.find((theme) => theme.id === activeThemeId)?.name || themeNameInput;
+      const plan = {
+        schema: "op1-firmware-preparation-plan",
+        version: 1,
+        generatedAt: new Date().toISOString(),
+        source: {
+          manifestPath: "/firmware-original/manifest.json",
+          firmwareVersion: null,
+          manifestAssets: manifest?.assets.map(({ file, sha256, category }) => ({ file, sha256, category })) ?? [],
+        },
+        theme: { name: appliedTheme, colorMap: customColorMap },
+        drawings: drawings.map(({ id, title, category, svgContent, appliedToAsset }) => ({ id, title, category, svgContent, appliedToAsset })),
+      };
+      const serialized = JSON.stringify(plan);
+      const planSha256 = await sha256Text(serialized);
+      const logs = [
+        `Manifeste source lu : ${manifest?.assetCount ?? 0} asset(s).`,
+        `Thème préparé : ${appliedTheme}.`,
+        `Dessins SVG contrôlés : ${drawings.length}.`,
+        `Plan SHA-256 : ${planSha256}.`,
+      ];
+      const warnings = [
+        ...(rejectedCount ? [`${rejectedCount} SVG non sûr(s) écarté(s).`] : []),
+        "Plan seulement : le repaquetage binaire exige le pont local OP-1 et reste indisponible dans cette page web.",
+      ];
+      setPreparationLogs([...logs, ...warnings]);
+      setLastReport({
+        createdAt: plan.generatedAt,
+        totalAssets: manifest?.assetCount ?? 0,
+        modifiedAssets: drawings.length + Object.keys(customColorMap).length,
+        appliedTheme,
+        planSha256,
+        status: "prepared",
+        warnings,
+        logs,
+        plan,
+      });
+      setNotice("✅ Plan local préparé et vérifié. Aucun firmware binaire n'a été généré ni écrit sur la machine.");
+    } catch (error) {
+      setNotice(`❌ Préparation impossible : ${error instanceof Error ? error.message : "erreur inconnue"}`);
+    } finally {
+      setPreparing(false);
+    }
   };
 
-  // Télécharger le fichier binaire / manifest du firmware repaqueté
-  const downloadFirmwarePatch = () => {
+  const downloadFirmwarePlan = () => {
     if (!lastReport) return;
-    const patchData = {
-      schema: "op1-firmware-patch",
-      version: "2.43-MOD",
-      buildHash: lastReport.hash,
-      timestamp: new Date().toISOString(),
-      appliedTheme: lastReport.appliedTheme,
-      colorMap: customColorMap,
-      customDrawingsCount: sharedDrawings.length,
-      drawings: sharedDrawings.map((d) => ({ id: d.id, title: d.title, category: d.category }))
-    };
-
-    const blob = new Blob([JSON.stringify(patchData, null, 2)], { type: "application/json" });
+    const payload = { ...lastReport.plan, planSha256: lastReport.planSha256 };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `op1-firmware-mod-${lastReport.hash}.json`;
+    link.download = `op1-firmware-plan-${lastReport.planSha256.slice(0, 12)}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setNotice("📥 Fichier patch firmware téléchargé !");
+    setNotice("📥 Plan de préparation téléchargé. Ce fichier n'est pas un firmware installable.");
   };
 
-  const selectedSvgRaw = selectedAsset ? svgCache[`${selectedAsset.category}/${selectedAsset.file}`] || "" : "";
-  const selectedSvgThemed = applyColorMapToSvg(selectedSvgRaw, customColorMap);
+  const selectedSvgRaw = sanitizeSvg(selectedAsset ? svgCache[`${selectedAsset.category}/${selectedAsset.file}`] || "" : "");
+  const selectedSvgThemed = sanitizeSvg(applyColorMapToSvg(selectedSvgRaw, customColorMap));
 
   return (
     <div className="hub-page firmware-lab-page" style={{ background: "#0e1015", color: "#e2e8f0", minHeight: "100vh" }}>
@@ -441,7 +444,7 @@ export default function FirmwareLab() {
               </span>
             </div>
             <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#94a3b8" }}>
-              Atelier d'édition, thèmes, repaquetage binaire et dossier commun synchronisé avec l'application de dessin.
+              Atelier d'édition et de préparation locale. Le repaquetage binaire reste réservé au pont OP-1 local.
             </p>
           </div>
 
@@ -497,7 +500,7 @@ export default function FirmwareLab() {
               gap: "8px"
             }}
           >
-            ⚡ Repaquetage & Compilation
+            ⚡ Préparation locale
           </button>
           <button
             type="button"
@@ -558,61 +561,48 @@ export default function FirmwareLab() {
           </button>
         </nav>
 
-        {/* ── ONGLET 1 : REPAQUETAGE & COMPILATION ── */}
+        {/* ── ONGLET 1 : PRÉPARATION LOCALE ── */}
         {activeTab === "repack" && (
           <section className="tab-section-repack" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "20px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {/* Carte de contrôle du compilateur */}
+              {/* Carte de préparation du plan */}
               <div style={{ background: "#151921", border: "1px solid #232a35", borderRadius: "10px", padding: "20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "bold", color: "#f8fafc" }}>
-                      Générateur de Firmware Moddé OP-1
+                      Plan de modification OP-1
                     </h3>
                     <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#94a3b8" }}>
-                      Combine le manifeste d'origine, le thème personnalisé et les éléments du dossier commun.
+                      Contrôle les SVG et prépare un manifeste pour le futur pont local. Aucun binaire n'est généré ici.
                     </p>
                   </div>
                   <button
                     type="button"
-                    disabled={compiling}
-                    onClick={startFirmwareCompilation}
+                    disabled={preparing}
+                    onClick={() => void prepareFirmwarePlan()}
                     style={{
-                      background: compiling ? "#334155" : "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                      background: preparing ? "#334155" : "linear-gradient(135deg, #2563eb, #1d4ed8)",
                       color: "#ffffff",
                       border: "none",
                       padding: "12px 24px",
                       borderRadius: "8px",
                       fontSize: "14px",
                       fontWeight: "bold",
-                      cursor: compiling ? "not-allowed" : "pointer",
+                      cursor: preparing ? "not-allowed" : "pointer",
                       boxShadow: "0 4px 12px rgba(37,99,235,0.3)"
                     }}
                   >
-                    {compiling ? `⚡ Repaquetage en cours (${compileProgress}%)...` : "🚀 Lancer le Repaquetage"}
+                    {preparing ? "⚡ Vérification en cours…" : "Préparer le plan"}
                   </button>
                 </div>
 
-                {/* Barre de progression */}
-                {compiling && (
-                  <div style={{ marginTop: "14px", marginBottom: "14px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#cbd5e1", marginBottom: "4px" }}>
-                      <span>Progression binaire</span>
-                      <span>{compileProgress}%</span>
-                    </div>
-                    <div style={{ width: "100%", height: "8px", background: "#0f172a", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ width: `${compileProgress}%`, height: "100%", background: "#3b82f6", transition: "width 0.2s ease" }} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Journal de compilation */}
+                {/* Journal de préparation */}
                 <div style={{ background: "#0a0c10", border: "1px solid #1a202c", borderRadius: "6px", padding: "12px", fontFamily: "monospace", fontSize: "11px", color: "#a0aec0", maxHeight: "180px", overflowY: "auto", marginTop: "12px" }}>
-                  {compileLogs.length === 0 ? (
-                    <div style={{ opacity: 0.5, fontStyle: "italic" }}>Appuyez sur "Lancer le Repaquetage" pour démarrer l'assemblage du firmware.</div>
+                  {preparationLogs.length === 0 ? (
+                    <div style={{ opacity: 0.5, fontStyle: "italic" }}>Prépare un plan pour vérifier les assets avant un futur traitement par le pont local.</div>
                   ) : (
-                    compileLogs.map((log, index) => (
-                      <div key={index} style={{ marginBottom: "2px", color: log.includes("✅") ? "#4ade80" : log.includes("🚀") ? "#60a5fa" : "#cbd5e1" }}>
+                    preparationLogs.map((log, index) => (
+                      <div key={index} style={{ marginBottom: "2px", color: log.includes("indisponible") || log.includes("écarté") ? "#fbbf24" : "#cbd5e1" }}>
                         {log}
                       </div>
                     ))
@@ -620,29 +610,29 @@ export default function FirmwareLab() {
                 </div>
               </div>
 
-              {/* Rapport de résultat après compilation */}
+              {/* Rapport de préparation */}
               {lastReport && (
                 <div style={{ background: "#131e17", border: "1px solid #22c55e44", borderRadius: "10px", padding: "20px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span style={{ fontSize: "20px" }}>✅</span>
                       <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "bold", color: "#4ade80" }}>
-                        Rapport de Compilation Réussie
+                        Plan local prêt
                       </h3>
                     </div>
                     <button
                       type="button"
-                      onClick={downloadFirmwarePatch}
+                      onClick={downloadFirmwarePlan}
                       style={{ background: "#22c55e", color: "#052e16", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "12px", fontWeight: "bold", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                     >
-                      📥 Télécharger le Patch (.json)
+                      📥 Télécharger le plan (.json)
                     </button>
                   </div>
 
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
                     <div style={{ background: "#0d1712", padding: "12px", borderRadius: "6px", border: "1px solid #1c3d27" }}>
-                      <small style={{ color: "#86efac", fontSize: "11px", display: "block" }}>Empreinte / Hash</small>
-                      <strong style={{ fontSize: "14px", color: "#ffffff", fontFamily: "monospace" }}>{lastReport.hash}</strong>
+                      <small style={{ color: "#86efac", fontSize: "11px", display: "block" }}>SHA-256 du plan</small>
+                      <strong style={{ fontSize: "11px", color: "#ffffff", fontFamily: "monospace", overflowWrap: "anywhere" }}>{lastReport.planSha256}</strong>
                     </div>
                     <div style={{ background: "#0d1712", padding: "12px", borderRadius: "6px", border: "1px solid #1c3d27" }}>
                       <small style={{ color: "#86efac", fontSize: "11px", display: "block" }}>Assets Modifiés</small>
@@ -827,7 +817,7 @@ export default function FirmwareLab() {
                       </div>
 
                       {/* Aperçu Visuel du Dessin */}
-                      <div style={{ background: "#000000", border: "1px solid #334155", borderRadius: "4px", padding: "6px", marginBottom: "10px", minHeight: "100px", display: "flex", alignItems: "center", justifyContent: "center" }} dangerouslySetInnerHTML={{ __html: drawing.svgContent }} />
+                      <div style={{ background: "#000000", border: "1px solid #334155", borderRadius: "4px", padding: "6px", marginBottom: "10px", minHeight: "100px", display: "flex", alignItems: "center", justifyContent: "center" }} dangerouslySetInnerHTML={{ __html: sanitizeSvg(drawing.svgContent) }} />
                     </div>
 
                     <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
@@ -841,7 +831,7 @@ export default function FirmwareLab() {
                       <button
                         type="button"
                         onClick={() => {
-                          setNotice(`✅ Dessin "${drawing.title}" sélectionné pour le repaquetage !`);
+                          setNotice(`✅ Dessin "${drawing.title}" sélectionné pour le plan de préparation.`);
                           setActiveTab("repack");
                         }}
                         style={{ flex: 1, background: "#2563eb", color: "#ffffff", border: "none", padding: "6px", borderRadius: "4px", fontSize: "11px", fontWeight: "bold", cursor: "pointer" }}

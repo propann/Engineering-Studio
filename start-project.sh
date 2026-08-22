@@ -5,6 +5,8 @@
 
 set -e
 
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 echo "╔════════════════════════════════════════════════════════════════════════════╗"
 echo "║                                                                            ║"
 echo "║                    🚀 STUDIO HUB - PROJECT LAUNCHER                       ║"
@@ -68,8 +70,8 @@ echo
 echo "📁 Step 2: Navigate to Studio Hub"
 echo "────────────────────────────────────────────────────────────────────────────"
 
-cd /home/azoth/studio-hub || {
-    print_error "Failed to navigate to /home/azoth/studio-hub"
+cd "$PROJECT_ROOT" || {
+    print_error "Failed to navigate to $PROJECT_ROOT"
     exit 1
 }
 
@@ -152,7 +154,7 @@ case $choice in
         echo "EP-133 will be available at: http://localhost:5173"
         echo
         print_status "Launching development servers..."
-        npm run dev:both
+        bash start-dev.sh
         ;;
     2)
         echo "🚀 Starting OP-1 dev server..."
@@ -160,7 +162,7 @@ case $choice in
         echo "OP-1 will be available at: http://localhost:3000"
         echo
         print_status "Launching OP-1 development server..."
-        npm run dev:op1
+        cd apps/op1-studio && npm run dev
         ;;
     3)
         echo "🚀 Starting EP-133 dev server..."
@@ -168,19 +170,23 @@ case $choice in
         echo "EP-133 will be available at: http://localhost:5173"
         echo
         print_status "Launching EP-133 development server..."
-        npm run dev:ep133
+        cd apps/ep133-studio && npm run dev
         ;;
     4)
         echo "🔨 Running build verification..."
         echo
-        npm run build:all
+        npm run build
         echo
         print_status "Build verification complete"
         ;;
     5)
         echo "🧪 Running test suite..."
         echo
-        npm run test:all
+        npm run typecheck
+        npm run test
+        npm run typecheck --prefix apps/op1-studio
+        npm run typecheck --prefix apps/ep133-studio
+        npm run test --prefix apps/ep133-studio
         echo
         print_status "Test suite complete"
         ;;

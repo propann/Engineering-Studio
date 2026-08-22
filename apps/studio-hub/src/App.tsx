@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Landing from "./pages/Landing";
 
 /**
@@ -60,11 +60,41 @@ type Page =
   | "backup-lab"
   | "orphan-pages";
 
-export function App() {
-  const [currentPage, setCurrentPage] = useState<Page>("landing");
+const PAGES = new Set<Page>([
+  "landing", "outils", "profil", "documentation", "exercises", "doc-op1", "doc-ep133",
+  "studio-ep133", "studio-op1", "rhythm-hero", "image-editor-op1", "firmware-lab",
+  "firmware-compiler", "theme-editor", "theme-project", "advanced-image", "sound-patch-creator",
+  "audio-plugin-rack", "sound-library", "midi-settings", "op1-settings", "backup-lab", "orphan-pages",
+]);
 
-  // Navigation helper pour les pages
-  (window as any).navigateMaquette = (page: Page) => setCurrentPage(page);
+function pageDepuisUrl(): Page {
+  if (typeof window === "undefined") return "landing";
+  const candidate = window.location.hash.replace(/^#\/?/, "") || "landing";
+  return PAGES.has(candidate as Page) ? candidate as Page : "landing";
+}
+
+export function App() {
+  const [currentPage, setCurrentPage] = useState<Page>(() => pageDepuisUrl());
+
+  useEffect(() => {
+    const naviguer = (page: Page) => {
+      if (!PAGES.has(page)) return;
+      const url = new URL(window.location.href);
+      url.hash = page === "landing" ? "/" : `/${page}`;
+      window.history.pushState({ page }, "", url);
+      setCurrentPage(page);
+    };
+    const synchroniser = () => setCurrentPage(pageDepuisUrl());
+    (window as Window & { navigateMaquette?: (page: Page) => void }).navigateMaquette = naviguer;
+    window.addEventListener("popstate", synchroniser);
+    window.addEventListener("hashchange", synchroniser);
+    return () => {
+      window.removeEventListener("popstate", synchroniser);
+      window.removeEventListener("hashchange", synchroniser);
+      const target = window as Window & { navigateMaquette?: (page: Page) => void };
+      if (target.navigateMaquette === naviguer) delete target.navigateMaquette;
+    };
+  }, []);
 
   // `key` force le remontage a chaque changement de page : sans elle,
   // Suspense reutilise la frontiere precedente et l'ecran d'attente ne

@@ -10,11 +10,10 @@ echo "║                                                                       
 echo "╚═══════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Arrêter les anciens processus
-echo "🔄 Nettoyage des anciens processus..."
-killall -9 node npm vite 2>/dev/null || true
-sleep 2
-echo "✅ Anciens processus arrêtés"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$PROJECT_ROOT"
+
+echo "ℹ️  Les autres processus Node restent intacts. Ce lanceur ne tue jamais les applications du système."
 
 echo ""
 echo "🧹 Nettoyage des caches..."
@@ -41,26 +40,26 @@ echo ""
 
 # Lancer Studio Hub
 echo "📍 Hub Studio (5179)..."
-cd /home/azoth/Engineering-Studio/apps/studio-hub
+cd "$PROJECT_ROOT/apps/studio-hub"
 npm run dev -- --host 127.0.0.1 --port 5179 > /tmp/hub.log 2>&1 &
 HUB_PID=$!
 echo "   ✅ Lancé (PID: $HUB_PID)"
 
 # Lancer OP-1 Studio
 echo "📍 OP-1 Studio (5175)..."
-cd /home/azoth/Engineering-Studio/apps/op1-studio
+cd "$PROJECT_ROOT/apps/op1-studio"
 npm run dev -- --host 127.0.0.1 --port 5175 > /tmp/op1.log 2>&1 &
 OP1_PID=$!
 echo "   ✅ Lancé (PID: $OP1_PID)"
 
 # Lancer EP-133 Studio
 echo "📍 EP-133 Studio (5177)..."
-cd /home/azoth/Engineering-Studio/apps/ep133-studio
+cd "$PROJECT_ROOT/apps/ep133-studio"
 npm run dev -- --host 127.0.0.1 --port 5177 > /tmp/ep133.log 2>&1 &
 EP133_PID=$!
 echo "   ✅ Lancé (PID: $EP133_PID)"
 
-cd /home/azoth/Engineering-Studio
+cd "$PROJECT_ROOT"
 
 echo ""
 echo "════════════════════════════════════════════════════════════════════════════"
@@ -95,7 +94,6 @@ echo "   - Hub:     tail -f /tmp/hub.log"
 echo "   - OP-1:    tail -f /tmp/op1.log"
 echo "   - EP-133:  tail -f /tmp/ep133.log"
 echo ""
-echo "Pour arrêter: killall node npm vite"
+echo "Pour arrêter uniquement ces studios: kill $HUB_PID $OP1_PID $EP133_PID"
 echo ""
-
 
