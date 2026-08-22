@@ -26,6 +26,20 @@ import {
   type OP1ButtonDef, type ControlVisual,
 } from "../lib/op1Buttons7B";
 
+type Op1MachineMode = "synth" | "drum" | "tape";
+
+function machineModeFromControl(id: string): Op1MachineMode | null {
+  if (id === "synth") return "synth";
+  if (id === "drum") return "drum";
+  if (id === "tape-mode") return "tape";
+  return null;
+}
+function soundSlotFromControl(id: string): number | null {
+  const match = /^sound([1-8])$/.exec(id);
+  return match ? Number(match[1]) : null;
+}
+
+
 function midiNoteName(note: number) {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return `${names[note % 12]}${Math.floor(note / 12) - 1}`;
@@ -432,6 +446,10 @@ export function StudioMachinePanel({
   pressedNotes = [],
   onTogglePlayback,
   onRecord,
+  onModeChange,
+  onOpenSoundMenu,
+  onOpenRackMenu,
+  onSoundMenuEncoder,
   onSendMidi,
   notesOnly = false,
   onPressedChange,
@@ -445,6 +463,11 @@ export function StudioMachinePanel({
   onTogglePlayback: () => void;
   /** Même action que REC sur l’écran simulé OP-1. */
   onRecord?: () => void;
+  onModeChange?: (mode: Op1MachineMode) => void;
+  onOpenSoundMenu?: (slot: number) => void;
+  onOpenRackMenu?: () => void;
+  /** Navigation des colonnes du menu par encodeur : 0=moteur, 1=patch. */
+  onSoundMenuEncoder?: (encoder: number, delta: number) => void;
   onSendMidi: (data: number[]) => void;
   onConnectMidi?: () => void;
   /** Zoome sur les touches note (blanches/noires) seulement, encodeurs/
@@ -638,6 +661,7 @@ export function StudioMachinePanel({
   // plus bas) — nettoyés au démontage pour ne jamais toucher un composant
   // déjà parti.
   const flashTimersRef = useRef<number[]>([]);
+  const soundLongPressRef = useRef<number | null>(null);
   useEffect(() => () => { flashTimersRef.current.forEach((t) => window.clearTimeout(t)); }, []);
 
   /** Remplace tous les appels directs à `onSendMidi` : journalise avant
@@ -814,6 +838,14 @@ export function StudioMachinePanel({
         // après association, Lecture et REC déclenchent le même handler.
         if (type === "trans" && idx === 0) onTogglePlayback();
         if (type === "trans" && idx === 1) onRecord?.();
+        if (type === "enc" && idx <= 1) onSoundMenuEncoder?.(idx, lastRawMidiIn[2] - 64);
+        if (type === "fn") {
+          const modeChange = machineModeFromControl(binding.realId);
+          if (modeChange) onModeChange?.(modeChange);
+          const soundSlot = soundSlotFromControl(binding.realId);
+          if (soundSlot) onOpenSoundMenu?.(soundSlot);
+          if (binding.realId === "sequencer") onOpenRackMenu?.();
+        }
         break; // un seul bouton peut correspondre à un message donné
       }
 
@@ -952,8 +984,9 @@ export function StudioMachinePanel({
               const v = Math.max(0, Math.min(127, startV + delta));
               setEncVals(arr => arr.map((x,i) => i===idx ? v : x));
               setLastEnc({ idx, v });
-              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               const role = encRoles[idx];
+              if (role && !role.isVolume && (role.tIndex === 0 || role.tIndex === 1)) onSoundMenuEncoder?.(role.tIndex, delta);
+              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
@@ -1119,10 +1152,15 @@ export function StudioMachinePanel({
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedFn(s => new Set(s).add(i));
                     setLastFn(i);
+                    const modeChange = machineModeFromControl(fnRealId);
+                    if (modeChange) onModeChange?.(modeChange);
+                    const soundSlot = soundSlotFromControl(fnRealId);
+                    if (soundSlot) soundLongPressRef.current = window.setTimeout(() => onOpenSoundMenu?.(soundSlot), 500);
+                    if (fnRealId === "sequencer") onOpenRackMenu?.();
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
-                  onPointerUp={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
-                  onPointerLeave={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
+                  onPointerUp={() => { if (soundLongPressRef.current !== null) { window.clearTimeout(soundLongPressRef.current); soundLongPressRef.current = null; } setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; }); }}
+                  onPointerLeave={() => { if (soundLongPressRef.current !== null) { window.clearTimeout(soundLongPressRef.current); soundLongPressRef.current = null; } setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; }); }}
                   ref={(node) => { node?.setAttribute("draggable", configOpen && binding ? "true" : "false"); }}
                   onDragStart={() => { if (binding) dragPayloadRef.current = { kind: "binding", key }; }}
                   onDragOver={(e) => { if (configOpen) e.preventDefault(); }}

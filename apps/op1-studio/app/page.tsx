@@ -12,6 +12,9 @@ import AudioPluginRack from "../../studio-hub/src/pages/AudioPluginRack";
  * caster — un `as unknown as` a deja masque une interop impossible ici.
  */
 type EvenementMidiLu = { data: Uint8Array | null };
+
+const SOUND_MENU_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
+const SOUND_MENU_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
 import firmwareCatalog from "../data/firmware/catalog.json";
 import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
 import { decodeMidiNote } from "./lib/midi";
@@ -435,6 +438,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [selectedEngine, setSelectedEngine] = useState<string>("FM");
   const [selectedPatch, setSelectedPatch] = useState<string>("Classic 01");
   const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
+  const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
+  const [soundMenuOpen, setSoundMenuOpen] = useState(false);
+  const [rackMenuOpen, setRackMenuOpen] = useState(false);
+  const [soundSlot, setSoundSlot] = useState(1);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -464,6 +471,39 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     autoMidiAttemptedRef.current = true;
     void onConnectMidi({ silent: true });
   }, [onConnectMidi]);
+
+  function setOp1MachineMode(mode: "synth" | "drum" | "tape") {
+    setMachineMode(mode);
+    if (mode === "drum") setSelectedEngine("Drum");
+    if (mode === "synth" && selectedEngine === "Drum") setSelectedEngine("FM");
+    onNotice(`Mode OP-1 : ${mode === "synth" ? "SYNTH" : mode === "drum" ? "DRUM" : "TAPE"}.`);
+  }
+
+  function openOp1SoundMenu(slot: number) {
+    setSoundSlot(Math.max(1, Math.min(8, slot)));
+    setSoundMenuOpen(true);
+  }
+
+  function openOp1RackMenu() {
+    setSoundMenuOpen(false);
+    setRackMenuOpen(true);
+  }
+
+  function navigateOp1SoundMenu(encoder: number, delta: number) {
+    if (!soundMenuOpen || !delta) return;
+    if (encoder === 0) {
+      setSelectedEngine((current) => {
+        const index = Math.max(0, SOUND_MENU_ENGINES.indexOf(current as typeof SOUND_MENU_ENGINES[number]));
+        return SOUND_MENU_ENGINES[(index + (delta > 0 ? 1 : -1) + SOUND_MENU_ENGINES.length) % SOUND_MENU_ENGINES.length];
+      });
+    }
+    if (encoder === 1) {
+      setSelectedPatch((current) => {
+        const index = Math.max(0, SOUND_MENU_PATCHES.indexOf(current as typeof SOUND_MENU_PATCHES[number]));
+        return SOUND_MENU_PATCHES[(index + (delta > 0 ? 1 : -1) + SOUND_MENU_PATCHES.length) % SOUND_MENU_PATCHES.length];
+      });
+    }
+  }
 
   // Synchronisation du moteur audio OP-1 actif
   useEffect(() => {
@@ -521,7 +561,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }, [sources]);
 
   function projectData() {
-    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { engine: selectedEngine, patch: selectedPatch }, view: { screen_scale: screenScale, screen_open: !screenFolded, keyboard_open: !keyboardFolded } };
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { mode: machineMode, engine: selectedEngine, patch: selectedPatch }, view: { screen_scale: screenScale, screen_open: !screenFolded, keyboard_open: !keyboardFolded } };
   }
 
   function saveProject() {
@@ -1555,6 +1595,12 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             }}
             onSeek={seekTransport}
             onNotice={onNotice}
+            machineMode={machineMode}
+            soundMenuOpen={soundMenuOpen}
+            soundSlot={soundSlot}
+            onSoundMenuClose={() => setSoundMenuOpen(false)}
+            rackMenuOpen={rackMenuOpen}
+            onRackMenuClose={() => setRackMenuOpen(false)}
             selectedEngine={selectedEngine}
             selectedPatch={selectedPatch}
             onEngineChange={setSelectedEngine}
@@ -1582,6 +1628,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             files={files}
             onTogglePlayback={toggleGlobalPlayback}
             onRecord={toggleTapeRecording}
+            onModeChange={setOp1MachineMode}
+            onOpenSoundMenu={openOp1SoundMenu}
+            onOpenRackMenu={openOp1RackMenu}
+            onSoundMenuEncoder={navigateOp1SoundMenu}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />
