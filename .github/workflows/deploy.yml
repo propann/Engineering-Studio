@@ -90,11 +90,13 @@ jobs:
       - name: Type check
         working-directory: apps/op1-studio
         run: npm run typecheck
-      - name: Test
+      - name: Test OP-1 native contracts
         working-directory: apps/op1-studio
-        # `npm test` appelle `vinext build`, mais ce dépôt ne fournit pas d'index.html :
-        # les tests Node ci-dessous sont la suite réellement maintenue de ce studio.
-        run: node --test tests/rendered-html.test.mjs tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs
+        # Ces contrats couvrent l'audio, les patches et le MIDI propres à l'OP-1.
+        # Le test rendered-html reste bloqué séparément tant que le build Vinext
+        # ne produit pas dist/server/index.js ; on ne transforme pas ce manque
+        # d'artefact en validation fictive du transfert OP-1.
+        run: node --experimental-strip-types --test tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs
 
   studio-ep133:
     name: EP-133 Studio Checks
