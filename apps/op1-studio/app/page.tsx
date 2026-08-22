@@ -416,7 +416,17 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [loopOut, setLoopOut] = useState(16);
   const [reversed, setReversed] = useState(false);
   const [screenFolded, setScreenFolded] = useState(false);
+  const [screenScale, setScreenScale] = useState(1);
   const [keyboardFolded, setKeyboardFolded] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("op1-studio-view-config-v1") ?? "{}") as { screenScale?: number };
+      if (typeof saved.screenScale === "number") setScreenScale(Math.max(0.5, Math.min(1, saved.screenScale)));
+    } catch { /* préférence locale absente ou invalide */ }
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("op1-studio-view-config-v1", JSON.stringify({ screenScale })); } catch { /* stockage local indisponible */ }
+  }, [screenScale]);
   // Rack audio du hub. Replie par defaut, contrairement aux deux autres :
   // il n'a rien a faire a l'ecran tant qu'on ne le demande pas, et ses
   // ecouteurs clavier sont poses sur `window`.
@@ -512,7 +522,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }, [sources]);
 
   function projectData() {
-    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { engine: selectedEngine, patch: selectedPatch } };
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { engine: selectedEngine, patch: selectedPatch }, view: { screen_scale: screenScale, screen_open: !screenFolded, keyboard_open: !keyboardFolded } };
   }
 
   function saveProject() {
@@ -530,13 +540,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   function loadProjectState(file: File) {
     void file.text().then((text) => { try {
-      const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; gain?: number; clips?: Array<{ source?: string; duration?: number; fade_in?: number; fade_out?: number }>; midi_events?: MidiEvent[] }>; sources?: Array<{ id?: string; path?: string; status?: string } | string>; source_refs?: Array<{ id?: string; path?: string; status?: string } | string> };
+      const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; gain?: number; clips?: Array<{ source?: string; duration?: number; fade_in?: number; fade_out?: number }>; midi_events?: MidiEvent[] }>; sources?: Array<{ id?: string; path?: string; status?: string } | string>; source_refs?: Array<{ id?: string; path?: string; status?: string } | string>; view?: { screen_scale?: number } };
       if (project.schema !== "op1-studio-project" || project.tracks?.length !== 4) throw new Error("format");
       const nextFiles: Record<number, string> = {}; const nextSourceRefs: Record<number, { path: string; status: "linked" | "reconnect" }> = {}; const nextDurations: Record<number, number> = {}; const nextEnds: Record<number, number> = {}; const nextFadeIns: Record<number, number> = {}; const nextFadeOuts: Record<number, number> = {}; const nextMuted: Record<number, boolean> = {}; const nextGains: Record<number, number> = {}; let nextSolo: number | null = null;
       project.tracks.forEach((track, index) => { const clip = track.clips?.[0]; if (clip?.source) { nextFiles[index] = clip.source; nextSourceRefs[index] = { path: clip.source, status: "reconnect" }; } if (typeof clip?.duration === "number") { nextDurations[index] = clip.duration; nextEnds[index] = clip.duration; } if (typeof clip?.fade_in === "number") nextFadeIns[index] = clip.fade_in; if (typeof clip?.fade_out === "number") nextFadeOuts[index] = clip.fade_out; if (track.mute) nextMuted[index] = true; if (typeof track.gain === "number") nextGains[index] = Math.max(0, Math.min(1, track.gain)); if (track.solo) nextSolo = index; });
       (project.source_refs ?? project.sources)?.forEach((source, index) => { const reference = typeof source === "string" ? { path: source, status: "reconnect" } : source.path ? { path: source.path, status: "reconnect" } : null; if (reference) nextSourceRefs[index] = { path: reference.path, status: "reconnect" }; });
       const events = project.tracks[0].midi_events ?? [];
-      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); setFiles(nextFiles); setSourceRefs(nextSourceRefs); setSources({}); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé. Les références audio sont conservées ; re-sélectionnez chaque source pour reconnecter la lecture.");
+      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); if (typeof project.view?.screen_scale === "number") setScreenScale(Math.max(0.5, Math.min(1, project.view.screen_scale))); setFiles(nextFiles); setSourceRefs(nextSourceRefs); setSources({}); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé. Les références audio sont conservées ; re-sélectionnez chaque source pour reconnecter la lecture.");
     } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
   }
 
@@ -1387,6 +1397,11 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             >
               <span>📼 Stems</span>
             </button>
+            <label className="op1-screen-scale-control" title="Réduire ou agrandir l’écran OP-1">
+              <span>ÉCRAN</span>
+              <input type="range" min="0.5" max="1" step="0.05" value={screenScale} onChange={(event) => setScreenScale(Number(event.target.value))} aria-label="Échelle de l’écran OP-1" />
+              <output>{Math.round(screenScale * 100)}%</output>
+            </label>
             <button
               type="button"
               className={`op1-pill-btn ${!keyboardFolded ? "is-active" : ""}`}
@@ -1401,7 +1416,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
       {/* ── Panneau Écran OLED Clone (Centré & Immersif) ── */}
       {!screenFolded && (
-        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "12px" }}>
+        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "12px", transform: `scale(${screenScale})`, transformOrigin: "top left", width: `${100 / screenScale}%` }}>
           <StudioTapeEditor
             tracks={tracks}
             files={files}

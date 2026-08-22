@@ -561,7 +561,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         ))}
       </div>
 
-      {!screenMenuOpen && (<>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
+      <>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
@@ -686,7 +686,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
 
         {/* Témoin d'état central : Petit triangle vert de lecture et Petit rond rouge de REC */}
         {recording ? (
-          <g style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
+          <g className="op1-svg-transport-indicator" style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
             <title>Enregistrement en cours (cliquer pour stopper)</title>
             {/* Petit rond rouge REC avec anneau pulsant */}
             <circle cx="160" cy="50" r="5.5" fill="#FF3A5D" stroke="#ffffff" strokeWidth="0.9" />
@@ -696,13 +696,13 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             </circle>
           </g>
         ) : (transportPlaying || playing !== null) ? (
-          <g style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
+          <g className="op1-svg-transport-indicator" style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
             <title>Lecture en cours (cliquer pour pause)</title>
             {/* Petit triangle vert de lecture */}
             <polygon points="154,43.5 168,50 154,56.5" fill="#00ED95" stroke="#ffffff" strokeWidth="0.8" />
           </g>
         ) : (
-          <g style={{ cursor: "pointer", opacity: 0.45 }} onClick={() => onToggleGlobalPlayback?.()}>
+          <g className="op1-svg-transport-indicator" style={{ cursor: "pointer", opacity: 0.45 }} onClick={() => onToggleGlobalPlayback?.()}>
             <title>Lecture arrêtée (cliquer pour jouer)</title>
             <polygon points="154.5,44 167.5,50 154.5,56" fill="none" stroke="#ffffff" strokeWidth="1.2" />
           </g>
@@ -1172,7 +1172,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         </g>
       </svg>
 
-      </>)}
+      </>
 
       {screenMenuOpen && (
         <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
@@ -1204,7 +1204,17 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
 
       {/* Contrôles sortis de l’écran : la zone OLED reste réservée à l’affichage. */}
       <div className="op1-screen-controls" aria-label="Contrôles de l’écran OP-1">
-        <div className="op1-screen-track-selector" role="group" aria-label="Sélection de piste">
+        <button
+        type="button"
+        className={`op1-screen-play-button ${transportPlaying || playing !== null ? "is-playing" : ""}`}
+        onClick={() => onToggleGlobalPlayback?.()}
+        aria-pressed={transportPlaying || playing !== null}
+        title={transportPlaying || playing !== null ? "Mettre en pause" : "Lire"}
+      >
+        <span aria-hidden="true">{transportPlaying || playing !== null ? "Ⅱ" : "▶"}</span>
+        {transportPlaying || playing !== null ? "PAUSE" : "LECTURE"}
+      </button>
+      <div className="op1-screen-track-selector" role="group" aria-label="Sélection de piste">
           <span className="op1-screen-control-label">PISTE</span>
           {[0, 1, 2, 3].map((track) => (
             <button
