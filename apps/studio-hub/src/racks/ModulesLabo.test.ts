@@ -111,8 +111,19 @@ describe("les modules ne demontent pas le Labo", () => {
     enModule("pages/SoundPatchCreator.tsx", "enModule");
   });
 
-  it("l'editeur de sample masque sa TopBar en module", () => {
-    enModule("pages/SoundEditorHub.tsx", "enModule");
+  it("l'editeur de sample n'a plus de TopBar du tout", () => {
+    /**
+     * Garantie plus forte que le drapeau, et c'est voulu.
+     *
+     * `SoundEditorHub` etait aussi une page autonome, d'ou un `enModule` pour
+     * choisir. Depuis la fusion dans la bibliotheque, il n'est PLUS QUE
+     * embarque — sous `SoundLibrary` et comme module du Labo. Le cas « page
+     * autonome » n'existant plus, la TopBar a disparu avec le drapeau : il n'y
+     * a plus de branche capable de demonter l'hote.
+     */
+    const source = lire("pages/SoundEditorHub.tsx");
+    expect(source, "SoundEditorHub rend une TopBar").not.toContain("<TopBar");
+    expect(source, "SoundEditorHub importe encore TopBar").not.toContain("import { TopBar }");
   });
 
   it("le module bibliotheque monte le panneau, pas la page", () => {

@@ -13,7 +13,7 @@ export default function Home() {
   const openTool = (toolId: string) => {
     if (toolId === "op1") (window as any).navigateMaquette("studio-op1");
     else if (toolId === "ep133") (window as any).navigateMaquette("studio-ep133");
-    else if (toolId === "sounds") (window as any).navigateMaquette("sound-editor");
+    else if (toolId === "sounds") (window as any).navigateMaquette("sound-library");
     else if (toolId === "visual") (window as any).navigateMaquette("image-editor-op1");
     else if (toolId === "profil") (window as any).navigateMaquette("profil");
     else (window as any).navigateMaquette("outils");

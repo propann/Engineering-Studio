@@ -4,7 +4,6 @@ const log = createLogger("SoundEditor");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TopBar } from "../components/TopBar";
 import "./sound-editor.css";
 import { useNotesMidi } from "../core/midi/useNotesMidi";
 
@@ -71,7 +70,19 @@ const CLIENT_OP1_SOUNDS: SoundItem[] = [
   { id: "op1-c03", name: "Drum Kit Custom Vinyl", machine: "op1", owner: "client", category: "perc", format: "AIF + OP-1 JSON", sizeKb: 2150, durationSec: 12.0, tags: ["NOUVEAU MEMBRE", "Vinyl", "Drums"], seedWave: [0.9, 0.3, 0.75, 0.2, 0.8, 0.1] },
 ];
 
-export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE", enModule = false }: { profileName?: string; onClose?: () => void; enModule?: boolean }) {
+/**
+ * Le banc d'ecoute des sons des machines.
+ *
+ * Il a longtemps ete une page a part entiere, doublant la bibliotheque : deux
+ * portes vers le meme travail. Il est desormais **toujours** embarque sous
+ * `SoundLibrary`, qui porte le titre, le profil et la TopBar.
+ *
+ * D'ou l'absence de props : la TopBar qu'il rendait appelait
+ * `navigateMaquette` et demontait donc sa page hote au premier clic. C'etait
+ * la raison d'etre du drapeau `enModule` — il n'a plus lieu d'etre puisque le
+ * cas « page autonome » n'existe plus.
+ */
+export default function SoundEditorHub() {
   // Studio View Mode (Space Saver): 4 Quadrants vs EP-133 Focus vs OP-1 Focus
   const [viewMode, setViewMode] = useState<StudioViewMode>("grid4");
 
@@ -598,10 +609,6 @@ export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE", enModul
 
   return (
     <main className="sound-editor-hub-page">
-      {/* Meme motif que le rack et le createur de patch : la TopBar
-          demonterait le Labo au premier clic. */}
-      {!enModule && <TopBar activePage="sound-editor" profileName={profileName} />}
-
       {/* LEFT SLIDE-OUT DRAWER TRIGGER BUTTON (EP-133) */}
       <button
         type="button"

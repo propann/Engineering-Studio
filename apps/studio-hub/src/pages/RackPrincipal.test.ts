@@ -78,7 +78,7 @@ describe("l'ouverture est portee par la donnee", () => {
 
   it("chaque type d'action est traite", () => {
     const corps = RACK.slice(RACK.indexOf("function ouvrir(tool: Tool)"));
-    for (const type of ["page", "groupe", "ancre", "editeur-son", "fiche"]) {
+    for (const type of ["page", "groupe", "ancre", "fiche"]) {
       expect(corps, `action « ${type} » non traitee`).toContain(`case "${type}":`);
     }
   });
@@ -154,7 +154,6 @@ describe("le regroupement est une donnee", () => {
       reglages: ["midi", "op-settings", "machine-test"],
       formation: ["op1-exercise", "rhythm"],
       documentation: ["op1-docs", "ep-docs", "documentation", "app-guide"],
-      son: ["sample", "sounds"],
     };
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
     for (const [groupe, attendus] of Object.entries(ATTENDUS)) {
@@ -168,15 +167,31 @@ describe("le regroupement est une donnee", () => {
     }
   });
 
-  it("chaque groupe a une carte qui l'ouvre, ou un rendu propre", () => {
-    // « son » et « documentation » n'ouvrent pas un panneau de groupe : l'un
-    // ouvre l'editeur sonore, l'autre fait defiler vers l'etagere. Les deux
-    // autres passent par le panneau.
-    expect(RACK).toContain('action: { type: "groupe", groupe: "reglages" }');
-    expect(RACK).toContain('action: { type: "groupe", groupe: "formation" }');
-    expect(RACK).toContain('action: { type: "editeur-son" }');
-    expect(RACK).toContain('action: { type: "ancre", ancre: "hub-documentation" }');
-    expect(RACK).toContain('<DocumentationShelf docs={membres("documentation")}');
+  it("aucun groupe n'a de membre que rien n'ouvre", () => {
+    /**
+     * L'invariant qui compte, et il est derive — plus une liste a tenir.
+     *
+     * `cartes()` filtre `!t.groupe` : un outil range dans un groupe ne
+     * s'affiche PAS dans la grille. Il n'est atteignable que par la carte qui
+     * ouvre son groupe. Un groupe qui perd sa carte rend donc ses membres
+     * invisibles, en silence.
+     *
+     * C'est arrive avec « son » : en fusionnant l'editeur sonore dans la
+     * bibliotheque, la carte « Son » a disparu, emportant l'acces a
+     * « Editeur de samples » et « Sons & transferts EP-133 ».
+     */
+    const avecMembres = new Set(
+      [...RACK.matchAll(/groupe: "([^"]+)",/g)].map((m) => m[1])
+    );
+    // Les deux facons d'ouvrir un groupe : le panneau, ou l'etagere qui le rend
+    // directement dans la page.
+    const ouverts = new Set([
+      ...[...RACK.matchAll(/type: "groupe", groupe: "([^"]+)"/g)].map((m) => m[1]),
+      ...[...RACK.matchAll(/<DocumentationShelf docs=\{membres\("([^"]+)"\)\}/g)].map((m) => m[1]),
+    ]);
+
+    const orphelins = [...avecMembres].filter((g) => !ouverts.has(g));
+    expect(orphelins, `groupes dont les membres sont invisibles : ${orphelins.join(", ")}`).toEqual([]);
   });
 
   it("les compteurs comptent les membres reels", () => {
@@ -190,8 +205,8 @@ describe("ce que la fusion ne devait pas casser", () => {
   it("les destinations connues sont toujours atteignables", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
     for (const page of [
-      "studio-op1", "studio-ep133", "firmware-gallery", "firmware-lab", "backup-lab",
-      "audio-plugin-rack", "sound-library", "sound-editor", "image-editor-op1",
+      "studio-op1", "studio-ep133", "firmware-lab", "backup-lab",
+      "audio-plugin-rack", "sound-library", "image-editor-op1",
       "midi-settings", "op1-settings", "exercises", "rhythm-hero",
       "doc-op1", "doc-ep133", "documentation",
     ]) {

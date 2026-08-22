@@ -79,7 +79,7 @@ export function EmplacementModule({ module }: { module: ModuleLabo }) {
     <div className="labo-emplacement">
       <Suspense fallback={<div className="labo-chargement">Chargement du module…</div>}>
         {module === "patch-machine" && <PatchMachine enModule />}
-        {module === "sample" && <EditeurSample enModule />}
+        {module === "sample" && <EditeurSample />}
         {module === "bibliotheque" && <Bibliotheque />}
       </Suspense>
     </div>

@@ -12,6 +12,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
+    // Le verrou qui aurait signale les quatre pages mortes du hub des le
+    // premier jour. Il reste a `false` pour une seule raison : `studio-hub` et
+    // `packages/` sont propres, mais `tsc` suit les imports vers
+    // `apps/op1-studio` et `apps/ep133-studio`, qui portent 43 declarations
+    // inutilisees. A rebasculer des que ce lot est traite.
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,

@@ -3,6 +3,7 @@ import { TopBar } from "../components/TopBar";
 import { DEFAULT_PROFILE_NAME, readProfileName } from "../core/profile";
 import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { SoundLibraryPanel } from "../SoundLibraryPanel";
+import SoundEditorHub from "./SoundEditorHub";
 
 /**
  * Page « Bibliothèque sonore ».
@@ -16,6 +17,12 @@ import { SoundLibraryPanel } from "../SoundLibraryPanel";
  * `ToolsHub.openTool`, et celui du `SynthEngineDrawer` supprimé en août — à
  * une différence près, décisive : ce panneau-ci **fonctionne**. On le branche
  * plutôt que de le supprimer.
+ *
+ * **Deux moitiés du même sujet, réunies.** Le hub proposait « Son » et
+ * « Bibliothèque sonore » comme deux outils : l'un est le banc d'écoute des
+ * sons des machines, l'autre le catalogue de tes propres fichiers importés.
+ * Deux portes vers le même travail, et la bibliothèque citée dans les deux
+ * descriptions.
  *
  * Le chargement de l'espace de travail reprend le motif de `BackupLab` :
  * la poignée revient d'IndexedDB, mais **pas le droit de lire**. L'adopter
@@ -46,9 +53,10 @@ export default function SoundLibrary() {
         <header className="sound-library-head">
           <h1>Bibliothèque sonore</h1>
           <p>
-            Catalogue commun aux deux machines : import, empreinte SHA‑256,
-            étiquettes, favoris et préparation. Les fichiers sont écrits dans
-            <code> shared/sounds/</code> de ton espace de travail.
+            Tes fichiers d'abord — import, empreinte SHA‑256, étiquettes et
+            favoris, écrits dans <code>shared/sounds/</code> de ton espace de
+            travail. Puis le banc d'écoute des sons des deux machines : découpe,
+            fondus et audition.
           </p>
         </header>
         <SoundLibraryPanel
@@ -56,6 +64,11 @@ export default function SoundLibrary() {
           onOpenOp1={() => (window as any).navigateMaquette("studio-op1")}
           onOpenEp133={() => (window as any).navigateMaquette("studio-ep133")}
         />
+
+        {/* Le banc d'écoute des sons des machines, sous tes propres fichiers.
+            Il n'a plus de TopBar à lui : celle de cette page suffit, et la
+            sienne démontait la page au premier clic. */}
+        <SoundEditorHub />
       </main>
     </div>
   );

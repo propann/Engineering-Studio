@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { TopBar } from "../components/TopBar";
 import { readProfileName } from "../core/profile";
-import SoundEditorHub from "./SoundEditorHub";
 import "./outils.css";
 
 const Link = ({href, className, ...props}: {href: string; className: string; [key: string]: any}) => {
@@ -27,7 +26,19 @@ const Link = ({href, className, ...props}: {href: string; className: string; [ke
  * Une seule source, desormais. Le regroupement devient une DONNEE (`groupe`)
  * au lieu d'un filtre tenu a la main.
  */
-type Groupe = "reglages" | "documentation" | "formation" | "son";
+/**
+ * Les regroupements du rack.
+ *
+ * « son » en faisait partie, et a disparu avec la réunion de l'éditeur sonore
+ * et de la bibliothèque : ses deux membres menaient à la même page que la carte
+ * « Bibliothèque sonore », qui est désormais la seule porte.
+ *
+ * À savoir en touchant aux groupes : `cartes()` filtre `!t.groupe`, donc un
+ * outil rangé dans un groupe ne s'affiche jamais dans la grille — il n'est
+ * atteignable que par la carte qui ouvre son groupe. Retirer cette carte sans
+ * retirer les membres les laisse dans la donnée sans que rien ne les rende.
+ */
+type Groupe = "reglages" | "documentation" | "formation";
 
 /** Ce que fait un clic. Explicite, parce que les neuf cartes ne faisaient pas toutes la meme chose. */
 type Action =
@@ -36,8 +47,6 @@ type Action =
   | { type: "groupe"; groupe: Groupe }
   /** Fait defiler jusqu'a une ancre de la page. */
   | { type: "ancre"; ancre: string }
-  /** Ouvre l'editeur sonore, qui n'est pas une page mais un panneau. */
-  | { type: "editeur-son" }
   /** Dernier recours : une fiche descriptive. Un outil qui en depend n'est pas encore branche. */
   | { type: "fiche" };
 
@@ -92,7 +101,7 @@ const tools: Tool[] = [
     id: "firmware-gallery", code: "FW-LAB", category: "MODS & OS OP-1", title: "⚙️ Galerie firmware OP-1",
     text: "Catalogue des firmwares, thèmes et patchs graphiques. Le Lab et le compilateur s’ouvrent depuis la galerie.",
     accent: "firmware-card", visual: "chip", status: "OUVRIR →",
-    action: { type: "page", page: "firmware-gallery" }, section: "op1", couleur: "#ff3a5d",
+    action: { type: "page", page: "firmware-lab" }, section: "op1", couleur: "#ff3a5d",
   },
   {
     id: "vault", code: "SAVE-ALL", category: "COFFRE", title: "💾 Sauvegarde",
@@ -106,12 +115,7 @@ const tools: Tool[] = [
     accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
     action: { type: "page", page: "audio-plugin-rack" }, section: "hub", couleur: "#d9ff43",
   },
-  {
-    id: "son", code: "SOUND", category: "AUDIO", title: "🎵 Son",
-    text: "Tape Studio, transferts, samples, bibliothèque sonore — tout pour créer et éditer.",
-    accent: "sound-card", visual: "wave", status: "OUVRIR →",
-    action: { type: "editeur-son" }, section: "hub",
-  },
+
   {
     id: "reglages", code: "CONFIG", category: "CONFIGURATION", title: "⚙️ Réglages",
     text: "Synchronisation MIDI et arpégiateur, tests de machine, diagnostic système.",
@@ -137,9 +141,9 @@ const tools: Tool[] = [
     action: { type: "page", page: "image-editor-op1" }, section: "hub",
   },
   {
-    id: "library", code: "SOUND-V1", category: "OUTIL DU HUB", title: "Bibliothèque sonore",
-    text: "Catalogue commun avec import, empreinte SHA-256, étiquettes et favoris.",
-    accent: "cyan", visual: "wave", status: "OUVRIR →",
+    id: "library", code: "SOUND-V1", category: "AUDIO", title: "🎵 Bibliothèque sonore",
+    text: "Tes fichiers — import, empreinte SHA-256, étiquettes, favoris — et le banc d’écoute des sons des deux machines : découpe, fondus, audition.",
+    accent: "sound-card", visual: "wave", status: "OUVRIR →",
     action: { type: "page", page: "sound-library" }, section: "hub",
   },
   {
@@ -166,18 +170,12 @@ const tools: Tool[] = [
     accent: "orange", visual: "grid", status: "OUVRIR →",
     action: { type: "page", page: "studio-ep133" }, section: "ep133", nettoieUrl: true,
   },
-  {
-    id: "sample", code: "WAV-AIFF", category: "SON", title: "Éditeur de samples",
-    text: "Waveform, trim, fondus et préparation des packs OP-1.",
-    accent: "cyan", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "sound-editor" }, section: "op1", groupe: "son",
-  },
-  {
-    id: "sounds", code: "PAD-64", category: "SON", title: "Sons & transferts EP-133",
-    text: "Banques, réglages de pads, clone et transferts préparés.",
-    accent: "orange", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "sound-editor" }, section: "ep133", groupe: "son",
-  },
+  // « Éditeur de samples » (OP-1) et « Sons & transferts EP-133 » vivaient ici,
+  // rangés dans un groupe « son » qu'ouvrait la carte « Son ». Les deux menaient
+  // à `sound-library`, comme la carte « Bibliothèque sonore » juste au-dessus :
+  // trois portes pour une seule destination. La bibliothèque réunissant
+  // désormais tes fichiers ET le banc d'écoute des machines, elle est cette
+  // porte — et le groupe « son » a disparu avec ses deux membres.
 
   // ── Membres du groupe « Réglages » ────────────────────────────────────
   {
@@ -257,7 +255,6 @@ export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
  const [activeSection,setActiveSection]=useState<Section>("all");
  const [groupeOuvert,setGroupeOuvert]=useState<Groupe|null>(null);
- const [showSoundEditor,setShowSoundEditor]=useState(false);
  const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
  useEffect(()=>{ setProfileName(readProfileName()); },[]);
@@ -283,7 +280,6 @@ export default function ToolsHub(){
    case "page": naviguer(tool.action.page); return;
    case "groupe": setGroupeOuvert(tool.action.groupe); return;
    case "ancre": document.getElementById(tool.action.ancre)?.scrollIntoView({ behavior: "smooth", block: "start" }); return;
-   case "editeur-son": setShowSoundEditor(true); return;
    case "fiche": setSelected(tool); return;
   }
  }
@@ -319,7 +315,6 @@ export default function ToolsHub(){
    <DocumentationShelf docs={membres("documentation")} onSelectTool={ouvrir} />
   </section>
 
-  {showSoundEditor&&<SoundEditorHub profileName={profileName} onClose={()=>setShowSoundEditor(false)}/>}
   {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
   {groupeOuvert==="formation"&&<TrainingModal training={membres("formation")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
   {groupeOuvert==="reglages"&&<SettingsModal settings={membres("reglages")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}

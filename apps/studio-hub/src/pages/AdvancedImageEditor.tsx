@@ -293,7 +293,7 @@ export default function AdvancedImageEditor() {
             <p style={{ color: "#666" }}>Édition complète avec outils professionnels et filtres</p>
           </div>
           <button
-            onClick={() => (window as any).navigateMaquette("firmware-gallery")}
+            onClick={() => (window as any).navigateMaquette("firmware-lab")}
             style={{
               padding: "10px 20px",
               background: "#dfd9ff",
