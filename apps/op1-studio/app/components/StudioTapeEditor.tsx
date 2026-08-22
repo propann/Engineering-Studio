@@ -74,6 +74,8 @@ export interface StudioTapeEditorProps {
   onLoopChange?: (looping: boolean) => void;
   onLoopRangeChange?: (loopIn: number, loopOut: number) => void;
   tempo?: number;
+  midiClockBpm?: number | null;
+  midiClockTick?: number;
   reversed: boolean;
   volume?: number;
   onVolumeChange?: (vol: number) => void;
@@ -117,6 +119,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     loopIn = 0, loopOut = 16,
     onLoopChange, onLoopRangeChange,
     tempo = 90,
+    midiClockBpm = null, midiClockTick = 0,
     reversed,
     volume = 0.85, onVolumeChange,
     audioRefs,
@@ -135,12 +138,20 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     y: number;
   } | null>(null);
   const [modeSelectorHover, setModeSelectorHover] = useState(false);
+  const [engineSelectorHover, setEngineSelectorHover] = useState(false);
 
   function cycleMachineMode(direction: 1 | -1) {
     const current = MACHINE_MODES.indexOf(machineMode);
     const next = MACHINE_MODES[(current + direction + MACHINE_MODES.length) % MACHINE_MODES.length];
     onMachineModeChange?.(next);
     onNotice?.(`Mode OP-1 : ${next === "synth" ? "SYNTH" : next === "drum" ? "DRUM" : "TAPE"}.`);
+  }
+
+  function cycleRackEngine(direction: 1 | -1) {
+    const current = RACK_ENGINES.indexOf(selectedEngine as typeof RACK_ENGINES[number]);
+    const next = RACK_ENGINES[(Math.max(0, current) + direction + RACK_ENGINES.length) % RACK_ENGINES.length];
+    onEngineChange?.(next);
+    onNotice?.(`Moteur audio : ${next}.`);
   }
 
   const dragRef = useRef<{
@@ -160,7 +171,10 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   // Constantes de projection OP-1
   const HEAD_X = 160; // Tête de lecture fixe au centre de l'écran OP-1
   const BAR_WIDTH_PX = 55.363; // Espacement exact d'une mesure (distance entre graduations OP-1)
-  const barSec = (60 / Math.max(30, tempo)) * 4;
+  // Une seule base temporelle pour les repères, le snap et le MIDI clock.
+  // Le clock entrant (24 PPQN) prend la priorité sur le tempo local.
+  const gridTempo = midiClockBpm ?? tempo;
+  const barSec = (60 / Math.max(30, gridTempo)) * 4;
   const beatSec = barSec / 4;
   const pixelsPerSec = BAR_WIDTH_PX / barSec;
 
@@ -300,7 +314,9 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     return Math.max(0, Math.min(TAPE_DURATION, t));
   }
 
-  // Calcul des repères de mesure dynamiques (une barre toutes les mesures, calées au tempo)
+  // Repères de mesure : même tempo que le snap et que l’horloge MIDI
+  // générale. Les lignes sont calculées depuis le temps absolu 0, donc elles
+  // restent alignées pendant le défilement de la bande.
   const visibleMeasures = (() => {
     const list: number[] = [];
     const tStart = Math.min(xToTime(-20), xToTime(340));
@@ -756,9 +772,12 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           </g>
         )}
 
-        {/* ── Repères de mesure dynamiques (calés sur le tempo et défilant avec la bande) ── */}
+        {/* ── Repères de mesure dynamiques (tempo local ou MIDI clock) ── */}
+        <text x="38" y="121" fill="#698EFF" fontFamily="monospace" fontSize="4.2" opacity="0.8">
+          {midiClockBpm ? `MIDI CLK ${Math.round(gridTempo)} BPM` : `GRID ${Math.round(gridTempo)} BPM`}
+        </text>
         {visibleMeasures.map((x, idx) => (
-          <line key={idx} x1={x} y1="126.238" x2={x} y2="120.338" stroke="#585566" strokeWidth="1.5" />
+          <line key={idx} x1={x} y1="126.238" x2={x} y2="120.338" stroke={idx % 4 === 0 ? "#00ED95" : "#585566"} strokeWidth={idx % 4 === 0 ? "1.5" : "0.8"} />
         ))}
 
         {/* ── Ligne de boucle (verte) & Repères de boucle sans texte ────────── */}
@@ -1205,6 +1224,28 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           <text x="4" y="8" fill="#00ED95" fontFamily="monospace" fontSize="4.6" fontWeight="700">
             {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
           </text>
+          <text x="53" y="8" textAnchor="end" fill="#698EFF" fontFamily="monospace" fontSize="5" fontWeight="700">◀▶</text>
+        </g>
+
+        <g
+          className={`op1-screen-engine-selector${engineSelectorHover ? " is-hovered" : ""}`}
+          transform="translate(257 145)"
+          style={{ cursor: "pointer" }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); cycleRackEngine(1); }}
+          onWheel={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cycleRackEngine(event.deltaY >= 0 ? 1 : -1);
+          }}
+          onMouseEnter={() => setEngineSelectorHover(true)}
+          onMouseLeave={() => setEngineSelectorHover(false)}
+          role="button"
+          aria-label="Choisir le moteur audio du rack à la molette"
+        >
+          <rect x="0" y="0" width="58" height="12" rx="2" fill={engineSelectorHover ? "#172235" : "#101719"} stroke={engineSelectorHover ? "#698EFF" : "#314047"} strokeWidth={engineSelectorHover ? "1" : "0.7"} />
+          <text x="4" y="4.5" fill="#698EFF" fontFamily="monospace" fontSize="3.2" fontWeight="700">ENGINE</text>
+          <text x="4" y="9.2" fill="#DFD9FF" fontFamily="monospace" fontSize="4.2" fontWeight="700">{selectedEngine}</text>
           <text x="53" y="8" textAnchor="end" fill="#698EFF" fontFamily="monospace" fontSize="5" fontWeight="700">◀▶</text>
         </g>
 

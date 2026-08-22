@@ -1139,6 +1139,7 @@ export function StudioMachinePanel({
               const fnVisual = binding?.visual ?? def7B?.visual ?? FN_STATIC_VISUAL[i];
               const fnRealId = binding?.realId ?? def7B?.id ?? FN_REAL_IDS[i];
               const fnSoundNumber = fnRealId ? (/^sound([1-8])$/.exec(fnRealId)?.[1] ?? /^track([1-4])$/.exec(fnRealId)?.[1]) : null;
+              const fnButtonColor = CONTROL_GLYPH_COLORS[fnVisual ?? "fn"] ?? "#00ED95";
               const isFnDown = pressedFn.has(i);
               const isPickTarget = learnStep === "pick-virtual";
               const sublabel = def7B?.sublabel;
@@ -1170,11 +1171,11 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isFnDown ? "#a8a8a4" : "#cececb"}
-                    stroke={dragOverKey === key ? "#00ED95" : binding ? "#267c65" : (isPickTarget ? "#00ED95" : "#8d9690")}
+                    fill={isFnDown ? "#f2f4ef" : fnButtonColor}
+                    stroke={dragOverKey === key ? "#ffffff" : binding ? "#267c65" : (isPickTarget ? "#ffffff" : fnButtonColor)}
                     strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#bcbcba" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#ffffff" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
                   {fnSoundNumber
                     ? <text x={b.col+b.w/2} y={b.row+b.h*.42} textAnchor="middle" dominantBaseline="central"
                         fontSize={Math.min(b.w,b.h)*.36} fill="#171a1b" fontFamily="monospace" fontWeight="900">{fnSoundNumber}</text>
@@ -1199,6 +1200,7 @@ export function StudioMachinePanel({
               const def7B = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
               const transLabel = binding?.realLabel ?? def7B?.label ?? TRANS_REAL_LABELS[i] ?? `Transport ${i + 1}`;
               const transVisual = binding?.visual ?? def7B?.visual ?? TRANS_STATIC_VISUAL[i];
+              const transButtonColor = CONTROL_GLYPH_COLORS[transVisual] ?? "#FF3A5D";
               const isTransDown = pressedTrans.has(i);
               const isPickTarget = learnStep === "pick-virtual";
               const sublabel = def7B?.sublabel;
@@ -1226,11 +1228,11 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isTransDown ? "#a8a8a4" : "#cececb"}
-                    stroke={dragOverKey === key ? "#FF3A5D" : binding ? "#267c65" : (isPickTarget ? "#FF3A5D" : "#8d9690")}
+                    fill={isTransDown ? "#f2f4ef" : transButtonColor}
+                    stroke={dragOverKey === key ? "#ffffff" : binding ? "#267c65" : (isPickTarget ? "#ffffff" : transButtonColor)}
                     strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#bcbcba" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#ffffff" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
                   {transVisual
                     ? <EmbeddedGlyph visual={transVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
                     : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#FF3A5D"/>
