@@ -137,7 +137,12 @@ chaque surface du hub qui produit du son.
       cours ne doit pas être remis à zéro**
 - [ ] **Rack MIDI** — mode contrôleur actif, l'OP-1 choisit les notes de
       l'arpège au lieu de les jouer
-- [ ] les deux studios reçoivent toujours le MIDI
+- [ ] **le studio EP-133 joue ses pads au clavier de l'OP-1.** C'était le
+      manque : le studio filtrait ses entrées sur les ports nommés « EP-133 »,
+      donc l'OP-1 était écartée **par construction**. Do1 = pad 1
+- [ ] **et sans ouvrir l'éditeur.** Le pont du hub ne servait que l'éditeur ;
+      un clavier branché doit jouer quoi qu'il arrive
+- [ ] le studio OP-1 reçoit toujours le MIDI
 - [ ] **passer d'une page à l'autre dix fois, en jouant à chaque fois.** C'est
       le test du répartiteur : `onmidimessage` est une propriété unique, et
       une seule écriture directe rendrait toutes les autres pages muettes —

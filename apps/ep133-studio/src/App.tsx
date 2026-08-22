@@ -68,6 +68,7 @@ import { useLanguageStore } from './core/store/languageStore';
 import { useHubInitialization } from './hooks/useHubInitialization';
 import { hubCommunication } from './core/hub/hubCommunication';
 import type { HubNoteMessage, HubTransportMessage } from '@studio-hub/midi-bridge';
+import { sAbonner } from '@studio-hub/midi-dispatch';
 
 const STUDIO_DEMOS = [
   { id: 'groove', title: 'DEMO GROOVE', file: 'demo-groove.json' },
@@ -1326,9 +1327,49 @@ export default function App({ embeddedMode = false }: { embeddedMode?: boolean }
     const onHubPanic = () => setEditorMidiHit(null);
     window.addEventListener('hub:midi-note', onHubNote);
     window.addEventListener('hub:midi-panic', onHubPanic);
+    
+    // Le meme jeu de pads, mais depuis un clavier branche EN DIRECT.
+    //
+    // `hub:midi-note` ne porte que ce que le panneau MIDI du hub relaie : il
+    // faut donc que le hub soit ouvert ET en mode controleur. Une OP-1 branchee
+    // sur cette machine doit jouer l'EP-133 sans cet intermediaire.
+    //
+    // On passe par le repartiteur, jamais par `input.onmidimessage` : c'est une
+    // propriete unique, et l'ecrire rendrait muettes toutes les autres pages
+    // sans le moindre message d'erreur.
+    const desabonnerClavier = sAbonner(({ donnees }) => {
+      if (donnees.length < 3) return;
+      const commande = donnees[0] & 0xf0;
+      const estNoteOn = commande === 0x90 && donnees[2] > 0;
+      // 0x80, ou 0x90 de velocite 0 : le note-off deguise que beaucoup de
+      // claviers envoient a la place d'un vrai note-off.
+      const estNoteOff = commande === 0x80 || (commande === 0x90 && donnees[2] === 0);
+      if (!estNoteOn && !estNoteOff) return;
+    
+      // Do1 = pad 1, comme le pont du hub. Hors des douze pads, rien a jouer.
+      const pad = donnees[1] - 36;
+      if (pad < 0 || pad > 11) return;
+    
+      if (estNoteOn) {
+        // Le SON d'abord, sans condition. Un clavier branche doit jouer, que
+        // l'editeur soit ouvert ou non : c'est la difference avec le pont du
+        // hub, qui ne sert que l'editeur.
+        audio.playPad(pad, donnees[2]);
+        setMachineGroup(editorGroup);
+        // Le retour visuel, lui, n'a de sens que dans l'editeur.
+        if (editorOpen) {
+          setEditorMidiHit({ pad, group: editorGroup });
+          if (editorMidiFlashTimer.current !== undefined) window.clearTimeout(editorMidiFlashTimer.current);
+          editorMidiFlashTimer.current = window.setTimeout(() => setEditorMidiHit(null), 180);
+        }
+      } else if (editorOpen) {
+        setEditorMidiHit((current) => current?.pad === pad ? null : current);
+      }
+    });
     return () => {
       window.removeEventListener('hub:midi-note', onHubNote);
       window.removeEventListener('hub:midi-panic', onHubPanic);
+      desabonnerClavier();
     };
   }, [editorGroup, editorMode, editorOpen]);
 

@@ -202,3 +202,74 @@ describe("chaque surface sonore dit si elle entend la machine", () => {
     expect(t).toContain("seDesabonner();");
   });
 });
+
+describe("les studios acceptent le clavier branche", () => {
+  /**
+   * `apps/ep133-studio` et `apps/op1-studio` sont hors du `include` de
+   * tsconfig : aucune erreur de type n'y est signalee. Ces tests structurels
+   * sont le seul filet.
+   */
+  const RACINE = path.join(DIR, "..", "..", "..", "..");
+  const lireApp = (p2: string) => readFileSync(path.join(RACINE, p2), "utf-8");
+
+  const EP133_MIDI = lireApp("ep133-studio/src/core/midi/useWebMidi.ts");
+  const EP133_APP = lireApp("ep133-studio/src/App.tsx");
+  const OP1 = lireApp("op1-studio/app/page.tsx");
+
+  it("lit bien les sources des studios", () => {
+    expect(EP133_MIDI.length).toBeGreaterThan(5000);
+    expect(EP133_APP.length).toBeGreaterThan(20000);
+    expect(OP1.length).toBeGreaterThan(20000);
+  });
+
+  it("l'EP-133 n'ecarte plus les notes venues d'un autre clavier", () => {
+    // Le filtre `isEp133MidiPort` les rejetait PAR CONSTRUCTION : une OP-1 en
+    // mode controleur ne pouvait pas jouer l'EP-133 en direct, seulement a
+    // travers le pont du hub.
+    expect(EP133_MIDI).toContain("const estNote = donnees.length >= 3");
+    expect(EP133_MIDI).toContain("if (!monitorAll && !estNote && !isEp133MidiPort(port)) return;");
+  });
+
+  it("...mais garde le SysEx filtre sur l'EP-133", () => {
+    // La reponse TE FILE (F0 00 20 76 33 ...) est analysee dans le
+    // gestionnaire : un SysEx venu d'une autre machine y serait pris pour une
+    // reponse de l'EP-133.
+    expect(EP133_MIDI).toContain("isEp133MidiPort(port)");
+    const i = EP133_MIDI.indexOf("const estNote");
+    expect(EP133_MIDI.slice(i, i + 300)).toContain("(donnees[0] & 0xf0) === 0x90");
+  });
+
+  it("l'EP-133 joue ses pads depuis un clavier branche en direct", () => {
+    expect(EP133_APP).toContain("const desabonnerClavier = sAbonner(");
+    expect(EP133_APP).toContain("audio.playPad(pad, donnees[2]);");
+  });
+
+  it("le son ne depend pas de l'editeur ouvert", () => {
+    // `hub:midi-note` ne sert que l'editeur. Un clavier branche doit jouer
+    // quoi qu'il arrive — sinon « ca marche pas partout ».
+    const i = EP133_APP.indexOf("const desabonnerClavier = sAbonner(");
+    const bloc = EP133_APP.slice(i, EP133_APP.indexOf("});", EP133_APP.indexOf("audio.playPad(pad", i)));
+    const avantLeSon = bloc.slice(0, bloc.indexOf("audio.playPad(pad"));
+    expect(avantLeSon, "le son est conditionne a l'editeur ouvert").not.toContain("editorOpen");
+  });
+
+  it("il se desabonne au demontage", () => {
+    expect(EP133_APP).toContain("desabonnerClavier();");
+  });
+
+  it("l'OP-1 accepte deja tous les ports", () => {
+    // Aucun filtre par nom : c'est le studio qui marchait deja.
+    const i = OP1.indexOf("const seDesabonner = sAbonner(");
+    expect(i).toBeGreaterThan(-1);
+    expect(OP1.slice(i, i + 200)).not.toContain("isEp133MidiPort");
+  });
+
+  it("aucun studio n'ecrit onmidimessage en direct", () => {
+    for (const [nom, source] of [["ep133/useWebMidi", EP133_MIDI], ["ep133/App", EP133_APP], ["op1/page", OP1]] as const) {
+      const ecritures = source
+        .split("\n")
+        .filter((l) => /\.onmidimessage\s*=/.test(l) && !l.trim().startsWith("//") && !l.trim().startsWith("*"));
+      expect(ecritures, `${nom} ecrit onmidimessage en direct`).toEqual([]);
+    }
+  });
+});

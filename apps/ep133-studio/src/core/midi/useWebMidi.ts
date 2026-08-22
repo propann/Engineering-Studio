@@ -213,7 +213,17 @@ export function useWebMidi(
       // d'origine reprend sa place.
       desabonnerRef.current?.();
       desabonnerRef.current = sAbonner(({ donnees, port, horodatage }) => {
-        if (!monitorAll && !isEp133MidiPort(port)) return;
+        // Les NOTES sont acceptees de n'importe quel port : jouer l'EP-133 depuis
+        // le clavier de l'OP-1 en mode controleur est l'usage meme de ce mode. Le
+        // filtre par nom de port les ecartait par construction.
+        //
+        // Le reste reste filtre sur l'EP-133, et ce n'est pas de la prudence
+        // decorative : la reponse TE FILE (F0 00 20 76 33 ...) est analysee au
+        // debut du gestionnaire, et un SysEx venu d'une autre machine y serait
+        // pris pour une reponse de l'EP-133.
+        const estNote = donnees.length >= 3
+          && ((donnees[0] & 0xf0) === 0x90 || (donnees[0] & 0xf0) === 0x80);
+        if (!monitorAll && !estNote && !isEp133MidiPort(port)) return;
         // Meme forme qu'un MIDIMessageEvent : la logique de pads en dessous
         // ne bouge pas d'une ligne.
         handler({ data: donnees, target: { name: port }, timeStamp: horodatage });
