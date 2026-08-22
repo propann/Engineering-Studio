@@ -1042,6 +1042,11 @@ export function StudioMachinePanel({
               );
             })}
 
+            {/* Séparateurs orange du clavier OP-1 : bandes visibles entre les touches blanches. */}
+            {whiteBlocks.slice(0, -1).map((b, i) => (
+              <rect key={`white-separator-${i}`} x={b.col + b.w - .08} y={b.row + .2} width={.16} height={Math.max(0, b.h - .4)} fill="#FF7A30" opacity=".82" />
+            ))}
+
             {blackBlocks.map((b, i) => {
               const note = BLACK_NOTES[i] ?? (61 + i*2);
               const isDown = pressed.has(note);
@@ -1055,8 +1060,8 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.3}
-                    fill={isDown?"#555":"#171a1b"}
-                    stroke="#050606" strokeWidth={.06}
+                    fill={isDown ? "#ffffff" : "#f1f2ef"}
+                    stroke={isDown ? "#FF7A30" : "#9da39f"} strokeWidth={.08}
                   />
                   <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
                     r={Math.min(b.w, b.h)*.32}
@@ -1065,7 +1070,7 @@ export function StudioMachinePanel({
                   {/* Touche du clavier ordinateur correspondante. */}
                   <text x={b.col+b.w/2} y={b.row+b.h-.38}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.4} fill="#9a95b5" fontFamily="monospace" fontWeight="700">
+                    fontSize={.4} fill="#68706c" fontFamily="monospace" fontWeight="700">
                     {labelForCode(BLACK_KEY_CODES[i])}
                   </text>
                 </g>
