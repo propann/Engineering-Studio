@@ -18,6 +18,7 @@ import { useRef, useState, type MutableRefObject } from "react";
 
 const RACK_ENGINES = ["mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements", "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth", "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp"] as const;
 const RACK_PATCHES = ["Virtual Analog Saw Lead", "CS-80 Brass Lead", "Granular Cloud Burst", "Modal Texture", "DX7 Glass Bell", "Hybrid Wavetable", "Acid Sequence", "Tape Dust"] as const;
+const RACK_EFFECTS = ["ADSR", "LFO", "Delay", "EQ", "Arpeggiator", "Step Sequencer", "Chorus", "Distortion"] as const;
 import { TrackContextMenu } from "./TrackContextMenu";
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
@@ -89,6 +90,8 @@ export interface StudioTapeEditorProps {
   machineMode?: "synth" | "drum" | "tape";
   soundMenuOpen?: boolean;
   onSoundMenuClose?: () => void;
+  rackMenuOpen?: boolean;
+  onRackMenuClose?: () => void;
   soundSlot?: number;
   selectedEngine?: string;
   selectedPatch?: string;
@@ -118,7 +121,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
-    machineMode = "synth", soundMenuOpen = false, onSoundMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
+    machineMode = "synth", soundMenuOpen = false, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = RACK_PATCHES[0], onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
@@ -548,7 +551,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   }
 
   return (
-    <div className={`tape-editor-screen ${soundMenuOpen ? "is-screen-menu-open" : ""}`} style={{ position: "relative" }}>
+    <div className={`tape-editor-screen ${soundMenuOpen || rackMenuOpen ? "is-screen-menu-open" : ""}`} style={{ position: "relative" }}>
 
       {/* Éléments audio cachés */}
       <div style={{ display: "none" }}>
@@ -1183,28 +1186,43 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       {soundMenuOpen && (
         <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
           <div className="op1-screen-patch-menu-head">
-            <span>OP-1 · SOUND {soundSlot} · {machineMode.toUpperCase()}</span>
+            <span>{soundMenuOpen ? ("OP-1 · SOUND " + soundSlot + " · " + machineMode.toUpperCase()) : "OP-1 · RACK FX"}</span>
             <button type="button" onClick={() => setScreenMenuOpen(false)} aria-label="Fermer le menu son">×</button>
           </div>
           <div className="op1-screen-patch-columns">
-            <section className="op1-screen-engine-column" aria-label="Moteurs audio">
-              <strong>MOTEURS</strong>
-              {RACK_ENGINES.map((engine) => (
-                <button key={engine} type="button" className={selectedEngine === engine ? "is-active" : ""} onClick={() => { onEngineChange?.(engine); onNotice?.("Moteur " + engine + " sélectionné."); }}>
-                  <span>{engine}</span><small>{selectedEngine === engine ? "ACTIF" : "MOTEUR"}</small>
-                </button>
-              ))}
-            </section>
-            <section className="op1-screen-patch-column" aria-label="Patches">
-              <strong>PATCHES</strong>
-              {RACK_PATCHES.map((patch) => (
-                <button key={patch} type="button" className={selectedPatch === patch ? "is-active" : ""} onClick={() => { onPatchChange?.(patch); onNotice?.("Patch " + selectedEngine + " " + patch + " chargé."); }}>
-                  <span>{patch}</span><small>{selectedEngine}</small>
-                </button>
-              ))}
-            </section>
+            {soundMenuOpen ? (
+              <>
+                <section className="op1-screen-engine-column" aria-label="Moteurs audio du rack">
+                  <strong>MOTEURS · BLEU</strong>
+                  {RACK_ENGINES.map((engine) => (
+                    <button key={engine} type="button" className={selectedEngine === engine ? "is-active" : ""} onClick={() => { onEngineChange?.(engine); onNotice?.("Moteur " + engine + " sélectionné."); }}>
+                      <span>{engine}</span><small>{selectedEngine === engine ? "ACTIF" : "RACK"}</small>
+                    </button>
+                  ))}
+                </section>
+                <section className="op1-screen-patch-column" aria-label="Patches du moteur">
+                  <strong>PATCHES · BLEU</strong>
+                  {RACK_PATCHES.map((patch) => (
+                    <button key={patch} type="button" className={selectedPatch === patch ? "is-active" : ""} onClick={() => { onPatchChange?.(patch); onNotice?.("Patch " + selectedEngine + " " + patch + " chargé."); }}>
+                      <span>{patch}</span><small>{selectedEngine}</small>
+                    </button>
+                  ))}
+                </section>
+              </>
+            ) : (
+              <>
+                <section className="op1-screen-engine-column" aria-label="Modules du rack">
+                  <strong>RACK · BLEU</strong>
+                  {RACK_ENGINES.map((engine) => <button key={engine} type="button" onClick={() => onNotice?.("Rack " + engine + " prêt.")}><span>{engine}</span><small>MODULE</small></button>)}
+                </section>
+                <section className="op1-screen-patch-column" aria-label="Effets du rack">
+                  <strong>EFFETS · BLEU</strong>
+                  {RACK_EFFECTS.map((effect) => <button key={effect} type="button" onClick={() => onNotice?.("Effet " + effect + " sélectionné.")}><span>{effect}</span><small>RACK</small></button>)}
+                </section>
+              </>
+            )}
           </div>
-          <div className="op1-screen-patch-menu-foot">Clavier et MIDI utilisent le moteur actif · {selectedEngine} / {selectedPatch}</div>
+          <div className="op1-screen-patch-menu-foot">{soundMenuOpen ? ("SOUND " + soundSlot + "/8 · encodeur bleu = moteur · encodeur vert = patch") : "SEQUENCER · effets du rack · aucun transfert machine"}</div>
         </div>
       )}
 
