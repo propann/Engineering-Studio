@@ -188,7 +188,7 @@ export function computeWaveformPeaks(buffer: ArrayBuffer, points = 100): Wavefor
     max.push(bucketMax);
     values.push(Math.max(Math.abs(bucketMin), Math.abs(bucketMax)));
   }
-  return { min, max, values, durationSeconds: frameCount / parsed.sampleRate } as WaveformPeaks & { sampleRate: number; channels: number };
+  return { min, max, values, durationSeconds: frameCount / parsed.sampleRate, sampleRate: parsed.sampleRate, channels: parsed.channels } as WaveformPeaks & { sampleRate: number; channels: number };
 }
 
 export function detectSilenceTrim(buffer: ArrayBuffer, thresholdDb = -40, guardMs = 10): SilenceTrimSuggestion | null {
