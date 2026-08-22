@@ -34,6 +34,12 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const PANNEAU = readFileSync(path.join(DIR, "MidiSyncPanel.tsx"), "utf-8");
 const RACK = readFileSync(path.join(DIR, "pages", "AudioPluginRack.tsx"), "utf-8");
 const CSS = readFileSync(path.join(DIR, "styles.css"), "utf-8");
+// L'interface du rack MIDI vit dans le paquet partage, comme celle du rack
+// d'effets vit dans racks/RackEffets.tsx : chaque rack porte la sienne.
+const ARP_UI = readFileSync(
+  path.join(DIR, "..", "..", "..", "packages", "musique", "Arpegiateur.tsx"),
+  "utf-8"
+);
 
 describe("le rack de moteurs entend le rack MIDI", () => {
   it("lit bien les deux sources", () => {
@@ -161,32 +167,51 @@ describe("le mode controleur alimente l'arpege", () => {
 });
 
 describe("interface", () => {
-  it("delegue le choix de gamme au composant partage", () => {
-    // Le panneau rendait ses deux menus lui-meme. Avec vingt-neuf gammes il
-    // fallait des familles, et un composant que les studios puissent poser
-    // aussi — il vit donc dans packages/musique, pas ici.
-    expect(PANNEAU).toContain("<SelecteurGamme");
+  it("le panneau delegue toute son interface au rack MIDI", () => {
+    // Le panneau garde ce qui est vraiment a lui : l'horloge, les sorties,
+    // l'envoi. Les commandes sont dans le paquet, posables par un studio.
+    expect(PANNEAU).toMatch(/<Arpegiateur[\s/>]/);
     expect(PANNEAU).toContain("gamme={arpGamme}");
     expect(PANNEAU).toContain("onGamme={setArpGamme}");
-    expect(PANNEAU).toContain("tonique={arpTonique}");
-    expect(PANNEAU).toContain("onTonique={setArpTonique}");
+    expect(PANNEAU).toContain("notesTenues={arpNotes}");
   });
 
-  it("ne reconstruit pas de menu de gammes en parallele", () => {
-    // Le defaut qui suivrait la migration : garder l'ancien menu a cote du
-    // composant, et voir les deux diverger.
-    expect(PANNEAU).not.toContain("ORDRE_GAMMES.map(");
-    expect(PANNEAU).not.toContain("NOMS_GAMMES[");
+  it("le panneau ne rend plus aucune commande d'arpege", () => {
+    // L'invariant d'equilibre, cote rack MIDI. Sans lui la frontiere se
+    // referme au premier « juste un curseur de plus ».
+    expect(PANNEAU).not.toContain('className="arp-panneau"');
+    expect(PANNEAU).not.toContain('className="arp-touche');
+    expect(PANNEAU).not.toContain("ORDRE_MOTIFS.map(");
+    expect(PANNEAU).not.toMatch(/<SelecteurGamme[\s/>]/);
   });
 
-  it("propose tous les motifs sans liste en dur", () => {
-    expect(PANNEAU).toContain("ORDRE_MOTIFS.map((m) =>");
+  it("le rack MIDI propose gammes et motifs sans liste en dur", () => {
+    expect(ARP_UI).toContain("ORDRE_MOTIFS.map((m) =>");
+    // Borne exigee : `toContain("<SelecteurGamme")` reste vrai pour
+    // `<SelecteurGammeZ`. Un premier jet de ce test ne voyait pas le
+    // renommage du composant.
+    expect(ARP_UI).toMatch(/<SelecteurGamme[\s/>]/);
+  });
+
+  it("le rack MIDI n'a aucun etat interne", () => {
+    // Deux verites pour un seul reglage seraient impossibles a diagnostiquer,
+    // et le clavier tenu doit rester la ou l'envoi le lit.
+    expect(ARP_UI).not.toContain("useState");
+    expect(ARP_UI).not.toContain("useRef");
+  });
+
+  it("le rack MIDI ne touche ni au MIDI ni au son", () => {
+    // Il regle. Le moteur d'arpege reste cote hote : c'est lui qui possede le
+    // tempo et sait a qui envoyer.
+    expect(ARP_UI).not.toContain("requestMIDIAccess");
+    expect(ARP_UI).not.toContain("broadcastNote");
+    expect(ARP_UI).not.toContain("setTimeout");
   });
 
   it("les touches se maintiennent au clic", () => {
     // Un arpegiateur sans maintien demanderait de garder trois doigts sur
     // l'ecran.
-    expect(PANNEAU).toContain("arpBasculerNote(note)");
+    expect(ARP_UI).toContain("onBasculerNote(note)");
     expect(PANNEAU).toContain("function arpToutRelacher()");
   });
 

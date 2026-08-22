@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, buildMidiRealtimePacket, createHubNoteMessage, createHubPanicMessage, createHubTransportMessage, parseMidiNotePacket } from "@studio-hub/midi-bridge";
 import { sAbonner } from "@studio-hub/midi-dispatch";
 import {
-  NOMS_MOTIFS, NOMS_NOTES, ORDRE_MOTIFS, SelecteurGamme,
+  Arpegiateur,
   pasArpege, quantifier, type Gamme, type Motif,
 } from "@studio-hub/musique";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "./core/audio/tempo";
@@ -519,61 +519,27 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
               <button className="panic-button" disabled={!hasDestination()} onClick={panic}>PANIC</button>
             </div>
           </div>
-          <div className="arp-panneau">
-            <div className="arp-tete">
-              <strong>Arpégiateur</strong>
-              <button
-                type="button"
-                className={`arp-bouton ${arpEnabled ? "actif" : ""}`}
-                disabled={!hasDestination() && !arpEnabled}
-                onClick={arpBasculer}
-              >
-                {arpEnabled ? "■ Arrêter" : "▶ Démarrer"}
-              </button>
-            </div>
-            <span className="arp-aide">
-              Les notes choisies partent vers <strong>tout ce qui écoute</strong> — le rack
-              de moteurs, l’OP‑1, l’EP‑133, et les machines branchées. En mode contrôleur,
-              l’OP‑1 choisit les notes au lieu de les jouer.
-            </span>
-            <div className="arp-reglages">
-              <label>Motif
-                <select value={arpMotif} onChange={(e) => setArpMotif(e.target.value as Motif)}>
-                  {ORDRE_MOTIFS.map((m) => <option key={m} value={m}>{NOMS_MOTIFS[m]}</option>)}
-                </select>
-              </label>
-          <SelecteurGamme gamme={arpGamme} onGamme={setArpGamme} tonique={arpTonique} onTonique={setArpTonique} prefixe="arp-gamme" />
-              <label>Vitesse
-                <select value={arpDivision} onChange={(e) => setArpDivision(e.target.value as Division)}>
-                  {ORDRE_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </label>
-              <label>Octaves
-                <select value={arpOctaves} onChange={(e) => setArpOctaves(Number(e.target.value))}>
-                  {[1, 2, 3, 4].map((o) => <option key={o} value={o}>{o}</option>)}
-                </select>
-              </label>
-            </div>
-            <div className="arp-clavier">
-              {Array.from({ length: 24 }, (_, d) => 48 + d).map((note) => (
-                <button
-                  key={note}
-                  type="button"
-                  className={`arp-touche ${NOMS_NOTES[note % 12].includes("#") ? "noire" : ""} ${arpNotes.includes(note) ? "tenue" : ""}`}
-                  onClick={() => arpBasculerNote(note)}
-                  title={`${NOMS_NOTES[note % 12]}${Math.floor(note / 12) - 1}`}
-                >
-                  {NOMS_NOTES[note % 12]}
-                </button>
-              ))}
-            </div>
-            <div className="arp-pied">
-              <span>{arpNotes.length ? `${arpNotes.length} note(s) tenue(s)` : "Aucune note tenue"}</span>
-              <button type="button" className="secondary-button" onClick={arpToutRelacher} disabled={!arpNotes.length}>
-                Tout relâcher
-              </button>
-            </div>
-          </div>
+          {/* Le rack MIDI rend sa propre interface, comme le rack d'effets rend
+              la sienne. Ce panneau garde ce qui est a lui : l'horloge, les
+              sorties, l'envoi. */}
+          <Arpegiateur
+            actif={arpEnabled}
+            onActif={arpBasculer}
+            pret={hasDestination()}
+            motif={arpMotif}
+            onMotif={setArpMotif}
+            gamme={arpGamme}
+            onGamme={setArpGamme}
+            tonique={arpTonique}
+            onTonique={setArpTonique}
+            division={arpDivision}
+            onDivision={setArpDivision}
+            octaves={arpOctaves}
+            onOctaves={setArpOctaves}
+            notesTenues={arpNotes}
+            onBasculerNote={arpBasculerNote}
+            onToutRelacher={arpToutRelacher}
+          />
         </div>
       </div>
     </section>
