@@ -445,6 +445,7 @@ export function StudioMachinePanel({
   mode = "clone",
   pressedNotes = [],
   onTogglePlayback,
+  onRecord,
   onSendMidi,
   notesOnly = false,
   onPressedChange,
@@ -456,6 +457,8 @@ export function StudioMachinePanel({
   position?: number;
   files?: Record<number, string>;
   onTogglePlayback: () => void;
+  /** Même action que REC sur l’écran simulé OP-1. */
+  onRecord?: () => void;
   onSendMidi: (data: number[]) => void;
   onConnectMidi?: () => void;
   /** Zoome sur les touches note (blanches/noires) seulement, encodeurs/
@@ -821,6 +824,10 @@ export function StudioMachinePanel({
           const timer = window.setTimeout(() => setPressed((s) => { if (!s.has(idx)) return s; const ns = new Set(s); ns.delete(idx); return ns; }), 150);
           flashTimersRef.current.push(timer);
         }
+        // Le bouton réel MIDI et le bouton virtuel pilotent le même écran :
+        // après association, Lecture et REC déclenchent le même handler.
+        if (type === "trans" && idx === 0) onTogglePlayback();
+        if (type === "trans" && idx === 1) onRecord?.();
         break; // un seul bouton peut correspondre à un message donné
       }
 
@@ -1181,6 +1188,7 @@ export function StudioMachinePanel({
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedTrans(s => new Set(s).add(i));
                     if (i === 0 || def7B?.id === "transport-play") onTogglePlayback();
+                    if (i === 1 || def7B?.id === "transport-rec") onRecord?.();
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 52 + i, 100]), transLabel);
                   }}
                   onPointerUp={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
