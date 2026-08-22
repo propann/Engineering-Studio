@@ -1493,7 +1493,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
                   display: "inline-block",
                   animation: recording ? "pulse 1s infinite" : "none"
                 }} />
-                <span>REC</span>
+                <span>{recording ? "STOP" : `REC · P${selectedTrack + 1}`}</span>
               </button>
 
               <button
@@ -1524,6 +1524,22 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
                   onChange={(e) => setTempo(Number(e.target.value))}
                 />
               </div>
+            </div>
+
+            <div className="op1-track-selector" role="group" aria-label="Sélection de piste">
+              <span className="op1-track-selector-label">PISTE</span>
+              {[0, 1, 2, 3].map((track) => (
+                <button
+                  key={track}
+                  type="button"
+                  className={`op1-track-select-btn op1-track-select-btn-${track + 1} ${selectedTrack === track ? "is-selected" : ""}`}
+                  onClick={() => { setSelectedTrack(track); onNotice(`Piste ${track + 1} sélectionnée.`); }}
+                  aria-pressed={selectedTrack === track}
+                  title={`Sélectionner la piste ${track + 1}`}
+                >
+                  {track + 1}
+                </button>
+              ))}
             </div>
 
             {/* Outils de boucle In / Out / Copier / Coller */}
