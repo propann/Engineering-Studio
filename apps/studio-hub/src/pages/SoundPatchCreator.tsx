@@ -1,4 +1,5 @@
 import { createLogger } from "@studio-hub/audio-bridge";
+import { TemoinMidi } from "../components/TemoinMidi";
 const log = createLogger("SoundPatch");
 "use client";
 
@@ -297,6 +298,9 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
             <button type="button" className="live-preview-audio-btn" onClick={() => playLiveSynthNote(261.63)}>
               ▶ ÉCOUTER LE PATCH EN DIRECT (WEB AUDIO)
             </button>
+            {/* Sans temoin, une page muette ne dit pas si c'est le MIDI ou
+                l'audio qui manque. */}
+            <TemoinMidi compact />
           </div>
 
           <div className="machine-target-selector">

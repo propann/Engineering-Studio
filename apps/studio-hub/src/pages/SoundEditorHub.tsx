@@ -1,4 +1,5 @@
 import { createLogger } from "@studio-hub/audio-bridge";
+import { TemoinMidi } from "../components/TemoinMidi";
 const log = createLogger("SoundEditor");
 "use client";
 
@@ -630,6 +631,7 @@ export default function SoundEditorHub({ profileName = "NOUVEAU MEMBRE", enModul
       <div className="sound-editor-wrapper">
         {/* TOP CONTROL BAR, VIEW MODE TOGGLES & SEARCH */}
         <header className="sound-top-bar">
+          <TemoinMidi compact />
           <div className="sound-top-headline-row">
             <div className="sound-header-titles">
               <h1>🎵 STUDIO SON UNIFIÉ (EP-133 & OP-1)</h1>

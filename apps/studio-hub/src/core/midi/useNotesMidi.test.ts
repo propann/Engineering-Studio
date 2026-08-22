@@ -152,3 +152,53 @@ describe("ce que le crochet decode", () => {
     expect(source).toContain("return seDesabonner;");
   });
 });
+
+describe("chaque surface sonore dit si elle entend la machine", () => {
+  /**
+   * Une page qui ecoute le MIDI sans rien afficher est indiscernable d'une
+   * page qui ne l'ecoute pas : quand rien ne sonne, on ne sait pas si c'est
+   * la permission, le contexte non securise, ou l'audio.
+   *
+   * Le temoin separe les trois. Il montre l'etat de l'acces, le nombre
+   * d'entrees, et la DERNIERE NOTE RECUE — une note affichee sans son deplace
+   * le diagnostic du MIDI vers l'audio.
+   */
+  const AVEC_TEMOIN = [
+    "pages/AudioPluginRack.tsx",   // son propre bandeau de diagnostic
+    "pages/SoundPatchCreator.tsx",
+    "pages/SoundEditorHub.tsx",
+  ];
+
+  it("aucune surface sonore n'est muette sur son etat MIDI", () => {
+    const SRC2 = path.join(DIR, "..", "..");
+    for (const fichier of AVEC_TEMOIN) {
+      const source = readFileSync(path.join(SRC2, fichier), "utf-8");
+      const affiche = /<TemoinMidi[\s/>]/.test(source) || /<RackDiagnostic[\s/>]/.test(source);
+      expect(affiche, `${fichier} ecoute le MIDI sans jamais dire ce qu'il en est`).toBe(true);
+    }
+  });
+
+  it("le temoin distingue « indisponible » de « refuse »", () => {
+    // Deux causes tres differentes, et deux gestes differents : ouvrir le
+    // site autrement, ou autoriser dans le navigateur. Les confondre envoie
+    // l'utilisateur chercher au mauvais endroit.
+    const t = readFileSync(path.join(DIR, "..", "..", "components", "TemoinMidi.tsx"), "utf-8");
+    expect(t).toContain('raison.includes("indisponible")');
+    expect(t).toContain("https ou sur localhost");
+  });
+
+  it("le temoin n'affiche pas l'horloge comme une note", () => {
+    // L'OP-1 envoie 24 messages d'horloge par noire. Les afficher ferait
+    // clignoter le temoin en permanence sans rien apprendre.
+    const t = readFileSync(path.join(DIR, "..", "..", "components", "TemoinMidi.tsx"), "utf-8");
+    expect(t).toContain('message.action !== "note-on"');
+  });
+
+  it("le temoin se desabonne des deux flux", () => {
+    // Il ecoute l'etat ET les notes : en oublier un a l'unmount laisserait un
+    // auditeur derriere a chaque changement de page.
+    const t = readFileSync(path.join(DIR, "..", "..", "components", "TemoinMidi.tsx"), "utf-8");
+    expect(t).toContain("seDesabonnerEtat();");
+    expect(t).toContain("seDesabonner();");
+  });
+});

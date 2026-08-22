@@ -4086,3 +4086,20 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
 .arp-gamme__tonique { width: 68px; }
 .arp-gamme__gamme optgroup { color: #8e9db5; font-style: normal; font-weight: 700; }
 .arp-gamme__gamme option { color: #ecf3ff; font-weight: 400; }
+
+/* ── Témoin MIDI ────────────────────────────────────────────────────────── */
+.temoin-midi {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 10px; border-radius: 5px;
+  background: #16213a; border: 1px solid #3d557f;
+  font: 600 10px ui-monospace, monospace; letter-spacing: .04em; color: #8e9db5;
+}
+.temoin-midi--compact { padding: 3px 8px; font-size: 9px; }
+.temoin-midi-point { width: 7px; height: 7px; border-radius: 50%; background: #6b7a92; flex: none; }
+.temoin-midi--ok { border-color: #2f6b5c; color: #7fe3c4; }
+.temoin-midi--ok .temoin-midi-point { background: #6fe3b0; box-shadow: 0 0 6px rgba(111,227,176,.7); }
+.temoin-midi--refus { border-color: #a95663; color: #ffd9d9; background: #2a1a20; }
+.temoin-midi--refus .temoin-midi-point { background: #e4707f; }
+.temoin-midi--attente .temoin-midi-point { background: #c9a227; }
+.temoin-midi-note { color: #ecf3ff; font-variant-numeric: tabular-nums; }
+.temoin-midi-raison { color: #c9a9b0; font-weight: 400; text-transform: none; letter-spacing: 0; }
