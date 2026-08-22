@@ -245,6 +245,20 @@ Panneau ENVELOPPE du rack de moteurs.
       défaut
 
 
+### Import de patch
+Bouton **📥 IMPORTER** à côté des trois exports.
+
+- [ ] **aller-retour complet** : exporter en JSON, changer de moteur, réimporter
+      — les réglages reviennent et les curseurs suivent
+- [ ] les trois formats se relisent : JSON standard, OP-1 SYNTH, EP-133 MAP
+- [ ] **réimporter deux fois le MÊME fichier fonctionne.** Sans remise à zéro
+      du champ, le second choix ne déclenche rien et on croit à un échec
+- [ ] un fichier qui n'est pas un patch donne un message clair, pas un rack vide
+- [ ] un patch d'un moteur inconnu est refusé en le nommant
+- [ ] le patch importé apparaît comme patch **utilisateur**, pas parmi les 91
+      d'usine
+
+
 ### Le rack d'effets — saturation et chorus
 Panneau EFFETS du rack, à côté du delay et de l'égaliseur.
 

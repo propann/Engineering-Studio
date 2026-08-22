@@ -12,14 +12,14 @@
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 4 prises, SYNC au tempo, seule la première réinjecte |
 | 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
-| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 11 gammes, 6 motifs |
+| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 29 gammes, 6 motifs |
 | 6 | Step Sequencer | 🔴 |
 | 7 | LFO Generator | 🔴 |
 | 8 | Distortion Stack | 🟢 saturation douce et par repliement, dans le rack d'effets |
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
 | 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
-| 12 | Patch Import/Export | 🔴 |
+| 12 | Patch Import/Export | ✅ livré — import validé, les trois formats se relisent |
 
 **Quatre acquis qui ne figuraient dans aucun module** et qui conditionnaient
 tout le reste :

@@ -1002,3 +1002,7 @@
 .fx-mode-btn:hover:not(:disabled) { color: #9fc4bc; border-color: #354a45; }
 .fx-mode-btn.actif { background: #1d3b34; border-color: #2f6b5c; color: #7fe3c4; }
 .fx-mode-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Import de patch ────────────────────────────────────────────────────── */
+.action-btn.import-btn { background: #1d3b34; border-color: #2f6b5c; color: #7fe3c4; }
+.action-btn.import-btn:hover { background: #244a41; border-color: #3f8b78; }

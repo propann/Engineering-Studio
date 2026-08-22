@@ -21,6 +21,7 @@ import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
 import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
 import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
+import { lirePatchImporte } from "../core/audio/importPatch";
 import { PanneauEnveloppe } from "../racks/PanneauEnveloppe";
 import { RackEffets } from "../racks/RackEffets";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
@@ -563,6 +564,7 @@ export default function AudioPluginRack({
 
   // Web Audio Context & Oscilloscope
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const fichierImportRef = useRef<HTMLInputElement | null>(null);
   const oscCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const debounceTimerRef = useRef<any>(null);
@@ -2436,6 +2438,40 @@ export default function AudioPluginRack({
   }, []);
 
   // EXPORT PRESET FOR INSTRUMENTS (OP-1 & EP-133 FORMATS)
+  /**
+   * Import d'un patch, symétrique des trois exports.
+   *
+   * Les clés autorisées viennent de `paramsRef` lui-même, et ne sont pas
+   * recopiées : une seconde liste divergerait de celle du rack au premier
+   * réglage ajouté, et l'import perdrait le nouveau sans rien dire.
+   */
+  const importerPatch = async (evt: React.ChangeEvent<HTMLInputElement>) => {
+    const fichier = evt.target.files?.[0];
+    // Remis à zéro tout de suite : sans cela, réimporter le MÊME fichier ne
+    // déclenche pas `change` une seconde fois.
+    evt.target.value = "";
+    if (!fichier) return;
+
+    try {
+      const resultat = lirePatchImporte(
+        await fichier.text(),
+        Object.keys(paramsRef.current)
+      );
+      if (!resultat.ok) {
+        showToast(`⚠️ ${resultat.raison}`);
+        return;
+      }
+      applyPatch(resultat.patch);
+      showToast(
+        resultat.ignores.length
+          ? `📥 ${resultat.patch.name} — ${resultat.ignores.length} réglage(s) inconnu(s) ignoré(s)`
+          : `📥 ${resultat.patch.name} importé`
+      );
+    } catch {
+      showToast("⚠️ Impossible de lire ce fichier.");
+    }
+  };
+
   const exportPreset = (format: "standard" | "op1" | "ep133") => {
     const p = paramsRef.current;
     let exportData: any;
@@ -2985,6 +3021,20 @@ export default function AudioPluginRack({
                 <button type="button" className="action-btn export-ep133-btn" onClick={() => exportPreset("ep133")}>
                   🎚️ EP-133 MAP
                 </button>
+                {/* Le rack savait exporter trois formats et n'en relisait
+                    aucun. Le champ est masqué : un `<input type="file">` nu
+                    ne se met pas au style du rack, et son libellé natif
+                    dépend de la langue du navigateur. */}
+                <button type="button" className="action-btn import-btn" onClick={() => fichierImportRef.current?.click()}>
+                  📥 IMPORTER
+                </button>
+                <input
+                  ref={fichierImportRef}
+                  type="file"
+                  accept="application/json,.json"
+                  style={{ display: "none" }}
+                  onChange={importerPatch}
+                />
               </div>
             </div>
           </header>
