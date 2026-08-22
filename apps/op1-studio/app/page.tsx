@@ -1633,6 +1633,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             onSeek={seekTransport}
             onNotice={onNotice}
             machineMode={machineMode}
+            onMachineModeChange={setOp1MachineMode}
             soundMenuOpen={soundMenuOpen}
             soundSlot={soundSlot}
             onSoundMenuClose={() => setSoundMenuOpen(false)}
