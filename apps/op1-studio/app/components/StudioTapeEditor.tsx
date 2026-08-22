@@ -176,7 +176,6 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   const gridTempo = midiClockBpm ?? tempo;
   const barSec = (60 / Math.max(30, gridTempo)) * 4;
   const beatSec = barSec / 4;
-  const midiClockBeat = ((midiClockTick % 24) + 24) % 24;
   const pixelsPerSec = BAR_WIDTH_PX / barSec;
 
   // Convertisseur Temps (s) -> Coordonnée X écran
