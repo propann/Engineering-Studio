@@ -24,7 +24,7 @@ export const KEYBOARD_ROWS = 16;
 // la même touche que le clavier joué en dessous.
 //
 // Recalé le 22 août 2026 sur le journal MIDI de la machine : la première
-// touche physique est le message de relâchement `80 29 40 14`. Le premier
+// touche physique est le message de relâchement `80 29 40 15`. Le premier
 // octet est le statut note-off et `0x29` (41) est donc le numéro de note.
 // Le clavier virtuel doit partir de cette note, sinon sa première touche
 // joue F3/MIDI 53 alors que la machine joue F2/MIDI 41.
