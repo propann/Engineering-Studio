@@ -78,13 +78,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
+      - name: Install root dependencies for shared sources
+        run: npm install --package-lock=false --ignore-scripts
       - name: Link private workspace packages
         working-directory: apps/op1-studio
         run: |
           node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.dependencies['@studio-hub/audio-bridge']='file:../../packages/audio-bridge'; p.dependencies['@studio-hub/midi-bridge']='file:../../packages/midi-bridge'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');"
       - name: Install dependencies
         working-directory: apps/op1-studio
-        run: npm install --package-lock=false --ignore-scripts
+        run: npm install --package-lock=false --ignore-scripts ../../packages/audio-bridge ../../packages/audio-formats ../../packages/fs-handles ../../packages/midi-bridge ../../packages/midi-dispatch ../../packages/musique
       - name: Type check
         working-directory: apps/op1-studio
         run: npm run typecheck
@@ -100,13 +102,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
+      - name: Install root dependencies for shared sources
+        run: npm install --package-lock=false --ignore-scripts
       - name: Link private workspace packages
         working-directory: apps/ep133-studio
         run: |
           node --input-type=module -e "import fs from 'node:fs'; const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.dependencies['@studio-hub/audio-bridge']='file:../../packages/audio-bridge'; p.dependencies['@studio-hub/midi-bridge']='file:../../packages/midi-bridge'; fs.writeFileSync('package.json', JSON.stringify(p, null, 2)+'\n');"
       - name: Install dependencies
         working-directory: apps/ep133-studio
-        run: npm install --package-lock=false --ignore-scripts
+        run: npm install --package-lock=false --ignore-scripts ../../packages/audio-bridge ../../packages/audio-formats ../../packages/fs-handles ../../packages/midi-bridge ../../packages/midi-dispatch ../../packages/musique
       - name: Type check
         working-directory: apps/ep133-studio
         run: npm run typecheck
