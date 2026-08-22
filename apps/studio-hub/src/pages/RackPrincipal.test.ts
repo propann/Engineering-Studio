@@ -49,16 +49,25 @@ describe("les constats chiffres de l'analyse restent vrais", () => {
     expect(ANALYSE).toContain("dix-neuf");
   });
 
-  it("le filtre n'en laisse toujours passer qu'un", () => {
-    // Si ce nombre change, l'analyse doit etre relue : c'est le constat 1.
-    const ligne = RACK.split("\n")[110];
+  it("le filtre laisse passer image et library", () => {
+    // Constat 1. Le nombre a change ce soir : `library` a recu une route et
+    // rejoint le rendu. Le reste du tableau attend la fusion des deux
+    // systemes, remise a apres les essais physiques.
+    // L'INSTRUCTION entiere, et non une ligne : le filtre tient sur deux
+    // lignes, les exclusions etant sur la seconde. Cherchee par contenu et
+    // non par index — la suppression des modales mortes a decale le fichier,
+    // et un premier jet lisait `[110]` qui ne pointait plus sur rien.
+    const depart = RACK.indexOf("const filteredTools");
+    expect(depart, "declaration du filtre introuvable").toBeGreaterThan(-1);
+    const ligne = RACK.slice(depart, RACK.indexOf(";", depart));
+    expect(ligne).toContain("category !==");
     const cats = new Set([...ligne.matchAll(/category !== "([^"]+)"/g)].map((m) => m[1]));
     const ids = new Set([...ligne.matchAll(/id !== "([^"]+)"/g)].map((m) => m[1]));
     const bloc = RACK.slice(RACK.indexOf("const tools:Tool[]=["), RACK.indexOf("\nconst sections"));
     const restants = [...bloc.matchAll(/\{id:"([^"]+)",code:"[^"]*",category:"([^"]+)"/g)]
       .filter(([, id, cat]) => !cats.has(cat) && !ids.has(id))
       .map(([, id]) => id);
-    expect(restants).toEqual(["image"]);
+    expect(restants.sort()).toEqual(["image", "library"]);
   });
 
   it("les onglets de section ne sont toujours pas branches", () => {
@@ -67,30 +76,69 @@ describe("les constats chiffres de l'analyse restent vrais", () => {
     expect((RACK.match(/setActiveSection/g) ?? [])).toHaveLength(1);
   });
 
-  it("les quatre modales sans declencheur le sont toujours", () => {
-    // Constat 3. Chaque etat est declare, rendu, et jamais mis a vrai.
-    for (const etat of ["setShowSave", "setShowSound", "setShowOP1Studio", "setShowEP133Studio"]) {
-      expect(RACK, `${etat} a maintenant un declencheur`).not.toContain(`${etat}(true)`);
+  it("les quatre modales inatteignables ont disparu", () => {
+    // Constat 3, corrige : leur etat etait declare, leur rendu ecrit, et leur
+    // declencheur n'existait pas. Supprimees plutot que branchees — rien
+    // n'indiquait qu'elles aient jamais ete atteignables.
+    // Bornes exigees : `showSoundEditor` contient `showSound`, et
+    // `SoundEditorHub` contient... rien de tout ca, mais un premier jet de ce
+    // test tombait sur le premier — il declarait mort un etat bien vivant.
+    for (const mort of ["showSave", "showSound", "showOP1Studio", "showEP133Studio",
+                        "SaveModal", "SoundModal", "StudioModal",
+                        "saveTools", "soundTools", "op1StudioTools", "ep133StudioTools"]) {
+      expect(RACK, `${mort} subsiste`).not.toMatch(new RegExp(`\\b${mort}\\b`));
     }
+    // ...et ce qui reste vivant doit rester la, sinon ce test passerait aussi
+    // sur un fichier vide.
+    expect(RACK).toMatch(/\bshowSoundEditor\b/);
+    expect(RACK).toMatch(/\bSettingsModal\b/);
     // Les deux qui marchent, pour que le test distingue « inatteignable » de
     // « le fichier ne contient plus ces modales du tout ».
     expect(RACK).toContain("setShowTraining(true)");
     expect(RACK).toContain("setShowSettings(true)");
   });
 
-  it("library n'a toujours aucune route", () => {
-    // Constat 4 — le meme defaut que celui documente comme corrige au cas
-    // `midi`, reste sur cet outil.
+  it("library a maintenant une route vers sa page", () => {
+    // Constat 4, corrige. Il retombait sur `setSelected()` — une modale
+    // purement descriptive — pendant que SoundLibraryPanel, qui importe,
+    // hache et ecrit sur le disque, n'etait monte nulle part.
     const corps = RACK.slice(RACK.indexOf("function openTool(tool:Tool){"), RACK.indexOf("const scrollToDocumentation"));
     expect(outils()).toContain("library");
-    expect(corps).not.toContain('tool.id==="library"');
+    expect(corps).toContain('tool.id==="library"');
+    expect(corps).toContain('navigateMaquette("sound-library")');
+  });
+
+  it("le panneau de bibliotheque est enfin monte quelque part", () => {
+    // Le defaut d'origine n'etait pas la route manquante mais le panneau
+    // orphelin : 263 lignes fonctionnelles que rien ne rendait.
+    const page = readFileSync(path.join(DIR, "SoundLibrary.tsx"), "utf-8");
+    expect(page).toContain("<SoundLibraryPanel");
+    expect(page).toContain("workspaceHandle={workspaceHandle}");
+    // La poignee revient d'IndexedDB, mais pas le droit de lire : l'adopter
+    // sans verifier afficherait une bibliotheque vide sous un espace
+    // « connecte ».
+    //
+    // On vise l'APPEL et non le nom : un premier jet cherchait
+    // « hasStoredPermission », que la ligne d'import contient encore apres
+    // qu'on ait retire la verification. Le test passait sur du code sans garde.
+    expect(page).toMatch(/await hasStoredPermission\(handle, "readwrite"\)/);
+    expect(page).toMatch(/if \(![\s\S]{0,60}hasStoredPermission[\s\S]{0,40}\) return;/);
+  });
+
+  it("le panneau ne nomme plus des pages qui n'existent plus", () => {
+    // Il disait « connecte l'espace maitre dans Coffre de l'atelier » — deux
+    // noms d'avant le travail sur les libelles. Un utilisateur qui cherche
+    // « Coffre de l'atelier » dans le rack principal ne le trouve pas.
+    const panneau = readFileSync(path.join(DIR, "..", "SoundLibraryPanel.tsx"), "utf-8");
+    expect(panneau).not.toContain("espace maître");
+    expect(panneau).not.toContain("Coffre de l’atelier");
   });
 });
 
 describe("le document d'analyse reste raccroche au code", () => {
-  it("cite des lignes qui existent encore", () => {
+  it("annonce la taille reelle du fichier", () => {
     // Une analyse qui cite `:247` alors que le fichier a change n'aide plus
-    // personne. On verifie la taille : si elle bouge, les numeros aussi.
+    // personne. Si la taille bouge, les numeros de ligne aussi.
     // `split("\n")` compte la chaine vide qui suit le dernier saut de ligne :
     // un fichier de 472 lignes en rend 473. Mon premier jet comparait les deux
     // directement et tombait sur son propre decalage.

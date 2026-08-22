@@ -3,7 +3,8 @@
 Analyse du 2026-08-22. **Aucun code n'a été déplacé** : ce document prépare une
 décision, il ne l'applique pas.
 
-Le rack principal est `apps/studio-hub/src/pages/ToolsHub.tsx` — 472 lignes.
+Le rack principal est `apps/studio-hub/src/pages/ToolsHub.tsx` — 472 lignes
+à l'heure de l'analyse, **395 lignes** après le nettoyage du même soir.
 C'est la porte d'entrée de l'atelier : c'est de là qu'on ouvre les studios, le
 rack audio, le coffre, le firmware, la documentation.
 
@@ -186,6 +187,51 @@ C'est la seule inexactitude de ce document qu'un visiteur voyait à l'écran.
 | `app-guide` | `documentation` | non — exclu |
 
 Toutes les pages citées existent et ont été ouvertes pour vérifier leur taille.
+
+---
+
+## Ce qui a été appliqué le soir même
+
+Décision prise après lecture de l'analyse : **nettoyer ce qui est inatteignable
+maintenant, remettre la fusion des deux systèmes à après les essais physiques**
+— le rack principal est la porte d'entrée, et le casser rendrait la machine
+inaccessible pendant les tests matériel.
+
+| Constat | Suite donnée |
+|---|---|
+| 3 — quatre modales sans déclencheur | **supprimées** avec leurs états et leurs trois listes. Rien n'indiquait qu'elles aient jamais été atteignables. |
+| 4 — `library` sans route | **branché**. Voir ci-dessous. |
+| 5 — deux branches mortes | **supprimées** ; le routage dit maintenant où vont vraiment `op1-backup` et `tape`. |
+| 6 — `SoundLibraryPanel` orphelin | **monté**, dans une page à lui. |
+| 7 — moteurs inventés sur la carte | **corrigé** (déjà noté plus haut). |
+| Firmware, Réglages — descriptions tièdes | **corrigées** : la carte firmware ouvre la galerie et le dit ; les réglages annoncent l'arpégiateur. |
+| 1 — le tableau n'affiche qu'un outil | inchangé, sauf `library` qui le rejoint. Attend la fusion. |
+| 2 — onglets de section absents | inchangé. Attend la fusion. |
+
+**77 lignes en moins** dans `ToolsHub.tsx`, aucun chemin vivant touché.
+
+### Pourquoi `library` a été branché et non supprimé
+
+La question se posait vraiment : le `SynthEngineDrawer` supprimé en août
+décrivait du son qu'il ne produisait pas, et un panneau orphelin de 263 lignes
+ressemble beaucoup à ça.
+
+Vérification faite avant de décider — le panneau **fonctionne** : il importe des
+fichiers, calcule leur empreinte SHA‑256, les écrit dans `shared/sounds/`, tient
+un manifeste versionné (`studio-hub.sound-library.v1`), fait écouter, étiquette,
+met en favori et déduplique. Rien de décoratif.
+
+Le défaut n'était donc pas le panneau, mais son absence de porte. Il en a une :
+`pages/SoundLibrary.tsx`, qui reprend de `BackupLab` le chargement prudent de
+l'espace de travail — la poignée revient d'IndexedDB, **mais pas le droit de
+lire**, et l'adopter sans vérifier afficherait une bibliothèque vide sous un
+espace annoncé « connecté ».
+
+### Un compteur qui mentait
+
+La carte « Son » affichait « 4 OUTILS » — la taille d'une liste qui alimentait
+une modale ne s'ouvrant jamais — et ouvrait `SoundEditorHub`, qui n'est pas ces
+quatre outils. Elle dit maintenant « OUVRIR → », comme ce qu'elle fait.
 
 ---
 

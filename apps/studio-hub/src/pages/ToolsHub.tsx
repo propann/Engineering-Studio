@@ -49,13 +49,9 @@ const sections:Array<{id:Section;label:string;emoji:string}> = [
 export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
  const [activeSection,setActiveSection]=useState<Section>("all");
- const [showSave,setShowSave]=useState(false);
  const [showTraining,setShowTraining]=useState(false);
  const [showSettings,setShowSettings]=useState(false);
- const [showSound,setShowSound]=useState(false);
  const [showSoundEditor,setShowSoundEditor]=useState(false);
- const [showOP1Studio,setShowOP1Studio]=useState(false);
- const [showEP133Studio,setShowEP133Studio]=useState(false);
  const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
  useEffect(()=>{ setProfileName(readProfileName()); },[]);
@@ -63,9 +59,6 @@ export default function ToolsHub(){
  const docTools = tools.filter(t => t.category === "DOCUMENTATION");
  const trainingTools = tools.filter(t => t.category === "TRAINING LAB");
  const settingsTools = tools.filter(t => t.id === "machine-test" || t.id === "midi" || t.id === "op-settings");
- const soundTools = tools.filter(t => t.id === "tape" || t.id === "sounds" || t.id === "sample" || t.id === "library");
- const op1StudioTools = tools.filter(t => t.id === "services");
- const ep133StudioTools = tools.filter(t => t.id === "pattern");
  function openTool(tool:Tool){
   if(tool.id==="op1-docs"){(window as any).navigateMaquette("doc-op1");return}
   if(tool.id==="ep-docs"){(window as any).navigateMaquette("doc-ep133");return}
@@ -73,7 +66,15 @@ export default function ToolsHub(){
    (window as any).navigateMaquette("op1-settings");
    return;
   }
-  if(tool.id==="midi"){
+  if(tool.id==="library"){
+    // Meme defaut que le cas `midi` juste en dessous : sans ce cas, l'entree
+    // retombait sur setSelected() et n'ouvrait qu'une modale descriptive.
+    // SoundLibraryPanel — import, empreinte SHA-256, manifeste, favoris —
+    // n'etait monte nulle part.
+    (window as any).navigateMaquette("sound-library");
+    return;
+   }
+   if(tool.id==="midi"){
    // Sans ce cas, l'entrée retombait sur setSelected() et n'ouvrait qu'une
    // modale descriptive : le panneau MidiSyncPanel n'était jamais monté.
    (window as any).navigateMaquette("midi-settings");
@@ -93,12 +94,12 @@ export default function ToolsHub(){
    (window as any).navigateMaquette("studio-ep133");
    return;
   }
-  if(tool.id==="services" || tool.id==="op1-backup" || tool.id==="tape"){(window as any).navigateMaquette("studio-op1");return}
+  if(tool.id==="services" || tool.id==="tape"){(window as any).navigateMaquette("studio-op1");return}
   if(tool.id==="image"){(window as any).navigateMaquette("image-editor-op1");return}
   if(tool.id==="firmware"){(window as any).navigateMaquette("firmware-lab");return}
   if(tool.id==="rhythm"){(window as any).navigateMaquette("rhythm-hero");return}
   if(tool.id==="op1-exercise"){(window as any).navigateMaquette("exercises");return}
-  if(tool.id==="sample" || tool.id==="tape" || tool.id==="sounds"){(window as any).navigateMaquette("sound-editor");return}
+  if(tool.id==="sample" || tool.id==="sounds"){(window as any).navigateMaquette("sound-editor");return}
   if(tool.id==="app-guide"){(window as any).navigateMaquette("documentation");return}
   if(tool.anchor==="exercises"){(window as any).navigateMaquette("exercises");return}
   if(tool.category==="DOCUMENTATION"){(window as any).navigateMaquette("documentation");return}
@@ -108,9 +109,8 @@ export default function ToolsHub(){
  const scrollToDocumentation = () => document.getElementById("hub-documentation")?.scrollIntoView({ behavior: "smooth", block: "start" });
  // Filtre les outils mais enlève les outils en cadres spéciaux
  const filteredTools = (activeSection === "all" ? tools : tools.filter(t => t.section && t.section === activeSection))
-   .filter(t => t.category !== "DOCUMENTATION" && t.category !== "SAUVEGARDE" && t.id !== "vault" && t.category !== "TRAINING LAB" && t.id !== "machine-test" && t.id !== "midi" && t.id !== "op-settings" && t.id !== "tape" && t.id !== "sounds" && t.id !== "sample" && t.id !== "library" && t.id !== "firmware" && t.id !== "services" && t.id !== "op1-backup" && t.id !== "pattern");
+   .filter(t => t.category !== "DOCUMENTATION" && t.category !== "SAUVEGARDE" && t.id !== "vault" && t.category !== "TRAINING LAB" && t.id !== "machine-test" && t.id !== "midi" && t.id !== "op-settings" && t.id !== "tape" && t.id !== "sounds" && t.id !== "sample" && t.id !== "firmware" && t.id !== "services" && t.id !== "op1-backup" && t.id !== "pattern");
 
- const saveTools = tools.filter(t => t.id === "op1-backup" || t.id === "vault");
  return <main className="hub-page">
   <TopBar activePage="outils" profileName={profileName} onDocClick={scrollToDocumentation}/>
   <section className="tools-section-organized" aria-label="Outils organisés">
@@ -199,8 +199,8 @@ export default function ToolsHub(){
      <span>FW-LAB</span>
      <ToolGraphic type="chip"/>
      <small>MODS & OS OP-1</small>
-     <h3>⚙️ Firmware Lab & Compilateur</h3>
-     <p>Catalogue, vérification, thèmes, patchs graphiques et préparation de firmwares OP-1.</p>
+     <h3>⚙️ Galerie firmware OP-1</h3>
+     <p>Catalogue des firmwares, thèmes et patchs graphiques. Le Lab et le compilateur s’ouvrent depuis la galerie.</p>
      <div className="tool-status">OUVRIR →</div>
     </button>
     <button
@@ -259,7 +259,7 @@ export default function ToolsHub(){
      <small>AUDIO</small>
      <h3>🎵 Son</h3>
      <p>Tape Studio, transferts, samples, bibliothèque sonore - tout pour créer et éditer.</p>
-     <div className="tool-status">{soundTools.length} OUTILS</div>
+     <div className="tool-status">OUVRIR →</div>
     </button>
     <button
      className="utility-card settings-card"
@@ -270,7 +270,7 @@ export default function ToolsHub(){
      <ToolGraphic type="sync"/>
      <small>CONFIGURATION</small>
      <h3>⚙️ Réglages</h3>
-     <p>Synchronisation MIDI, tests de machine et diagnostic système.</p>
+     <p>Synchronisation MIDI et arpégiateur, tests de machine, diagnostic système.</p>
      <div className="tool-status">{settingsTools.length} OPTIONS</div>
     </button>
     {filteredTools.map(tool => (
@@ -319,63 +319,9 @@ export default function ToolsHub(){
 
   {showSoundEditor&&<SoundEditorHub profileName={profileName} onClose={()=>setShowSoundEditor(false)}/>}
   {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
-  {showSave&&<SaveModal saves={saveTools} onClose={()=>setShowSave(false)} onSelectTool={(tool)=>{openTool(tool);setShowSave(false);}}/>}
   {showTraining&&<TrainingModal training={trainingTools} onClose={()=>setShowTraining(false)} onSelectTool={(tool)=>{openTool(tool);setShowTraining(false);}}/>}
   {showSettings&&<SettingsModal settings={settingsTools} onClose={()=>setShowSettings(false)} onSelectTool={(tool)=>{openTool(tool);setShowSettings(false);}}/>}
-  {showSound&&<SoundModal sounds={soundTools} onClose={()=>setShowSound(false)} onSelectTool={(tool)=>{openTool(tool);setShowSound(false);}}/>}
-  {showOP1Studio&&<StudioModal studio="op1" tools={op1StudioTools} onClose={()=>setShowOP1Studio(false)} onSelectTool={(tool)=>{openTool(tool);setShowOP1Studio(false);}}/>}
-  {showEP133Studio&&<StudioModal studio="ep133" tools={ep133StudioTools} onClose={()=>setShowEP133Studio(false)} onSelectTool={(tool)=>{openTool(tool);setShowEP133Studio(false);}}/>}
  </main>
-}
-
-function StudioModal({studio,tools:studioTools,onClose,onSelectTool}:{studio:"op1"|"ep133";tools:Tool[];onClose:()=>void;onSelectTool:(t:Tool)=>void}){
- const isOP1 = studio === "op1";
- const title = isOP1 ? "🎹 OP-1 STUDIO" : "🥁 EP-133 STUDIO";
- const subtitle = isOP1 ? "Synthèse, création et gestion" : "Beatmaking et performance";
- const borderColor = isOP1 ? "#FFD700" : "#FF8C00";
- return <div className="studio-modal-backdrop" onClick={onClose}>
-  <section className="studio-modal" style={{borderColor}} onClick={e=>e.stopPropagation()}>
-   <button className="studio-modal-close" onClick={onClose} style={{background: borderColor}}>✕</button>
-   <div className="studio-modal-header" style={{borderBottomColor: borderColor, backgroundColor: isOP1 ? "#fffacd" : "#ffe4c4"}}>
-    <h2>{title}</h2>
-    <p>{subtitle}</p>
-   </div>
-   <div className="studio-grid">
-    {studioTools.map(tool => (
-     <button key={tool.id} className={`studio-card-item ${tool.accent}`} onClick={()=>onSelectTool(tool)}>
-      <ToolGraphic type={tool.visual}/>
-      <h3>{tool.title}</h3>
-      <small>{tool.category}</small>
-      <p>{tool.text}</p>
-      <div className="studio-status">{tool.status}</div>
-     </button>
-    ))}
-   </div>
-  </section>
- </div>
-}
-
-function SoundModal({sounds,onClose,onSelectTool}:{sounds:Tool[];onClose:()=>void;onSelectTool:(t:Tool)=>void}){
- return <div className="sound-modal-backdrop" onClick={onClose}>
-  <section className="sound-modal" onClick={e=>e.stopPropagation()}>
-   <button className="sound-modal-close" onClick={onClose}>✕</button>
-   <div className="sound-modal-header">
-    <h2>🎵 CRÉATION & ÉDITION AUDIO</h2>
-    <p>Outils pour composer, éditer et préparer les sons</p>
-   </div>
-   <div className="sound-grid">
-    {sounds.map(sound => (
-     <button key={sound.id} className={`sound-card-item ${sound.accent}`} onClick={()=>onSelectTool(sound)}>
-      <ToolGraphic type={sound.visual}/>
-      <h3>{sound.title}</h3>
-      <small>{sound.category}</small>
-      <p>{sound.text}</p>
-      <div className="sound-status">{sound.status}</div>
-     </button>
-    ))}
-   </div>
-  </section>
- </div>
 }
 
 function SettingsModal({settings,onClose,onSelectTool}:{settings:Tool[];onClose:()=>void;onSelectTool:(t:Tool)=>void}){
@@ -417,29 +363,6 @@ function TrainingModal({training,onClose,onSelectTool}:{training:Tool[];onClose:
       <small>{course.category}</small>
       <p>{course.text}</p>
       <div className="training-status">{course.status}</div>
-     </button>
-    ))}
-   </div>
-  </section>
- </div>
-}
-
-function SaveModal({saves,onClose,onSelectTool}:{saves:Tool[];onClose:()=>void;onSelectTool:(t:Tool)=>void}){
- return <div className="save-modal-backdrop" onClick={onClose}>
-  <section className="save-modal" onClick={e=>e.stopPropagation()}>
-   <button className="save-modal-close" onClick={onClose}>✕</button>
-   <div className="save-modal-header">
-    <h2>💾 SAUVEGARDES & RESTAURATION</h2>
-    <p>Protégez vos machines et vos données</p>
-   </div>
-   <div className="saves-grid">
-    {saves.map(save => (
-     <button key={save.id} className={`save-card-item ${save.accent}`} onClick={()=>onSelectTool(save)}>
-      <ToolGraphic type={save.visual}/>
-      <h3>{save.title}</h3>
-      <small>{save.category}</small>
-      <p>{save.text}</p>
-      <div className="save-status">{save.status}</div>
      </button>
     ))}
    </div>
