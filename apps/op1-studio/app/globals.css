@@ -1971,7 +1971,7 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   letter-spacing: .13em;
 }
 .op1-screen-engine-column > strong { color: #4cace1; }
-.op1-screen-patch-column > strong { color: #4cace1; }
+.op1-screen-patch-column > strong { color: #00ed95; }
 .op1-screen-engine-column button,
 .op1-screen-patch-column button {
   display: flex;
@@ -2001,9 +2001,9 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 }
 .op1-screen-patch-column button:hover,
 .op1-screen-patch-column button.is-active {
-  color: #07131a;
-  background: #4cace1;
-  border-color: #8bd5ff;
+  color: #06130e;
+  background: #00ed95;
+  border-color: #8fffd2;
 }
 .op1-screen-patch-menu-foot {
   padding: 7px 10px;

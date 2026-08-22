@@ -457,6 +457,7 @@ export function StudioMachinePanel({
   recording = false,
   onModeChange,
   onOpenSoundMenu,
+  onSaveSoundSlot,
   onOpenRackMenu,
   onSoundMenuEncoder,
   onSendMidi,
@@ -475,6 +476,8 @@ export function StudioMachinePanel({
   onRecord?: () => void;
   onModeChange?: (mode: Op1MachineMode) => void;
   onOpenSoundMenu?: (slot: number) => void;
+  /** Sauvegarde le moteur/patch courant dans un slot après pression longue. */
+  onSaveSoundSlot?: (slot: number) => void;
   onOpenRackMenu?: () => void;
   /** Navigation des colonnes du menu par encodeur : 0=moteur, 1=patch. */
   onSoundMenuEncoder?: (encoder: number, delta: number) => void;
@@ -1211,7 +1214,12 @@ export function StudioMachinePanel({
                     const modeChange = machineModeFromControl(fnRealId);
                     if (modeChange) onModeChange?.(modeChange);
                     const soundSlot = soundSlotFromControl(fnRealId);
-                    if (soundSlot) soundLongPressRef.current = window.setTimeout(() => onOpenSoundMenu?.(soundSlot), 500);
+                    if (soundSlot) {
+                      // Clic court : ouvre immédiatement le petit écran de sélection.
+                      onOpenSoundMenu?.(soundSlot);
+                      // Pression longue : mémorise moteur + patch dans ce slot local.
+                      soundLongPressRef.current = window.setTimeout(() => onSaveSoundSlot?.(soundSlot), 550);
+                    }
                     if (fnRealId === "sequencer") onOpenRackMenu?.();
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
