@@ -140,18 +140,6 @@ const tools: Tool[] = [
     action: { type: "page", page: "firmware-lab" }, section: "op1",
   },
   {
-    id: "services", code: "OP1-LAB", category: "OP-1", title: "Services OP-1",
-    text: "Patchs son, ressources référencées et outils de préparation.",
-    accent: "yellow", visual: "grid", status: "OUVRIR →",
-    action: { type: "page", page: "studio-op1" }, section: "op1",
-  },
-  {
-    id: "tape", code: "TAPE-04", category: "STUDIO", title: "Tape & Album Studio",
-    text: "Quatre pistes, transport, mixage, stems et Album en mode local.",
-    accent: "yellow", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "studio-op1" }, section: "op1",
-  },
-  {
     id: "sample", code: "WAV-AIFF", category: "SON", title: "Éditeur de samples",
     text: "Waveform, trim, fondus et préparation des packs OP-1.",
     accent: "cyan", visual: "wave", status: "OUVRIR →",
