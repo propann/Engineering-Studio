@@ -15,7 +15,17 @@
  *   tape x0    : 5.467  tape x1 : 311.398
  */
 import { useRef, useState, type MutableRefObject } from "react";
+import {
+  RACK_ENGINES_METAS,
+  RACK_ENGINE_IDS,
+  getPatchesForEngine,
+  getEngineMeta,
+  type EngineId,
+} from "../lib/soundEnginesData";
 import { TrackContextMenu } from "./TrackContextMenu";
+
+const RACK_EFFECTS = ["ADSR", "LFO", "Delay", "EQ", "Arpeggiator", "Step Sequencer", "Chorus", "Distortion"] as const;
+const MACHINE_MODES = ["synth", "drum", "tape"] as const;
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
 const SVG_W = 320;
@@ -41,16 +51,6 @@ function formatPos(sec: number) {
   const s = Math.floor(sec % 60);
   const t = Math.floor((sec % 1) * 10);
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${t}`;
-}
-
-// ── Chiffres 1-4 (boîte trackno, extrait tape.svg) ────────────────────────────
-function TrackNumber({ index }: { index: number }) {
-  switch (index) {
-    case 0: return <line x1="20.342" y1="9.378" x2="20.342" y2="24.367" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    case 1: return <path d="M13.222,14.443c0-2.797,2.266-5.065,5.063-5.065h3.927c2.77,0,5.011,2.197,5.011,4.964c0,2.242-1.263,3.985-3.511,4.778l-10.487,4.5v0.752h14.238" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    case 2: return <path d="M12.846,13.237c0-2.132,1.73-3.859,3.862-3.859h7.312c2.106,0,3.814,1.676,3.814,3.782c0,2.11-1.708,3.713-3.814,3.713h-6.678h6.678c2.106,0,3.814,1.604,3.814,3.712c0,2.107-1.708,3.784-3.814,3.784h-7.312c-2.133,0-3.862-1.728-3.862-3.862" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-    default: return <polyline points="27.444,19.596 12.844,19.596 12.844,18.862 23.065,9.374 23.792,9.374 23.792,23.971" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="square" />;
-  }
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -79,6 +79,8 @@ export interface StudioTapeEditorProps {
   onLoopChange?: (looping: boolean) => void;
   onLoopRangeChange?: (loopIn: number, loopOut: number) => void;
   tempo?: number;
+  midiClockBpm?: number | null;
+  midiClockTick?: number;
   reversed: boolean;
   volume?: number;
   onVolumeChange?: (vol: number) => void;
@@ -93,6 +95,18 @@ export interface StudioTapeEditorProps {
   onSelectTrack: (index: number) => void;
   onSeek: (time: number) => void;
   onNotice?: (msg: string) => void;
+  machineMode?: "synth" | "drum" | "tape";
+  onMachineModeChange?: (mode: "synth" | "drum" | "tape") => void;
+  soundMenuOpen?: boolean;
+  onSoundMenuOpen?: (slot: number) => void;
+  onSoundMenuClose?: () => void;
+  rackMenuOpen?: boolean;
+  onRackMenuClose?: () => void;
+  soundSlot?: number;
+  selectedEngine?: string;
+  selectedPatch?: string;
+  onEngineChange?: (engine: string) => void;
+  onPatchChange?: (patch: string) => void;
   onExportTrack?: (index: number) => void;
   onClearTrack?: (index: number) => void;
   onEditTrim?: (index: number) => void;
@@ -111,12 +125,14 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     loopIn = 0, loopOut = 16,
     onLoopChange, onLoopRangeChange,
     tempo = 90,
+    midiClockBpm = null, midiClockTick = 0,
     reversed,
     volume = 0.85, onVolumeChange,
     audioRefs,
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
+    machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuOpen, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = "Virtual Analog Saw Lead", onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
 
@@ -127,6 +143,46 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     x: number;
     y: number;
   } | null>(null);
+  const [modeSelectorHover, setModeSelectorHover] = useState(false);
+  const [engineWindowOpen, setEngineWindowOpen] = useState(false);
+  const [engineSelectorHover, setEngineSelectorHover] = useState(false);
+  const [engineScrollOffset, setEngineScrollOffset] = useState(0);
+  const [patchScrollOffset, setPatchScrollOffset] = useState(0);
+  const [hoveredEngineId, setHoveredEngineId] = useState<string | null>(null);
+  const [hoveredPatchId, setHoveredPatchId] = useState<string | null>(null);
+
+  function cycleMachineMode(direction: 1 | -1) {
+    const current = MACHINE_MODES.indexOf(machineMode);
+    const next = MACHINE_MODES[(current + direction + MACHINE_MODES.length) % MACHINE_MODES.length];
+    onMachineModeChange?.(next);
+    onNotice?.(`Mode OP-1 : ${next === "synth" ? "SYNTH" : next === "drum" ? "DRUM" : "TAPE"}.`);
+  }
+
+  function cycleRackEngine(direction: 1 | -1) {
+    const current = RACK_ENGINES_METAS.findIndex((m) => m.id === selectedEngine);
+    const nextIndex = (Math.max(0, current) + direction + RACK_ENGINES_METAS.length) % RACK_ENGINES_METAS.length;
+    const nextEngine = RACK_ENGINES_METAS[nextIndex];
+    if (nextEngine) {
+      onEngineChange?.(nextEngine.id);
+      const patches = getPatchesForEngine(nextEngine.id);
+      if (patches.length > 0) {
+        onPatchChange?.(patches[0].name);
+      }
+      onNotice?.(`🔵 Moteur audio (T1 Bleu) : ${nextEngine.label}`);
+    }
+  }
+
+  function cyclePatch(direction: 1 | -1) {
+    const currentPatches = getPatchesForEngine(selectedEngine);
+    if (currentPatches.length === 0) return;
+    const current = currentPatches.findIndex((p) => p.name === selectedPatch);
+    const nextIndex = (Math.max(0, current) + direction + currentPatches.length) % currentPatches.length;
+    const nextPatch = currentPatches[nextIndex];
+    if (nextPatch) {
+      onPatchChange?.(nextPatch.name);
+      onNotice?.(`🟢 Patch audio (T2 Vert) : ${nextPatch.name}`);
+    }
+  }
 
   const dragRef = useRef<{
     kind: "clip" | "playhead" | "volume" | "scrub" | "loopIn" | "loopOut" | "overviewScrub";
@@ -145,7 +201,10 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   // Constantes de projection OP-1
   const HEAD_X = 160; // Tête de lecture fixe au centre de l'écran OP-1
   const BAR_WIDTH_PX = 55.363; // Espacement exact d'une mesure (distance entre graduations OP-1)
-  const barSec = (60 / Math.max(30, tempo)) * 4;
+  // Une seule base temporelle pour les repères, le snap et le MIDI clock.
+  // Le clock entrant (24 PPQN) prend la priorité sur le tempo local.
+  const gridTempo = midiClockBpm ?? tempo;
+  const barSec = (60 / Math.max(30, gridTempo)) * 4;
   const beatSec = barSec / 4;
   const pixelsPerSec = BAR_WIDTH_PX / barSec;
 
@@ -285,7 +344,9 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     return Math.max(0, Math.min(TAPE_DURATION, t));
   }
 
-  // Calcul des repères de mesure dynamiques (une barre toutes les mesures, calées au tempo)
+  // Repères de mesure : même tempo que le snap et que l’horloge MIDI
+  // générale. Les lignes sont calculées depuis le temps absolu 0, donc elles
+  // restent alignées pendant le défilement de la bande.
   const visibleMeasures = (() => {
     const list: number[] = [];
     const tStart = Math.min(xToTime(-20), xToTime(340));
@@ -363,12 +424,17 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       return;
     }
 
-    // 1. Glissière de volume sur l'écran (colonne de droite x=295..318, y=10..115)
-    if (pt.x >= 295 && pt.x <= 318 && pt.y <= 118) {
+    // 1. Glissière de volume sur l'écran (colonne de droite x=295..318, y=6..62)
+    if (pt.x >= 295 && pt.x <= 318 && pt.y <= 62) {
       (event.currentTarget as SVGSVGElement).setPointerCapture(event.pointerId);
       dragRef.current = { kind: "volume", trackIndex: -1, startSvgX: pt.x, startOffset: 0 };
-      const vol = Math.max(0, Math.min(1, 1 - (pt.y - 10) / 100));
+      const vol = Math.max(0, Math.min(1, 1 - (pt.y - 8) / 44));
       onVolumeChange?.(vol);
+      return;
+    }
+
+    // Si la petite fenêtre Moteurs & Patches est ouverte, on ignore les clics dans sa zone pour la cassette
+    if (engineWindowOpen && pt.x >= 50 && pt.x <= 270 && pt.y <= 106) {
       return;
     }
 
@@ -379,29 +445,21 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       return;
     }
 
-    // 3. Clic tactile sur le numéro de piste en haut à gauche (Pistes 1-4) -> Cycler de piste
-    if (pt.x >= 4 && pt.x <= 36 && pt.y >= 2 && pt.y <= 33) {
-      const nextTrack = (selectedTrack + 1) % 4;
-      onSelectTrack(nextTrack);
-      onNotice?.(`Piste ${nextTrack + 1} sélectionnée.`);
-      return;
-    }
-
-    // 4. Clic tactile sur le bouton PLAY / PAUSE au centre de l'écran (y=40..65)
-    if (pt.x >= 144 && pt.x <= 176 && pt.y >= 40 && pt.y <= 65) {
+    // 4. Clic tactile sur le bouton PLAY / PAUSE au centre de la cassette (y=38..60)
+    if (pt.x >= 144 && pt.x <= 176 && pt.y >= 38 && pt.y <= 60) {
       onToggleGlobalPlayback?.();
       return;
     }
 
-    // 5. Clic tactile sur le bouton RECORD sous la lecture (y=68..90)
-    if (pt.x >= 144 && pt.x <= 176 && pt.y >= 68 && pt.y <= 90) {
+    // 5. Clic tactile sur le bouton RECORD sous la lecture (y=66..88)
+    if (pt.x >= 144 && pt.x <= 176 && pt.y >= 66 && pt.y <= 88) {
       onRecord?.();
       return;
     }
 
-    // 6. Clic tactile sur la bobine gauche (Rewind -5s)
+    // 6. Clic tactile sur la bobine gauche de la cassette (Rewind -5s)
     const dLeftReel = (pt.x - 85.225) ** 2 + (pt.y - 53.316) ** 2;
-    if (dLeftReel <= 44 ** 2 && pt.y < 105) {
+    if (dLeftReel <= 42 ** 2 && pt.y < 105) {
       const nextPos = Math.max(0, position - 5);
       onSeek(nextPos);
       Object.values(audioRefs.current).forEach((audio) => {
@@ -411,9 +469,9 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       return;
     }
 
-    // 7. Clic tactile sur la bobine droite (Fast Forward +5s)
+    // 7. Clic tactile sur la bobine droite de la cassette (Fast Forward +5s)
     const dRightReel = (pt.x - 232.639) ** 2 + (pt.y - 53.316) ** 2;
-    if (dRightReel <= 44 ** 2 && pt.y < 105) {
+    if (dRightReel <= 42 ** 2 && pt.y < 105) {
       const nextPos = Math.min(TAPE_DURATION, position + 5);
       onSeek(nextPos);
       Object.values(audioRefs.current).forEach((audio) => {
@@ -490,7 +548,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     }
 
     if (dragRef.current.kind === "volume") {
-      const vol = Math.max(0, Math.min(1, 1 - (pt.y - 10) / 100));
+      const vol = Math.max(0, Math.min(1, 1 - (pt.y - 8) / 44));
       onVolumeChange?.(vol);
       return;
     }
@@ -554,7 +612,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
   }
 
   return (
-    <div className="tape-editor-screen" style={{ position: "relative" }}>
+    <div className={`tape-editor-screen ${soundMenuOpen || rackMenuOpen ? "is-screen-menu-open" : ""}`} style={{ position: "relative" }}>
 
       {/* Éléments audio cachés */}
       <div style={{ display: "none" }}>
@@ -570,7 +628,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         ))}
       </div>
 
-      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
+      <>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
@@ -584,74 +642,73 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
       >
         {/* Fond */}
         <rect width={SVG_W} height={SVG_H} fill="#0c1011" />
-
-        {/* ── Partie statique : chemin du ruban ──────────────────────────── */}
-        <g opacity="0.5" stroke="#656579" strokeWidth="1.5" fill="none">
-          <path d="M85.445,105.977c0.098-2.271,0.708-4.422,1.719-6.312" />
-          <path d="M88.49,115.832c-0.32-0.445-0.616-0.908-0.887-1.389" />
-          <path d="M233.314,100.742c-0.16-0.369-0.334-0.732-0.521-1.086" />
-          <path d="M232.002,115.564c1.24-1.729,2.118-3.715,2.529-5.879" />
-          <circle cx="232.641" cy="53.316" r="22.774" />
-          <line x1="212.943" y1="103.658" x2="231.552" y2="107.422" />
-          <line x1="167.271" y1="112.29"  x2="203.327" y2="103.658" />
-          <line x1="119.239" y1="105.127" x2="153.273" y2="112.436" />
-          <line x1="89.547"  y1="111.818" x2="107.205" y2="104.939" />
-          <line x1="61.282"  y1="88.301"  x2="81.928"  y2="109.867" />
-          <line x1="242.841" y1="94.959"  x2="238.443" y2="105.023" />
-        </g>
-        <line x1="243.062" y1="94.096" x2="254.666" y2="59.17" stroke="#656579" strokeWidth="1.5" />
-
-        {/* ── Bobines blanches interactives (clic gauche = rewind, clic droite = fast-forward) ── */}
-        <g style={{ cursor: "pointer" }}>
-          <title>Bobine gauche (cliquer pour rembobiner -5s)</title>
-          <circle cx="85.225"  cy="53.316" r="42.499" fill="none" stroke="#fff" strokeWidth="1.5" />
-          <circle cx="85.225"  cy="53.316" r="8.323"  fill="none" stroke="#fff" strokeWidth="1.5" />
-          <circle cx="85.225"  cy="53.316" r="1.868"  fill="none" stroke="#fff" strokeWidth="1.5" />
-          {/* Bras bobine gauche (tourne en sens inverse) */}
-          <g transform={`rotate(${-reelAngle}, 85.225, 53.316)`}>
-            <line x1="97.56"  y1="40.039" x2="109.637" y2="27.041" stroke="#fff" strokeWidth="1.5" />
-            <line x1="90.555" y1="70.638" x2="95.774"  y2="87.596" stroke="#fff" strokeWidth="1.5" />
-            <line x1="67.559" y1="49.272" x2="50.262"  y2="45.313" stroke="#fff" strokeWidth="1.5" />
+        {/* Le mode est sélectionné depuis le bas de l'écran, comme un contrôle tactile. */}
+        {/* ── Cassette K7 & Bobines (taille proportionnelle centrée) ──────────── */}
+        <g transform="translate(160, 54) scale(0.84) translate(-160, -58)">
+          {/* ── Partie statique : chemin du ruban ──────────────────────────── */}
+          <g opacity="0.5" stroke="#656579" strokeWidth="1.5" fill="none">
+            <path d="M85.445,105.977c0.098-2.271,0.708-4.422,1.719-6.312" />
+            <path d="M88.49,115.832c-0.32-0.445-0.616-0.908-0.887-1.389" />
+            <path d="M233.314,100.742c-0.16-0.369-0.334-0.732-0.521-1.086" />
+            <path d="M232.002,115.564c1.24-1.729,2.118-3.715,2.529-5.879" />
+            <circle cx="232.641" cy="53.316" r="22.774" />
+            <line x1="212.943" y1="103.658" x2="231.552" y2="107.422" />
+            <line x1="167.271" y1="112.29"  x2="203.327" y2="103.658" />
+            <line x1="119.239" y1="105.127" x2="153.273" y2="112.436" />
+            <line x1="89.547"  y1="111.818" x2="107.205" y2="104.939" />
+            <line x1="61.282"  y1="88.301"  x2="81.928"  y2="109.867" />
+            <line x1="242.841" y1="94.959"  x2="238.443" y2="105.023" />
           </g>
-        </g>
+          <line x1="243.062" y1="94.096" x2="254.666" y2="59.17" stroke="#656579" strokeWidth="1.5" />
 
-        <g style={{ cursor: "pointer" }}>
-          <title>Bobine droite (cliquer pour avance rapide +5s)</title>
-          <circle cx="232.639" cy="53.316" r="42.499" fill="none" stroke="#fff" strokeWidth="1.5" />
-          <circle cx="232.793" cy="53.315" r="8.37"   fill="none" stroke="#fff" strokeWidth="1.5" />
-          <circle cx="232.639" cy="53.316" r="1.869"  fill="none" stroke="#fff" strokeWidth="1.5" />
-          {/* Bras bobine droite (tourne) */}
-          <g transform={`rotate(${reelAngle}, 232.639, 53.316)`}>
-            <line x1="232.54"  y1="35.364" x2="232.54"  y2="17.621" stroke="#fff" strokeWidth="1.5" />
-            <line x1="216.846" y1="62.549" x2="201.479" y2="71.421" stroke="#fff" strokeWidth="1.5" />
-            <line x1="248.234" y1="62.55"  x2="263.602" y2="71.42"  stroke="#fff" strokeWidth="1.5" />
+          {/* ── Bobines blanches interactives (clic gauche = rewind, clic droite = fast-forward) ── */}
+          <g style={{ cursor: "pointer" }}>
+            <title>Bobine gauche (cliquer pour rembobiner -5s)</title>
+            <circle cx="85.225"  cy="53.316" r="42.499" fill="none" stroke="#fff" strokeWidth="1.5" />
+            <circle cx="85.225"  cy="53.316" r="8.323"  fill="none" stroke="#fff" strokeWidth="1.5" />
+            <circle cx="85.225"  cy="53.316" r="1.868"  fill="none" stroke="#fff" strokeWidth="1.5" />
+            {/* Bras bobine gauche (tourne en sens inverse) */}
+            <g transform={`rotate(${-reelAngle}, 85.225, 53.316)`}>
+              <line x1="97.56"  y1="40.039" x2="109.637" y2="27.041" stroke="#fff" strokeWidth="1.5" />
+              <line x1="90.555" y1="70.638" x2="95.774"  y2="87.596" stroke="#fff" strokeWidth="1.5" />
+              <line x1="67.559" y1="49.272" x2="50.262"  y2="45.313" stroke="#fff" strokeWidth="1.5" />
+            </g>
           </g>
+
+          <g style={{ cursor: "pointer" }}>
+            <title>Bobine droite (cliquer pour avance rapide +5s)</title>
+            <circle cx="232.639" cy="53.316" r="42.499" fill="none" stroke="#fff" strokeWidth="1.5" />
+            <circle cx="232.793" cy="53.315" r="8.37"   fill="none" stroke="#fff" strokeWidth="1.5" />
+            <circle cx="232.639" cy="53.316" r="1.869"  fill="none" stroke="#fff" strokeWidth="1.5" />
+            {/* Bras bobine droite (tourne) */}
+            <g transform={`rotate(${reelAngle}, 232.639, 53.316)`}>
+              <line x1="232.54"  y1="35.364" x2="232.54"  y2="17.621" stroke="#fff" strokeWidth="1.5" />
+              <line x1="216.846" y1="62.549" x2="201.479" y2="71.421" stroke="#fff" strokeWidth="1.5" />
+              <line x1="248.234" y1="62.55"  x2="263.602" y2="71.42"  stroke="#fff" strokeWidth="1.5" />
+            </g>
+          </g>
+
+          {/* Têtes + galets */}
+          <path d="M167.271,100.63v11.66c0,0-3.396,0.533-7.271,0.533s-7.193-0.533-7.193-0.533v-11.66H167.271z" fill="none" stroke="#fff" strokeWidth="1.5" />
+          <line x1="205.753" y1="110.85"  x2="210.52"  y2="106.082" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="160"     y1="112.823" x2="160"     y2="106.802" stroke="#fff" strokeWidth="1.5" />
+          <circle cx="234.523" cy="105.023" r="3.92" fill="none" stroke="#fff" strokeWidth="1.5" />
+          <circle cx="113.198" cy="108.16"  r="6.8"  fill="none" stroke="#fff" strokeWidth="1.5" />
+          <circle cx="113.198" cy="108.16"  r="1.406" fill="#fff" />
+          <circle cx="85.887"  cy="110.354" r="3.919" fill="none" stroke="#fff" strokeWidth="1.5" />
+          <circle cx="208.137" cy="108.467" r="6.8"  fill="none" stroke="#fff" strokeWidth="1.5" />
         </g>
 
-        {/* Têtes + galets */}
-        <path d="M167.271,100.63v11.66c0,0-3.396,0.533-7.271,0.533s-7.193-0.533-7.193-0.533v-11.66H167.271z" fill="none" stroke="#fff" strokeWidth="1.5" />
-        <line x1="205.753" y1="110.85"  x2="210.52"  y2="106.082" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
-        <line x1="160"     y1="112.823" x2="160"     y2="106.802" stroke="#fff" strokeWidth="1.5" />
-        <circle cx="234.523" cy="105.023" r="3.92" fill="none" stroke="#fff" strokeWidth="1.5" />
-        <circle cx="113.198" cy="108.16"  r="6.8"  fill="none" stroke="#fff" strokeWidth="1.5" />
-        <circle cx="113.198" cy="108.16"  r="1.406" fill="#fff" />
-        <circle cx="85.887"  cy="110.354" r="3.919" fill="none" stroke="#fff" strokeWidth="1.5" />
-        <circle cx="208.137" cy="108.467" r="6.8"  fill="none" stroke="#fff" strokeWidth="1.5" />
-
-        {/* Compteur de position OP-1 (agrandi, lisible, sans points/barres parasites, avec avertissement couleur fin de bande) */}
+        {/* Compteur de position OP-1 (centré sur la cassette) */}
         {(() => {
-          // Calcul de la proximité de fin de bande (max 360s)
-          // 0:00 - 4:00 (< 240s) : Blanc éclatant (#ffffff)
-          // 4:00 - 5:15 (240s - 315s) : Orange avertissement (#FF9436)
-          // 5:15 - 6:00 (>= 315s) : Rouge alerte fin de bande OP-1 (#FF3A5D)
           let counterColor = "#ffffff";
           let alertStatus: "normal" | "warning" | "critical" = "normal";
 
           if (position >= 315) {
-            counterColor = "#FF3A5D"; // Rouge critique
+            counterColor = "#FF3A5D";
             alertStatus = "critical";
           } else if (position >= 240) {
-            counterColor = "#FF9436"; // Orange avertissement
+            counterColor = "#FF9436";
             alertStatus = "warning";
           }
 
@@ -660,7 +717,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
               {alertStatus !== "normal" && (
                 <rect
                   x="120"
-                  y="10"
+                  y="8"
                   width="80"
                   height="22"
                   rx="4"
@@ -671,13 +728,13 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
               )}
               <text
                 x="160"
-                y="26.5"
+                y="24.5"
                 textAnchor="middle"
                 fill={counterColor}
-                fontSize="16"
+                fontSize="15"
                 fontFamily="'JetBrains Mono', 'Fira Code', monospace"
                 fontWeight="900"
-                letterSpacing="1.8"
+                letterSpacing="1.6"
                 style={{
                   filter: alertStatus === "critical"
                     ? "drop-shadow(0px 0px 4px rgba(255,58,93,0.9))"
@@ -693,60 +750,371 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           );
         })()}
 
-        {/* Témoin d'état central : Petit triangle vert de lecture et Petit rond rouge de REC */}
-        {recording ? (
-          <g style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
-            <title>Enregistrement en cours (cliquer pour stopper)</title>
-            {/* Petit rond rouge REC avec anneau pulsant */}
-            <circle cx="160" cy="50" r="5.5" fill="#FF3A5D" stroke="#ffffff" strokeWidth="0.9" />
-            <circle cx="160" cy="50" r="8.5" fill="none" stroke="#FF3A5D" strokeWidth="1.2" opacity="0.8">
-              <animate attributeName="r" values="5.5;10;5.5" dur="1s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite" />
-            </circle>
-          </g>
-        ) : (transportPlaying || playing !== null) ? (
-          <g style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
+        {/* Transport écran : lecture au centre de la cassette, REC juste dessous */}
+        {(transportPlaying || playing !== null) ? (
+          <g className="op1-svg-transport-indicator" style={{ cursor: "pointer" }} onClick={() => onToggleGlobalPlayback?.()}>
             <title>Lecture en cours (cliquer pour pause)</title>
-            {/* Petit triangle vert de lecture */}
-            <polygon points="154,43.5 168,50 154,56.5" fill="#00ED95" stroke="#ffffff" strokeWidth="0.8" />
+            <polygon points="154,42 168,48.5 154,55" fill="#00ED95" stroke="#ffffff" strokeWidth="0.8" />
           </g>
         ) : (
-          <g style={{ cursor: "pointer", opacity: 0.45 }} onClick={() => onToggleGlobalPlayback?.()}>
+          <g className="op1-svg-transport-indicator" style={{ cursor: "pointer", opacity: 0.45 }} onClick={() => onToggleGlobalPlayback?.()}>
             <title>Lecture arrêtée (cliquer pour jouer)</title>
-            <polygon points="154.5,44 167.5,50 154.5,56" fill="none" stroke="#ffffff" strokeWidth="1.2" />
+            <polygon points="154.5,42.5 167.5,48.5 154.5,54.5" fill="none" stroke="#ffffff" strokeWidth="1.2" />
           </g>
         )}
+        <g className="op1-svg-record-control" style={{ cursor: "pointer" }} onClick={() => onRecord?.()}>
+          <title>{recording ? "Enregistrement en cours (cliquer pour stopper)" : "Enregistrer"}</title>
+          <circle cx="160" cy="74" r="6" fill={recording ? "#FF3A5D" : "none"} stroke="#FF3A5D" strokeWidth="1.3" />
+          <circle cx="160" cy="74" r={recording ? 9.5 : 8} fill="none" stroke="#FF3A5D" strokeWidth="1" opacity={recording ? 0.8 : 0.55}>
+            {recording && <animate attributeName="r" values="6;10.5;6" dur="1s" repeatCount="indefinite" />}
+            {recording && <animate attributeName="opacity" values="0.9;0.1;0.9" dur="1s" repeatCount="indefinite" />}
+          </circle>
+          <text x="170" y="76" fill="#FF3A5D" fontSize="4.2" fontFamily="monospace" fontWeight="700">REC</text>
+        </g>
 
-        {/* Indicateur & Glissière de Volume Interactive (rouge TE) */}
+        {/* Indicateur & Glissière de Volume à droite */}
         {(() => {
-          const volY = 10 + (1 - Math.max(0, Math.min(1, volume))) * 100;
+          const volTopY = 8;
+          const volTrackH = 44;
+          const volY = volTopY + (1 - Math.max(0, Math.min(1, volume))) * volTrackH;
           return (
             <g style={{ cursor: "ns-resize" }}>
               <title>Glissière de volume master (glisser verticalement)</title>
               {/* Rail de fond */}
-              <line x1="305.268" y1="10" x2="305.268" y2="110"
-                stroke="#3a2028" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="306" y1={volTopY} x2="306" y2={volTopY + volTrackH}
+                stroke="#3a2028" strokeWidth="2" strokeLinecap="round" />
               {/* Niveau actif */}
-              <line x1="305.268" y1={volY} x2="305.268" y2="110"
-                stroke="#FF3A5D" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="306" y1={volY} x2="306" y2={volTopY + volTrackH}
+                stroke="#FF3A5D" strokeWidth="2" strokeLinecap="round" />
               {/* Curseur de volume */}
-              <circle cx="305.268" cy={volY} r="4" fill="#FF3A5D" stroke="#fff" strokeWidth="1" />
+              <circle cx="306" cy={volY} r="2.6" fill="#FF3A5D" stroke="#fff" strokeWidth="0.8" />
               {/* Texte % Volume */}
-              <text x="305.268" y="117" textAnchor="middle" fill="#FF3A5D" fontSize="4.5" fontFamily="monospace" fontWeight="bold">
+              <text x="306" y={volTopY + volTrackH + 6} textAnchor="middle" fill="#FF3A5D" fontSize="3.8" fontFamily="monospace" fontWeight="bold">
                 {Math.round(volume * 100)}%
               </text>
               {/* Zone Clic Élargie */}
-              <rect x="296" y="5" width="20" height="115" fill="transparent" />
+              <rect x="296" y="5" width="20" height={volTrackH + 10} fill="transparent" />
             </g>
           );
         })()}
 
-        {/* Numéro de piste interactif (cadre haut gauche, clic pour cycler 1..4) */}
-        <g style={{ cursor: "pointer" }}>
-          <title>Piste active (cliquer pour changer de piste 1..4)</title>
-          <rect x="6" y="3" width="28.082" height="28.081" fill="#121820" stroke="#fff" strokeWidth="1.5" rx="1.5" />
-          <TrackNumber index={selectedTrack} />
-        </g>
+        {/* ── PETIT CADRE ULTRA COMPACT MOTEURS (BLEU) & PATCHES (VERT) AVEC POTENTIOMÈTRES ROTATIFS ── */}
+        {engineWindowOpen && (() => {
+          const winX = 82;
+          const winY = 6;
+          const winW = 156;
+          const winH = 68;
+
+          // Données colonnes Moteurs (4 visibles)
+          const visibleEngineCount = 4;
+          const currentEngineIndex = Math.max(0, RACK_ENGINES_METAS.findIndex((m) => m.id === selectedEngine));
+          const maxEngineOffset = Math.max(0, RACK_ENGINES_METAS.length - visibleEngineCount);
+          // Garde automatiquement le moteur sélectionné visible dans la colonne bleue
+          const safeEngineOffset = Math.max(0, Math.min(maxEngineOffset, Math.min(currentEngineIndex, Math.max(0, currentEngineIndex - 1))));
+          const visibleEngines = RACK_ENGINES_METAS.slice(safeEngineOffset, safeEngineOffset + visibleEngineCount);
+
+          // Angle potentiomètre bleu Moteur (de -135° à +135°)
+          const engineProgress = RACK_ENGINES_METAS.length > 1 ? currentEngineIndex / (RACK_ENGINES_METAS.length - 1) : 0;
+          const blueKnobAngle = engineProgress * 270 - 135;
+
+          // Données colonnes Patches (4 visibles)
+          const currentPatches = getPatchesForEngine(selectedEngine);
+          const currentPatchIndex = Math.max(0, currentPatches.findIndex((p) => p.name === selectedPatch));
+          const visiblePatchCount = 4;
+          const maxPatchOffset = Math.max(0, currentPatches.length - visiblePatchCount);
+          // Garde automatiquement le patch sélectionné visible dans la colonne verte
+          const safePatchOffset = Math.max(0, Math.min(maxPatchOffset, Math.min(currentPatchIndex, Math.max(0, currentPatchIndex - 1))));
+          const visiblePatches = currentPatches.slice(safePatchOffset, safePatchOffset + visiblePatchCount);
+
+          // Angle potentiomètre vert Patch (de -135° à +135°)
+          const patchProgress = currentPatches.length > 1 ? currentPatchIndex / (currentPatches.length - 1) : 0;
+          const greenKnobAngle = patchProgress * 270 - 135;
+
+          const colW = 75;
+
+          return (
+            <g
+              transform={`translate(${winX} ${winY})`}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {/* Fond sombre & double bordure fine */}
+              <rect
+                x="0"
+                y="0"
+                width={winW}
+                height={winH}
+                rx="3"
+                fill="#070c10"
+                stroke="#1b2a36"
+                strokeWidth="1.2"
+                style={{ filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.9))" }}
+              />
+              <rect
+                x="1.2"
+                y="1.2"
+                width={winW - 2.4}
+                height={winH - 2.4}
+                rx="2"
+                fill="none"
+                stroke="#2a3f50"
+                strokeWidth="0.5"
+              />
+
+              {/* Barre de titre compacte */}
+              <rect x="1.5" y="1.5" width={winW - 3} height="8.5" rx="1.5" fill="#0d1820" />
+              <line x1="1.5" y1="10" x2={winW - 1.5} y2="10" stroke="#1b2a36" strokeWidth="0.7" />
+
+              {/* Titre MOTEURS (Bleu) & PATCHES (Vert) */}
+              <text x="5" y="7.2" fill="#698EFF" fontFamily="monospace" fontSize="3.6" fontWeight="900" letterSpacing="0.4">
+                🔵 MOTEURS
+              </text>
+              <text x="38" y="7.2" fill="#4a657c" fontFamily="monospace" fontSize="3.2" fontWeight="700">
+                &
+              </text>
+              <text x="44" y="7.2" fill="#00ED95" fontFamily="monospace" fontSize="3.6" fontWeight="900" letterSpacing="0.4">
+                🟢 PATCHES
+              </text>
+
+              {/* Bouton Réduire / Fermer (×) */}
+              <g
+                style={{ cursor: "pointer" }}
+                onClick={(e) => { e.stopPropagation(); setEngineWindowOpen(false); }}
+                role="button"
+                aria-label="Fermer la fenêtre"
+              >
+                <title>Fermer le cadre (Cliquer)</title>
+                <rect x={winW - 10} y="2.2" width="7.5" height="6" rx="1" fill="#2d171d" stroke="#5c2937" strokeWidth="0.4" />
+                <text x={winW - 6.25} y="6.6" textAnchor="middle" fill="#ff5c7a" fontSize="4.5" fontWeight="900">×</text>
+              </g>
+
+              {/* ── COLONNE 1 (GAUCHE) : MOTEURS BLEUS AVEC POTENTIOMÈTRE BLEU T1 ── */}
+              <g
+                transform="translate(2.5 11)"
+                onWheel={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  cycleRackEngine(e.deltaY > 0 ? 1 : -1);
+                }}
+              >
+                {/* En-tête Moteurs avec Potentiomètre BLEU */}
+                <rect x="0" y="0" width={colW} height="12" rx="1.5" fill="#0c1825" stroke="#1d3855" strokeWidth="0.5" />
+                <text x="3" y="5.5" fill="#698EFF" fontFamily="monospace" fontSize="3.2" fontWeight="900">
+                  MOTEUR ({RACK_ENGINES_METAS.length})
+                </text>
+                <text x="3" y="9.8" fill="#587ea0" fontFamily="monospace" fontSize="2.4" fontWeight="700">
+                  {`#${currentEngineIndex + 1}/${RACK_ENGINES_METAS.length}`}
+                </text>
+
+                {/* Potentiomètre Rotatif BLEU interactif T1 */}
+                {(() => {
+                  const kcx = 66.5;
+                  const kcy = 6;
+                  const kr = 4.2;
+                  const rad = (blueKnobAngle * Math.PI) / 180;
+                  const nx = kcx + kr * 0.7 * Math.sin(rad);
+                  const ny = kcy - kr * 0.7 * Math.cos(rad);
+
+                  return (
+                    <g
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        cycleRackEngine(1);
+                      }}
+                      onWheel={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        cycleRackEngine(e.deltaY > 0 ? 1 : -1);
+                      }}
+                    >
+                      <title>Potentiomètre BLEU : Tourner pour changer de moteur (clic ou molette)</title>
+                      {/* Anneau extérieur bleu */}
+                      <circle cx={kcx} cy={kcy} r={kr} fill="#0b1726" stroke="#698EFF" strokeWidth="0.7" />
+                      {/* Fond gradué */}
+                      <circle cx={kcx} cy={kcy} r={kr * 0.75} fill="#142840" stroke="#254a73" strokeWidth="0.4" />
+                      {/* Aiguille rotative bleue */}
+                      <line x1={kcx} y1={kcy} x2={nx} y2={ny} stroke="#698EFF" strokeWidth="1" strokeLinecap="round" />
+                      {/* Centre blanc */}
+                      <circle cx={kcx} cy={kcy} r="0.9" fill="#ffffff" />
+                      <circle cx={nx} cy={ny} r="0.6" fill="#ffffff" />
+                    </g>
+                  );
+                })()}
+
+                {/* Liste compacte des moteurs en BLEU */}
+                {visibleEngines.map((meta, idx) => {
+                  const isActive = selectedEngine === meta.id;
+                  const isHovered = hoveredEngineId === meta.id;
+                  const rowY = 13 + idx * 10.5;
+                  return (
+                    <g
+                      key={meta.id}
+                      transform={`translate(0 ${rowY})`}
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEngineChange?.(meta.id);
+                        const patches = getPatchesForEngine(meta.id);
+                        if (patches.length > 0) {
+                          onPatchChange?.(patches[0].name);
+                        }
+                        setPatchScrollOffset(0);
+                        onNotice?.(`🔵 Moteur sélectionné : ${meta.label}`);
+                      }}
+                      onMouseEnter={() => setHoveredEngineId(meta.id)}
+                      onMouseLeave={() => setHoveredEngineId(null)}
+                    >
+                      <rect
+                        x="0"
+                        y="0"
+                        width={colW}
+                        height="9.5"
+                        rx="1.2"
+                        fill={isActive ? "#11263d" : isHovered ? "#0d1d2e" : "#08131e"}
+                        stroke={isActive ? "#698EFF" : isHovered ? "#3d6490" : "#132538"}
+                        strokeWidth={isActive ? "0.9" : "0.4"}
+                      />
+                      <circle cx="3.2" cy="4.7" r={isActive ? 1.4 : 0.9} fill={isActive ? "#698EFF" : "#2a4d70"} />
+                      <text
+                        x="6.5"
+                        y="6.2"
+                        fill={isActive ? "#ffffff" : isHovered ? "#bcd6f5" : "#89aecd"}
+                        fontFamily="monospace"
+                        fontSize="3.1"
+                        fontWeight={isActive ? "900" : "600"}
+                      >
+                        {meta.label.length > 11 ? meta.label.slice(0, 10) + "…" : meta.label}
+                      </text>
+                      <text
+                        x={colW - 2.5}
+                        y="6.2"
+                        textAnchor="end"
+                        fill={isActive ? "#698EFF" : "#4a7095"}
+                        fontFamily="monospace"
+                        fontSize="2.4"
+                        fontWeight="800"
+                      >
+                        {meta.category === "Eurorack" ? "MOD" : meta.category === "Synthèse FM" ? "FM" : meta.category === "Wavetable" ? "WT" : meta.category === "Acid Bassline" ? "303" : meta.category === "Échantillonneur" ? "SF2" : meta.category === "Analogique Moog" ? "MOOG" : "VA"}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+
+              {/* Séparateur vertical médian */}
+              <line x1={winW / 2} y1="11" x2={winW / 2} y2={winH - 2} stroke="#1b2a36" strokeWidth="0.7" />
+
+              {/* ── COLONNE 2 (DROITE) : PATCHES VERTS AVEC POTENTIOMÈTRE VERT T2 ── */}
+              <g
+                transform={`translate(${winW / 2 + 1.5} 11)`}
+                onWheel={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  cyclePatch(e.deltaY > 0 ? 1 : -1);
+                }}
+              >
+                {/* En-tête Patches avec Potentiomètre VERT */}
+                <rect x="0" y="0" width={colW} height="12" rx="1.5" fill="#0b1e16" stroke="#194833" strokeWidth="0.5" />
+                <text x="3" y="5.5" fill="#00ED95" fontFamily="monospace" fontSize="3.2" fontWeight="900">
+                  PATCH ({currentPatches.length})
+                </text>
+                <text x="3" y="9.8" fill="#4d9978" fontFamily="monospace" fontSize="2.4" fontWeight="700">
+                  {`#${currentPatchIndex + 1}/${currentPatches.length}`}
+                </text>
+
+                {/* Potentiomètre Rotatif VERT interactif T2 */}
+                {(() => {
+                  const kcx = 66.5;
+                  const kcy = 6;
+                  const kr = 4.2;
+                  const rad = (greenKnobAngle * Math.PI) / 180;
+                  const nx = kcx + kr * 0.7 * Math.sin(rad);
+                  const ny = kcy - kr * 0.7 * Math.cos(rad);
+
+                  return (
+                    <g
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        cyclePatch(1);
+                      }}
+                      onWheel={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        cyclePatch(e.deltaY > 0 ? 1 : -1);
+                      }}
+                    >
+                      <title>Potentiomètre VERT : Tourner pour naviguer dans les patches (clic ou molette)</title>
+                      {/* Anneau extérieur vert */}
+                      <circle cx={kcx} cy={kcy} r={kr} fill="#091b13" stroke="#00ED95" strokeWidth="0.7" />
+                      {/* Fond gradué */}
+                      <circle cx={kcx} cy={kcy} r={kr * 0.75} fill="#103322" stroke="#1d6643" strokeWidth="0.4" />
+                      {/* Aiguille rotative verte */}
+                      <line x1={kcx} y1={kcy} x2={nx} y2={ny} stroke="#00ED95" strokeWidth="1" strokeLinecap="round" />
+                      {/* Centre blanc */}
+                      <circle cx={kcx} cy={kcy} r="0.9" fill="#ffffff" />
+                      <circle cx={nx} cy={ny} r="0.6" fill="#ffffff" />
+                    </g>
+                  );
+                })()}
+
+                {/* Liste compacte des patches en VERT */}
+                {visiblePatches.map((patch, idx) => {
+                  const isActive = selectedPatch === patch.name;
+                  const isHovered = hoveredPatchId === patch.id;
+                  const rowY = 13 + idx * 10.5;
+                  return (
+                    <g
+                      key={patch.id}
+                      transform={`translate(0 ${rowY})`}
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPatchChange?.(patch.name);
+                        onNotice?.(`🟢 Patch actif : ${patch.name}`);
+                      }}
+                      onMouseEnter={() => setHoveredPatchId(patch.id)}
+                      onMouseLeave={() => setHoveredPatchId(null)}
+                    >
+                      <rect
+                        x="0"
+                        y="0"
+                        width={colW}
+                        height="9.5"
+                        rx="1.2"
+                        fill={isActive ? "#0d2b1f" : isHovered ? "#0a2118" : "#071711"}
+                        stroke={isActive ? "#00ED95" : isHovered ? "#267a57" : "#103324"}
+                        strokeWidth={isActive ? "0.9" : "0.4"}
+                      />
+                      <circle cx="3.2" cy="4.7" r={isActive ? 1.4 : 0.9} fill={isActive ? "#00ED95" : "#1f6044"} />
+                      <text
+                        x="6.5"
+                        y="6.2"
+                        fill={isActive ? "#ffffff" : isHovered ? "#b7f4db" : "#80c4a7"}
+                        fontFamily="monospace"
+                        fontSize="2.9"
+                        fontWeight={isActive ? "900" : "600"}
+                      >
+                        {patch.name.length > 12 ? patch.name.slice(0, 11) + "…" : patch.name}
+                      </text>
+                      <text
+                        x={colW - 2.5}
+                        y="6.2"
+                        textAnchor="end"
+                        fill={isActive ? "#00ED95" : "#448067"}
+                        fontFamily="monospace"
+                        fontSize="2.3"
+                        fontWeight="700"
+                      >
+                        {patch.category.length > 5 ? patch.category.slice(0, 4) + "." : patch.category}
+                      </text>
+                    </g>
+                  );
+                })}
+              </g>
+            </g>
+          );
+        })()}
 
         {/* Badge REV */}
         {reversed && (
@@ -758,9 +1126,12 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           </g>
         )}
 
-        {/* ── Repères de mesure dynamiques (calés sur le tempo et défilant avec la bande) ── */}
+        {/* ── Repères de mesure dynamiques (tempo local ou MIDI clock) ── */}
+        <text x="44" y="121" fill="#698EFF" fontFamily="monospace" fontSize="4.2" opacity="0.8">
+          {midiClockBpm ? `MIDI CLK ${Math.round(gridTempo)} BPM` : `GRID ${Math.round(gridTempo)} BPM`}
+        </text>
         {visibleMeasures.map((x, idx) => (
-          <line key={idx} x1={x} y1="126.238" x2={x} y2="120.338" stroke="#585566" strokeWidth="1.5" />
+          <line key={idx} x1={x} y1="126.238" x2={x} y2="120.338" stroke={idx % 4 === 0 ? "#00ED95" : "#585566"} strokeWidth={idx % 4 === 0 ? "1.5" : "0.8"} />
         ))}
 
         {/* ── Ligne de boucle (verte) & Repères de boucle sans texte ────────── */}
@@ -1186,7 +1557,223 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             style={{ cursor: "pointer" }}
           />
         </g>
+        {/* Sélecteur tactile de mode (au-dessus des pistes à gauche, cadre blanc net, sans flèches) */}
+        <g
+          className={`op1-screen-mode-selector${modeSelectorHover ? " is-hovered" : ""}`}
+          transform="translate(6 107)"
+          style={{ cursor: "pointer" }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => { event.stopPropagation(); cycleMachineMode(1); }}
+          onWheel={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            cycleMachineMode(event.deltaY >= 0 ? 1 : -1);
+          }}
+          onMouseEnter={() => setModeSelectorHover(true)}
+          onMouseLeave={() => setModeSelectorHover(false)}
+          role="button"
+          aria-label="Changer le mode OP-1 (SYNTH / DRUM / TAPE)"
+        >
+          <title>Mode OP-1 (Cliquer ou molette pour changer)</title>
+          <rect
+            x="0"
+            y="0"
+            width="34"
+            height="11"
+            rx="2"
+            fill={modeSelectorHover ? "#172025" : "#0d1316"}
+            stroke={modeSelectorHover ? "#ffffff" : "rgba(255, 255, 255, 0.9)"}
+            strokeWidth="1"
+          />
+          <text
+            x="17"
+            y="7.5"
+            textAnchor="middle"
+            fill={machineMode === "tape" ? "#00ED95" : "#ffffff"}
+            fontFamily="monospace"
+            fontSize="4.8"
+            fontWeight="800"
+            letterSpacing="0.4"
+          >
+            {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
+          </text>
+        </g>
+
+        {/* Bouton tactile MOTEUR (au-dessus des pistes à droite, cadre blanc net) */}
+        <g
+          className={`op1-screen-engine-selector${engineSelectorHover ? " is-hovered" : ""}`}
+          transform="translate(276 107)"
+          style={{ cursor: "pointer" }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            setEngineWindowOpen((prev) => !prev);
+          }}
+          onMouseEnter={() => setEngineSelectorHover(true)}
+          onMouseLeave={() => setEngineSelectorHover(false)}
+          role="button"
+          aria-label="Ouvrir la liste des moteurs audio et patches"
+        >
+          <title>Moteurs & Patches (Cliquer pour ouvrir la fenêtre)</title>
+          <rect
+            x="0"
+            y="0"
+            width="38"
+            height="11"
+            rx="2"
+            fill={engineWindowOpen ? "#152a22" : engineSelectorHover ? "#172025" : "#0d1316"}
+            stroke={engineWindowOpen ? "#00ED95" : engineSelectorHover ? "#ffffff" : "rgba(255, 255, 255, 0.9)"}
+            strokeWidth="1"
+          />
+          <text
+            x="19"
+            y="7.5"
+            textAnchor="middle"
+            fill={engineWindowOpen ? "#00ED95" : "#ffffff"}
+            fontFamily="monospace"
+            fontSize="4.5"
+            fontWeight="800"
+            letterSpacing="0.4"
+          >
+            MOTEUR
+          </text>
+        </g>
+
+        {/* Contour blanc net intérieur garantissant la délimitation visible de l'écran OLED */}
+        <rect
+          x="1"
+          y="1"
+          width={SVG_W - 2}
+          height={SVG_H - 2}
+          rx="4"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="1.2"
+          style={{ pointerEvents: "none" }}
+        />
+
       </svg>
+
+      </>
+
+      {(soundMenuOpen || rackMenuOpen) && (
+        <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">
+          <div className="op1-screen-patch-menu-head">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontWeight: 800, color: "#698EFF" }}>
+                {soundMenuOpen ? `OP-1 · SOUND ${soundSlot} · ${machineMode.toUpperCase()}` : "OP-1 · RACK FX & SEQUENCER"}
+              </span>
+              {soundMenuOpen && (
+                <span style={{ fontSize: "10px", color: "#a5b4fc", background: "rgba(105, 142, 255, 0.15)", padding: "2px 6px", borderRadius: "4px" }}>
+                  Moteur Actif : <strong style={{ color: "#fff" }}>{selectedEngine}</strong>
+                </span>
+              )}
+            </div>
+            <button type="button" onClick={() => { onSoundMenuClose?.(); onRackMenuClose?.(); }} aria-label="Fermer le menu">×</button>
+          </div>
+          <div className="op1-screen-patch-columns">
+            {soundMenuOpen ? (
+              <>
+                <section className="op1-screen-engine-column" aria-label="Moteurs audio du rack">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <strong style={{ color: "#698EFF" }}>🔵 MOTEURS · POTENTIOMÈTRE BLEU</strong>
+                    <span style={{ fontSize: "9px", color: "#64748b" }}>{RACK_ENGINES_METAS.length} moteurs</span>
+                  </div>
+                  {RACK_ENGINES_METAS.map((meta) => {
+                    const isActive = selectedEngine === meta.id;
+                    return (
+                      <button
+                        key={meta.id}
+                        type="button"
+                        className={isActive ? "is-active" : ""}
+                        onClick={() => {
+                          onEngineChange?.(meta.id);
+                          const patches = getPatchesForEngine(meta.id);
+                          if (patches.length > 0) {
+                            onPatchChange?.(patches[0].name);
+                          }
+                          onNotice?.(`Moteur sonore : ${meta.label} (${meta.type})`);
+                        }}
+                        title={meta.description}
+                      >
+                        <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                          <span>{meta.label}</span>
+                          <span style={{ fontSize: "9px", opacity: 0.7 }}>[{meta.type}]</span>
+                        </span>
+                        <small>{isActive ? "ACTIF" : meta.id}</small>
+                      </button>
+                    );
+                  })}
+                </section>
+
+                <section className="op1-screen-patch-column" aria-label="Patches du moteur">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <strong style={{ color: "#00ED95" }}>🟢 PATCHS · POTENTIOMÈTRE VERT</strong>
+                    <span style={{ fontSize: "9px", color: "#64748b" }}>
+                      {getPatchesForEngine(selectedEngine).length} patchs ({selectedEngine})
+                    </span>
+                  </div>
+                  {getPatchesForEngine(selectedEngine).map((patch) => {
+                    const isActive = selectedPatch === patch.name;
+                    return (
+                      <button
+                        key={patch.name}
+                        type="button"
+                        className={isActive ? "is-active" : ""}
+                        onClick={() => {
+                          onPatchChange?.(patch.name);
+                          onNotice?.(`Patch chargé : ${patch.name} (${selectedEngine})`);
+                        }}
+                        title={patch.description}
+                      >
+                        <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px" }}>
+                          <span style={{ fontWeight: isActive ? 700 : 500 }}>{patch.name}</span>
+                          <span style={{ fontSize: "8.5px", color: isActive ? "#0f172a" : "#64748b" }}>{patch.description}</span>
+                        </span>
+                        <small style={{
+                          background: isActive ? "#0f172a" : "#1e293b",
+                          color: isActive ? "#00ED95" : "#94a3b8",
+                          padding: "1px 5px",
+                          borderRadius: "3px",
+                          fontWeight: 700
+                        }}>
+                          {patch.category.toUpperCase()}
+                        </small>
+                      </button>
+                    );
+                  })}
+                </section>
+              </>
+            ) : (
+              <>
+                <section className="op1-screen-engine-column" aria-label="Modules du rack">
+                  <strong style={{ color: "#698EFF" }}>🔵 RACK MODULES · BLEU</strong>
+                  {RACK_ENGINES_METAS.map((meta) => (
+                    <button key={meta.id} type="button" onClick={() => onNotice?.(`Module ${meta.label} prêt.`)}>
+                      <span>{meta.label}</span>
+                      <small>{meta.type}</small>
+                    </button>
+                  ))}
+                </section>
+                <section className="op1-screen-patch-column" aria-label="Effets du rack">
+                  <strong style={{ color: "#00ED95" }}>🟢 EFFETS · VERT</strong>
+                  {RACK_EFFECTS.map((effect) => (
+                    <button key={effect} type="button" onClick={() => onNotice?.(`Effet ${effect} sélectionné.`)}>
+                      <span>{effect}</span>
+                      <small>RACK FX</small>
+                    </button>
+                  ))}
+                </section>
+              </>
+            )}
+          </div>
+          <div className="op1-screen-patch-menu-foot">
+            {soundMenuOpen
+              ? `SOUND ${soundSlot}/8 · 🔵 Encodeur Bleu (T1) = Moteur (${RACK_ENGINES_METAS.length}) · 🟢 Encodeur Vert (T2) = Patch (${getPatchesForEngine(selectedEngine).length}) · Clic direct supporté`
+              : "SEQUENCER & FX · Effets et modulation du rack · Aucun transfert machine requis"}
+          </div>
+        </div>
+      )}
 
       {/* ── Inputs fichiers invisibles (déclenchés via le menu de piste 1..4) ── */}
       <div style={{ display: "none" }}>

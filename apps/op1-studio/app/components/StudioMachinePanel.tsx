@@ -26,6 +26,20 @@ import {
   type OP1ButtonDef, type ControlVisual,
 } from "../lib/op1Buttons7B";
 
+type Op1MachineMode = "synth" | "drum" | "tape";
+
+function machineModeFromControl(id: string): Op1MachineMode | null {
+  if (id === "synth") return "synth";
+  if (id === "drum") return "drum";
+  if (id === "tape-mode") return "tape";
+  return null;
+}
+function soundSlotFromControl(id: string): number | null {
+  const match = /^sound([1-8])$/.exec(id);
+  return match ? Number(match[1]) : null;
+}
+
+
 function midiNoteName(note: number) {
   const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return `${names[note % 12]}${Math.floor(note / 12) - 1}`;
@@ -58,6 +72,12 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
     { id: "tape", label: "TAPE", visual: "tape-mode", note: "" },
     { id: "mixer", label: "MIXER", visual: "mixer", note: "" },
   ] },
+  { label: "Pistes (Touches 1 à 4)", entries: [
+    { id: "track1", label: "1", visual: "fn", note: "Sélection Piste 1" },
+    { id: "track2", label: "2", visual: "fn", note: "Sélection Piste 2" },
+    { id: "track3", label: "3", visual: "fn", note: "Sélection Piste 3" },
+    { id: "track4", label: "4", visual: "fn", note: "Sélection Piste 4" },
+  ] },
   { label: "Sélection de son", entries: [
     { id: "sound1", label: "SOUND 1", visual: "fn", note: "choix moteur/échantillon" },
     { id: "sound2", label: "SOUND 2", visual: "fn", note: "choix moteur/échantillon" },
@@ -76,38 +96,23 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
   ] },
   { label: "Bande", entries: [
     { id: "transport-play", label: "Lecture", visual: "play", note: "" },
-    { id: "transport-rec", label: "Enregistr.", visual: "rec", note: "" },
     { id: "transport-stop", label: "Stop", visual: "stop", note: "" },
     { id: "tape-split", label: "Split", visual: "split", note: "" },
     { id: "tape-drop", label: "Drop", visual: "drop", note: "" },
     { id: "tape-join", label: "Join", visual: "join", note: "" },
-    // Sélection de piste (CC 11-14, capturés à la suite de MIXER le 18 août
-    // 2026 : « 1 2 3 4 la selection des track »).
-    { id: "track1", label: "Piste 1", visual: "fn", note: "" },
-    { id: "track2", label: "Piste 2", visual: "fn", note: "" },
-    { id: "track3", label: "Piste 3", visual: "fn", note: "" },
-    { id: "track4", label: "Piste 4", visual: "fn", note: "" },
   ] },
   { label: "Audio", entries: [
     { id: "micin", label: "MIC/LINE", visual: "mic", note: "" },
   ] },
-  { label: "Affichage", entries: [
-    // T1-T4 : 4 encodeurs colores alignes sous l'ecran (soft keys, on
-    // tourne ET on clique) - absents de cette liste jusqu'ici, on ne
-    // pouvait les associer qu'en cliquant directement le cercle du clavier
-    // construit (18 aout 2026, demande : « il manque le 1 2 3 4 qui est
-    // sous l'ecran »).
-    { id: "t1", label: "T1", visual: "enc", note: "sous l'écran" },
-    { id: "t2", label: "T2", visual: "enc", note: "sous l'écran" },
-    { id: "t3", label: "T3", visual: "enc", note: "sous l'écran" },
-    { id: "t4", label: "T4", visual: "enc", note: "sous l'écran" },
-    // Clic (pas rotation) du même encodeur - un contrôle à part, voir
-    // `pressedEncPush`/`asPressSignature` (18 août 2026, demande : « il y a
-    // aussi sur les 4 encodeur un bouton »).
-    { id: "t1-push", label: "1", visual: "enc", note: "" },
-    { id: "t2-push", label: "2", visual: "enc", note: "" },
-    { id: "t3-push", label: "3", visual: "enc", note: "" },
-    { id: "t4-push", label: "4", visual: "enc", note: "" },
+  { label: "Affichage & Encodeurs", entries: [
+    { id: "t1", label: "T1", visual: "enc", note: "sous l'écran (Bleu)" },
+    { id: "t2", label: "T2", visual: "enc", note: "sous l'écran (Vert)" },
+    { id: "t3", label: "T3", visual: "enc", note: "sous l'écran (Blanc)" },
+    { id: "t4", label: "T4", visual: "enc", note: "sous l'écran (Orange)" },
+    { id: "t1-push", label: "Clic T1", visual: "enc", note: "pression encodeur 1" },
+    { id: "t2-push", label: "Clic T2", visual: "enc", note: "pression encodeur 2" },
+    { id: "t3-push", label: "Clic T3", visual: "enc", note: "pression encodeur 3" },
+    { id: "t4-push", label: "Clic T4", visual: "enc", note: "pression encodeur 4" },
   ] },
 ];
 
@@ -143,11 +148,12 @@ const FN_STATIC_VISUAL: (ControlVisual | null)[] = [
   null, null, null, null, null, null, null, null,
   "seq", "shift", "plug", "help",
 ];
-// Index 0 = déjà câblé sur onTogglePlayback ; 1-2 affichés mais sans action
-// (aucune fonction d'enregistrement/stop implémentée côté clone pour l'instant).
-const TRANS_REAL_LABELS = ["Lecture / Pause", "Enregistrement", "Stop"];
-const TRANS_SHORT_LABELS = ["LEC", "ENR", "STO"];
-const TRANS_STATIC_VISUAL: ControlVisual[] = ["play", "rec", "stop"];
+// Ordre physique du clavier virtuel : REC, LECTURE, STOP.
+// La REC de l'écran simulé reste la commande de référence pour l'enregistrement,
+// mais la touche REC du clavier virtuel appelle la même action.
+const TRANS_REAL_LABELS = ["Enregistrement (REC)", "Lecture / Pause", "Stop"];
+const TRANS_SHORT_LABELS = ["REC", "PLAY", "STOP"];
+const TRANS_STATIC_VISUAL: ControlVisual[] = ["rec", "play", "stop"];
 
 // ── Association « touche réelle → bouton construit » (14 août 2026, fin
 // d'après-midi) ─────────────────────────────────────────────────────────
@@ -159,13 +165,20 @@ const TRANS_STATIC_VISUAL: ControlVisual[] = ["play", "rec", "stop"];
 // clavier construit, pas une donnée machine).
 type LearnedBinding = { realId: string; realLabel: string; visual: ControlVisual; midi: number[] };
 type LearnedMap = Record<string, LearnedBinding>;
+type PersistedControlConfig = { schema: "op1-studio-control-config"; version: 1; frozen: boolean; bindings: LearnedMap };
 const LEARNED_MAP_KEY = "op1-studio-control-map-v1";
-function loadLearnedMapSync(): LearnedMap {
+function loadControlConfigSync(): { bindings: LearnedMap; frozen: boolean } {
   try {
-    if (typeof window === "undefined") return {};
+    if (typeof window === "undefined") return { bindings: {}, frozen: false };
     const raw = localStorage.getItem(LEARNED_MAP_KEY);
-    return raw ? (JSON.parse(raw) as LearnedMap) : {};
-  } catch { return {}; }
+    if (!raw) return { bindings: {}, frozen: false };
+    const parsed = JSON.parse(raw) as Partial<PersistedControlConfig> & LearnedMap;
+    if (parsed.schema === "op1-studio-control-config" && parsed.bindings) {
+      return { bindings: parsed.bindings, frozen: Boolean(parsed.frozen) };
+    }
+    const bindings = parsed as LearnedMap;
+    return { bindings, frozen: Object.keys(bindings).length > 0 };
+  } catch { return { bindings: {}, frozen: false }; }
 }
 
 // ── Journal MIDI (14 août 2026) ─────────────────────────────────────────
@@ -218,14 +231,11 @@ function tEncoderPushDigit(id: string): { digit: string; color: string } | null 
   const match = /^t([1-4])-push$/.exec(id);
   return match ? { digit: match[1], color: T_ENCODER_COLORS[Number(match[1]) - 1] } : null;
 }
-/** Boutons de sélection de piste (Piste 1-4, CC 11-14) : même traitement
- * gros-chiffre que les encodeurs, en vert (couleur "fn" générique) puisque
- * ce sont des boutons verts, pas des encodeurs colorés. */
+const OP1_TRACK_BTN_COLORS = ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"];
 function trackDigit(id: string): { digit: string; color: string } | null {
   const match = /^track([1-4])$/.exec(id);
-  return match ? { digit: match[1], color: CONTROL_GLYPH_COLORS.fn } : null;
+  return match ? { digit: match[1], color: OP1_TRACK_BTN_COLORS[Number(match[1]) - 1] } : null;
 }
-
 /** Formes seules, coordonnées 0-18 — réutilisées telles quelles par
  * `ControlGlyph` (liste de référence) et `EmbeddedGlyph` (incrustées dans un
  * bouton du clavier construit, 14 août 2026 : « on remplace la pastille de
@@ -445,6 +455,16 @@ export function StudioMachinePanel({
   mode = "clone",
   pressedNotes = [],
   onTogglePlayback,
+  onRecord,
+  onStop,
+  onSelectTrack,
+  playing = false,
+  recording = false,
+  onModeChange,
+  onOpenSoundMenu,
+  onSaveSoundSlot,
+  onOpenRackMenu,
+  onSoundMenuEncoder,
   onSendMidi,
   notesOnly = false,
   onPressedChange,
@@ -453,9 +473,22 @@ export function StudioMachinePanel({
   pressedNotes?: number[];
   mode?: "clone" | "midi";
   playing?: boolean;
+  recording?: boolean;
   position?: number;
   files?: Record<number, string>;
   onTogglePlayback: () => void;
+  /** Même action que REC sur l’écran simulé OP-1. */
+  onRecord?: () => void;
+  /** Arrêt complet de la lecture et de l'enregistrement */
+  onStop?: () => void;
+  onSelectTrack?: (trackIndex: number) => void;
+  onModeChange?: (mode: Op1MachineMode) => void;
+  onOpenSoundMenu?: (slot: number) => void;
+  /** Sauvegarde le moteur/patch courant dans un slot après pression longue. */
+  onSaveSoundSlot?: (slot: number) => void;
+  onOpenRackMenu?: () => void;
+  /** Navigation des colonnes du menu par encodeur : 0=moteur, 1=patch. */
+  onSoundMenuEncoder?: (encoder: number, delta: number) => void;
   onSendMidi: (data: number[]) => void;
   onConnectMidi?: () => void;
   /** Zoome sur les touches note (blanches/noires) seulement, encodeurs/
@@ -557,7 +590,22 @@ export function StudioMachinePanel({
   }
 
   function selectConfig(type: string, index: number, label: string) {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour la modifier."); return; }
     setConfigTarget({ type, index, label });
+  }
+
+  function toggleConfigFrozen() {
+    if (controlConfigFrozen) {
+      if (window.confirm("Déverrouiller la configuration du clavier pour la modifier ?")) {
+        setControlConfigFrozen(false);
+        setLearnFeedback("Configuration déverrouillée pour modification.");
+      }
+      return;
+    }
+    setControlConfigFrozen(true);
+    setConfigTarget(null);
+    setLearnStep(null); setLearnReal(null); setLearnVirtual(null); setLearnBaseline(null);
+    setLearnFeedback("Configuration figée sur cet appareil.");
   }
 
   // Joue les touches note construites depuis le clavier ordinateur. Ignoré
@@ -626,7 +674,7 @@ export function StudioMachinePanel({
   }, [configOpen, whiteBlocks.length, blackBlocks.length, mode]);
 
   const [encVals, setEncVals] = useState([64,64,64,64,64,64,64,64]);
-  const encDrag = useRef<{idx:number; startY:number; startV:number}|null>(null);
+  const encDrag = useRef<{idx:number; startY:number; startV:number; lastStep?: number}|null>(null);
   // Dernier message envoyé par famille câblée — pour la liste de référence
   // ci-dessous (« ça envoie les messages à l'ordi », 14 août 2026) : sans ça
   // la liste resterait une doc statique, sans lien avec ce qui se passe
@@ -649,6 +697,7 @@ export function StudioMachinePanel({
   // plus bas) — nettoyés au démontage pour ne jamais toucher un composant
   // déjà parti.
   const flashTimersRef = useRef<number[]>([]);
+  const soundLongPressRef = useRef<number | null>(null);
   useEffect(() => () => { flashTimersRef.current.forEach((t) => window.clearTimeout(t)); }, []);
 
   /** Remplace tous les appels directs à `onSendMidi` : journalise avant
@@ -666,13 +715,14 @@ export function StudioMachinePanel({
   }
 
   // ── Procédure d'association touche réelle → bouton construit ───────────
-  const [learnedMap, setLearnedMap] = useState<LearnedMap>(() => loadLearnedMapSync());
+  const [learnedMap, setLearnedMap] = useState<LearnedMap>(() => loadControlConfigSync().bindings);
+  const [controlConfigFrozen, setControlConfigFrozen] = useState(() => loadControlConfigSync().frozen);
   const [controlSearch, setControlSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
   useEffect(() => {
-    try { localStorage.setItem(LEARNED_MAP_KEY, JSON.stringify(learnedMap)); } catch { /* stockage indisponible (navigation privée) : tant pis, pas bloquant */ }
-  }, [learnedMap]);
+    try { const saved: PersistedControlConfig = { schema: "op1-studio-control-config", version: 1, frozen: controlConfigFrozen, bindings: learnedMap }; localStorage.setItem(LEARNED_MAP_KEY, JSON.stringify(saved)); } catch { /* stockage indisponible (navigation privée) : tant pis, pas bloquant */ }
+  }, [learnedMap, controlConfigFrozen]);
   const [learnStep, setLearnStep] = useState<"pick-virtual" | "listen-machine" | null>(null);
   const [learnReal, setLearnReal] = useState<ControlRefEntry | null>(null);
   const [learnVirtual, setLearnVirtual] = useState<{ key: string; label: string } | null>(null);
@@ -680,6 +730,7 @@ export function StudioMachinePanel({
   const [learnFeedback, setLearnFeedback] = useState<string | null>(null);
 
   function applyOfficial7BMapping() {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour appliquer le mapping officiel."); return; }
     const newMap: LearnedMap = {};
     fnBlocks.forEach((b, i) => {
       const def = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
@@ -708,6 +759,7 @@ export function StudioMachinePanel({
   }
 
   function startLearn(entry: ControlRefEntry) {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour apprendre une association."); return; }
     setLearnReal(entry);
     setLearnVirtual(null);
     setLearnFeedback(null);
@@ -735,6 +787,7 @@ export function StudioMachinePanel({
   const dragPayloadRef = useRef<DragPayload | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   function handleDropOnVirtual(type: string, index: number, fallbackLabel: string) {
+    if (controlConfigFrozen) { setLearnFeedback("Configuration figée : déverrouillez-la pour déplacer une association."); return; }
     const payload = dragPayloadRef.current;
     dragPayloadRef.current = null;
     setDragOverKey(null);
@@ -821,6 +874,39 @@ export function StudioMachinePanel({
           const timer = window.setTimeout(() => setPressed((s) => { if (!s.has(idx)) return s; const ns = new Set(s); ns.delete(idx); return ns; }), 150);
           flashTimersRef.current.push(timer);
         }
+        // Le bouton réel MIDI et le bouton virtuel pilotent le même écran :
+        // après association, REC, Lecture et Stop déclenchent les handlers adéquats.
+        if (type === "trans" && idx === 0) onRecord?.();
+        if (type === "trans" && idx === 1) onTogglePlayback();
+        if (type === "trans" && idx === 2) {
+          if (onStop) onStop();
+          else {
+            if (playing) onTogglePlayback();
+            if (recording) onRecord?.();
+          }
+        }
+        if (binding.realId === "transport-rec") onRecord?.();
+        if (binding.realId === "transport-play") onTogglePlayback();
+        if (binding.realId === "transport-stop") {
+          if (onStop) onStop();
+          else {
+            if (playing) onTogglePlayback();
+            if (recording) onRecord?.();
+          }
+        }
+        if (type === "enc" && idx <= 1) onSoundMenuEncoder?.(idx, lastRawMidiIn[2] - 64);
+        if (type === "fn" || type === "encpush") {
+          const modeChange = machineModeFromControl(binding.realId);
+          if (modeChange) onModeChange?.(modeChange);
+          const soundSlot = soundSlotFromControl(binding.realId);
+          if (soundSlot) onOpenSoundMenu?.(soundSlot);
+          if (binding.realId === "sequencer") onOpenRackMenu?.();
+          const trackMatch = /^track([1-4])$/.exec(binding.realId);
+          if (trackMatch) {
+            const trk = Number(trackMatch[1]) - 1;
+            onSelectTrack?.(trk);
+          }
+        }
         break; // un seul bouton peut correspondre à un message donné
       }
 
@@ -843,11 +929,19 @@ export function StudioMachinePanel({
           ▼ clavier
         </button>
         {panelOpen && <button className={`mpanel-bar-btn${configOpen ? " is-active" : ""}`} onClick={() => { setConfigOpen(v => !v); setConfigTarget(null); }}>
-          {configOpen ? "fermer config" : "config"}
+          {controlConfigFrozen ? "config figée" : configOpen ? "fermer config" : "config"}
         </button>}
         <span className="mgrid-hint">{validated.length} blocs</span>
         <span className="mgrid-hint">clavier ordinateur : ZXCVBNM,./ QWER (+ SDGHJL;23 5)</span>
         {configOpen && <span className="mgrid-feedback" aria-live="polite">{lastPlayed}</span>}
+      </div>
+
+      <div className="virtual-keyboard-transport" aria-label="Transport du clavier MIDI virtuel">
+        <button type="button" className={`virtual-keyboard-play${playing ? " is-playing" : ""}`} onClick={onTogglePlayback} aria-pressed={playing}>
+          <span aria-hidden="true">{playing ? "❚❚" : "▶"}</span>
+          {playing ? "PAUSE" : "LECTURE"}
+        </button>
+        <span>Clavier MIDI virtuel · {controlConfigFrozen ? "configuration figée" : "configuration locale"}</span>
       </div>
 
       {panelOpen && configOpen && (
@@ -867,6 +961,11 @@ export function StudioMachinePanel({
               <small>Cliquez un autre contrôle pour le configurer.</small>
             </> : learnFeedback ? <strong className="control-learn-done">✓ {learnFeedback}</strong>
               : <small>Cliquez un bouton virtuel, une note ou un potentiomètre — ou une touche de la liste à droite pour l&apos;associer à un bouton du clavier construit.</small>}
+          </div>
+
+          <div className="machine-config-lock-row">
+            <span>{controlConfigFrozen ? "Configuration enregistrée et figée sur cet appareil." : "Configuration modifiable puis enregistrable sur cet appareil."}</span>
+            <button type="button" onClick={toggleConfigFrozen}>{controlConfigFrozen ? "Déverrouiller" : "Figer la configuration"}</button>
           </div>
 
           <div className="control-reference" aria-label="Liste complète des touches de la machine">
@@ -893,12 +992,24 @@ export function StudioMachinePanel({
                       onDragStart={() => { dragPayloadRef.current = { kind: "real", entry }; }}
                     >
                       {(() => {
-                        const bigDigit = tEncoderPushDigit(entry.id) ?? trackDigit(entry.id);
-                        return bigDigit
-                          ? <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
+                        const bigDigit = tEncoderPushDigit(entry.id);
+                        if (bigDigit) {
+                          return (
+                            <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
                               <text x={9} y={9} textAnchor="middle" dominantBaseline="central" fontSize={14} fontFamily="monospace" fontWeight="700" fill={bigDigit.color}>{bigDigit.digit}</text>
                             </svg>
-                          : <ControlGlyph visual={entry.visual} colorOverride={tEncoderColor(entry.id)} />;
+                          );
+                        }
+                        const trk = trackDigit(entry.id);
+                        if (trk) {
+                          return (
+                            <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
+                              <rect x={2} y={2} width={14} height={14} rx={3} fill="#141c22" stroke={trk.color} strokeWidth={1.4} />
+                              <text x={9} y={9.5} textAnchor="middle" dominantBaseline="central" fontSize={11} fontFamily="monospace" fontWeight="900" fill={trk.color}>{trk.digit}</text>
+                            </svg>
+                          );
+                        }
+                        return <ControlGlyph visual={entry.visual} colorOverride={tEncoderColor(entry.id)} />;
                       })()}
                       <span>{entry.label}</span>
                     </button>
@@ -917,9 +1028,9 @@ export function StudioMachinePanel({
             </div>
             <div className="midi-journal-list">
               {midiLog.length === 0 && <span className="control-ref-note">Aucun message pour l&apos;instant — jouez une touche ou branchez l&apos;OP-1 en mode contrôleur.</span>}
-              {/* slice(0, 1) n'affichait qu'un seul message : ce n'est pas un journal.
-                  Le tampon en garde 300, autant en montrer une page. */}
-              {[...midiLog].reverse().slice(0, 40).map((entry) => (
+              {/* Le tampon complet reste disponible au téléchargement ; la fenêtre
+                  n'affiche que les trois derniers messages pour rester compacte. */}
+              {[...midiLog].reverse().slice(0, 3).map((entry) => (
                 <div key={entry.id} className={`midi-journal-row midi-journal-${entry.dir}`}>
                   <span className="midi-journal-dir">{entry.dir === "in" ? "↓ IN" : "↑ OUT"}</span>
                   <span className="midi-journal-hex">{hexBytes(entry.data)}</span>
@@ -936,6 +1047,7 @@ export function StudioMachinePanel({
         <div className="machine-layout-zone" style={{ aspectRatio: `${layoutWidth} / ${layoutHeight}` }}>
           <svg viewBox={layoutViewBox} preserveAspectRatio="xMidYMid meet"
             style={{ width:"100%", height:"100%", display:"block" }}
+            aria-label={recording ? "Clavier OP-1 — enregistrement" : playing ? "Clavier OP-1 — lecture" : "Clavier OP-1 — prêt"}
             onPointerUp={() => {
               const drag = encDrag.current;
               encDrag.current = null;
@@ -954,17 +1066,31 @@ export function StudioMachinePanel({
             }}
             onPointerMove={e => {
               if (!encDrag.current) return;
-              const {idx, startY, startV} = encDrag.current;
-              const delta = Math.round((startY - e.clientY) / 3);
+              const {idx, startY, startV, lastStep = 0} = encDrag.current;
+              const delta = Math.round((startY - e.clientY) / 4);
+              const stepDelta = delta - lastStep;
               const v = Math.max(0, Math.min(127, startV + delta));
               setEncVals(arr => arr.map((x,i) => i===idx ? v : x));
               setLastEnc({ idx, v });
-              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               const role = encRoles[idx];
+              if (stepDelta !== 0) {
+                encDrag.current.lastStep = delta;
+                if (role && !role.isVolume && (role.tIndex === 0 || role.tIndex === 1)) {
+                  onSoundMenuEncoder?.(role.tIndex, stepDelta > 0 ? 1 : -1);
+                }
+              }
+              // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
           >
-            <rect x={0} y={0} width={COLS} height={ROWS} fill="#ffffff" />
+            <defs>
+              <pattern id="op1KeyboardStatusGrid" width="2" height="2" patternUnits="userSpaceOnUse">
+                <rect width="2" height="2" fill="#050505" />
+                <path d="M 2 0 L 0 0 0 2" fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#FF9436"} strokeWidth=".12" opacity=".78" />
+              </pattern>
+            </defs>
+            <rect x={0} y={0} width={COLS} height={ROWS} fill="url(#op1KeyboardStatusGrid)" />
+            <rect x={0.2} y={0.2} width={COLS - 0.4} height={ROWS - 0.4} fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#FF9436"} strokeWidth=".35" opacity=".9" />
 
             {whiteBlocks.map((b, i) => {
               const note = WHITE_NOTES[i] ?? (60 + i);
@@ -981,14 +1107,14 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isDown ? "#c9c2eb" : "#DFD9FF"}
+                    fill={isDown ? "#d4d8d5" : "#f1f2ef"}
                     stroke="#8f89aa" strokeWidth={.06}
                   />
                   <rect
                     x={b.col + b.w*.22} y={b.row + b.h*.25}
                     width={b.w*.56} height={b.h*.45}
                     rx={b.w*.28}
-                    fill={isDown?"#b8b0d9":"#f5f2ff"}
+                    fill={isDown?"#c5cbc7":"#fbfcfa"}
                     stroke="#aaa2c5" strokeWidth={.04}
                   />
                   <text x={b.col+b.w/2} y={b.row+b.h*.16}
@@ -999,12 +1125,17 @@ export function StudioMachinePanel({
                   {/* Touche du clavier ordinateur correspondante. */}
                   <text x={b.col+b.w/2} y={b.row+b.h-.42}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.42} fill="#8b86a8" fontFamily="monospace" fontWeight="700">
+                    fontSize={.42} fill="#68706c" fontFamily="monospace" fontWeight="700">
                     {labelForCode(WHITE_KEY_CODES[i])}
                   </text>
                 </g>
               );
             })}
+
+            {/* Séparateurs orange du clavier OP-1 : bandes visibles entre les touches blanches. */}
+            {whiteBlocks.slice(0, -1).map((b, i) => (
+              <rect key={`white-separator-${i}`} x={b.col + b.w - .08} y={b.row + .2} width={.16} height={Math.max(0, b.h - .4)} fill="#FF7A30" opacity=".82" />
+            ))}
 
             {blackBlocks.map((b, i) => {
               const note = BLACK_NOTES[i] ?? (61 + i*2);
@@ -1019,8 +1150,8 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.3}
-                    fill={isDown?"#555":"#171a1b"}
-                    stroke="#050606" strokeWidth={.06}
+                    fill={isDown ? "#ffffff" : "#f1f2ef"}
+                    stroke={isDown ? "#FF7A30" : "#9da39f"} strokeWidth={.08}
                   />
                   <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
                     r={Math.min(b.w, b.h)*.32}
@@ -1029,7 +1160,7 @@ export function StudioMachinePanel({
                   {/* Touche du clavier ordinateur correspondante. */}
                   <text x={b.col+b.w/2} y={b.row+b.h-.38}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.4} fill="#9a95b5" fontFamily="monospace" fontWeight="700">
+                    fontSize={.4} fill="#68706c" fontFamily="monospace" fontWeight="700">
                     {labelForCode(BLACK_KEY_CODES[i])}
                   </text>
                 </g>
@@ -1113,6 +1244,7 @@ export function StudioMachinePanel({
               const fnVisual = binding?.visual ?? def7B?.visual ?? FN_STATIC_VISUAL[i];
               const fnRealId = binding?.realId ?? def7B?.id ?? FN_REAL_IDS[i];
               const fnSoundNumber = fnRealId ? (/^sound([1-8])$/.exec(fnRealId)?.[1] ?? /^track([1-4])$/.exec(fnRealId)?.[1]) : null;
+              const fnButtonColor = CONTROL_GLYPH_COLORS[fnVisual ?? "fn"] ?? "#00ED95";
               const isFnDown = pressedFn.has(i);
               const isPickTarget = learnStep === "pick-virtual";
               const sublabel = def7B?.sublabel;
@@ -1126,10 +1258,25 @@ export function StudioMachinePanel({
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedFn(s => new Set(s).add(i));
                     setLastFn(i);
+                    const modeChange = machineModeFromControl(fnRealId);
+                    if (modeChange) onModeChange?.(modeChange);
+                    const soundSlot = soundSlotFromControl(fnRealId);
+                    if (soundSlot) {
+                      // Clic court : ouvre immédiatement le petit écran de sélection.
+                      onOpenSoundMenu?.(soundSlot);
+                      // Pression longue : mémorise moteur + patch dans ce slot local.
+                      soundLongPressRef.current = window.setTimeout(() => onSaveSoundSlot?.(soundSlot), 550);
+                    }
+                    if (fnRealId === "sequencer") onOpenRackMenu?.();
+                    const trackMatch = /^track([1-4])$/.exec(fnRealId);
+                    if (trackMatch) {
+                      const trk = Number(trackMatch[1]) - 1;
+                      onSelectTrack?.(trk);
+                    }
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
-                  onPointerUp={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
-                  onPointerLeave={() => setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
+                  onPointerUp={() => { if (soundLongPressRef.current !== null) { window.clearTimeout(soundLongPressRef.current); soundLongPressRef.current = null; } setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; }); }}
+                  onPointerLeave={() => { if (soundLongPressRef.current !== null) { window.clearTimeout(soundLongPressRef.current); soundLongPressRef.current = null; } setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; }); }}
                   ref={(node) => { node?.setAttribute("draggable", configOpen && binding ? "true" : "false"); }}
                   onDragStart={() => { if (binding) dragPayloadRef.current = { kind: "binding", key }; }}
                   onDragOver={(e) => { if (configOpen) e.preventDefault(); }}
@@ -1139,11 +1286,11 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isFnDown ? "#a8a8a4" : "#cececb"}
-                    stroke={dragOverKey === key ? "#00ED95" : binding ? "#267c65" : (isPickTarget ? "#00ED95" : "#8d9690")}
+                    fill={isFnDown ? "#ffffff" : "#e4e6e4"}
+                    stroke={dragOverKey === key ? "#ffffff" : binding ? "#267c65" : (isPickTarget ? "#ffffff" : fnButtonColor)}
                     strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#bcbcba" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isFnDown ? "#ffffff" : "#d6d9d6"} stroke="#9da39f" strokeWidth={.04}/>
                   {fnSoundNumber
                     ? <text x={b.col+b.w/2} y={b.row+b.h*.42} textAnchor="middle" dominantBaseline="central"
                         fontSize={Math.min(b.w,b.h)*.36} fill="#171a1b" fontFamily="monospace" fontWeight="900">{fnSoundNumber}</text>
@@ -1163,11 +1310,14 @@ export function StudioMachinePanel({
             })}
 
             {!notesOnly && transBlocks.map((b, i) => {
+              // Ordre du châssis : REC, LECTURE, STOP. Les trois touches
+              // restent visibles pour conserver la disposition physique.
               const key = `trans-${i}`;
               const binding = learnedMap[key];
               const def7B = OP1_7B_BY_COORDS.get(`${b.col},${b.row}`);
               const transLabel = binding?.realLabel ?? def7B?.label ?? TRANS_REAL_LABELS[i] ?? `Transport ${i + 1}`;
               const transVisual = binding?.visual ?? def7B?.visual ?? TRANS_STATIC_VISUAL[i];
+              const transButtonColor = CONTROL_GLYPH_COLORS[transVisual] ?? "#FF3A5D";
               const isTransDown = pressedTrans.has(i);
               const isPickTarget = learnStep === "pick-virtual";
               const sublabel = def7B?.sublabel;
@@ -1180,7 +1330,15 @@ export function StudioMachinePanel({
                     if (configOpen) { e.stopPropagation(); selectConfig("transport", i, transLabel); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedTrans(s => new Set(s).add(i));
-                    if (i === 0 || def7B?.id === "transport-play") onTogglePlayback();
+                    if (i === 0 || def7B?.id === "transport-rec" || binding?.realId === "transport-rec") onRecord?.();
+                    if (i === 1 || def7B?.id === "transport-play" || binding?.realId === "transport-play") onTogglePlayback();
+                    if (i === 2 || def7B?.id === "transport-stop" || binding?.realId === "transport-stop") {
+                      if (onStop) onStop();
+                      else {
+                        if (playing) onTogglePlayback();
+                        if (recording) onRecord?.();
+                      }
+                    }
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 52 + i, 100]), transLabel);
                   }}
                   onPointerUp={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}
@@ -1194,11 +1352,11 @@ export function StudioMachinePanel({
                 >
                   <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
                     rx={.35}
-                    fill={isTransDown ? "#a8a8a4" : "#cececb"}
-                    stroke={dragOverKey === key ? "#FF3A5D" : binding ? "#267c65" : (isPickTarget ? "#FF3A5D" : "#8d9690")}
+                    fill={isTransDown ? "#ffffff" : "#e4e6e4"}
+                    stroke={dragOverKey === key ? "#ffffff" : binding ? "#267c65" : (isPickTarget ? "#ffffff" : transButtonColor)}
                     strokeWidth={dragOverKey === key || binding || isPickTarget ? .14 : .06}
                   />
-                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#bcbcba" : "#dedede"} stroke="#b0b0ad" strokeWidth={.04}/>
+                  <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.32} fill={isTransDown ? "#ffffff" : "#d6d9d6"} stroke="#9da39f" strokeWidth={.04}/>
                   {transVisual
                     ? <EmbeddedGlyph visual={transVisual} cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.28}/>
                     : <circle cx={b.col+b.w/2} cy={b.row+b.h*.42} r={Math.min(b.w,b.h)*.24} fill="#FF3A5D"/>

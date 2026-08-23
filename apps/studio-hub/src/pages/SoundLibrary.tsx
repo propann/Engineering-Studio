@@ -18,12 +18,6 @@ import SoundEditorHub from "./SoundEditorHub";
  * une différence près, décisive : ce panneau-ci **fonctionne**. On le branche
  * plutôt que de le supprimer.
  *
- * **Deux moitiés du même sujet, réunies.** Le hub proposait « Son » et
- * « Bibliothèque sonore » comme deux outils : l'un est le banc d'écoute des
- * sons des machines, l'autre le catalogue de tes propres fichiers importés.
- * Deux portes vers le même travail, et la bibliothèque citée dans les deux
- * descriptions.
- *
  * Le chargement de l'espace de travail reprend le motif de `BackupLab` :
  * la poignée revient d'IndexedDB, mais **pas le droit de lire**. L'adopter
  * sans vérifier afficherait « espace connecté » au-dessus d'une bibliothèque
@@ -32,6 +26,7 @@ import SoundEditorHub from "./SoundEditorHub";
 export default function SoundLibrary() {
   const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME);
   const [workspaceHandle, setWorkspaceHandle] = useState<FileSystemDirectoryHandle | null>(null);
+  const [activeView, setActiveView] = useState<"library" | "editor">("library");
 
   useEffect(() => { setProfileName(readProfileName()); }, []);
 
@@ -53,22 +48,26 @@ export default function SoundLibrary() {
         <header className="sound-library-head">
           <h1>Bibliothèque sonore</h1>
           <p>
-            Tes fichiers d'abord — import, empreinte SHA‑256, étiquettes et
-            favoris, écrits dans <code>shared/sounds/</code> de ton espace de
-            travail. Puis le banc d'écoute des sons des deux machines : découpe,
-            fondus et audition.
+            Un point d’entrée unique pour cataloguer, préparer et ouvrir les sons
+            OP‑1 et EP‑133. Les formats et transferts restent propres à chaque machine.
           </p>
+          <nav className="sound-library-view-tabs" aria-label="Vues de la bibliothèque sonore">
+            <button type="button" className={activeView === "library" ? "is-active" : ""} onClick={() => setActiveView("library")}>Catalogue & stockage</button>
+            <button type="button" className={activeView === "editor" ? "is-active" : ""} onClick={() => setActiveView("editor")}>Éditeur & préparation</button>
+          </nav>
         </header>
-        <SoundLibraryPanel
-          workspaceHandle={workspaceHandle}
-          onOpenOp1={() => (window as any).navigateMaquette("studio-op1")}
-          onOpenEp133={() => (window as any).navigateMaquette("studio-ep133")}
-        />
-
-        {/* Le banc d'écoute des sons des machines, sous tes propres fichiers.
-            Il n'a plus de TopBar à lui : celle de cette page suffit, et la
-            sienne démontait la page au premier clic. */}
-        <SoundEditorHub />
+        {activeView === "library" ? (
+          <SoundLibraryPanel
+            workspaceHandle={workspaceHandle}
+            onOpenOp1={() => (window as any).navigateMaquette("studio-op1")}
+            onOpenEp133={() => (window as any).navigateMaquette("studio-ep133")}
+          />
+        ) : (
+          /* Sans props : SoundEditorHub ne rend plus de TopBar, la nôtre suffit.
+             La garantie est structurelle, pas un drapeau — ModulesLabo.test.ts
+             refuse tout <TopBar dans ce fichier. */
+          <SoundEditorHub />
+        )}
       </main>
     </div>
   );

@@ -100,17 +100,13 @@ describe("l'ouverture est portee par la donnee", () => {
   });
 });
 
-describe("les sections deviennent utilisables", () => {
-  it("les onglets sont rendus", () => {
-    // Declares depuis le debut, jamais affiches, et inutilisables tant que les
-    // vrais outils vivaient hors du tableau.
-    expect(RACK).toContain("sections.map(section");
-    expect(RACK).toContain("setActiveSection(section.id)");
+describe("navigation principale", () => {
+  it("conserve uniquement la TopBar", () => {
+    expect(RACK).not.toContain("hub-sections");
+    expect(RACK).not.toContain("setActiveSection");
   });
 
-  it("aucune section n'est vide", () => {
-    // Rebranchees telles quelles avant la fusion, « OP-1 STUDIO » et
-    // « EP-133 STUDIO » auraient affiche ZERO outil.
+  it("garde des cartes pour les deux studios", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
     const entrees = [...bloc.matchAll(/id: "([^"]+)"[\s\S]*?section: "(hub|op1|ep133)"/g)];
     const cartes = entrees.filter((m) => {
@@ -121,14 +117,6 @@ describe("les sections deviennent utilisables", () => {
     for (const section of ["hub", "op1", "ep133"]) {
       const n = cartes.filter((m) => m[2] === section).length;
       expect(n, `la section « ${section} » n'a aucune carte`).toBeGreaterThan(0);
-    }
-  });
-
-  it("les onglets ont un style", () => {
-    // Une classe posee sans regle CSS : le defaut que ni le typecheck ni le
-    // build ne voient.
-    for (const c of ["hub-sections", "hub-section-btn"]) {
-      expect(CSS, `.${c} sans regle`).toMatch(new RegExp(`\\.${c}[\\s,{:.]`));
     }
   });
 });
@@ -154,6 +142,10 @@ describe("le regroupement est une donnee", () => {
       reglages: ["midi", "op-settings", "machine-test"],
       formation: ["op1-exercise", "rhythm"],
       documentation: ["op1-docs", "ep-docs", "documentation", "app-guide"],
+      // « son » n'est plus : ses deux membres n'etaient rendus par rien — aucune
+      // carte n'ouvrait le groupe — et menaient de toute facon a `sound-library`,
+      // comme la carte « Bibliotheque sonore ». L'editeur vit maintenant dans
+      // l'onglet « Editeur & preparation » de cette page.
     };
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["), RACK.indexOf("\n/** Les cartes du rack"));
     for (const [groupe, attendus] of Object.entries(ATTENDUS)) {
@@ -176,9 +168,9 @@ describe("le regroupement est une donnee", () => {
      * ouvre son groupe. Un groupe qui perd sa carte rend donc ses membres
      * invisibles, en silence.
      *
-     * C'est arrive avec « son » : en fusionnant l'editeur sonore dans la
-     * bibliotheque, la carte « Son » a disparu, emportant l'acces a
-     * « Editeur de samples » et « Sons & transferts EP-133 ».
+     * La liste en dur qui tenait ce role laissait passer le cas : elle
+     * verifiait que « son » menait bien a `sound-library`, sans voir que les
+     * deux membres du groupe « son » n'etaient rendus par rien.
      */
     const avecMembres = new Set(
       [...RACK.matchAll(/groupe: "([^"]+)",/g)].map((m) => m[1])
@@ -234,7 +226,7 @@ describe("ce que la fusion ne devait pas casser", () => {
 
   it("aucun identifiant n'est declare deux fois", () => {
     const ids = outils();
-    expect(ids.length).toBeGreaterThan(20);
+    expect(ids.length).toBeGreaterThan(15);
     expect(new Set(ids).size, "un identifiant est declare deux fois").toBe(ids.length);
   });
 });

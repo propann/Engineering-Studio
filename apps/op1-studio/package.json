@@ -22,8 +22,8 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
-    "@studio-hub/audio-bridge": "*",
-    "@studio-hub/midi-bridge": "*",
+    "@studio-hub/audio-bridge": "file:../../packages/audio-bridge",
+    "@studio-hub/midi-bridge": "file:../../packages/midi-bridge",
     "drizzle-orm": "^0.45.2",
     "next": "^16.2.6",
     "react": "^19.2.8",

@@ -35,10 +35,7 @@ export function TopBar({
   const studioLinks = [
     { id: "studio-op1", label: "OP-1 Studio", icon: "🎹", badge: "OP-1" },
     { id: "studio-ep133", label: "EP-133 Studio", icon: "🥁", badge: "K.O. II" },
-    // Vers la bibliotheque, qui reunit tes fichiers ET le banc d'ecoute des
-    // sons des machines. Elle pointait sur l'editeur seul : la barre du haut
-    // ouvrait donc la moitie de l'outil.
-    { id: "sound-library", label: "Sons", icon: "🎵" },
+    { id: "sound-library", label: "Bibliothèque sonore", icon: "🎵" },
     { id: "outils", label: "Hub Outils", icon: "🔗" },
     { id: "orphan-pages", label: "Pages", icon: "🗂️" },
   ];

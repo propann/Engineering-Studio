@@ -22,13 +22,13 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@studio-hub/midi-bridge": path.resolve(__dirname, "packages/midi-bridge/index.ts"),
-      "@studio-hub/audio-bridge": path.resolve(__dirname, "packages/audio-bridge/index.ts"),
-      "@studio-hub/fs-handles": path.resolve(__dirname, "packages/fs-handles/index.ts"),
-      "@studio-hub/audio-formats": path.resolve(__dirname, "packages/audio-formats/index.ts"),
-      "@studio-hub/midi-dispatch": path.resolve(__dirname, "packages/midi-dispatch/index.ts"),
-      "@studio-hub/musique": path.resolve(__dirname, "packages/musique/index.ts"),
-      "@studio-hub/core": path.resolve(__dirname, "apps/studio-hub/src/core"),
+      "@studio-hub/midi-bridge": path.resolve(import.meta.dirname, "packages/midi-bridge/index.ts"),
+      "@studio-hub/audio-bridge": path.resolve(import.meta.dirname, "packages/audio-bridge/index.ts"),
+      "@studio-hub/fs-handles": path.resolve(import.meta.dirname, "packages/fs-handles/index.ts"),
+      "@studio-hub/audio-formats": path.resolve(import.meta.dirname, "packages/audio-formats/index.ts"),
+      "@studio-hub/midi-dispatch": path.resolve(import.meta.dirname, "packages/midi-dispatch/index.ts"),
+      "@studio-hub/musique": path.resolve(import.meta.dirname, "packages/musique/index.ts"),
+      "@studio-hub/core": path.resolve(import.meta.dirname, "apps/studio-hub/src/core"),
     },
   },
   server: {

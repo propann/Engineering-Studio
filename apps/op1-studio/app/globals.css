@@ -467,8 +467,17 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
    Copie conforme de la machine OP-1, étendue pour la souris.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Container principal — tout est noir, comme un vrai écran */
-.tape-editor-screen { width: 100%; margin-bottom: 14px; background: #0c1011; border-radius: 7px; overflow: hidden; border: 1px solid #1a2122; box-shadow: 0 6px 24px rgba(0,0,0,.55); }
+/* Container principal — contour blanc net et visible pour délimiter l'écran virtuel */
+.tape-editor-screen {
+  position: relative;
+  width: 100%;
+  margin-bottom: 0 !important;
+  background: #0c1011;
+  border-radius: 6px;
+  overflow: visible;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 8px 30px rgba(0, 0, 0, 0.8) !important;
+}
 
 /* Section SVG machine (haut) — coule directement dans les pistes */
 .tape-editor-display { display: block; border-bottom: 1px solid #1e282a; }
@@ -1359,90 +1368,101 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
    OP-1 PRO STUDIO — MENU BAR & FLOATING DRAWERS (HARDWARE FOCUSED)
    ══════════════════════════════════════════════════════════════════════════ */
 /* ══════════════════════════════════════════════════════════════════════════
-   OP-1 PRO STUDIO — COMPACT CONSOLE & UNIFIED HEADER (HAUTEUR OPTIMISÉE)
+   OP-1 PRO STUDIO — COMPACT CONSOLE & UNIFIED MODULAR BANDS (RANGEMENT STRICT)
    ══════════════════════════════════════════════════════════════════════════ */
 .op1-compact-console {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 6px 10px;
-  background: #14181c;
-  border: 1px solid #232b33;
-  border-radius: 8px;
+  gap: 4px;
+  padding: 5px 8px;
+  background: #12161a;
+  border: 1px solid #222c35;
+  border-radius: 6px;
   margin-bottom: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  width: 100%;
 }
 
-.op1-compact-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
+.op1-compact-row, .op1-console-band {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin;
+  padding: 1px 0;
+  width: 100%;
+}
+
+.op1-control-cluster {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  padding: 2px 4px !important;
+  background: #0d1114 !important;
+  border: 1px solid #1f2730 !important;
+  border-radius: 4px !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
 
 .op1-compact-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.op1-compact-brand {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding-right: 8px;
-  border-right: 1px solid #28323c;
-  line-height: 1;
-}
-
-.op1-compact-brand strong {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #f8fafc;
-}
-
-.op1-compact-brand span {
-  font-size: 8px;
-  padding: 1px 4px;
-  background: #267c65;
-  color: #ffffff;
-  border-radius: 2px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .op1-pill-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 2px 7px;
-  height: 25px;
-  background: #1b2229;
-  border: 1px solid #2c3742;
+  padding: 0 7px;
+  height: 24px;
+  min-height: 24px;
+  background: #1b232a;
+  border: 1px solid #2e3b47;
   color: #cbd5e1;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.12s ease;
-  white-space: nowrap;
+  white-space: nowrap !important;
   line-height: 1;
+  flex-shrink: 0 !important;
+  user-select: none;
 }
 
 .op1-pill-btn:hover {
-  background: #26303a;
+  background: #25313c;
   border-color: #475569;
   color: #ffffff;
 }
 
 .op1-pill-btn.is-active {
-  background: #19332a;
-  border-color: #29be87;
-  color: #29be87;
-  box-shadow: 0 0 8px rgba(41, 190, 135, 0.2);
+  background: rgba(0, 237, 149, 0.18);
+  border-color: #00ed95;
+  color: #00ed95;
+  box-shadow: 0 0 8px rgba(0, 237, 149, 0.25);
+}
+
+.op1-pill-btn.is-active-blue {
+  background: rgba(105, 142, 255, 0.2);
+  border-color: #698eff;
+  color: #93c5fd;
+  box-shadow: 0 0 8px rgba(105, 142, 255, 0.25);
+}
+
+.op1-pill-btn.is-active-orange {
+  background: rgba(255, 148, 54, 0.2);
+  border-color: #ff9436;
+  color: #ffb56b;
+  box-shadow: 0 0 8px rgba(255, 148, 54, 0.25);
 }
 
 .op1-pill-btn .badge {
@@ -1454,118 +1474,222 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 }
 
 .op1-pill-btn.is-active .badge {
-  background: #29be87;
-  color: #0f1215;
-}
-
-.op1-transport-cluster {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  background: #0d1114;
-  padding: 2px 4px;
-  border-radius: 5px;
-  border: 1px solid #1e262f;
+  background: #00ed95;
+  color: #0c1011;
+  font-weight: 800;
 }
 
 .op1-play-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  height: 22px;
-  padding: 0 7px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
   background: rgba(0, 237, 149, 0.12);
-  border: 1px solid #00ED95;
-  color: #00ED95;
+  border: 1px solid #00ed95;
+  color: #00ed95;
   border-radius: 3px;
   font-weight: 800;
   font-size: 10px;
   cursor: pointer;
   transition: all 0.12s ease;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .op1-play-btn:hover {
-  background: #00ED95;
-  color: #0c1011;
+  background: #00ed95;
+  color: #07130e;
+}
+
+.op1-play-btn.is-playing {
+  background: #00ed95;
+  color: #07130e;
+  box-shadow: 0 0 10px rgba(0, 237, 149, 0.65);
 }
 
 .op1-rec-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  height: 22px;
-  padding: 0 7px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 8px;
   background: rgba(255, 58, 93, 0.12);
-  border: 1px solid #FF3A5D;
-  color: #FF3A5D;
+  border: 1px solid #ff3a5d;
+  color: #ff3a5d;
   border-radius: 3px;
   font-weight: 800;
   font-size: 10px;
   cursor: pointer;
   transition: all 0.12s ease;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.op1-rec-btn:hover {
+  background: #ff3a5d;
+  color: #ffffff;
 }
 
 .op1-rec-btn.is-recording {
-  background: #FF3A5D;
+  background: #ff3a5d;
   color: #ffffff;
   box-shadow: 0 0 10px rgba(255, 58, 93, 0.65);
 }
 
 .op1-state-btn {
-  height: 22px;
-  padding: 0 6px;
-  background: transparent;
-  border: 1px solid #2a353f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 7px;
+  background: #171e25;
+  border: 1px solid #2c3945;
   color: #94a3b8;
   border-radius: 3px;
   font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.12s ease;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .op1-state-btn:hover {
+  background: #232e38;
   border-color: #475569;
   color: #f1f5f9;
 }
 
 .op1-state-btn.is-active {
-  background: rgba(0, 237, 149, 0.15);
-  border-color: #00ED95;
-  color: #00ED95;
+  background: rgba(0, 237, 149, 0.16);
+  border-color: #00ed95;
+  color: #00ed95;
+  box-shadow: 0 0 6px rgba(0, 237, 149, 0.3);
 }
 
 .op1-state-btn.is-rev-active {
-  background: rgba(255, 58, 93, 0.15);
-  border-color: #FF3A5D;
-  color: #FF3A5D;
+  background: rgba(255, 148, 54, 0.16);
+  border-color: #ff9436;
+  color: #ff9436;
+  box-shadow: 0 0 6px rgba(255, 148, 54, 0.3);
 }
 
-.op1-tempo-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  height: 22px;
-  padding: 0 5px;
-  background: #171d22;
-  border: 1px solid #2a353f;
-  border-radius: 3px;
-  font-size: 10px;
-  color: #94a3b8;
+/* Boîte de Tempo BPM rigide horizontale */
+.op1-tempo-cluster {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  height: 24px !important;
+  padding: 0 5px !important;
+  background: #0d1114 !important;
+  border: 1px solid #3d2c1f !important;
+  border-radius: 4px !important;
+  color: #ffb56b !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
-.op1-tempo-box input {
-  width: 40px;
+.op1-tempo-cluster-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #ff9436;
+  letter-spacing: 0.04em;
+  margin-right: 2px;
+}
+
+.op1-tempo-cluster input {
+  width: 32px;
   height: 18px;
-  background: #0f1316;
-  border: 1px solid #334155;
+  background: #14100b;
+  border: 1px solid #5a3f28;
   border-radius: 2px;
-  color: #38bdf8;
-  font-weight: bold;
+  color: #ffffff;
+  font-weight: 900;
   font-size: 10px;
   text-align: center;
   padding: 0;
+  outline: none;
 }
+
+.op1-tempo-step-btn {
+  width: 15px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #23180f;
+  border: 1px solid #5a3c26;
+  border-radius: 2px;
+  color: #ffb56b;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  padding: 0;
+}
+
+.op1-tempo-step-btn:hover {
+  background: #3b281a;
+  border-color: #ff9436;
+  color: #ffffff;
+}
+
+/* Sélecteur de piste direct 1..4 */
+.op1-track-selector {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  height: 24px !important;
+  padding: 0 5px !important;
+  background: #0d1114 !important;
+  border: 1px solid #222d37 !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.op1-track-selector-label {
+  font-size: 9px;
+  font-weight: 900;
+  color: #ff9436;
+  letter-spacing: 0.05em;
+  margin-right: 2px;
+}
+
+.op1-track-select-btn {
+  width: 20px;
+  height: 18px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #172022;
+  background: #94a3b8;
+  border: 1px solid #64748b;
+  border-radius: 2px;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 10px;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
+}
+
+.op1-track-select-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.op1-track-select-btn-1.is-selected { background: #698eff; border-color: #698eff; color: #0b1120; box-shadow: 0 0 6px rgba(105,142,255,0.6); }
+.op1-track-select-btn-2.is-selected { background: #00ed95; border-color: #00ed95; color: #07130e; box-shadow: 0 0 6px rgba(0,237,149,0.6); }
+.op1-track-select-btn-3.is-selected { background: #dfd9ff; border-color: #dfd9ff; color: #18112e; box-shadow: 0 0 6px rgba(223,217,255,0.6); }
+.op1-track-select-btn-4.is-selected { background: #ff3a5d; border-color: #ff3a5d; color: #ffffff; box-shadow: 0 0 6px rgba(255,58,93,0.6); }
 
 .op1-pro-bar {
   display: flex;
@@ -1822,4 +1946,685 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+
+/* Contrôles physiques sortis de l’écran OLED : accès direct, lisible et tactile. */
+.op1-screen-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: #11171b;
+  border: 1px solid #263139;
+  border-top: 0;
+}
+.op1-screen-track-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.op1-screen-control-label {
+  margin-right: 3px;
+  color: #71808b;
+  font: 700 9px var(--font-geist-mono), monospace;
+  letter-spacing: .12em;
+}
+.op1-screen-track-button {
+  width: 30px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #cbd5e1;
+  background: #1b242b;
+  border: 1px solid #34424c;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 12px var(--font-geist-mono), monospace;
+}
+.op1-screen-track-button:hover,
+.op1-screen-track-button:focus-visible {
+  border-color: #fff;
+  transform: translateY(-1px);
+}
+.op1-screen-track-button.is-selected {
+  color: #0b1014;
+  border-color: currentColor;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.12);
+}
+.op1-screen-track-button-1.is-selected { background: #698eff; color: #08101e; }
+.op1-screen-track-button-2.is-selected { background: #00ed95; color: #06130e; }
+.op1-screen-track-button-3.is-selected { background: #dfd9ff; color: #181329; }
+.op1-screen-track-button-4.is-selected { background: #ff3a5d; color: #21060d; }
+.op1-screen-record-button {
+  min-width: 148px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #fff;
+  background: #8d1e32;
+  border: 1px solid #ff3a5d;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-record-button:hover,
+.op1-screen-record-button:focus-visible,
+.op1-screen-record-button.is-recording {
+  background: #ff3a5d;
+  color: #21060d;
+  box-shadow: 0 0 14px rgba(255,58,93,.28);
+}
+.op1-screen-record-button small {
+  color: inherit;
+  opacity: .78;
+  font: 700 8px var(--font-geist-mono), monospace;
+  letter-spacing: 0;
+}
+.op1-screen-record-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  background: #ff3a5d;
+  border: 1px solid #fff;
+  border-radius: 50%;
+}
+.op1-screen-record-button.is-recording .op1-screen-record-dot {
+  animation: pulse 1s infinite;
+}
+@media (max-width: 560px) {
+  .op1-screen-controls { align-items: stretch; flex-direction: column; }
+  .op1-screen-track-selector { justify-content: center; }
+  .op1-screen-record-button { width: 100%; }
+}
+
+
+/* Menu interne OP-1 : la cassette laisse place à l'écran de sélection machine. */
+.op1-screen-patch-menu {
+  min-height: clamp(220px, 24vw, 360px);
+  color: #dce8e3;
+  background: #090f13;
+  border: 1px solid #26353c;
+  font-family: var(--font-geist-mono), monospace;
+}
+.op1-screen-patch-menu-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  color: #d8e5df;
+  background: #111b21;
+  border-bottom: 1px solid #26353c;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+.op1-screen-patch-menu-head button {
+  width: 24px;
+  height: 24px;
+  color: #d8e5df;
+  background: transparent;
+  border: 1px solid #40515b;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.op1-screen-patch-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 190px;
+}
+.op1-screen-engine-column,
+.op1-screen-patch-column {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px;
+}
+.op1-screen-engine-column { background: rgba(76, 172, 225, .08); border-right: 1px solid #26353c; }
+.op1-screen-patch-column { background: rgba(76, 172, 225, .08); }
+.op1-screen-engine-column > strong,
+.op1-screen-patch-column > strong {
+  margin-bottom: 3px;
+  font-size: 9px;
+  letter-spacing: .13em;
+}
+.op1-screen-engine-column > strong { color: #4cace1; }
+.op1-screen-patch-column > strong { color: #00ed95; }
+.op1-screen-engine-column button,
+.op1-screen-patch-column button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 26px;
+  padding: 5px 7px;
+  color: #b9c7c2;
+  background: rgba(6, 12, 16, .72);
+  border: 1px solid #26353c;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  font: 700 10px var(--font-geist-mono), monospace;
+}
+.op1-screen-engine-column button small,
+.op1-screen-patch-column button small {
+  color: #6f8189;
+  font-size: 8px;
+}
+.op1-screen-engine-column button:hover,
+.op1-screen-engine-column button.is-active {
+  color: #07131a;
+  background: #4cace1;
+  border-color: #8bd5ff;
+}
+.op1-screen-patch-column button:hover,
+.op1-screen-patch-column button.is-active {
+  color: #06130e;
+  background: #00ed95;
+  border-color: #8fffd2;
+}
+.op1-screen-patch-menu-foot {
+  padding: 7px 10px;
+  color: #70818a;
+  border-top: 1px solid #26353c;
+  font-size: 9px;
+}
+.op1-screen-menu-button {
+  min-height: 32px;
+  padding: 0 12px;
+  color: #8bd5ff;
+  background: #102432;
+  border: 1px solid #4cace1;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .05em;
+}
+.op1-screen-menu-button:hover,
+.op1-screen-menu-button[aria-expanded="true"] {
+  color: #06131a;
+  background: #4cace1;
+}
+@media (max-width: 560px) {
+  .op1-screen-patch-columns { grid-template-columns: 1fr; }
+  .op1-screen-engine-column { border-right: 0; border-bottom: 1px solid #26353c; }
+}
+
+/* Écran interne tactile : la cassette reste visible, réduite sur la gauche. */
+.tape-editor-screen.is-screen-menu-open > svg {
+  width: 49% !important;
+  transform: scale(.96);
+  transform-origin: left top;
+}
+.tape-editor-screen.is-screen-menu-open > .op1-screen-patch-menu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  width: 47%;
+  max-height: calc(100% - 16px);
+  min-height: 0;
+  overflow: auto;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .45);
+}
+.tape-editor-screen.is-screen-menu-open .op1-screen-patch-columns {
+  min-height: 0;
+}
+.op1-svg-transport-indicator {
+  display: none;
+}
+.op1-screen-play-button {
+  min-width: 104px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #00ed95;
+  background: #10241d;
+  border: 1px solid #00ed95;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 10px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-play-button:hover,
+.op1-screen-play-button:focus-visible,
+.op1-screen-play-button.is-playing {
+  color: #06130e;
+  background: #00ed95;
+}
+.op1-screen-play-button span {
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .tape-editor-screen.is-screen-menu-open > svg {
+    width: 42% !important;
+  }
+  .tape-editor-screen.is-screen-menu-open > .op1-screen-patch-menu {
+    width: 54%;
+  }
+}
+
+.op1-screen-scale-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 25px;
+  padding: 0 8px;
+  color: #8bd5ff;
+  background: #102432;
+  border: 1px solid #31566a;
+  border-radius: 4px;
+  font: 800 9px var(--font-geist-mono), monospace;
+  letter-spacing: .06em;
+}
+.op1-screen-scale-control input {
+  width: 78px;
+  accent-color: #4cace1;
+  cursor: pointer;
+}
+.op1-screen-scale-control output {
+  min-width: 30px;
+  color: #dcecff;
+  text-align: right;
+}
+@media (max-width: 700px) {
+  .op1-screen-scale-control { order: 3; }
+}
+
+/* Châssis OP-1 : fond sombre compact, sans barre blanche entre l'écran et les touches. */
+.studio-keyboard-panel { background: #d7dbd8; margin-top: 0 !important; }
+.studio-keyboard-panel .studio-machine-panel { margin-top: 0 !important; background: #d7dbd8; border-color: #9aa19d; color: #27302c; box-shadow: 0 4px 12px rgba(40,48,44,.18); }
+.studio-keyboard-panel .mpanel-bar { display: none !important; }
+
+/* En-tête de fenêtre OP-1 Studio ("Jolie Tête") */
+.op1-window-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: linear-gradient(180deg, #1e262c 0%, #13191d 100%);
+  border: 1px solid #2a3740;
+  border-radius: 8px 8px 0 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.35);
+  margin-bottom: 6px;
+}
+.op1-header-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.op1-header-logo-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0b0f12;
+  padding: 4px 8px;
+  border-radius: 5px;
+  border: 1px solid #233038;
+}
+.op1-header-logo-badge strong {
+  font: 900 12px var(--font-geist-mono), monospace;
+  color: #f3f6f4;
+  letter-spacing: 0.12em;
+}
+.op1-header-logo-badge span {
+  font: 800 8px var(--font-geist-mono), monospace;
+  color: #07130e;
+  background: #00ed95;
+  padding: 1px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.08em;
+}
+.op1-header-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 9.5px var(--font-geist-mono), monospace;
+  color: #8da4b3;
+  padding: 3px 8px;
+  background: rgba(18, 25, 30, 0.7);
+  border: 1px solid #24343e;
+  border-radius: 4px;
+}
+.op1-led-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00ed95;
+  box-shadow: 0 0 6px #00ed95;
+  animation: op1-led-pulse 2s infinite ease-in-out;
+}
+.op1-led-dot.is-red {
+  background: #ff3a5d;
+  box-shadow: 0 0 7px #ff3a5d;
+  animation: op1-rec-blink 0.8s infinite ease-in-out;
+}
+.op1-led-dot.is-blue {
+  background: #698eff;
+  box-shadow: 0 0 6px #698eff;
+}
+.op1-led-dot.is-orange {
+  background: #ff9436;
+  box-shadow: 0 0 6px #ff9436;
+}
+@keyframes op1-led-pulse {
+  0%, 100% { opacity: 0.7; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+@keyframes op1-rec-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+.op1-header-center-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 700 10px var(--font-geist-mono), monospace;
+  color: #9cb0bf;
+}
+.op1-header-engine-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  background: #0b1115;
+  border: 1px solid #283a45;
+  border-radius: 4px;
+  color: #698eff;
+}
+.op1-header-engine-pill span {
+  color: #00ed95;
+}
+
+.op1-header-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Console OP-1 : Exactement 2 rangées STRICTEMENT horizontales, ultra-compactes */
+.op1-compact-console {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.op1-console-band {
+  min-height: 24px;
+  height: 24px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  background: linear-gradient(180deg, #171f24 0%, #10161a 100%);
+  border: 1px solid #28373f;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 2px 5px rgba(0,0,0,0.25);
+  box-sizing: border-box;
+}
+.op1-console-band::-webkit-scrollbar {
+  display: none;
+}
+.op1-console-band .op1-compact-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0;
+}
+
+/* Boutons tactiles silicone OP-1 */
+.op1-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font: 700 8.5px var(--font-geist-mono), monospace;
+  letter-spacing: 0.03em;
+  color: #cfd8dc;
+  background: linear-gradient(180deg, #242f36 0%, #192227 100%);
+  border: 1px solid #364752;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+.op1-pill-btn:hover {
+  background: linear-gradient(180deg, #2d3b44 0%, #202b32 100%);
+  border-color: #4f6878;
+  color: #ffffff;
+}
+.op1-pill-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+.op1-pill-btn.is-active {
+  background: linear-gradient(180deg, #00ed95 0%, #00c77c 100%);
+  border-color: #00ed95;
+  color: #07130e;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(0,237,149,0.35);
+}
+.op1-pill-btn.is-active-blue {
+  background: linear-gradient(180deg, #698eff 0%, #4c73ea 100%);
+  border-color: #698eff;
+  color: #0b1120;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(105,142,255,0.35);
+}
+.op1-pill-btn.is-active-orange {
+  background: linear-gradient(180deg, #ff9436 0%, #e0761a 100%);
+  border-color: #ff9436;
+  color: #1f1003;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(255,148,54,0.35);
+}
+.op1-pill-btn .badge {
+  font-size: 8.5px;
+  padding: 1px 4px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 3px;
+  color: #9cb0bf;
+}
+.op1-pill-btn.is-active .badge {
+  background: rgba(7,19,14,0.3);
+  color: #07130e;
+}
+
+/* Boutons de transport & enregistrement */
+.op1-rec-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font: 800 8.5px var(--font-geist-mono), monospace;
+  color: #ff859a;
+  background: linear-gradient(180deg, #30171c 0%, #200d11 100%);
+  border: 1px solid #5a2631;
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  transition: all 0.12s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.op1-rec-btn:hover {
+  background: linear-gradient(180deg, #421e25 0%, #2e1217 100%);
+  border-color: #ff3a5d;
+  color: #ffffff;
+}
+.op1-rec-btn.is-recording {
+  background: linear-gradient(180deg, #ff3a5d 0%, #d6193e 100%);
+  border-color: #ff3a5d;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(255,58,93,0.6);
+  animation: op1-rec-pulse 1s infinite alternate ease-in-out;
+}
+@keyframes op1-rec-pulse {
+  0% { box-shadow: 0 0 6px rgba(255,58,93,0.4); }
+  100% { box-shadow: 0 0 14px rgba(255,58,93,0.8); }
+}
+
+/* Master volume control */
+.op1-master-volume-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 6px;
+  background: #0c1114;
+  border: 1px solid #28373f;
+  border-radius: 3px;
+  color: #9cb0bf;
+  font: 800 8px var(--font-geist-mono), monospace;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.op1-master-volume-control input {
+  width: 50px;
+  height: 3px;
+  accent-color: #00ed95;
+  cursor: pointer;
+}
+.op1-master-volume-control output {
+  min-width: 22px;
+  color: #00ed95;
+  font-weight: 800;
+  text-align: right;
+}
+
+/* Tiroir de bibliothèque de samples */
+.op1-sample-library-drawer {
+  margin: 4px 0 6px;
+  padding: 6px 10px;
+  background: #11191a;
+  border: 1px solid #334449;
+  border-radius: 5px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.op1-sample-library-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #233034;
+  margin-bottom: 6px;
+}
+.op1-sample-library-drawer-head strong {
+  color: #00ed95;
+  font: 800 10.5px var(--font-geist-mono), monospace;
+  letter-spacing: 0.08em;
+}
+.op1-sample-library-drawer-head small {
+  color: #8fa09d;
+  font: 9px var(--font-geist-mono), monospace;
+}
+
+/* Zone d'enchaînement Écran OLED → Clavier Virtuel avec cadre blanc net */
+.studio-screen-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+.studio-keyboard-panel {
+  margin-top: 0 !important;
+  border-top: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+
+/* Transport visible du clavier MIDI virtuel et verrouillage de configuration locale. */
+.virtual-keyboard-transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 8px;
+  color: #91a09c;
+  background: #11191a;
+  border-bottom: 1px solid #263333;
+  font: 700 9px var(--font-geist-mono), monospace;
+}
+.virtual-keyboard-play {
+  min-width: 84px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #06130e;
+  background: #00ed95;
+  border: 1px solid #00ed95;
+  border-radius: 4px;
+  cursor: pointer;
+  font: 800 9px var(--font-geist-mono), monospace;
+}
+.virtual-keyboard-play:hover,
+.virtual-keyboard-play:focus-visible,
+.virtual-keyboard-play.is-playing {
+  color: #06130e;
+  background: #8fffd2;
+  border-color: #8fffd2;
+}
+.machine-config-lock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 10px;
+  color: #52645b;
+  background: #eef4ef;
+  border-bottom: 1px solid #d6e2d9;
+  font: 8px var(--font-geist-mono), monospace;
+}
+.machine-config-lock-row button {
+  min-height: 22px;
+  padding: 0 8px;
+  color: #07130e;
+  background: #00ed95;
+  border: 1px solid #00ed95;
+  border-radius: 3px;
+  cursor: pointer;
+  font: 800 8px var(--font-geist-mono), monospace;
+}
+.machine-config-lock-row button:hover,
+.machine-config-lock-row button:focus-visible {
+  background: #8fffd2;
+  border-color: #8fffd2;
+}
+@media (max-width: 560px) {
+  .virtual-keyboard-transport { align-items: flex-start; flex-direction: column; }
+  .machine-config-lock-row { align-items: flex-start; flex-direction: column; }
 }

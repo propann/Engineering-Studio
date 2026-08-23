@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { sAbonner } from "@studio-hub/midi-dispatch";
 // Le rack du hub, importe tel quel. Ce studio n'avait aucun moteur de synthese
 // a lui : op1SynthEngine joue des samples, pas des patches.
@@ -12,30 +12,53 @@ import AudioPluginRack from "../../studio-hub/src/pages/AudioPluginRack";
  * caster — un `as unknown as` a deja masque une interop impossible ici.
  */
 type EvenementMidiLu = { data: Uint8Array | null };
-import firmwareCatalog from "../data/firmware/catalog.json";
-import { describeLocalBridgeAction, prepareLocalBridgeAction } from "./lib/localBridge";
+
+const PATCH_PROFILE_KEY = "op1-studio-user-patches-v1";
+
+function initialScreenScale(): number {
+  if (typeof window === "undefined") return 1;
+  try {
+    const saved = JSON.parse(localStorage.getItem("op1-studio-view-config-v1") ?? "{}") as { screenScale?: number };
+    return typeof saved.screenScale === "number" ? Math.max(0.5, Math.min(1, saved.screenScale)) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function initialPatch(field: "engine" | "patch", fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+    const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+    return saved["1"]?.[field] ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+import { MidiKeyboardOptionsBar, DEFAULT_MIDI_KEYBOARD_OPTIONS, type MidiKeyboardOptions } from "./components/MidiKeyboardOptionsBar";
+import {
+  RACK_ENGINES_METAS,
+  RACK_ENGINE_IDS,
+  getPatchesForEngine,
+  getEngineMeta,
+  type EngineId,
+} from "./lib/soundEnginesData";
+import { quantifier, type Gamme } from "../../../packages/musique";
+
 import { decodeMidiNote } from "./lib/midi";
-import { prepareNativeLocalPlan, readDisplayLibrary } from "./lib/nativeStorage";
+import { readDisplayLibrary } from "./lib/nativeStorage";
 import { encodeAiffPcm16, encodeWavPcm16 } from "./lib/audioConvert";
 import { op1AudioEngine } from "./lib/op1SynthEngine";
-import { HomeHub } from "./components/HomeHub";
-// import { DocumentationPanel } from "./components/DocumentationPanel"; // Moved to Hub
-import { DisplayCreatorPanel } from "./components/DisplayCreatorPanel";
 import { Op1PixelEditor } from "./components/Op1PixelEditor";
-import { ExercisePanel } from "./components/ExercisePanel";
-import { BackupPanel } from "./components/BackupPanel";
-import { SoundsPanel } from "./components/SoundsPanel";
-import { ServiceHub } from "./components/ServiceHub";
-import { StudioModeHeader } from "./components/StudioModeHeader";
+import { GameGuitarHeroPanel } from "./components/GameGuitarHeroPanel";
 import { StudioMachinePanel } from "./components/StudioMachinePanel";
-import { StudioProjectToolbar } from "./components/StudioProjectToolbar";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
+import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
 import { StudioTrackList } from "./components/StudioTrackList";
-import { StudioTransportPanel } from "./components/StudioTransportPanel";
-import { ToolWindowTabs } from "./components/ToolWindowTabs";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
-import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY, OP1_SAMPLES_PREPARED_KEY } from "./lib/hubCommunication";
+import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY } from "./lib/hubCommunication";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 
 type IconName =
@@ -52,38 +75,6 @@ type IconName =
   | "plug"
   | "book"
   | "image";
-
-type ToolWindow = "exercise" | "editor" | "backups" | "sounds" | "services" | "tape" | null;
-
-function hubReturnUrl() {
-  return new URLSearchParams(window.location.search).get("hubReturn") || (typeof window !== "undefined" ? window.location.origin : "/");
-}
-
-function initialHubTool(): { tool: ToolWindow; homeOpen: boolean } {
-  if (typeof window === "undefined") return { tool: "tape", homeOpen: false };
-  const requested = new URLSearchParams(window.location.search).get("hubTool");
-  if (requested === "firmware") return { tool: null, homeOpen: false };
-  const tools: ToolWindow[] = ["exercise", "editor", "backups", "sounds", "services", "tape"];
-  return tools.includes(requested as ToolWindow)
-    ? { tool: requested as ToolWindow, homeOpen: false }
-    : { tool: "tape", homeOpen: false };
-}
-
-const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-function returnToHub() {
-  if ((window as any).navigateMaquette) {
-    (window as any).navigateMaquette("outils");
-    return;
-  }
-  const target = hubReturnUrl();
-  if (window.opener && !window.opener.closed) {
-    window.opener.focus();
-    window.close();
-    return;
-  }
-  window.location.assign(target);
-}
 
 function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -386,7 +377,74 @@ function audioBufferToAiffMono(buffer: AudioBuffer): Blob {
   return new Blob([encodeAiffPcm16(mono, 1, buffer.sampleRate)], { type: "audio/aiff" });
 }
 
-function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void }) {
+type AutosaveSnapshot = {
+  version: 1;
+  projectName: string;
+  files: Record<number, string>;
+  sourceRefs: Record<number, { path: string; status: "linked" | "reconnect" }>;
+  durations: Record<number, number>;
+  clipEnds: Record<number, number>;
+  clipOffsets: Record<number, number>;
+  fadeIns: Record<number, number>;
+  fadeOuts: Record<number, number>;
+  muted: Record<number, boolean>;
+  gains: Record<number, number>;
+  solo: number | null;
+  selectedTrack: number;
+  tempo: number;
+  loopIn: number;
+  loopOut: number;
+  looping: boolean;
+  reversed: boolean;
+  screenScale: number;
+  midiEvents: MidiEvent[];
+};
+
+const OP1_AUTOSAVE_KEY = "op1-studio-autosave-v1";
+const OP1_AUTOSAVE_DB = "op1-studio-autosave";
+const OP1_AUTOSAVE_STORE = "audio";
+
+function openOp1AutosaveDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(OP1_AUTOSAVE_DB, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore(OP1_AUTOSAVE_STORE);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveOp1AutosaveAudio(index: number, source: string) {
+  try {
+    const response = await fetch(source);
+    const blob = await response.blob();
+    const db = await openOp1AutosaveDb();
+    await new Promise<void>((resolve, reject) => {
+      const request = db.transaction(OP1_AUTOSAVE_STORE, "readwrite").objectStore(OP1_AUTOSAVE_STORE).put(blob, String(index));
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+  } catch {
+    // Une source temporaire ou un navigateur sans IndexedDB ne bloque pas le studio.
+  }
+}
+
+async function readOp1AutosaveAudio(index: number): Promise<Blob | null> {
+  try {
+    const db = await openOp1AutosaveDb();
+    const blob = await new Promise<Blob | undefined>((resolve, reject) => {
+      const request = db.transaction(OP1_AUTOSAVE_STORE, "readonly").objectStore(OP1_AUTOSAVE_STORE).get(String(index));
+      request.onsuccess = () => resolve(request.result as Blob | undefined);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    return blob ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { onNotice: (message: string) => void; onConnectMidi: (options?: { silent?: boolean }) => Promise<boolean>; onSendMidi: (data: number[]) => void; libraryHandle?: FileSystemDirectoryHandle | null }) {
   const tracks = ["Track 1", "Track 2", "Track 3", "Track 4"];
   const [files, setFiles] = useState<Record<number, string>>({});
   const [sources, setSources] = useState<Record<number, string>>({});
@@ -404,6 +462,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [solo, setSolo] = useState<number | null>(null);
   const [playing, setPlaying] = useState<number | null>(null);
   const [tempo, setTempo] = useState(90);
+  const [midiClockBpm, setMidiClockBpm] = useState<number | null>(null);
+  const [midiClockTick, setMidiClockTick] = useState(0);
+  const midiClockTickRef = useRef(0);
+  const midiClockLastQuarterRef = useRef<number | null>(null);
   const [recording, setRecording] = useState(false);
   const [recordingStartPos, setRecordingStartPos] = useState(0);
   const recordingRef = useRef(false);
@@ -416,15 +478,40 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [loopOut, setLoopOut] = useState(16);
   const [reversed, setReversed] = useState(false);
   const [screenFolded, setScreenFolded] = useState(false);
+  const [screenScale, setScreenScale] = useState(initialScreenScale);
   const [keyboardFolded, setKeyboardFolded] = useState(false);
+  const [sampleLibraryOpen, setSampleLibraryOpen] = useState(false);
+  const [autosaveReady, setAutosaveReady] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem("op1-studio-view-config-v1", JSON.stringify({ screenScale })); } catch { /* stockage local indisponible */ }
+  }, [screenScale]);
   // Rack audio du hub. Replie par defaut, contrairement aux deux autres :
   // il n'a rien a faire a l'ecran tant qu'on ne le demande pas, et ses
   // ecouteurs clavier sont poses sur `window`.
   const [rackFolded, setRackFolded] = useState(true);
-  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | null>(null);
-  const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | null>(null);
-  const [selectedEngine, setSelectedEngine] = useState<string>("FM");
-  const [selectedSoundCategory, setSelectedSoundCategory] = useState<string>("Synth");
+  const [midiOptions, setMidiOptions] = useState<MidiKeyboardOptions>(DEFAULT_MIDI_KEYBOARD_OPTIONS);
+  const [showMidiOptions, setShowMidiOptions] = useState(true);
+  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | "guitar_hero" | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | "tools" | null>(null);
+  const [selectedEngine, setSelectedEngine] = useState(() => initialPatch("engine", "mi_plaits"));
+  const [selectedPatch, setSelectedPatch] = useState(() => initialPatch("patch", "Virtual Analog Saw Lead"));
+  const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
+  const [soundMenuOpen, setSoundMenuOpen] = useState(false);
+  const [rackMenuOpen, setRackMenuOpen] = useState(false);
+  const [soundSlot, setSoundSlot] = useState(1);
+  const patchProfileLoadedRef = useRef(false);
+  // Profil local de l'utilisateur : les 8 emplacements OP-1 sont conservés
+  // sur l'appareil, sans upload et sans écriture USB sur la machine.
+  useEffect(() => { patchProfileLoadedRef.current = true; }, []);
+  useEffect(() => {
+    if (!patchProfileLoadedRef.current) return;
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      saved[String(soundSlot)] = { engine: selectedEngine, patch: selectedPatch };
+      localStorage.setItem(PATCH_PROFILE_KEY, JSON.stringify(saved));
+    } catch { /* stockage local indisponible */ }
+  }, [selectedEngine, selectedPatch, soundSlot]);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -439,6 +526,62 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   const [lastRawMidiIn, setLastRawMidiIn] = useState<number[] | null>(null);
   const [midiEvents, setMidiEvents] = useState<Array<{ type: "note_on" | "note_off"; note: number; velocity: number; time: number }>>([]);
   const [projectName, setProjectName] = useState("Nouveau projet OP-1");
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const raw = localStorage.getItem(OP1_AUTOSAVE_KEY);
+        const saved = raw ? JSON.parse(raw) as AutosaveSnapshot : null;
+        if (!saved || saved.version !== 1 || cancelled) { setAutosaveReady(true); return; }
+        setProjectName(saved.projectName ?? "Nouveau projet OP-1");
+        setFiles(saved.files ?? {});
+        setSourceRefs(saved.sourceRefs ?? {});
+        setDurations(saved.durations ?? {});
+        setClipEnds(saved.clipEnds ?? {});
+        setClipOffsets(saved.clipOffsets ?? {});
+        setFadeIns(saved.fadeIns ?? {});
+        setFadeOuts(saved.fadeOuts ?? {});
+        setMuted(saved.muted ?? {});
+        setGains(saved.gains ?? {});
+        setSolo(typeof saved.solo === "number" ? saved.solo : null);
+        setSelectedTrack(saved.selectedTrack ?? 0);
+        setTempo(saved.tempo ?? 90);
+        setLoopIn(saved.loopIn ?? 0);
+        setLoopOut(saved.loopOut ?? 16);
+        setLooping(Boolean(saved.looping));
+        setReversed(Boolean(saved.reversed));
+        setMidiEvents(saved.midiEvents ?? []);
+        const restoredSources: Record<number, string> = {};
+        for (const index of [0, 1, 2, 3]) {
+          const blob = await readOp1AutosaveAudio(index);
+          if (blob) restoredSources[index] = URL.createObjectURL(blob);
+        }
+        if (!cancelled) setSources(restoredSources);
+      } catch {
+        // Une sauvegarde absente ou invalide est ignorée sans bloquer l'interface.
+      } finally {
+        if (!cancelled) setAutosaveReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    const snapshot: AutosaveSnapshot = {
+      version: 1, projectName, files, sourceRefs, durations, clipEnds, clipOffsets,
+      fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut,
+      looping, reversed, screenScale, midiEvents,
+    };
+    try { localStorage.setItem(OP1_AUTOSAVE_KEY, JSON.stringify(snapshot)); } catch { /* quota locale atteinte */ }
+  }, [autosaveReady, projectName, files, sourceRefs, durations, clipEnds, clipOffsets, fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut, looping, reversed, screenScale, midiEvents]);
+
+  useEffect(() => {
+    if (!autosaveReady) return;
+    Object.entries(sources).forEach(([rawIndex, source]) => { void saveOp1AutosaveAudio(Number(rawIndex), source); });
+  }, [autosaveReady, sources]);
+
+
   const projectInputRef = useRef<HTMLInputElement>(null);
   const midiHandler = useRef<((event: EvenementMidiLu) => void) | null>(null);
   /** Desabonnement du repartiteur pendant l'enregistrement MIDI. */
@@ -455,10 +598,99 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     void onConnectMidi({ silent: true });
   }, [onConnectMidi]);
 
-  // Synchronisation du moteur audio OP-1 actif
+  function setOp1MachineMode(mode: "synth" | "drum" | "tape") {
+    setMachineMode(mode);
+    if (mode === "drum") setSelectedEngine("Drum");
+    if (mode === "synth" && selectedEngine === "Drum") setSelectedEngine("FM");
+    onNotice(`Mode OP-1 : ${mode === "synth" ? "SYNTH" : mode === "drum" ? "DRUM" : "TAPE"}.`);
+  }
+
+  function openOp1SoundMenu(slot: number) {
+    const nextSlot = Math.max(1, Math.min(8, slot));
+    setSoundSlot(nextSlot);
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      const savedSlot = saved[String(nextSlot)];
+      if (savedSlot?.engine) setSelectedEngine(savedSlot.engine);
+      if (savedSlot?.patch) setSelectedPatch(savedSlot.patch);
+    } catch { /* profil local absent */ }
+    setSoundMenuOpen(true);
+  }
+
+  function openOp1RackMenu() {
+    setSoundMenuOpen(false);
+    setRackMenuOpen(true);
+  }
+  
+  function saveOp1SoundSlot(slot: number) {
+    const target = Math.max(1, Math.min(8, slot));
+    try {
+      const raw = localStorage.getItem(PATCH_PROFILE_KEY);
+      const saved = raw ? JSON.parse(raw) as Record<string, { engine?: string; patch?: string }> : {};
+      saved[String(target)] = { engine: selectedEngine, patch: selectedPatch };
+      localStorage.setItem(PATCH_PROFILE_KEY, JSON.stringify(saved));
+      setSoundSlot(target);
+      onNotice(`Patch ${selectedPatch} sauvegardé dans le slot ${target}/8 (local uniquement).`);
+    } catch {
+      onNotice("Impossible de sauvegarder le patch localement.");
+    }
+  }
+
+  function navigateOp1SoundMenu(encoder: number, delta: number) {
+    if (!soundMenuOpen || !delta) return;
+    if (encoder === 0) {
+      setSelectedEngine((current) => {
+        const index = Math.max(0, RACK_ENGINE_IDS.indexOf(current as EngineId));
+        const nextIndex = (index + (delta > 0 ? 1 : -1) + RACK_ENGINE_IDS.length) % RACK_ENGINE_IDS.length;
+        const nextEngine = RACK_ENGINE_IDS[nextIndex];
+        const patches = getPatchesForEngine(nextEngine);
+        if (patches.length > 0) {
+          setSelectedPatch(patches[0].name);
+        }
+        const meta = getEngineMeta(nextEngine);
+        onNotice(`🔵 Moteur sélectionné (T1) : ${meta?.label ?? nextEngine}`);
+        return nextEngine;
+      });
+    }
+    if (encoder === 1) {
+      setSelectedPatch((current) => {
+        const patches = getPatchesForEngine(selectedEngine);
+        if (patches.length === 0) return current;
+        const patchNames = patches.map((p) => p.name);
+        const index = Math.max(0, patchNames.indexOf(current));
+        const nextIndex = (index + (delta > 0 ? 1 : -1) + patchNames.length) % patchNames.length;
+        const nextPatch = patchNames[nextIndex];
+        onNotice(`🟢 Patch sélectionné (T2) : ${nextPatch}`);
+        return nextPatch;
+      });
+    }
+  }
+
+  // Synchronisation du moteur audio OP-1 actif : les identifiants du
+  // rack (mi_plaits, dexed_fm, etc.) sont résolus localement par le moteur.
+  // La sélection reste strictement dans le navigateur : aucun transfert USB
+  // ou écriture sur la machine n'est déclenché ici.
   useEffect(() => {
     op1AudioEngine.setEngine(selectedEngine);
   }, [selectedEngine]);
+  useEffect(() => {
+    op1AudioEngine.setPatch(selectedPatch);
+  }, [selectedPatch]);
+
+  const midiOptionsRef = useRef(midiOptions);
+  useEffect(() => {
+    midiOptionsRef.current = midiOptions;
+  }, [midiOptions]);
+
+  function transformMidiNote(inputNote: number): number {
+    const opts = midiOptionsRef.current;
+    let n = inputNote;
+    if (opts.scaleEnabled) {
+      n = quantifier(n, opts.scaleRoot, opts.scaleType as Gamme);
+    }
+    return Math.max(0, Math.min(127, n + opts.octaveShift * 12 + opts.transpose));
+  }
 
   // L'OP-1 expose deux ports MIDI sous Windows. Le retour visuel et sonore du clone
   // reste actif même quand aucune capture n'est en cours.
@@ -467,17 +699,40 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const request = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
     if (!request) return;
     let disposed = false;
-    let inputs: MidiInputLike[] = [];
     const handler = (event: EvenementMidiLu) => {
-      if (event.data) setLastRawMidiIn([...event.data]);
+      if (event.data) {
+        setLastRawMidiIn([...event.data]);
+        const status = event.data[0] & 0xff;
+        if (status === 0xfa) {
+          midiClockTickRef.current = 0;
+          midiClockLastQuarterRef.current = performance.now();
+          setMidiClockTick(0);
+        } else if (status === 0xf8) {
+          midiClockTickRef.current += 1;
+          const tick = midiClockTickRef.current;
+          setMidiClockTick(tick);
+          if (tick % 24 === 0) {
+            const now = performance.now();
+            const previous = midiClockLastQuarterRef.current;
+            if (previous !== null) {
+              const measured = 60000 / Math.max(1, now - previous);
+              if (measured >= 20 && measured <= 300) setMidiClockBpm(measured);
+            }
+            midiClockLastQuarterRef.current = now;
+          }
+        } else if (status === 0xfc) {
+          setMidiClockBpm(null);
+        }
+      }
       const message = decodeMidiNote(event.data);
       if (!message) return;
+      const note = transformMidiNote(message.note);
       if (message.type === "note_on") {
-        op1AudioEngine.triggerNoteOn(message.note, message.velocity || 100);
-        setPressedMidiNotes((current) => current.includes(message.note) ? current : [...current, message.note]);
+        op1AudioEngine.triggerNoteOn(note, message.velocity || 100);
+        setPressedMidiNotes((current) => current.includes(note) ? current : [...current, note]);
       } else {
-        op1AudioEngine.triggerNoteOff(message.note);
-        setPressedMidiNotes((current) => current.filter((note) => note !== message.note));
+        op1AudioEngine.triggerNoteOff(note);
+        setPressedMidiNotes((current) => current.filter((n) => n !== note));
       }
     };
     // Abonnement au repartiteur, plutot qu'une ecriture directe.
@@ -511,7 +766,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }, [sources]);
 
   function projectData() {
-    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null } };
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { mode: machineMode, engine: selectedEngine, patch: selectedPatch }, view: { screen_scale: screenScale, screen_open: !screenFolded, keyboard_open: !keyboardFolded } };
   }
 
   function saveProject() {
@@ -529,13 +784,13 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   function loadProjectState(file: File) {
     void file.text().then((text) => { try {
-      const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; gain?: number; clips?: Array<{ source?: string; duration?: number; fade_in?: number; fade_out?: number }>; midi_events?: MidiEvent[] }>; sources?: Array<{ id?: string; path?: string; status?: string } | string>; source_refs?: Array<{ id?: string; path?: string; status?: string } | string> };
+      const project = JSON.parse(text) as { schema?: string; name?: string; tempo?: number; tracks?: Array<{ mute?: boolean; solo?: boolean; gain?: number; clips?: Array<{ source?: string; duration?: number; fade_in?: number; fade_out?: number }>; midi_events?: MidiEvent[] }>; sources?: Array<{ id?: string; path?: string; status?: string } | string>; source_refs?: Array<{ id?: string; path?: string; status?: string } | string>; view?: { screen_scale?: number } };
       if (project.schema !== "op1-studio-project" || project.tracks?.length !== 4) throw new Error("format");
       const nextFiles: Record<number, string> = {}; const nextSourceRefs: Record<number, { path: string; status: "linked" | "reconnect" }> = {}; const nextDurations: Record<number, number> = {}; const nextEnds: Record<number, number> = {}; const nextFadeIns: Record<number, number> = {}; const nextFadeOuts: Record<number, number> = {}; const nextMuted: Record<number, boolean> = {}; const nextGains: Record<number, number> = {}; let nextSolo: number | null = null;
       project.tracks.forEach((track, index) => { const clip = track.clips?.[0]; if (clip?.source) { nextFiles[index] = clip.source; nextSourceRefs[index] = { path: clip.source, status: "reconnect" }; } if (typeof clip?.duration === "number") { nextDurations[index] = clip.duration; nextEnds[index] = clip.duration; } if (typeof clip?.fade_in === "number") nextFadeIns[index] = clip.fade_in; if (typeof clip?.fade_out === "number") nextFadeOuts[index] = clip.fade_out; if (track.mute) nextMuted[index] = true; if (typeof track.gain === "number") nextGains[index] = Math.max(0, Math.min(1, track.gain)); if (track.solo) nextSolo = index; });
       (project.source_refs ?? project.sources)?.forEach((source, index) => { const reference = typeof source === "string" ? { path: source, status: "reconnect" } : source.path ? { path: source.path, status: "reconnect" } : null; if (reference) nextSourceRefs[index] = { path: reference.path, status: "reconnect" }; });
       const events = project.tracks[0].midi_events ?? [];
-      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); setFiles(nextFiles); setSourceRefs(nextSourceRefs); setSources({}); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé. Les références audio sont conservées ; re-sélectionnez chaque source pour reconnecter la lecture.");
+      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); if (typeof project.view?.screen_scale === "number") setScreenScale(Math.max(0.5, Math.min(1, project.view.screen_scale))); setFiles(nextFiles); setSourceRefs(nextSourceRefs); setSources({}); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé. Les références audio sont conservées ; re-sélectionnez chaque source pour reconnecter la lecture.");
     } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
   }
 
@@ -885,12 +1140,45 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const entries = Object.entries(sources).filter(([, source]) => Boolean(source));
     if (!entries.length) { onNotice("Chargez au moins une piste avant l'export Tape."); return; }
     try {
-      const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const soloed = solo !== null;
+      const sampleRate = 44100;
+      const tapeDuration = 360;
+      const context = new AudioContext();
+      const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({
+        index: Number(rawIndex),
+        buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()),
+      })));
+      await context.close();
+      const soloed = solo !== null;
       for (const { index, buffer } of decoded) {
         if (muted[index] || (soloed && solo !== index)) continue;
-        const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const offline = new OfflineAudioContext(2, Math.ceil(end * sampleRate), sampleRate); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); const rendered = await offline.startRendering(); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToAiffMono(rendered)); link.download = `track_${index + 1}.aif`; link.click(); URL.revokeObjectURL(link.href); await new Promise((resolve) => window.setTimeout(resolve, 120));
+        const offset = Math.max(0, Math.min(tapeDuration, clipOffsets[index] ?? 0));
+        const clipDuration = Math.min(tapeDuration - offset, clipEnds[index] ?? durations[index] ?? buffer.duration);
+        if (clipDuration <= 0) continue;
+        const fadeIn = Math.min(clipDuration, fadeIns[index] ?? 0);
+        const fadeOut = Math.min(clipDuration, fadeOuts[index] ?? 0);
+        const offline = new OfflineAudioContext(1, Math.ceil(tapeDuration * sampleRate), sampleRate);
+        const sourceNode = offline.createBufferSource();
+        const gainNode = offline.createGain();
+        sourceNode.buffer = buffer;
+        const level = gains[index] ?? 1;
+        gainNode.gain.setValueAtTime(fadeIn ? 0 : level, offset);
+        if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, offset + fadeIn);
+        if (fadeOut) {
+          gainNode.gain.setValueAtTime(level, Math.max(offset + fadeIn, offset + clipDuration - fadeOut));
+          gainNode.gain.linearRampToValueAtTime(0, offset + clipDuration);
+        }
+        sourceNode.connect(gainNode).connect(offline.destination);
+        sourceNode.start(offset);
+        sourceNode.stop(offset + clipDuration);
+        const rendered = await offline.startRendering();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(audioBufferToAiffMono(rendered));
+        link.download = `track_${index + 1}.aif`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
       }
-      onNotice("Stems Tape exportés : quatre fichiers AIFF mono (track_1.aif…track_4.aif), prêts pour validation.");
+      onNotice("Stems Tape exportés sur 6 minutes : positions et fades conservés. Validation locale requise avant transfert.");
     } catch { onNotice("L'export Tape a échoué. Vérifiez les fichiers audio locaux."); }
   }
 
@@ -902,35 +1190,39 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     }
     try {
       const sampleRate = 44100;
+      const tapeDuration = 360;
       const context = new AudioContext();
       const buffer = await context.decodeAudioData(await (await fetch(source)).arrayBuffer());
       await context.close();
-
-      const end = Math.min(360, clipEnds[index] ?? durations[index] ?? buffer.duration);
-      const fadeIn = Math.min(end, fadeIns[index] ?? 0);
-      const fadeOut = Math.min(end, fadeOuts[index] ?? 0);
-      const offline = new OfflineAudioContext(1, Math.ceil(end * sampleRate), sampleRate);
+      const offset = Math.max(0, Math.min(tapeDuration, clipOffsets[index] ?? 0));
+      const clipDuration = Math.min(tapeDuration - offset, clipEnds[index] ?? durations[index] ?? buffer.duration);
+      if (clipDuration <= 0) {
+        onNotice(`La Piste ${index + 1} ne contient aucune durée exportable.`);
+        return;
+      }
+      const fadeIn = Math.min(clipDuration, fadeIns[index] ?? 0);
+      const fadeOut = Math.min(clipDuration, fadeOuts[index] ?? 0);
+      const offline = new OfflineAudioContext(1, Math.ceil(tapeDuration * sampleRate), sampleRate);
       const sourceNode = offline.createBufferSource();
       const gainNode = offline.createGain();
       sourceNode.buffer = buffer;
       const level = gains[index] ?? 1;
-      gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0);
-      if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn);
+      gainNode.gain.setValueAtTime(fadeIn ? 0 : level, offset);
+      if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, offset + fadeIn);
       if (fadeOut) {
-        gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut));
-        gainNode.gain.linearRampToValueAtTime(0, end);
+        gainNode.gain.setValueAtTime(level, Math.max(offset + fadeIn, offset + clipDuration - fadeOut));
+        gainNode.gain.linearRampToValueAtTime(0, offset + clipDuration);
       }
       sourceNode.connect(gainNode).connect(offline.destination);
-      sourceNode.start(0);
-      sourceNode.stop(end);
-
+      sourceNode.start(offset);
+      sourceNode.stop(offset + clipDuration);
       const rendered = await offline.startRendering();
       const link = document.createElement("a");
       link.href = URL.createObjectURL(audioBufferToAiffMono(rendered));
       link.download = `track_${index + 1}.aif`;
       link.click();
       URL.revokeObjectURL(link.href);
-      onNotice(`Piste ${index + 1} exportée : track_${index + 1}.aif (AIFF mono 44.1 kHz).`);
+      onNotice(`Piste ${index + 1} exportée avec sa position : track_${index + 1}.aif (AIFF mono 44.1 kHz).`);
     } catch {
       onNotice(`Échec de l'export de la Piste ${index + 1}.`);
     }
@@ -979,10 +1271,70 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     const entries = Object.entries(sources).filter(([, source]) => Boolean(source));
     if (!entries.length) { onNotice("Chargez au moins une piste avant l'export Album."); return; }
     try {
-      const sampleRate = 44100; const context = new AudioContext(); const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({ index: Number(rawIndex), buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()) }))); await context.close(); const maxEnd = Math.min(360, Math.max(...decoded.map(({ index, buffer }) => clipEnds[index] ?? durations[index] ?? buffer.duration), 1)); const offline = new OfflineAudioContext(2, Math.ceil(maxEnd * sampleRate), sampleRate); const soloed = solo !== null;
-      decoded.forEach(({ index, buffer }) => { if (muted[index] || (soloed && solo !== index)) return; const end = Math.min(maxEnd, clipEnds[index] ?? durations[index] ?? buffer.duration); const fadeIn = Math.min(end, fadeIns[index] ?? 0); const fadeOut = Math.min(end, fadeOuts[index] ?? 0); const sourceNode = offline.createBufferSource(); const gainNode = offline.createGain(); sourceNode.buffer = buffer; const level = gains[index] ?? 1; gainNode.gain.setValueAtTime(fadeIn ? 0 : level, 0); if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, fadeIn); if (fadeOut) { gainNode.gain.setValueAtTime(level, Math.max(fadeIn, end - fadeOut)); gainNode.gain.linearRampToValueAtTime(0, end); } sourceNode.connect(gainNode).connect(offline.destination); sourceNode.start(0); sourceNode.stop(end); });
-      const rendered = await offline.startRendering(); const faceLength = 180; const downloads: string[] = []; for (let face = 0; face < 2; face += 1) { const start = face * faceLength; const length = Math.max(0, Math.min(faceLength, maxEnd - start)); const faceBuffer = new AudioBuffer({ length: Math.max(1, Math.ceil(length * sampleRate)), numberOfChannels: 2, sampleRate }); for (let channel = 0; channel < 2; channel += 1) faceBuffer.copyToChannel(rendered.getChannelData(channel).subarray(Math.ceil(start * sampleRate), Math.ceil(start * sampleRate) + faceBuffer.length), channel); const link = document.createElement("a"); link.href = URL.createObjectURL(audioBufferToAiffMono(faceBuffer)); link.download = `side_${face === 0 ? "a" : "b"}.aif`; link.click(); URL.revokeObjectURL(link.href); downloads.push(link.download); await new Promise((resolve) => window.setTimeout(resolve, 120)); }
-      const manifest = new Blob([JSON.stringify({ schema: "op1-album-export", version: 1, project: projectName, tempo, sample_rate: sampleRate, channels: 1, faces: downloads, source_tracks: entries.map(([rawIndex]) => Number(rawIndex) + 1) }, null, 2)], { type: "application/json" }); const manifestLink = document.createElement("a"); manifestLink.href = URL.createObjectURL(manifest); manifestLink.download = "album-manifest.json"; manifestLink.click(); URL.revokeObjectURL(manifestLink.href); onNotice("Album exporté : deux faces AIFF mono (side_a.aif, side_b.aif) et manifeste générés.");
+      const sampleRate = 44100;
+      const tapeDuration = 360;
+      const faceLength = 180;
+      const context = new AudioContext();
+      const decoded = await Promise.all(entries.map(async ([rawIndex, source]) => ({
+        index: Number(rawIndex),
+        buffer: await context.decodeAudioData(await (await fetch(source)).arrayBuffer()),
+      })));
+      await context.close();
+      const soloed = solo !== null;
+      const maxEnd = Math.min(tapeDuration, Math.max(...decoded.map(({ index, buffer }) =>
+        Math.min(tapeDuration, (clipOffsets[index] ?? 0) + (clipEnds[index] ?? durations[index] ?? buffer.duration))), 1));
+      const offline = new OfflineAudioContext(2, Math.ceil(maxEnd * sampleRate), sampleRate);
+      decoded.forEach(({ index, buffer }) => {
+        if (muted[index] || (soloed && solo !== index)) return;
+        const offset = Math.max(0, Math.min(maxEnd, clipOffsets[index] ?? 0));
+        const clipDuration = Math.min(maxEnd - offset, clipEnds[index] ?? durations[index] ?? buffer.duration);
+        if (clipDuration <= 0) return;
+        const fadeIn = Math.min(clipDuration, fadeIns[index] ?? 0);
+        const fadeOut = Math.min(clipDuration, fadeOuts[index] ?? 0);
+        const sourceNode = offline.createBufferSource();
+        const gainNode = offline.createGain();
+        sourceNode.buffer = buffer;
+        const level = gains[index] ?? 1;
+        gainNode.gain.setValueAtTime(fadeIn ? 0 : level, offset);
+        if (fadeIn) gainNode.gain.linearRampToValueAtTime(level, offset + fadeIn);
+        if (fadeOut) {
+          gainNode.gain.setValueAtTime(level, Math.max(offset + fadeIn, offset + clipDuration - fadeOut));
+          gainNode.gain.linearRampToValueAtTime(0, offset + clipDuration);
+        }
+        sourceNode.connect(gainNode).connect(offline.destination);
+        sourceNode.start(offset);
+        sourceNode.stop(offset + clipDuration);
+      });
+      const rendered = await offline.startRendering();
+      const downloads: string[] = [];
+      for (let face = 0; face < 2; face += 1) {
+        const start = face * faceLength;
+        const length = Math.max(0, Math.min(faceLength, maxEnd - start));
+        if (length <= 0) continue;
+        const faceBuffer = new AudioBuffer({ length: Math.ceil(length * sampleRate), numberOfChannels: 2, sampleRate });
+        const startFrame = Math.ceil(start * sampleRate);
+        for (let channel = 0; channel < 2; channel += 1) {
+          faceBuffer.copyToChannel(rendered.getChannelData(channel).subarray(startFrame, startFrame + faceBuffer.length), channel);
+        }
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(audioBufferToAiffMono(faceBuffer));
+        link.download = `side_${face === 0 ? "a" : "b"}.aif`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        downloads.push(link.download);
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
+      }
+      const manifest = new Blob([JSON.stringify({
+        schema: "op1-album-export", version: 1, project: projectName, tempo, sample_rate: sampleRate,
+        channels: 1, tape_seconds: tapeDuration, face_seconds: faceLength, faces: downloads,
+        source_tracks: entries.map(([rawIndex]) => Number(rawIndex) + 1),
+      }, null, 2)], { type: "application/json" });
+      const manifestLink = document.createElement("a");
+      manifestLink.href = URL.createObjectURL(manifest);
+      manifestLink.download = "album-manifest.json";
+      manifestLink.click();
+      URL.revokeObjectURL(manifestLink.href);
+      onNotice("Album exporté avec positions conservées. Validation locale requise avant transfert.");
     } catch { onNotice("L'export Album a échoué. Vérifiez les sources audio locales."); }
   }
 
@@ -992,15 +1344,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   }
 
   const barSec = (60 / Math.max(30, tempo)) * 4;
-  const beatSec = barSec / 4;
+  const stepSec = barSec / 16;
 
   function snapToGrid(sec: number): number {
-    return Math.max(0, Math.min(360, Math.round(sec / beatSec) * beatSec));
+    return Math.max(0, Math.min(360, Math.round(sec / stepSec) * stepSec));
   }
 
   function setLoopInAtHead() {
     const snapped = snapToGrid(transportTime);
-    const newOut = Math.max(snapped + beatSec, loopOut);
+    const newOut = Math.max(snapped + stepSec, loopOut);
     setLoopIn(snapped);
     setLoopOut(newOut);
     onNotice(`Point IN fixé à ${snapped.toFixed(1)}s (calé tempo).`);
@@ -1008,7 +1360,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
   function setLoopOutAtHead() {
     const snapped = snapToGrid(transportTime);
-    const newIn = Math.min(loopIn, Math.max(0, snapped - beatSec));
+    const newIn = Math.min(loopIn, Math.max(0, snapped - stepSec));
     setLoopIn(newIn);
     setLoopOut(snapped);
     onNotice(`Point OUT fixé à ${snapped.toFixed(1)}s (calé tempo).`);
@@ -1082,10 +1434,34 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
   return (
     <div className="tool-body tape-editor" onClick={() => { if (activeDropdown) setActiveDropdown(null); }}>
 
+      {sampleLibraryOpen && (
+        <div className="op1-sample-library-drawer" role="dialog" aria-modal="true" aria-label="Samples sauvegardés">
+          <div className="op1-sample-library-drawer-head">
+            <div><strong>SAMPLES SAUVEGARDÉS</strong><small>Préécouter puis charger sur la piste active · local uniquement</small></div>
+            <button type="button" onClick={() => setSampleLibraryOpen(false)} aria-label="Fermer la bibliothèque">×</button>
+          </div>
+          <SoundLibraryIndex
+            libraryHandle={libraryHandle}
+            onUseSample={({ name, file, duration }) => {
+              const source = URL.createObjectURL(file);
+              setFiles((current) => ({ ...current, [selectedTrack]: name }));
+              setSources((current) => ({ ...current, [selectedTrack]: source }));
+              setSourceRefs((current) => ({ ...current, [selectedTrack]: { path: name, status: "linked" } }));
+              setDurations((current) => ({ ...current, [selectedTrack]: duration ?? 0 }));
+              setClipEnds((current) => ({ ...current, [selectedTrack]: duration ?? 0 }));
+              setWaveformPeaks((current) => ({ ...current, [selectedTrack]: [] }));
+              setPlaying(null);
+              setSampleLibraryOpen(false);
+              onNotice(`${name} chargé sur ${tracks[selectedTrack]} depuis les sauvegardes locales.`);
+            }}
+          />
+        </div>
+      )}
+
       {/* ── CONSOLE DE CONTRÔLE COMPACTE OP-1 STUDIO (Hauteur optimisée) ── */}
       <div className="op1-compact-console">
         {/* Ligne 1 : Navigation, Modals & Menus déroulants */}
-        <div className="op1-compact-row">
+        <div className="op1-compact-row op1-console-band op1-console-band-machine">
           <div className="op1-compact-group">
             <div className="op1-compact-brand">
               <strong>OP-1 STUDIO</strong>
@@ -1137,6 +1513,102 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
               <Icon name="wave" size={12} />
               <span>Moteur</span>
               <span className="badge">{selectedEngine}</span>
+            </button>
+
+            {/* Menu Hub Outils (Dropdown) contenant le bouton Apprendre */}
+            <div className="op1-pro-menu-group">
+              <button
+                type="button"
+                className={`op1-pill-btn ${activeDropdown === "tools" || activeModal === "guitar_hero" ? "is-active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveDropdown(activeDropdown === "tools" ? null : "tools");
+                }}
+                title="Accéder au Hub Outils : Apprentissage, Exercices, Finger Drumming et Fiche de Personnage"
+                style={{
+                  borderColor: "rgba(56, 189, 248, 0.4)",
+                  color: "#38bdf8",
+                  background: activeDropdown === "tools" ? "rgba(56, 189, 248, 0.2)" : "rgba(56, 189, 248, 0.08)",
+                }}
+              >
+                <span>🛠️</span>
+                <span>Hub Outils</span>
+                <span style={{ fontSize: "8px" }}>▼</span>
+              </button>
+
+              {activeDropdown === "tools" && (
+                <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()} style={{ minWidth: "230px" }}>
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("guitar_hero");
+                      setActiveDropdown(null);
+                    }}
+                    style={{
+                      background: "rgba(255, 58, 93, 0.12)",
+                      border: "1px solid rgba(255, 58, 93, 0.3)",
+                      borderRadius: "6px",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span style={{ fontSize: "16px" }}>🎓</span>
+                    <div style={{ display: "flex", flexDirection: "column", textAlign: "left" }}>
+                      <strong style={{ color: "#FF3A5D", fontSize: "11px" }}>Apprendre & Arcade OP-1</strong>
+                      <small style={{ fontSize: "9px", color: "#94a3b8" }}>Mélodies, accords, finger drumming & RPG</small>
+                    </div>
+                  </button>
+
+                  <div style={{ height: "1px", background: "#232b33", margin: "4px 0" }} />
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setSampleLibraryOpen(true);
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🌊 Samples & Banque de sons</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("engines");
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🎹 Moteurs & Patchs Son</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("tracks");
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🎚️ Console de Mixage 4 Pistes</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className={`op1-pill-btn ${sampleLibraryOpen ? "is-active" : ""}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSampleLibraryOpen((current) => !current);
+                setActiveDropdown(null);
+              }}
+              title="Préécouter et charger un sample sauvegardé sur la piste active"
+            >
+              <Icon name="wave" size={12} />
+              <span>Samples sauvegardés</span>
             </button>
 
             {/* Menu 3 : Projet & Exports (Dropdown) */}
@@ -1239,16 +1711,19 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
 
               {activeDropdown === "view" && (
                 <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
                     <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setRackFolded(!rackFolded); setActiveDropdown(null); }}>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setShowMidiOptions(!showMidiOptions); setActiveDropdown(null); }}>
+                    <span>{showMidiOptions ? "🎹 Masquer Barre MIDI / Arp" : "🎹 Afficher Barre MIDI / Arp"}</span>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setRackFolded(!rackFolded); setActiveDropdown(null); }}>
                     <span>{rackFolded ? "▲ Afficher Rack Audio" : "▼ Replier Rack Audio"}</span>
                   </button>
-                  </button>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
                     <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
                   </button>
-                  <button className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setReversed(!reversed); setActiveDropdown(null); }}>
                     <span>{reversed ? "🔄 Sens Normal Bande" : "🔄 Inverser Bande (Tape Invert)"}</span>
                   </button>
                 </div>
@@ -1257,26 +1732,16 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
           </div>
 
           {/* Côté droit ligne 1 : Nom du projet & infos */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px", color: "#94a3b8" }}>
+          <div className="op1-console-project-info" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11px" }}>
             <span>Projet : <strong style={{ color: "#f1f5f9" }}>{projectName}</strong></span>
           </div>
         </div>
 
         {/* Ligne 2 : Transport direct & Outils de boucle */}
-        <div className="op1-compact-row" style={{ paddingTop: "2px" }}>
+        <div className="op1-compact-row op1-console-band op1-console-band-transport" style={{ paddingTop: "2px" }}>
           {/* Groupe Transport compact */}
           <div className="op1-compact-group">
             <div className="op1-transport-cluster">
-              <button
-                type="button"
-                className="op1-play-btn"
-                onClick={toggleGlobalPlayback}
-                title="Lecture / Pause (Espace)"
-              >
-                <Icon name="wave" size={11} />
-                <span>PLAY</span>
-              </button>
-
               <button
                 type="button"
                 className={`op1-rec-btn ${recording ? "is-recording" : ""}`}
@@ -1291,7 +1756,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
                   display: "inline-block",
                   animation: recording ? "pulse 1s infinite" : "none"
                 }} />
-                <span>REC</span>
+                <span>{recording ? "STOP" : `REC · P${selectedTrack + 1}`}</span>
               </button>
 
               <button
@@ -1322,6 +1787,22 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
                   onChange={(e) => setTempo(Number(e.target.value))}
                 />
               </div>
+            </div>
+
+            <div className="op1-track-selector" role="group" aria-label="Sélection de piste">
+              <span className="op1-track-selector-label">PISTE</span>
+              {[0, 1, 2, 3].map((track) => (
+                <button
+                  key={track}
+                  type="button"
+                  className={`op1-track-select-btn op1-track-select-btn-${track + 1} ${selectedTrack === track ? "is-selected" : ""}`}
+                  onClick={() => { setSelectedTrack(track); onNotice(`Piste ${track + 1} sélectionnée.`); }}
+                  aria-pressed={selectedTrack === track}
+                  title={`Sélectionner la piste ${track + 1}`}
+                >
+                  {track + 1}
+                </button>
+              ))}
             </div>
 
             {/* Outils de boucle In / Out / Copier / Coller */}
@@ -1386,6 +1867,11 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             >
               <span>📼 Stems</span>
             </button>
+            <label className="op1-screen-scale-control" title="Réduire ou agrandir l’écran OP-1">
+              <span>ÉCRAN</span>
+              <input type="range" min="0.5" max="1" step="0.05" value={screenScale} onChange={(event) => setScreenScale(Number(event.target.value))} aria-label="Échelle de l’écran OP-1" />
+              <output>{Math.round(screenScale * 100)}%</output>
+            </label>
             <button
               type="button"
               className={`op1-pill-btn ${!keyboardFolded ? "is-active" : ""}`}
@@ -1394,13 +1880,21 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             >
               <span>🎹 Clavier</span>
             </button>
+            <button
+              type="button"
+              className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
+              onClick={() => setShowMidiOptions(!showMidiOptions)}
+              title="Afficher ou masquer les options de jeu MIDI, gammes et arpégiateur"
+            >
+              <span>⚙️ MIDI / Arp</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* ── Panneau Écran OLED Clone (Centré & Immersif) ── */}
       {!screenFolded && (
-        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "12px" }}>
+        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "12px", transform: `scale(${screenScale})`, transformOrigin: "top left", width: `${100 / screenScale}%` }}>
           <StudioTapeEditor
             tracks={tracks}
             files={files}
@@ -1429,6 +1923,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
               setLoopOut(outSec);
             }}
             tempo={tempo}
+            midiClockBpm={midiClockBpm}
+            midiClockTick={midiClockTick}
             volume={masterVolume}
             onVolumeChange={setMasterVolume}
             audioRefs={audioRefs}
@@ -1452,6 +1948,18 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             }}
             onSeek={seekTransport}
             onNotice={onNotice}
+            machineMode={machineMode}
+            onMachineModeChange={setOp1MachineMode}
+            soundMenuOpen={soundMenuOpen}
+            onSoundMenuOpen={openOp1SoundMenu}
+            soundSlot={soundSlot}
+            onSoundMenuClose={() => setSoundMenuOpen(false)}
+            rackMenuOpen={rackMenuOpen}
+            onRackMenuClose={() => setRackMenuOpen(false)}
+            selectedEngine={selectedEngine}
+            selectedPatch={selectedPatch}
+            onEngineChange={setSelectedEngine}
+            onPatchChange={setSelectedPatch}
             reversed={reversed}
             onExportTrack={exportSingleTrack}
             onClearTrack={clearTrack}
@@ -1464,16 +1972,29 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
         </div>
       )}
 
-      {/* ── Panneau Clavier OP-1 (Châssis matériel & encodeurs) ── */}
+      {/* ── Panneau Clavier OP-1 (Châssis matériel & encodeurs) + Options MIDI ── */}
       {!keyboardFolded && (
-        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "12px" }}>
+        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <MidiKeyboardOptionsBar
+            options={midiOptions}
+            onChange={(next) => setMidiOptions((prev) => ({ ...prev, ...next }))}
+            isOpen={showMidiOptions}
+            onToggleOpen={() => setShowMidiOptions((v) => !v)}
+          />
           <StudioMachinePanel
             pressedNotes={pressedMidiNotes}
             mode={studioMode}
             playing={transportPlaying}
+            recording={recording}
             position={transportTime}
             files={files}
             onTogglePlayback={toggleGlobalPlayback}
+            onRecord={toggleTapeRecording}
+            onModeChange={setOp1MachineMode}
+            onOpenSoundMenu={openOp1SoundMenu}
+            onSaveSoundSlot={saveOp1SoundSlot}
+            onOpenRackMenu={openOp1RackMenu}
+            onSoundMenuEncoder={navigateOp1SoundMenu}
             onSendMidi={onSendMidi}
             lastRawMidiIn={lastRawMidiIn}
           />
@@ -1596,17 +2117,22 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          MODAL DRAWER : MOTEURS DE SYNTHÈSE ET SONS OP-1
+          MODAL DRAWER : MOTEURS DE SYNTHÈSE ET SONS OP-1 (2 COLONNES BLEU/VERT)
           S'affiche à la demande via les menus ou boutons d'accès
          ══════════════════════════════════════════════════════════════════════ */}
       {activeModal === "engines" && (
         <div className="op1-pro-modal-backdrop" onClick={() => setActiveModal(null)}>
-          <div className="op1-pro-modal-content" style={{ maxWidth: "780px" }} onClick={(e) => e.stopPropagation()}>
+          <div className="op1-pro-modal-content" style={{ maxWidth: "860px" }} onClick={(e) => e.stopPropagation()}>
             <div className="op1-pro-modal-header">
-              <strong>
-                <Icon name="wave" size={18} />
-                Moteurs Sonores & Banque de Patchs OP-1
-              </strong>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <strong style={{ display: "flex", alignItems: "center", gap: "8px", color: "#f1f5f9" }}>
+                  <Icon name="wave" size={18} />
+                  Navigateur de Moteurs & Patchs OP-1
+                </strong>
+                <span style={{ fontSize: "11px", color: "#698EFF", background: "rgba(105, 142, 255, 0.15)", padding: "2px 8px", borderRadius: "4px", fontWeight: 700 }}>
+                  Actif : {selectedEngine} · {selectedPatch}
+                </span>
+              </div>
               <button
                 type="button"
                 className="op1-pro-modal-close"
@@ -1618,111 +2144,187 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
             </div>
 
             <div className="op1-pro-modal-body">
-              {/* Choix du Moteur */}
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", display: "block", marginBottom: "8px", fontWeight: "bold" }}>
-                  Sélection du moteur actif (Synth & Drum)
-                </label>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {["FM", "Cluster", "Digital", "Iter", "Pulse", "String", "Sampler", "Phase", "DNA", "Voltage", "Drum"].map((engine) => (
-                    <button
-                      key={engine}
-                      onClick={() => {
-                        setSelectedEngine(engine);
-                        onNotice(`Moteur sonore sélectionné : ${engine}`);
-                      }}
-                      style={{
-                        padding: "6px 14px",
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        borderRadius: "6px",
-                        border: selectedEngine === engine ? "1px solid #29be87" : "1px solid #28333e",
-                        background: selectedEngine === engine ? "#29be87" : "#1a2128",
-                        color: selectedEngine === engine ? "#0f1215" : "#cbd5e1",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease"
-                      }}
-                    >
-                      {engine}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Catégories de patchs */}
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", display: "block", marginBottom: "8px", fontWeight: "bold" }}>
-                  Catégorie de son
-                </label>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {["Synth", "Drum", "Bass", "Lead", "Pad", "Keys", "FX"].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedSoundCategory(cat)}
-                      style={{
-                        padding: "5px 12px",
-                        fontSize: "11px",
-                        borderRadius: "5px",
-                        border: selectedSoundCategory === cat ? "1px solid #4cace1" : "1px solid #28333e",
-                        background: selectedSoundCategory === cat ? "rgba(76, 172, 225, 0.2)" : "#181f26",
-                        color: selectedSoundCategory === cat ? "#4cace1" : "#94a3b8",
-                        cursor: "pointer"
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Liste des Presets */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px" }}>
-                {[
-                  { name: `${selectedEngine} Classic 01`, category: selectedSoundCategory },
-                  { name: `${selectedEngine} Deep Sub`, category: "Bass" },
-                  { name: `${selectedEngine} Soft Ambient`, category: "Pad" },
-                  { name: `${selectedEngine} Punchy Lead`, category: "Lead" },
-                  { name: `${selectedEngine} Metallic Bell`, category: "Keys" },
-                  { name: `${selectedEngine} Cosmic Warp`, category: "FX" },
-                ].map((preset, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: "10px 12px",
-                      background: "#181e24",
-                      border: "1px solid #2a3540",
-                      borderRadius: "6px",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center"
-                    }}
-                  >
-                    <div>
-                      <strong style={{ display: "block", fontSize: "12px", color: "#f1f5f9" }}>{preset.name}</strong>
-                      <small style={{ fontSize: "10px", color: "#64748b" }}>{selectedEngine} · {preset.category}</small>
-                    </div>
-                    <button
-                      onClick={() => {
-                        onNotice(`Patch "${preset.name}" chargé sur l'OP-1 !`);
-                        setActiveModal(null);
-                      }}
-                      style={{
-                        padding: "4px 10px",
-                        fontSize: "11px",
-                        fontWeight: "bold",
-                        background: "#29be87",
-                        color: "#0f1215",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer"
-                      }}
-                    >
-                      LOAD
-                    </button>
+              {/* Disposition 2 colonnes fidèle aux potentiomètres Bleu (T1) et Vert (T2) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", minHeight: "360px" }}>
+                
+                {/* Colonne 1 : 🔵 Moteurs de Son (Potentiomètre Bleu T1) */}
+                <div style={{ display: "flex", flexDirection: "column", background: "#131920", border: "1px solid rgba(105, 142, 255, 0.3)", borderRadius: "8px", padding: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", paddingBottom: "8px", borderBottom: "1px solid rgba(105, 142, 255, 0.2)" }}>
+                    <strong style={{ color: "#698EFF", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🔵</span> MOTEURS AUDIO (Encodeur Bleu T1)
+                    </strong>
+                    <span style={{ fontSize: "10px", color: "#64748b" }}>{RACK_ENGINES_METAS.length} moteurs</span>
                   </div>
-                ))}
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "320px", paddingRight: "4px" }}>
+                    {RACK_ENGINES_METAS.map((meta) => {
+                      const isActive = selectedEngine === meta.id;
+                      return (
+                        <button
+                          key={meta.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedEngine(meta.id);
+                            const patches = getPatchesForEngine(meta.id);
+                            if (patches.length > 0) {
+                              setSelectedPatch(patches[0].name);
+                            }
+                            onNotice(`Moteur sonore : ${meta.label} (${meta.type})`);
+                          }}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: isActive ? "1px solid #698EFF" : "1px solid #1e293b",
+                            background: isActive ? "rgba(105, 142, 255, 0.2)" : "#18212c",
+                            color: isActive ? "#ffffff" : "#cbd5e1",
+                            cursor: "pointer",
+                            textAlign: "left",
+                            transition: "all 0.15s ease"
+                          }}
+                          title={meta.description}
+                        >
+                          <div>
+                            <div style={{ fontWeight: isActive ? 700 : 600, fontSize: "12px" }}>{meta.label}</div>
+                            <div style={{ fontSize: "9.5px", color: isActive ? "#93c5fd" : "#64748b" }}>{meta.description}</div>
+                          </div>
+                          <div style={{
+                            fontSize: "9px",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            fontWeight: 700,
+                            background: isActive ? "#698EFF" : "#223247",
+                            color: isActive ? "#0f172a" : "#94a3b8"
+                          }}>
+                            {meta.type.toUpperCase()}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Colonne 2 : 🟢 Patchs du Moteur (Potentiomètre Vert T2) */}
+                <div style={{ display: "flex", flexDirection: "column", background: "#131920", border: "1px solid rgba(0, 237, 149, 0.3)", borderRadius: "8px", padding: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", paddingBottom: "8px", borderBottom: "1px solid rgba(0, 237, 149, 0.2)" }}>
+                    <strong style={{ color: "#00ED95", fontSize: "12px", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span>🟢</span> PATCHS DU MOTEUR (Encodeur Vert T2)
+                    </strong>
+                    <span style={{ fontSize: "10px", color: "#64748b" }}>
+                      {getPatchesForEngine(selectedEngine).length} patchs
+                    </span>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px", overflowY: "auto", maxHeight: "320px", paddingRight: "4px" }}>
+                    {getPatchesForEngine(selectedEngine).map((patch) => {
+                      const isActive = selectedPatch === patch.name;
+                      return (
+                        <div
+                          key={patch.name}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 10px",
+                            borderRadius: "6px",
+                            border: isActive ? "1px solid #00ED95" : "1px solid #1e293b",
+                            background: isActive ? "rgba(0, 237, 149, 0.15)" : "#18212c",
+                            transition: "all 0.15s ease"
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: isActive ? 700 : 600, fontSize: "12px", color: isActive ? "#ffffff" : "#cbd5e1" }}>
+                              {patch.name}
+                            </div>
+                            <div style={{ fontSize: "9.5px", color: isActive ? "#86efac" : "#64748b" }}>
+                              {patch.description} · <span style={{ textTransform: "uppercase", opacity: 0.8 }}>{patch.category}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPatch(patch.name);
+                              onNotice(`Patch "${patch.name}" chargé sur l'OP-1 !`);
+                              setActiveModal(null);
+                            }}
+                            style={{
+                              padding: "4px 10px",
+                              fontSize: "10.5px",
+                              fontWeight: 700,
+                              background: isActive ? "#00ED95" : "#1e293b",
+                              color: isActive ? "#0f172a" : "#00ED95",
+                              border: "1px solid #00ED95",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            {isActive ? "ACTIF" : "CHARGER"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             </div>
+
+            <div className="op1-pro-modal-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderTop: "1px solid #232c34", fontSize: "11px", color: "#64748b" }}>
+              <span>
+                🔵 Encodeur T1 : Parcourt les moteurs · 🟢 Encodeur T2 : Parcourt les patchs
+              </span>
+              <button
+                type="button"
+                className="op1-pill-btn"
+                onClick={() => setActiveModal(null)}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Game Guitar Hero OP-1 (Plein écran immersif avec Clavier et Écran Simulateur OLED) */}
+      {activeModal === "guitar_hero" && (
+        <div
+          className="op1-pro-modal-backdrop"
+          onClick={() => setActiveModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(5, 7, 10, 0.88)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            className="op1-guitar-hero-modal-window"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "1160px",
+              maxHeight: "96vh",
+              overflowY: "auto",
+              backgroundColor: "#0d1117",
+              border: "1px solid #2d3748",
+              borderRadius: "14px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 58, 93, 0.15)",
+              padding: "16px",
+            }}
+          >
+            <GameGuitarHeroPanel
+              onClose={() => setActiveModal(null)}
+              onNotice={onNotice}
+              onSendMidi={onSendMidi}
+            />
           </div>
         </div>
       )}
@@ -1730,62 +2332,6 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi }: { onNotice: (messag
     </div>
   );
 }
-
-const nav = [
-  { label: "Firmware", icon: "chip" as IconName, active: true },
-  { label: "Sauvegardes", icon: "archive" as IconName },
-  { label: "Sons", icon: "wave" as IconName },
-  { label: "Services", icon: "book" as IconName },
-  { label: "Studio", icon: "tape" as IconName },
-  { label: "Images", icon: "image" as IconName },
-];
-
-const recommendedFirmware = firmwareCatalog.releases[0];
-const officialFirmwareUrl = recommendedFirmware.officialUrl;
-
-// Niveau de risque : repris de data/mods/catalog.json (colonne "risk") pour
-// les mods qui y sont individuellement audités ; "unclassified" pour les
-// remplacements d'écran isolés et les paquets de ressources en bloc
-// (Écrans/Audio/Ressources), qui ne sont pas encore passés par un audit
-// mod par mod — ne pas les présenter comme "controlled" par confort. Aucun
-// mod "high"/"critical" du catalogue n'est exposé dans cette UI (ils
-// restent recherche/candidat, voir OP1_FIRMWARE_BIBLE.md §11) — la jauge
-// ci-dessous reste donc prête à réagir le jour où l'un d'eux serait ajouté.
-type FirmwareModRisk = "controlled" | "unclassified" | "high" | "critical";
-type FirmwareMod = { id: string; category: string; title: string; detail: string; source: string; risk: FirmwareModRisk; availability?: string; preview?: string; isNew?: boolean };
-
-const FIRMWARE_RISK_WEIGHT: Record<FirmwareModRisk, number> = { controlled: 1, unclassified: 2, high: 4, critical: 7 };
-const FIRMWARE_RISK_LABEL: Record<FirmwareModRisk, string> = { controlled: "Vérifié", unclassified: "Non classé", high: "Risque élevé", critical: "Risque critique" };
-
-// Jauge agrégée (pas un mod pris isolément) : la somme des poids ci-dessus
-// pour tous les mods sélectionnés à la fois. Seuils choisis pour qu'une
-// sélection de quelques mods "controlled" reste "faible", et qu'il faille
-// une confirmation explicite avant de partir sur une combinaison chargée —
-// voir docs/FIRMWARE_PAGE_ROADMAP.md.
-type FirmwareRiskLevel = "aucun" | "faible" | "modere" | "eleve";
-const FIRMWARE_GAUGE_LABEL: Record<FirmwareRiskLevel, string> = {
-  aucun: "Aucun mod sélectionné", faible: "Risque faible", modere: "Risque modéré", eleve: "Risque élevé",
-};
-
-const firmwareMods: FirmwareMod[] = [
-  { id: "playmode", category: "Écrans", title: "Écran Play Mode", detail: "Remplace l’écran du mode lecture.", source: "SOURCE_MODIFIEE/content/display/playmode.svg", preview: "/firmware-mods/playmode.svg", risk: "unclassified" },
-  { id: "rymd", category: "Écrans", title: "Écran RYMD", detail: "Modifie l’écran et les repères du mode RYMD.", source: "SOURCE_MODIFIEE/content/display/rymd.svg", preview: "/firmware-mods/rymd.svg", risk: "unclassified" },
-  { id: "tapeconfig", category: "Écrans", title: "Écran Tape Config", detail: "Remplace l’écran de configuration Tape.", source: "SOURCE_MODIFIEE/content/display/tapeconfig.svg", preview: "/firmware-mods/tapeconfig.svg", risk: "unclassified" },
-  { id: "op1patch", category: "Audio", title: "Patch vocal OP-1", detail: "Ajoute la ressource audio de speech modifiée.", source: "SOURCE_MODIFIEE/content/audio/speech/op1patch.raw", risk: "unclassified" },
-  { id: "audio", category: "Ressources", title: "Ressources audio du pack", detail: "40 RAW : synth, drum, presets et speech.", source: "SOURCE_MODIFIEE/content/audio/", risk: "unclassified" },
-  { id: "display", category: "Ressources", title: "Ressources graphiques du pack", detail: "61 SVG d’interface et d’écrans.", source: "SOURCE_MODIFIEE/content/display/", risk: "unclassified" },
-  { id: "iter", category: "Fonctions", title: "Synthé Iter", detail: "Active le synthé Iter caché dans le firmware original.", source: "op1repacker --options iter", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
-  { id: "presets-iter", category: "Fonctions", title: "Presets Iter", detail: "Ajoute 11 presets AIF fournis avec le moteur Iter.", source: "op1repacker --options presets-iter", availability: "Moteur local trouvé · dépend de Iter", isNew: true, risk: "controlled" },
-  { id: "filter", category: "Fonctions", title: "Effet Filter", detail: "Rend disponible l’effet Filter pour le traitement sonore.", source: "op1repacker --options filter", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
-  { id: "subtle-fx", category: "Fonctions", title: "Subtle FX", detail: "Modifie les réglages par défaut des effets pour un rendu plus léger.", source: "op1repacker --options subtle-fx", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
-  { id: "gfx-tape-invert", category: "Thèmes", title: "Tape inversé", detail: "Applique le patch graphique d’inversion de l’écran Tape.", source: "op1repacker --options gfx-tape-invert", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
-  { id: "gfx-cwo-moose", category: "Thèmes", title: "CWO Moose", detail: "Applique le patch graphique Moose au visuel CWO.", source: "op1repacker --options gfx-cwo-moose", availability: "Moteur local trouvé", isNew: true, risk: "controlled" },
-  { id: "gfx-iter-lab", category: "Thèmes", title: "Iter Lab", detail: "Remplace le visuel Iter par l’asset Iter Lab fourni.", source: "op1repacker --options gfx-iter-lab", availability: "Moteur local trouvé · dépend de Iter", isNew: true, risk: "controlled" },
-];
-
-type DirectoryPickerWindow = Window & {
-  showDirectoryPicker?: () => Promise<FileSystemDirectoryHandle>;
-};
 
 type MidiInputLike = { name: string | null; onmidimessage: MIDIInput["onmidimessage"] };
 type MidiOutputLike = { name: string | null; send: MIDIOutput["send"] };
@@ -1801,48 +2347,8 @@ type MidiNavigator = Navigator & {
 
 export default function Home() {
   useHubInitialization();
-  const [stage, setStage] = useState(0);
-  const [expertOpen, setExpertOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [deviceName, setDeviceName] = useState<string | null>(null);
-  const [midiConnected, setMidiConnected] = useState(false);
-  const [backupTested, setBackupTested] = useState(false);
-  const [libraryFolder, setLibraryFolder] = useState<string | null>(null);
-  // L’état initial doit être identique au rendu serveur et au premier rendu
-  // client. Le paramètre hubTool est appliqué après hydratation pour éviter
-  // qu’un lancement direct Hub → outil ne produise un mismatch SSR/client.
-  const [toolWindow, setToolWindow] = useState<ToolWindow>(null);
-  const [homeOpen, setHomeOpen] = useState(true);
-  const [isHydrated, setIsHydrated] = useState(false);
-  // Appliquer la cible Hub avant la première interaction possible. Le premier
-  // rendu reste identique au SSR, puis l’effet de layout ouvre l’outil demandé
-  // sans laisser un clic utilisateur être écrasé par l’état initial.
-  useClientLayoutEffect(() => {
-    const initial = initialHubTool();
-    setToolWindow(initial.tool);
-    setHomeOpen(initial.homeOpen);
-    setIsHydrated(true);
-  }, []);
-  const [exerciseRunning, setExerciseRunning] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState("I–V–vi–IV");
-  const [firmwareOptions, setFirmwareOptions] = useState({
-    verify: true,
-    backup: true,
-    teBoot: false,
-  });
-  const [studioSection] = useState<"tape" | "graphics">("tape");
-  const [firmwareFile, setFirmwareFile] = useState<{ name: string; size: number } | null>(null);
-  const [selectedMods, setSelectedMods] = useState<Record<string, boolean>>({});
-  const [selectedMod, setSelectedMod] = useState<FirmwareMod | null>(null);
-  const [firmwareRiskAck, setFirmwareRiskAck] = useState(false);
-  // Explorateur de mods (feuille de route Firmware, 14 août 2026) : une
-  // catégorie ouverte à la fois, comme un dossier qu'on déplie — pas toutes
-  // les catégories dépliées en même temps.
-  const [openModCategory, setOpenModCategory] = useState<string | null>(null);
-  const [soundPackReady, setSoundPackReady] = useState(false);
-  const [backupRoot] = useState("backups/");
   const [sharedSoundLibraryHandle, setSharedSoundLibraryHandle] = useState<FileSystemDirectoryHandle | null>(null);
-  const folderInputRef = useRef<HTMLInputElement>(null);
   const midiOutputRef = useRef<MidiOutputLike | null>(null);
 
   useEffect(() => {
@@ -1855,7 +2361,6 @@ export default function Home() {
           const sounds = await shared.getDirectoryHandle("sounds", { create: true });
           for (const folder of ["originals", "prepared", "packs", "quarantine"]) await sounds.getDirectoryHandle(folder, { create: true });
           setSharedSoundLibraryHandle(sounds);
-          setLibraryFolder(`${root.name}/shared/sounds`);
           setNotice("Bibliothèque centrale OP‑1 connectée au workspace Hub.");
         } catch {
           setNotice("Le workspace Hub est reçu, mais la bibliothèque de sons doit être reconnectée.");
@@ -1865,56 +2370,6 @@ export default function Home() {
     window.addEventListener("hub:workspaceLoaded", onHubWorkspace);
     return () => window.removeEventListener("hub:workspaceLoaded", onHubWorkspace);
   }, []);
-
-  // Jauge de danger (feuille de route Firmware, 14 août 2026) : la somme du
-  // poids de chaque mod sélectionné, pas seulement son nombre — un mod non
-  // classé pèse plus qu'un mod vérifié, un mod à risque élevé pèse
-  // nettement plus. Recalculée à chaque rendu (12 mods au maximum, calcul
-  // trivial) plutôt que mémoïsée.
-  const selectedFirmwareModList = firmwareMods.filter((mod) => selectedMods[mod.id]);
-  const firmwareRiskWeight = selectedFirmwareModList.reduce((total, mod) => total + FIRMWARE_RISK_WEIGHT[mod.risk], 0);
-  const firmwareRiskLevel: FirmwareRiskLevel =
-    firmwareRiskWeight === 0 ? "aucun" : firmwareRiskWeight <= 4 ? "faible" : firmwareRiskWeight <= 9 ? "modere" : "eleve";
-  const firmwareRiskBlocked = firmwareRiskLevel === "eleve" && !firmwareRiskAck;
-
-  // Un changement de sélection invalide une confirmation déjà donnée — un
-  // "je confirme" ne doit jamais couvrir une sélection différente de celle
-  // qui a été acquittée. Différé dans une image (requestAnimationFrame)
-  // plutôt qu'appelé en direct dans le corps de l'effet, pour rester en
-  // dehors du rendu synchrone (règle react-hooks/set-state-in-effect).
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setFirmwareRiskAck(false));
-    return () => cancelAnimationFrame(raf);
-  }, [selectedMods]);
-
-  useEffect(() => {
-    if (!toolWindow && !selectedMod && !expertOpen) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      if (selectedMod) setSelectedMod(null);
-      else if (expertOpen) setExpertOpen(false);
-      else setToolWindow(null);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [expertOpen, selectedMod, toolWindow]);
-
-  async function chooseLibraryFolder() {
-    const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
-    if (picker) {
-      try {
-        const folder = await picker();
-        setSharedSoundLibraryHandle(folder);
-        setLibraryFolder(folder.name);
-        setNotice(`Dossier local sélectionné : ${folder.name}. Les fichiers restent sur cet appareil.`);
-      } catch {
-        // The user cancelled the native picker.
-      }
-      return;
-    }
-    folderInputRef.current?.click();
-  }
-
 
   async function connectMidiDevice(options: { silent?: boolean } = {}) {
     const requestMIDIAccess = (navigator as MidiNavigator).requestMIDIAccess?.bind(navigator);
@@ -1932,10 +2387,7 @@ export default function Home() {
         if (!options.silent) setNotice("Aucune entrée MIDI OP-1 détectée. Vérifiez le câble USB et le mode MIDI de la machine.");
         return false;
       }
-      setDeviceName(input.name ?? "OP-1");
       midiOutputRef.current = output ?? null;
-      setMidiConnected(true);
-      setStage(2);
       if (!options.silent) setNotice(`OP-1 détecté par MIDI : ${inputs.length} port${inputs.length === 1 ? "" : "s"} en entrée${output ? " et une sortie" : ""}.`);
       return true;
     } catch {
@@ -1943,27 +2395,6 @@ export default function Home() {
       return false;
     }
   }
-
-  async function notifyLocalPlan(action: "firmware.plan" | "backup.plan" | "sounds.transfer-plan", payload: Record<string, string | number | boolean>) {
-    const request = prepareLocalBridgeAction(action, payload);
-    try {
-      const nativePlan = await prepareNativeLocalPlan(action, payload);
-      if (nativePlan) {
-        setNotice(`${describeLocalBridgeAction(request)} Validé par le pont Tauri.`);
-        return;
-      }
-      setNotice(describeLocalBridgeAction(request));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Validation native refusée.";
-      setNotice(`Le pont Tauri a refusé le plan : ${message}`);
-    }
-  }
-
-  function testBackupPlan() {
-    setBackupTested(true);
-    void notifyLocalPlan("backup.plan", { root: backupRoot });
-  }
-
 
   return (
     <main className="app-shell studio-op1-page" style={{ minHeight: "100vh", background: "#0e1314", color: "#eef3ea", padding: "12px 16px" }}>
@@ -1980,6 +2411,7 @@ export default function Home() {
         onNotice={setNotice}
         onConnectMidi={connectMidiDevice}
         onSendMidi={(data) => midiOutputRef.current?.send?.(data)}
+        libraryHandle={sharedSoundLibraryHandle}
       />
     </main>
   );

@@ -26,19 +26,7 @@ const Link = ({href, className, ...props}: {href: string; className: string; [ke
  * Une seule source, desormais. Le regroupement devient une DONNEE (`groupe`)
  * au lieu d'un filtre tenu a la main.
  */
-/**
- * Les regroupements du rack.
- *
- * « son » en faisait partie, et a disparu avec la réunion de l'éditeur sonore
- * et de la bibliothèque : ses deux membres menaient à la même page que la carte
- * « Bibliothèque sonore », qui est désormais la seule porte.
- *
- * À savoir en touchant aux groupes : `cartes()` filtre `!t.groupe`, donc un
- * outil rangé dans un groupe ne s'affiche jamais dans la grille — il n'est
- * atteignable que par la carte qui ouvre son groupe. Retirer cette carte sans
- * retirer les membres les laisse dans la donnée sans que rien ne les rende.
- */
-type Groupe = "reglages" | "documentation" | "formation";
+type Groupe = "reglages" | "documentation" | "formation" | "son";
 
 /** Ce que fait un clic. Explicite, parce que les neuf cartes ne faisaient pas toutes la meme chose. */
 type Action =
@@ -47,6 +35,7 @@ type Action =
   | { type: "groupe"; groupe: Groupe }
   /** Fait defiler jusqu'a une ancre de la page. */
   | { type: "ancre"; ancre: string }
+  /** Ouvre l'editeur sonore, qui n'est pas une page mais un panneau. */
   /** Dernier recours : une fiche descriptive. Un outil qui en depend n'est pas encore branche. */
   | { type: "fiche" };
 
@@ -98,12 +87,6 @@ const tools: Tool[] = [
 
   // ── Cartes principales ────────────────────────────────────────────────
   {
-    id: "firmware-gallery", code: "FW-LAB", category: "MODS & OS OP-1", title: "⚙️ Galerie firmware OP-1",
-    text: "Catalogue des firmwares, thèmes et patchs graphiques. Le Lab et le compilateur s’ouvrent depuis la galerie.",
-    accent: "firmware-card", visual: "chip", status: "OUVRIR →",
-    action: { type: "page", page: "firmware-lab" }, section: "op1", couleur: "#ff3a5d",
-  },
-  {
     id: "vault", code: "SAVE-ALL", category: "COFFRE", title: "💾 Sauvegarde",
     text: "Snapshots OP-1 et EP-133, vérification SHA-256 et restauration contrôlée.",
     accent: "save-card", visual: "grid", status: "OUVRIR →",
@@ -115,8 +98,12 @@ const tools: Tool[] = [
     accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
     action: { type: "page", page: "audio-plugin-rack" }, section: "hub", couleur: "#d9ff43",
   },
-
   {
+    id: "son", code: "SOUND", category: "AUDIO", title: "🎵 Bibliothèque sonore",
+    text: "Catalogue, préparation, favoris, doublons et accès aux workflows OP-1 / EP-133.",
+    accent: "sound-card", visual: "wave", status: "OUVRIR →",
+    action: { type: "page", page: "sound-library" }, section: "hub",
+  },  {
     id: "reglages", code: "CONFIG", category: "CONFIGURATION", title: "⚙️ Réglages",
     text: "Synchronisation MIDI et arpégiateur, tests de machine, diagnostic système.",
     accent: "settings-card", visual: "sync", status: "OPTIONS",
@@ -141,41 +128,19 @@ const tools: Tool[] = [
     action: { type: "page", page: "image-editor-op1" }, section: "hub",
   },
   {
-    id: "library", code: "SOUND-V1", category: "AUDIO", title: "🎵 Bibliothèque sonore",
-    text: "Tes fichiers — import, empreinte SHA-256, étiquettes, favoris — et le banc d’écoute des sons des deux machines : découpe, fondus, audition.",
-    accent: "sound-card", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "sound-library" }, section: "hub",
-  },
-  {
     id: "firmware", code: "FW-243", category: "OP-1", title: "Firmware Lab",
     text: "Catalogue, vérification et préparation locale des mods OP-1.",
     accent: "yellow", visual: "chip", status: "OUVRIR →",
     action: { type: "page", page: "firmware-lab" }, section: "op1",
   },
-  {
-    id: "services", code: "OP1-LAB", category: "OP-1", title: "Services OP-1",
-    text: "Patchs son, ressources référencées et outils de préparation.",
-    accent: "yellow", visual: "grid", status: "OUVRIR →",
-    action: { type: "page", page: "studio-op1" }, section: "op1",
-  },
-  {
-    id: "tape", code: "TAPE-04", category: "STUDIO", title: "Tape & Album Studio",
-    text: "Quatre pistes, transport, mixage, stems et Album en mode local.",
-    accent: "yellow", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "studio-op1" }, section: "op1",
-  },
-  {
-    id: "pattern", code: "PAT-SONG", category: "STUDIO", title: "Pattern & Song Studio",
-    text: "Groupes A/B/C/D, patterns, scènes et positions Song EP-133.",
-    accent: "orange", visual: "grid", status: "OUVRIR →",
-    action: { type: "page", page: "studio-ep133" }, section: "ep133", nettoieUrl: true,
-  },
   // « Éditeur de samples » (OP-1) et « Sons & transferts EP-133 » vivaient ici,
-  // rangés dans un groupe « son » qu'ouvrait la carte « Son ». Les deux menaient
-  // à `sound-library`, comme la carte « Bibliothèque sonore » juste au-dessus :
-  // trois portes pour une seule destination. La bibliothèque réunissant
-  // désormais tes fichiers ET le banc d'écoute des machines, elle est cette
-  // porte — et le groupe « son » a disparu avec ses deux membres.
+  // rangés dans un groupe « son ». `cartes()` filtrant `!t.groupe`, un membre de
+  // groupe ne s'affiche pas dans la grille : il n'est atteignable que par la
+  // carte qui ouvre son groupe. Or rien n'ouvre « son » — ni panneau de groupe,
+  // ni étagère. Les deux étaient donc invisibles, et menaient de toute façon à
+  // `sound-library`, comme la carte « Bibliothèque sonore » juste au-dessus.
+  // L'éditeur vit maintenant dans l'onglet « Éditeur & préparation » de cette
+  // page. RackPrincipal.test.ts dérive l'invariant et attrapera le prochain.
 
   // ── Membres du groupe « Réglages » ────────────────────────────────────
   {
@@ -244,16 +209,8 @@ const cartes = (section: Section) =>
 
 const membres = (groupe: Groupe) => tools.filter((t) => t.groupe === groupe);
 
-const sections:Array<{id:Section;label:string;emoji:string}> = [
- {id:"hub",label:"HUB CENTRAL",emoji:"🔗"},
- {id:"op1",label:"OP-1 STUDIO",emoji:"🎹"},
- {id:"ep133",label:"EP-133 STUDIO",emoji:"🥁"},
- {id:"all",label:"TOUS LES OUTILS",emoji:"📦"},
-];
-
 export default function ToolsHub(){
  const [selected,setSelected]=useState<Tool|null>(null);
- const [activeSection,setActiveSection]=useState<Section>("all");
  const [groupeOuvert,setGroupeOuvert]=useState<Groupe|null>(null);
  const [profileName,setProfileName]=useState("NOUVEAU MEMBRE");
 
@@ -284,7 +241,7 @@ export default function ToolsHub(){
   }
  }
 
- const visibles = cartes(activeSection);
+ const visibles = cartes("all");
 
  return <main className="hub-page">
   <TopBar activePage="outils" profileName={profileName} onDocClick={scrollToDocumentation}/>
@@ -292,19 +249,6 @@ export default function ToolsHub(){
   {/* Les onglets de section : declares depuis le debut, jamais rendus, et
       inutilisables tant que les vrais outils vivaient dans des cartes ecrites
       a la main. Ils ont un sens maintenant que chaque outil porte sa section. */}
-  <nav className="hub-sections" aria-label="Filtrer les outils">
-   {sections.map(section => (
-    <button
-     key={section.id}
-     type="button"
-     className={`hub-section-btn ${activeSection === section.id ? "actif" : ""}`}
-     onClick={()=>setActiveSection(section.id)}
-    >
-     <span aria-hidden="true">{section.emoji}</span> {section.label}
-     <small>{cartes(section.id).length}</small>
-    </button>
-   ))}
-  </nav>
 
   <section className="tools-section-organized" aria-label="Outils organisés">
    <div className="utility-grid">
@@ -315,7 +259,7 @@ export default function ToolsHub(){
    <DocumentationShelf docs={membres("documentation")} onSelectTool={ouvrir} />
   </section>
 
-  {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
+    {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
   {groupeOuvert==="formation"&&<TrainingModal training={membres("formation")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
   {groupeOuvert==="reglages"&&<SettingsModal settings={membres("reglages")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
  </main>

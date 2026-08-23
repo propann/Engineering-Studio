@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   KEYBOARD_BLACK_NOTES,
+  OP1_FIRST_KEY_NOTE,
   KEYBOARD_COLS,
   KEYBOARD_ROWS,
   KEYBOARD_WHITE_NOTES,
@@ -29,10 +30,11 @@ const block = (over: Partial<KeyboardBlock> = {}): KeyboardBlock => ({
 });
 
 describe("correspondance notes / touches", () => {
-  it("part de F3, pas de C3", () => {
-    // Confirme par capture brute : la premiere touche blanche de l'OP-1
-    // envoie 53 (F3). Partir de 48 decalerait tout le clavier.
-    expect(KEYBOARD_WHITE_NOTES[0]).toBe(53);
+  it("part de la première note matérielle MIDI 41", () => {
+    // Capture brute corrigée : la première touche de l'OP-1 est journalisée
+    // comme 80 29 40 15. Le statut 80 est note-off et 29 = 41 est la note.
+    expect(OP1_FIRST_KEY_NOTE).toBe(41);
+    expect(KEYBOARD_WHITE_NOTES[0]).toBe(OP1_FIRST_KEY_NOTE);
   });
 
   it("n'a aucune note en commun entre blanches et noires", () => {

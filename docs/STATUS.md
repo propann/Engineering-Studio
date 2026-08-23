@@ -1,6 +1,6 @@
 # État actuel — Engineering Studio
 
-Date de référence : **2026-08-21**
+Date de référence : **2026-08-22**
 
 ## Synthèse
 
@@ -19,7 +19,7 @@ les tests automatiques ne peuvent pas prouver.
 | Dépôt GitHub | Opérationnel, branche `main` |
 | Intégration continue | ✅ tourne sur `main`, la branche réellement déployée |
 | Déploiement Coolify | Opérationnel, HTTPS via le proxy |
-| Tests automatisés | ✅ 482, dont l'analyse de format binaire et le câblage |
+| Tests automatisés | 🔶 contrôles natifs séparés OP-1 / EP-133 en CI ; validation complète en cours |
 | Profil local | ✅ récupérable depuis le dossier de travail |
 | Dossier de travail | ✅ mémorisé, permission vérifiée au rechargement |
 | Coffre — sauvegarde | ✅ validée à l'usage, dossiers vides compris |
@@ -36,10 +36,15 @@ les tests automatiques ne peuvent pas prouver.
 | Rack principal : une source unique | ✅ 2026-08-22, onglets de section rebranchés |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
 | EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
+| OP-1 Studio — clone tactile | ✅ quatre pistes, transport, REC piste active, écran/racks, clavier MIDI et couleurs machine | 
+| OP-1 Studio — samples sauvegardés | ✅ préécoute et chargement sur la piste active depuis la bibliothèque locale | 
+| OP-1 Studio — persistance après actualisation | ✅ métadonnées `localStorage` + blobs audio `IndexedDB` | 
 
 **Ce qu'il ne faut pas déclarer validé** : la restauration *par l'application*
 vers une machine. Le mécanisme d'écriture l'est — écrire, démonter, relire,
 comparer les empreintes — mais pas son orchestration.
+
+**Contrat machine :** la CI partage le niveau de sécurité, pas le protocole matériel. Les contrôles OP-1 couvrent ses AIFF, patches, volume et MIDI ; les contrôles EP-133 couvrent ses projets, samples et échanges MIDI/SysEx. Un test de l'un ne constitue jamais une preuve pour l'autre.
 
 ## Derniers travaux
 
@@ -50,6 +55,9 @@ comparer les empreintes — mais pas son orchestration.
 - Exemples audio personnels renommés en exemples de démonstration.
 - Documentation principale rangée dans docs/INDEX.md.
 - Module profil partagé ajouté dans apps/studio-hub/src/core/profile.ts.
+- Clone OP‑1 aligné sur l’interface demandée : contrôles Piste 1–4 dans la bande supérieure, bande haute du clavier retirée, écran/racks tactiles et mode machine visible.
+- Autosauvegarde du projet OP‑1 ajoutée : réglages, pistes, références et sources audio sont restaurés après actualisation dans la même origine.
+- Bibliothèque « Samples sauvegardés » ajoutée : préécoute puis chargement local sur la piste sélectionnée, sans écriture machine.
 
 ## Ce qui est fiable
 
@@ -61,10 +69,11 @@ comparer les empreintes — mais pas son orchestration.
 
 ## Prochaines étapes recommandées
 
-1. Ajouter des tests de démarrage avec localStorage vide.
-2. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS.
+1. Ajouter des tests de démarrage avec localStorage vide et IndexedDB vide.
+2. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS et vérifier la restauration d’un projet audio.
+3. Ajouter un scénario navigateur de remplacement et suppression d’une source persistée.
 3. Brancher les pages restantes sur le module profil partagé.
-4. Ajouter une vérification de build dans CI.
+4. Conserver les installations des studios synchronisées avec leurs manifests.
 5. Auditer les états locaux indépendants des modules.
 6. Préparer un routage URL stable avant de rendre les pages partageables.
 
@@ -74,3 +83,10 @@ Ne pas utiliser « Production Ready » pour l’ensemble du produit tant que les
 tests automatisés, les parcours navigateur et la validation matérielle ne sont
 pas documentés. Dire plutôt : « Hub local fonctionnel, intégration matérielle
 en cours ».
+
+
+### Dernier alignement OP-1 Studio
+
+- Clavier MIDI virtuel : bouton LECTURE/PAUSE visible et relié au transport existant.
+- Configuration MIDI locale : enveloppe versionnée, sauvegardée côté client, avec verrouillage explicite après validation.
+- Journal MIDI : affichage limité aux 3 messages les plus récents ; le tampon diagnostic reste téléchargeable.

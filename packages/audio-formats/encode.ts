@@ -8,8 +8,8 @@
  * Rien ici ne transfère quoi que ce soit : les tampons produits restent en
  * mémoire, à charge de l'appelant de les écrire.
  */
-import { parseWavFormat, readSignedSample as readWavSample } from "@studio-hub/audio-bridge";
-import { parseAiffFormat, readAiffSample } from "./aiff";
+import { parseWavFormat, readSignedSample as readWavSample } from "../audio-bridge/index.ts";
+import { parseAiffFormat, readAiffSample } from "./aiff.ts";
 
 interface ExtractedAudio {
   channels: number;

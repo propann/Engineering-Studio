@@ -8,6 +8,8 @@
  * Le WAV, lui, était déjà partagé : son analyse vit dans
  * `@studio-hub/audio-bridge` depuis plus longtemps.
  */
-export * from "./aiff";
-export * from "./encode";
-export * from "./machines";
+export * from "./aiff.ts";
+export * from "./encode.ts";
+export * from "./machines.ts";
+export * from "./op1Patch.ts";
+export * from "./op1Pack.ts";

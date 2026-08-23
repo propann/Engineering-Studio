@@ -930,11 +930,13 @@ async function createBackup() {
       setSnapshots(relus);
       const scellement = verifierSnapshot(relus, snapshotId, fichiersCopies.length, manifest.totalBytes ?? 0);
       emettre({ type: "scelle", ...scellement });
-      if (!scellement.ok) setError(scellement.raison ?? "Snapshot non vérifiable après écriture.");
+      if (!scellement.ok) {
+        throw new Error(scellement.raison ?? "Snapshot non vérifiable après écriture.");
+      }
       setSelectedSnapshotId(snapshotId);
       setRestoreCategories(selectedCategories);
       onBackupRecorded(machine);
-      const report: VaultReport = { operation: "backup", machine, snapshotId, sourceOrTarget: sourceName || machine, createdAt: manifest.createdAt ?? new Date().toISOString(), categories: selectedCategories, fileCount: manifestFiles.length, totalBytes: manifest.totalBytes ?? 0, files: fichiersCopies, phase: "verified" };
+      const report: VaultReport = { operation: "backup", machine, snapshotId, sourceOrTarget: sourceName || machine, createdAt: manifest.createdAt ?? new Date().toISOString(), categories: selectedCategories, fileCount: fichiersCopies.length, totalBytes: manifest.totalBytes ?? 0, files: fichiersCopies, phase: "verified" };
       setLastReport(report);
       // Dire OU, pas seulement combien. Le snapshot vit a trois niveaux de
       // profondeur, dans un dossier horodate : sans ce chemin, l'utilisateur
