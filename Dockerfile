@@ -31,6 +31,15 @@ COPY --from=builder /build/dist ./dist
 COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/package.json ./
 
+# vite.config.ts fait partie de l'execution, pas seulement de la construction.
+# `vite preview` le relit au demarrage pour y trouver `preview.allowedHosts` ;
+# sans lui, il tourne sur la configuration par defaut et repond 403 « Blocked
+# request » a toute requete portant un nom de domaine — c'est-a-dire a tout
+# visiteur arrivant par le proxy, l'acces direct par IP restant le seul a
+# fonctionner. La construction, elle, reussissait : le defaut ne se voyait
+# qu'une fois en ligne.
+COPY --from=builder /build/vite.config.ts ./
+
 # Exécution sans privilèges.
 RUN addgroup -g 1001 -S appuser \
  && adduser -S appuser -u 1001 \
