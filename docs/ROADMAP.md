@@ -19,15 +19,28 @@
 
 ---
 
-## Current implementation snapshot — 2026-08-22
+## Current implementation snapshot — 2026-08-23
 
 - ✅ OP‑1 Studio : clone tactile avec écran Tape, quatre pistes, transport, REC sur la piste active, sélection de mode et racks son/effets.
 - ✅ Interface machine : clavier aux couleurs OP‑1, séparateurs orange, cercles noirs, bande haute du clavier supprimée et commandes regroupées dans deux bandes supérieures.
-- ✅ MIDI : clavier virtuel et contrôles écran reliés aux événements MIDI OP‑1 ; tempo, mesures et horloge MIDI utilisent la même base temporelle.
+- ✅ MIDI : clavier virtuel et contrôles écran reliés aux événements MIDI OP‑1 ; tempo, mesures et horloge MIDI utilisent la même base temporelle. **Tout passe par le répartiteur** — aucune page n'écrit `onmidimessage`, un test l'interdit.
 - ✅ Samples : bibliothèque locale avec préécoute et chargement d’un sample sauvegardé sur la piste active.
 - ✅ Persistance : métadonnées du projet en `localStorage`, sources audio en `IndexedDB`, restauration après actualisation dans la même origine.
 - ✅ Sécurité : fabrication locale et plans de transfert restent sans écriture machine (`machineWrite: false`) tant que le parcours complet n’est pas validé.
+- ✅ Les douze modules du rack : dix livrés, deux partiels (le graphe de l'égaliseur, la pile de distorsion). MODULES_STATUS.md fait foi sur le détail.
 - 🔮 Strudel : idée documentée dans la présente roadmap, hors interface OP‑1 pour l’instant.
+
+**Une seule branche.** Les vingt-huit branches distantes ont été ramenées à `main`
+le 2026-08-23, leur contenu étant entièrement absorbé — vérifié fichier par
+fichier, et recoupé avec l'état des PR côté GitHub.
+
+**Ce que cette page n'est pas.** Les sections datées plus bas sont un journal :
+elles disent ce qui était vrai le jour où elles ont été écrites, et les nombres de
+tests qu'elles citent comptent ce que *ce changement-là* a ajouté — pas la taille
+de la suite. Seul l'instantané ci-dessus décrit le présent.
+`packages/musique/documentation.test.ts` fait respecter la distinction : il refuse
+tout compte de tests figé hors d'une entrée déjà cochée. Ce paragraphe s'est fait
+reprendre par lui en le rédigeant.
 
 ## 🎯 Project Vision
 
@@ -97,10 +110,13 @@ A unified suite for Teenage Engineering instruments (OP-1, EP-133) integrated wi
       truth table and names explicitly what must NOT be declared validated: restore
       *through the application* towards a machine. The write mechanism is proven; its
       orchestration is not.
-- [ ] Organize guides in /docs/guides/
-- [x] Clean up root directory — 9 .md files remain at root (README, INDEX,
+- [x] Organize guides in /docs/guides/ — ten documents live there. One guide sits
+      outside on purpose: `apps/studio-hub/docs/MODULE_DEVELOPMENT_GUIDE.md`, next
+      to the code it describes.
+- [x] Clean up root directory — seven .md files remain at root (README, INDEX,
       GETTING_STARTED, DEPLOIEMENT, MODULES_STATUS, AUDIO_RACK_README,
-      AUDIO_RACK_ROADMAP) — 7, under the ~8 target. The four deployment documents
+      AUDIO_RACK_ROADMAP), under the ~8 target. The line used to open on « 9 »
+      and close on « 7 », listing seven: the count contradicted itself. The four deployment documents
       (1618 lines across DEPLOYMENT, DEPLOY_README, DEPLOY_SECRETS and
       docs/guides/COOLIFY_DEPLOYMENT) were merged into a single DEPLOIEMENT.md on
       2026-08-21, dropping what described machinery this project does not have.
@@ -622,10 +638,13 @@ reaches everything that listens.
         the menu with no error anywhere. The tests check musical correctness, not
         just shape — modes against rotations of the major scale, symmetric scales
         against their own transposition.
-  - [ ] **Flanger and phaser** — the chorus is in, the other two modulations are
-        not.
-  - [ ] **Multi-tap delay** (module 2) — single tap plus tempo SYNC today.
-  - [ ] **ADSR controls** (module 4) — the envelope exists, the knobs don't.
+  - [x] **Flanger and phaser** (module 9, 2026-08-22) — three modes over a single
+        graph. `RackEffets` renders CHORUS, FLANGER and PHASER off one `fxModMode`.
+  - [x] **Multi-tap delay** (module 2, 2026-08-22) — one to four taps, tempo SYNC,
+        only the first tap feeding back: `fxDelayTaps` and `fxDelaySpread`.
+  - [x] **ADSR controls** (module 4, 2026-08-22) — `PanneauEnveloppe` carries the
+        four knobs (`envAttack`/`envDecay`/`envSustain`/`envRelease`), with bounds
+        that stop the ramps from lifting.
 
 #### Dead code swept from the studios (2026-08-21)
 
@@ -654,15 +673,32 @@ between OP-1 and EP-133 sound libraries". That is exactly what
 realised elsewhere. Deleting the stub is what makes the package the single
 answer to that question.
 
+#### Closed since (2026-08-23)
+
+The three items this section listed are done. Checked against the code, not
+against a memory of it:
+
+- [x] The rack as a **component reusable from the studios**. `enTiroir` embeds it:
+      it drops its TopBar, and the host studio rebroadcasts the hub transport.
+      `STATUS.md` records it running inside both EP‑133 and OP‑1.
+- [x] Multi-tap delay, ADSR controls, arpeggiator — modules 2, 4, 5, all three
+      delivered. MODULES_STATUS.md tracks the twelve and was already accurate;
+      this file was the one lagging behind it.
+- [x] Writing the OP-1 `APPL`/`op-1` chunk. `encodeOp1PatchAiff`
+      (`packages/audio-formats/op1Patch.ts`) writes it and refuses any file that
+      fails validation first; `validateOp1Pack` then rejects a pack whose patch
+      carries no `APPL`/`op-1` metadata. Arrived with the OP-1 fabrication
+      pipeline, and it never writes to the machine — `machineWrite: false` holds.
+
 #### Still open
 
-- [ ] The rack as a **component reusable from the studios**, so several can be chosen
-      to compose with. It is a page today, not a component — the same kind of
-      extraction as the engines, at page level.
-- [ ] Multi-tap delay, ADSR controls, arpeggiator — modules 2, 4, 5. See
-      MODULES_STATUS.md.
-- [ ] Writing the OP-1 `APPL`/`op-1` chunk, for drum kits with markers. Reading it
-      already works (`drumMarkersInSeconds`).
+- [ ] **Parametric EQ graph** (module 3) — the three bands work; the curve is not
+      drawn. The only module of the twelve still visibly partial.
+- [ ] **Distortion stack** (module 8) — soft clip and wavefold are in the effects
+      rack; the full stack is not.
+The OP-1 restore path *through the application* is also still open, but it is
+tracked once, under Phase 4.3 above — not duplicated here. It is the one entry
+that must never be checked off from reading code: it needs the machine.
 
 ---
 
