@@ -23,9 +23,17 @@ export const KEYBOARD_ROWS = 16;
 // gauche→droite, partagé pour que l'écran Exercices assigne la même note à
 // la même touche que le clavier joué en dessous.
 //
-// Alignement du clavier MIDI virtuel sur le clavier OP-1 physique :
-// La première touche physique de l'OP-1 (F3 / Fa3) transmet la note MIDI 53 (0x35).
-// Le clavier virtuel débute donc à la note 53 pour un alignement parfait 1:1.
+// Alignement du clavier MIDI virtuel sur le clavier OP-1 physique.
+//
+// Valeur tranchée le 2026-08-23, après deux commits qui se sont contredits :
+// `53eee1d` avait mis 41 (F2) en citant une capture brute « 80 29 40 15 »,
+// `b6fba1a` a remis 53 (F3). Les deux dispositions sont valides — 24 touches,
+// F à E — et séparées d'une seule octave.
+//
+// À savoir avant d'y retoucher : l'OP-1 décale lui-même son octave, donc sa
+// première touche n'émet PAS une note fixe. Aucune des deux valeurs n'est
+// universellement juste ; 53 est celle retenue. Le raisonnement complet est
+// dans apps/studio-hub/src/core/keyboardLayout.test.ts, qui la verrouille.
 export const OP1_FIRST_KEY_NOTE = 53;
 export const KEYBOARD_WHITE_NOTES = [53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76];
 export const KEYBOARD_BLACK_NOTES = [54, 56, 58, 61, 63, 66, 68, 70, 73, 75];

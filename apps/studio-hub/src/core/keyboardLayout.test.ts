@@ -30,10 +30,25 @@ const block = (over: Partial<KeyboardBlock> = {}): KeyboardBlock => ({
 });
 
 describe("correspondance notes / touches", () => {
-  it("part de la première note matérielle MIDI 41", () => {
-    // Capture brute corrigée : la première touche de l'OP-1 est journalisée
-    // comme 80 29 40 15. Le statut 80 est note-off et 29 = 41 est la note.
-    expect(OP1_FIRST_KEY_NOTE).toBe(41);
+  it("part de la première note matérielle MIDI 53", () => {
+    /**
+     * Deux commits se sont contredits ici, et le desaccord est consigne pour
+     * qu'il ne se rejoue pas.
+     *
+     * `53eee1d` a mis 41 (F2) en citant une capture brute « 80 29 40 15 » dont
+     * il ne reste aucune trace ailleurs dans le depot. `b6fba1a` a remis 53
+     * (F3) en affirmant l'inverse, sans preuve. Les deux dispositions sont
+     * valides — 24 touches, F a E — et separees d'une seule octave.
+     *
+     * C'est justement ce que decale le reglage d'octave de l'OP-1 : la machine
+     * n'emet pas une note fixe pour sa premiere touche. Aucune des deux valeurs
+     * n'est donc universellement juste ; 53 est celle retenue, tranchee par le
+     * proprietaire de la machine le 2026-08-23.
+     *
+     * Avant de la rechanger : verifier sur le materiel, et noter le reglage
+     * d'octave en meme temps que les octets.
+     */
+    expect(OP1_FIRST_KEY_NOTE).toBe(53);
     expect(KEYBOARD_WHITE_NOTES[0]).toBe(OP1_FIRST_KEY_NOTE);
   });
 
