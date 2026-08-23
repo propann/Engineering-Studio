@@ -24,17 +24,22 @@ renseignés. Suivre ces pages faisait perdre du temps sur des étapes sans objet
 
 ---
 
-## Les deux branches
+## Les branches
 
 | Branche | Rôle |
 |---|---|
-| `main` | ce que Coolify déploie. Les tests s'y lancent aussi. |
-| `validation` | pour voir le résultat **avant** de fusionner, sur un changement sensible |
+| `main` | ce que Coolify déploie. Les tests s'y lancent aussi. **Seule branche existante.** |
+| `validation` | voie facultative, créée à la demande, pour voir le CI avant la mise en ligne |
 
 Pousser sur `main` reste la voie normale : le CI s'y déclenche, on est prévenu
 si quelque chose casse. Passer par `validation` d'abord donne la réponse avant
 que ça parte en ligne — utile quand on touche à la construction, aux
 dépendances ou au Dockerfile.
+
+`validation` n'existe pas en ce moment : les branches ont été ramenées à `main`
+seule le 2026-08-23, leur contenu étant entièrement absorbé. Le workflow
+continue de l'écouter, donc `git push origin HEAD:validation` la recrée et
+déclenche le CI sans rien déployer.
 
 ### Ce qui a été corrigé le 2026-08-21
 

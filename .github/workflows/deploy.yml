@@ -11,6 +11,11 @@ name: CI — tests, image, sécurité
 # `validation` sert à voir le résultat AVANT de fusionner dans main, pour les
 # changements sensibles. Pousser directement sur main reste possible — les
 # tests tournent quand même, on est simplement prevenu apres coup.
+#
+# La branche n'existe pas en permanence : elle a été supprimée le 2026-08-23
+# avec les autres, son contenu étant absorbé dans main. Le déclencheur reste
+# ici pour que `git push origin HEAD:validation` la recrée et lance le CI sans
+# rien déployer. Un déclencheur sur une branche absente ne coûte rien.
 
 on:
   push:

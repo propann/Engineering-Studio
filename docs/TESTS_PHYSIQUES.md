@@ -283,7 +283,7 @@ Menu **Gamme** du rack MIDI, groupé par familles.
 ### Enveloppe ADSR
 Panneau ENVELOPPE du rack de moteurs.
 
-- [ ] **les 91 patches d'usine sonnent comme avant.** Les défauts reproduisent
+- [ ] **les 76 patches d'usine sonnent comme avant.** Les défauts reproduisent
       exactement les valeurs câblées jusqu'ici ; si un patch connu sonne
       différemment, la valeur par défaut a bougé
 - [ ] attaque longue : la note monte progressivement, sans clic au départ
@@ -307,7 +307,7 @@ Bouton **📥 IMPORTER** à côté des trois exports.
       du champ, le second choix ne déclenche rien et on croit à un échec
 - [ ] un fichier qui n'est pas un patch donne un message clair, pas un rack vide
 - [ ] un patch d'un moteur inconnu est refusé en le nommant
-- [ ] le patch importé apparaît comme patch **utilisateur**, pas parmi les 91
+- [ ] le patch importé apparaît comme patch **utilisateur**, pas parmi les 76
       d'usine
 
 
@@ -315,7 +315,7 @@ Bouton **📥 IMPORTER** à côté des trois exports.
 Panneau LFO du Labo, à côté de l'enveloppe.
 
 - [ ] **CIBLE sur « — Aucun — » : le son est strictement celui d'avant.** Le
-      défaut ne module rien, sinon les 91 patches d'usine changeraient
+      défaut ne module rien, sinon les 76 patches d'usine changeraient
 - [ ] **trémolo** : le volume pulse. À profondeur maximale, il ne doit
       **jamais** se taire ni craquer — le creux reste au-dessus de zéro, sans
       quoi le gain n'atténue pas mais **inverse la phase**
@@ -473,7 +473,7 @@ l'état d'hier, restaurer vers une copie de l'état actuel.
 - [ ] les fichiers inchangés ne sont pas réécrits (horodatages)
 
 ### Recherche de patches
-- [ ] taper filtre bien les 91 patches d'usine et les patches perso
+- [ ] taper filtre bien les 76 patches d'usine et les patches perso
 - [ ] la recherche fonctionne sur les deux familles de moteurs, pas une seule
 
 ### EP-133

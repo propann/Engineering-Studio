@@ -25,7 +25,7 @@ le rack d'effets le traite.**
 | Rack | Métier | Où il vit |
 |---|---|---|
 | **MIDI** | produit les notes — arpégiateur, 30 gammes, horloge, relais | `packages/musique/`, panneau `MidiSyncPanel` |
-| **Moteurs** | en fait du son — 15 moteurs, 91 patches | `pages/AudioPluginRack.tsx` |
+| **Moteurs** | en fait du son — 15 moteurs, 76 patches | `pages/AudioPluginRack.tsx` |
 | **Effets** | traite le son — saturation, égaliseur, modulation, délai | `core/audio/effets.ts` + `racks/RackEffets.tsx` |
 
 Chaque rack **porte son interface**. Un test l'empêche de revenir en arrière :
@@ -41,7 +41,7 @@ qui écoute** — le rack, l'OP-1, l'EP-133 et n'importe quelle machine branché
 Quinze moteurs de synthèse — la suite Mutable Instruments (Plaits, Braids,
 Rings, Clouds, Elements) et dix moteurs libres (Dexed/DX7 FM, Surge XT,
 ZynAddSubFX, Helm, FluidSynth, amsynth, AMY, pl_synth, Open303, Faust).
-91 patches d'usine, superposition de patches, oscilloscope, et fabrication
+76 patches d'usine, superposition de patches, oscilloscope, et fabrication
 d'échantillons rendus hors ligne puis **relus et comparés par empreinte**.
 
 ![Rack de moteurs, avec l'enveloppe et le rack d'effets](docs/assets/captures/rack-audio.png)
@@ -220,8 +220,13 @@ vérification du code actuel.
 
 ## Git
 
-`main` est la branche de référence et de production. Rien n'y arrive sans être
-passé par `validation` et par un CI vert.
+`main` est la branche de référence et de production, et c'est aujourd'hui la
+seule qui existe. Le CI s'y déclenche à chaque poussée.
+
+`validation` est une voie facultative, pas un passage obligé : on la crée depuis
+`main` quand on veut voir le CI **avant** que le changement parte en ligne —
+typiquement sur la construction, les dépendances ou le Dockerfile. Le workflow
+l'écoute en permanence ; il suffit de pousser dessus pour qu'elle existe.
 
 ~~~bash
 git switch main

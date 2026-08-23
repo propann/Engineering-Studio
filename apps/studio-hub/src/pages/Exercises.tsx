@@ -1,14 +1,8 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
+import { useNotesMidi } from "../core/midi/useNotesMidi";
 import { GameGuitarHeroPanel } from "../../../op1-studio/app/components/GameGuitarHeroPanel";
-
-type MidiMessageEventLike = { data: Uint8Array | number[] };
-type MidiInputLike = { onmidimessage: ((event: MidiMessageEventLike) => void) | null };
-type MidiAccessLike = {
-  inputs: { values: () => Iterable<MidiInputLike> };
-  onstatechange: (() => void) | null;
-};
 
 export default function Exercises() {
   const [notice, setNotice] = useState<string | null>(null);
@@ -22,55 +16,32 @@ export default function Exercises() {
     (window as any).navigateMaquette?.("outils");
   }, []);
 
-  // Écoute de Web MIDI direct sur la page d'exercices
-  useEffect(() => {
-    if (typeof navigator === "undefined" || !("requestMIDIAccess" in navigator)) return;
+  /**
+   * Les notes tenues, vues par le repartiteur.
+   *
+   * Cette page ecrivait `input.onmidimessage` sur chaque entree, et le
+   * reecrivait a chaque `onstatechange`. C'est une propriete UNIQUE : l'ecrire
+   * remplace le gestionnaire du repartiteur, et rend muets tous les autres
+   * abonnes — le rack, le clavier virtuel, le temoin MIDI — sans le moindre
+   * message d'erreur. `packages/midi-dispatch/exclusivite.test.ts` interdit ce
+   * geste, et le signalait ici en trois endroits.
+   *
+   * Le crochet fait deja tout ce que le bloc supprime refaisait, y compris le
+   * note-off deguise (`0x90` de velocite 0) que beaucoup de claviers envoient
+   * a la place d'un vrai `0x80`.
+   */
+  const tenues = useRef(new Set<number>());
 
-    let midiAccess: MidiAccessLike | null = null;
-    const activeNotes = new Set<number>();
-
-    const onMidiMessage = (event: MidiMessageEventLike) => {
-      const data = event.data;
-      if (!data || data.length < 2) return;
-      const cmd = data[0] & 0xf0;
-      const note = data[1];
-      const vel = data[2] || 0;
-
-      if (cmd === 0x90 && vel > 0) {
-        activeNotes.add(note);
-        setPressedMidiNotes(Array.from(activeNotes));
-      } else if (cmd === 0x80 || (cmd === 0x90 && vel === 0)) {
-        activeNotes.delete(note);
-        setPressedMidiNotes(Array.from(activeNotes));
-      }
-    };
-
-    const nav = navigator as unknown as { requestMIDIAccess?: (opt?: { sysex: boolean }) => Promise<MidiAccessLike> };
-    nav.requestMIDIAccess?.({ sysex: false }).then(
-      (access: MidiAccessLike) => {
-        midiAccess = access;
-        for (const input of access.inputs.values()) {
-          input.onmidimessage = onMidiMessage;
-        }
-        access.onstatechange = () => {
-          for (const input of access.inputs.values()) {
-            input.onmidimessage = onMidiMessage;
-          }
-        };
-      },
-      () => {
-        // MIDI indisponible ou refusé
-      }
-    );
-
-    return () => {
-      if (midiAccess) {
-        for (const input of midiAccess.inputs.values()) {
-          input.onmidimessage = null;
-        }
-      }
-    };
-  }, []);
+  useNotesMidi(
+    useCallback(({ note }) => {
+      tenues.current.add(note);
+      setPressedMidiNotes([...tenues.current]);
+    }, []),
+    useCallback((note: number) => {
+      tenues.current.delete(note);
+      setPressedMidiNotes([...tenues.current]);
+    }, [])
+  );
 
   return (
     <main

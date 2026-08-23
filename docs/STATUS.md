@@ -26,14 +26,14 @@ les tests automatiques ne peuvent pas prouver.
 | Coffre — restauration | 🔶 mécanisme validé sur l'OP-1, orchestration non |
 | Écriture sur l'OP-1 | ✅ vérifiée octet par octet, machine rendue intacte |
 | Web MIDI | ✅ instantané à l'usage sur l'OP-1 |
-| Rack — synthèse | ✅ 15 moteurs, 91 patches, superposition par patch |
+| Rack — synthèse | ✅ 15 moteurs, 76 patches, superposition par patch |
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
-| Rack — effets | 🔶 delay et égaliseur ; ADSR et arpégiateur à faire |
+| Rack — effets | ✅ quatre familles : saturation, égaliseur, modulation (chorus/flanger/phaser), delay à quatre prises |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
-| Rack MIDI (arpégiateur, 30 gammes) | ✅ |
-| Rack d'effets (saturation, chorus) | ✅ |
+| Rack MIDI (arpégiateur, 30 gammes, séquenceur pas à pas) | ✅ |
+| Enveloppe ADSR et LFO global | ✅ panneaux dédiés, LFO appliqué aux quinze moteurs |
 | Chaque rack porte son interface | ✅ verrouillé par test |
-| Rack principal : une source unique | ✅ 2026-08-22, onglets de section rebranchés |
+| Rack principal : une source unique | ✅ un seul tableau d'outils, plus de cartes écrites à la main |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
 | EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
 | OP-1 Studio — clone tactile | ✅ quatre pistes, transport, REC piste active, écran/racks, clavier MIDI et couleurs machine | 
@@ -72,10 +72,10 @@ comparer les empreintes — mais pas son orchestration.
 1. Ajouter des tests de démarrage avec localStorage vide et IndexedDB vide.
 2. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS et vérifier la restauration d’un projet audio.
 3. Ajouter un scénario navigateur de remplacement et suppression d’une source persistée.
-3. Brancher les pages restantes sur le module profil partagé.
-4. Conserver les installations des studios synchronisées avec leurs manifests.
-5. Auditer les états locaux indépendants des modules.
-6. Préparer un routage URL stable avant de rendre les pages partageables.
+4. Brancher les pages restantes sur le module profil partagé.
+5. Conserver les installations des studios synchronisées avec leurs manifests.
+6. Auditer les états locaux indépendants des modules.
+7. Préparer un routage URL stable avant de rendre les pages partageables.
 
 ## Règle de communication
 

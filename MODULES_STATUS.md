@@ -109,7 +109,7 @@ Voir `docs/FOLDER_PICKER.md`.
 > Le moteur cherchait dans `audioRackStore`, un store Zustand persisté sous
 > « studio-hub-audio-rack », alors que le rack garde ses patches utilisateur
 > sous « studio_hub_user_patches ». Clef différente, store jamais alimenté :
-> une recherche testée qui ne pouvait rien trouver, à côté de 91 patches
+> une recherche testée qui ne pouvait rien trouver, à côté de 76 patches
 > d'usine qu'on ne pouvait que faire défiler.
 >
 > `PatchSearchEngine` est appelé directement par `AudioPluginRack.tsx` sur les

@@ -8,9 +8,10 @@
 
 ## 📋 Quick Links
 
-- **Physical tests**: [TESTS_PHYSIQUES.md](TESTS_PHYSIQUES.md) — what the 366
-  automated tests cannot prove. A sample that sounds wrong, a file the OP-1
-  refuses, a latency you can feel: none of those fail a test suite.
+- **Physical tests**: [TESTS_PHYSIQUES.md](TESTS_PHYSIQUES.md) — what the
+  automated suite cannot prove, however large it grows. A sample that sounds
+  wrong, a file the OP-1 refuses, a latency you can feel: none of those fail a
+  test suite.
 
 - **Current Status**: See [STATUS.md](#current-status)
 - **Architecture**: See [docs/architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)
@@ -306,14 +307,14 @@ appeared on the roadmap.
       files fail on `Cannot find package`.
 
 #### Patch search wired to the rack (2026-08-21)
-- [x] Patch search connected — the rack holds 91 factory patches across 15 engines
+- [x] Patch search connected — the rack holds 76 factory patches across 15 engines
       plus the user's own, and had no way to search them: you scrolled. Meanwhile
       `PatchSearchEngine` sat in modules/audio-rack-01-patch-search, fully written
       and covered by 159 lines of green tests, imported by nobody.
       It searched a parallel Zustand store (core/store/audioRackStore.ts) persisted
       under "studio-hub-audio-rack", while the rack persists user patches under
       "studio_hub_user_patches" — a different key, so the store was always empty.
-      A tested search that could never find anything, next to 91 unsearchable patches.
+      A tested search that could never find anything, next to 76 unsearchable patches.
       Now wired straight into AudioPluginRack via `filtrerPatches`, over the real
       factory + user lists. Verified by sabotage: unfiltering one of the two engine
       lists fails exactly two tests, and making an empty search return everything
@@ -323,7 +324,7 @@ appeared on the roadmap.
       favourites filter are now live, integrated into the existing patch list rather
       than through the separate `Patch Browser` panel — the rack already had a working
       list with search in it.
-      The 91 factory patches are **constants in the source**: you cannot write a
+      The 76 factory patches are **constants in the source**: you cannot write a
       favourite onto them, and copying them to do so would duplicate every patch on the
       first star click. Hence `core/patchMeta.ts`, a dictionary keyed by patch id,
       merged at display time. 30 tests, and `fusionnerMetas` never mutates what it
@@ -444,7 +445,7 @@ appeared on the roadmap.
 ### Phase 4.6: The Rack Becomes a Production Tool (✅ DELIVERED — 2026-08-21)
 
 Not on the original roadmap. It grew out of a single observation: the rack had 15
-engines, 91 patches, and **no output**. It made sound you could only hear, never
+engines, 76 patches, and **no output**. It made sound you could only hear, never
 keep. Everything below follows from removing that lock.
 
 #### The keystone: engines independent of the audio context
@@ -483,7 +484,7 @@ kept playing perfectly in live, so nothing else would signal it.
       cover the whole stack. They cross the offline render too — a fabricated sample
       carries the same effects as what you hear. Feedback is capped at 0.85 so a
       slider at 100% cannot produce a runaway.
-- [x] **Favourites and tags** on patches, merged at display time because the 91
+- [x] **Favourites and tags** on patches, merged at display time because the 76
       factory patches are constants in the source and cannot be written to.
 
 #### Shared packages, studios lightened
