@@ -72,6 +72,12 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
     { id: "tape", label: "TAPE", visual: "tape-mode", note: "" },
     { id: "mixer", label: "MIXER", visual: "mixer", note: "" },
   ] },
+  { label: "Pistes (Touches 1 à 4)", entries: [
+    { id: "track1", label: "1", visual: "fn", note: "Sélection Piste 1" },
+    { id: "track2", label: "2", visual: "fn", note: "Sélection Piste 2" },
+    { id: "track3", label: "3", visual: "fn", note: "Sélection Piste 3" },
+    { id: "track4", label: "4", visual: "fn", note: "Sélection Piste 4" },
+  ] },
   { label: "Sélection de son", entries: [
     { id: "sound1", label: "SOUND 1", visual: "fn", note: "choix moteur/échantillon" },
     { id: "sound2", label: "SOUND 2", visual: "fn", note: "choix moteur/échantillon" },
@@ -98,23 +104,15 @@ const OP1_CONTROL_GROUPS: { label: string; entries: ControlRefEntry[] }[] = [
   { label: "Audio", entries: [
     { id: "micin", label: "MIC/LINE", visual: "mic", note: "" },
   ] },
-  { label: "Affichage", entries: [
-    // T1-T4 : 4 encodeurs colores alignes sous l'ecran (soft keys, on
-    // tourne ET on clique) - absents de cette liste jusqu'ici, on ne
-    // pouvait les associer qu'en cliquant directement le cercle du clavier
-    // construit (18 aout 2026, demande : « il manque le 1 2 3 4 qui est
-    // sous l'ecran »).
-    { id: "t1", label: "T1", visual: "enc", note: "sous l'écran" },
-    { id: "t2", label: "T2", visual: "enc", note: "sous l'écran" },
-    { id: "t3", label: "T3", visual: "enc", note: "sous l'écran" },
-    { id: "t4", label: "T4", visual: "enc", note: "sous l'écran" },
-    // Clic (pas rotation) du même encodeur - un contrôle à part, voir
-    // `pressedEncPush`/`asPressSignature` (18 août 2026, demande : « il y a
-    // aussi sur les 4 encodeur un bouton »).
-    { id: "t1-push", label: "1", visual: "enc", note: "" },
-    { id: "t2-push", label: "2", visual: "enc", note: "" },
-    { id: "t3-push", label: "3", visual: "enc", note: "" },
-    { id: "t4-push", label: "4", visual: "enc", note: "" },
+  { label: "Affichage & Encodeurs", entries: [
+    { id: "t1", label: "T1", visual: "enc", note: "sous l'écran (Bleu)" },
+    { id: "t2", label: "T2", visual: "enc", note: "sous l'écran (Vert)" },
+    { id: "t3", label: "T3", visual: "enc", note: "sous l'écran (Blanc)" },
+    { id: "t4", label: "T4", visual: "enc", note: "sous l'écran (Orange)" },
+    { id: "t1-push", label: "Clic T1", visual: "enc", note: "pression encodeur 1" },
+    { id: "t2-push", label: "Clic T2", visual: "enc", note: "pression encodeur 2" },
+    { id: "t3-push", label: "Clic T3", visual: "enc", note: "pression encodeur 3" },
+    { id: "t4-push", label: "Clic T4", visual: "enc", note: "pression encodeur 4" },
   ] },
 ];
 
@@ -153,9 +151,9 @@ const FN_STATIC_VISUAL: (ControlVisual | null)[] = [
 // Ordre physique du clavier virtuel : REC, LECTURE, STOP.
 // La REC de l'écran simulé reste la commande de référence pour l'enregistrement,
 // mais la touche REC du clavier virtuel appelle la même action.
-const TRANS_REAL_LABELS = ["Enregistrement", "Lecture / Pause", "Stop"];
-const TRANS_SHORT_LABELS = ["ENR", "LEC", "STO"];
-const TRANS_STATIC_VISUAL: ControlVisual[] = ["play", "rec", "stop"];
+const TRANS_REAL_LABELS = ["Enregistrement (REC)", "Lecture / Pause", "Stop"];
+const TRANS_SHORT_LABELS = ["REC", "PLAY", "STOP"];
+const TRANS_STATIC_VISUAL: ControlVisual[] = ["rec", "play", "stop"];
 
 // ── Association « touche réelle → bouton construit » (14 août 2026, fin
 // d'après-midi) ─────────────────────────────────────────────────────────
@@ -232,6 +230,11 @@ function tEncoderColor(id: string): string | undefined {
 function tEncoderPushDigit(id: string): { digit: string; color: string } | null {
   const match = /^t([1-4])-push$/.exec(id);
   return match ? { digit: match[1], color: T_ENCODER_COLORS[Number(match[1]) - 1] } : null;
+}
+const OP1_TRACK_BTN_COLORS = ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"];
+function trackDigit(id: string): { digit: string; color: string } | null {
+  const match = /^track([1-4])$/.exec(id);
+  return match ? { digit: match[1], color: OP1_TRACK_BTN_COLORS[Number(match[1]) - 1] } : null;
 }
 /** Formes seules, coordonnées 0-18 — réutilisées telles quelles par
  * `ControlGlyph` (liste de référence) et `EmbeddedGlyph` (incrustées dans un
@@ -453,6 +456,8 @@ export function StudioMachinePanel({
   pressedNotes = [],
   onTogglePlayback,
   onRecord,
+  onStop,
+  onSelectTrack,
   playing = false,
   recording = false,
   onModeChange,
@@ -474,6 +479,9 @@ export function StudioMachinePanel({
   onTogglePlayback: () => void;
   /** Même action que REC sur l’écran simulé OP-1. */
   onRecord?: () => void;
+  /** Arrêt complet de la lecture et de l'enregistrement */
+  onStop?: () => void;
+  onSelectTrack?: (trackIndex: number) => void;
   onModeChange?: (mode: Op1MachineMode) => void;
   onOpenSoundMenu?: (slot: number) => void;
   /** Sauvegarde le moteur/patch courant dans un slot après pression longue. */
@@ -666,7 +674,7 @@ export function StudioMachinePanel({
   }, [configOpen, whiteBlocks.length, blackBlocks.length, mode]);
 
   const [encVals, setEncVals] = useState([64,64,64,64,64,64,64,64]);
-  const encDrag = useRef<{idx:number; startY:number; startV:number}|null>(null);
+  const encDrag = useRef<{idx:number; startY:number; startV:number; lastStep?: number}|null>(null);
   // Dernier message envoyé par famille câblée — pour la liste de référence
   // ci-dessous (« ça envoie les messages à l'ordi », 14 août 2026) : sans ça
   // la liste resterait une doc statique, sans lien avec ce qui se passe
@@ -867,16 +875,37 @@ export function StudioMachinePanel({
           flashTimersRef.current.push(timer);
         }
         // Le bouton réel MIDI et le bouton virtuel pilotent le même écran :
-        // après association, Lecture et REC déclenchent le même handler.
-        if (type === "trans" && idx === 0) onTogglePlayback();
-        if (type === "trans" && idx === 1) onRecord?.();
+        // après association, REC, Lecture et Stop déclenchent les handlers adéquats.
+        if (type === "trans" && idx === 0) onRecord?.();
+        if (type === "trans" && idx === 1) onTogglePlayback();
+        if (type === "trans" && idx === 2) {
+          if (onStop) onStop();
+          else {
+            if (playing) onTogglePlayback();
+            if (recording) onRecord?.();
+          }
+        }
+        if (binding.realId === "transport-rec") onRecord?.();
+        if (binding.realId === "transport-play") onTogglePlayback();
+        if (binding.realId === "transport-stop") {
+          if (onStop) onStop();
+          else {
+            if (playing) onTogglePlayback();
+            if (recording) onRecord?.();
+          }
+        }
         if (type === "enc" && idx <= 1) onSoundMenuEncoder?.(idx, lastRawMidiIn[2] - 64);
-        if (type === "fn") {
+        if (type === "fn" || type === "encpush") {
           const modeChange = machineModeFromControl(binding.realId);
           if (modeChange) onModeChange?.(modeChange);
           const soundSlot = soundSlotFromControl(binding.realId);
           if (soundSlot) onOpenSoundMenu?.(soundSlot);
           if (binding.realId === "sequencer") onOpenRackMenu?.();
+          const trackMatch = /^track([1-4])$/.exec(binding.realId);
+          if (trackMatch) {
+            const trk = Number(trackMatch[1]) - 1;
+            onSelectTrack?.(trk);
+          }
         }
         break; // un seul bouton peut correspondre à un message donné
       }
@@ -964,11 +993,23 @@ export function StudioMachinePanel({
                     >
                       {(() => {
                         const bigDigit = tEncoderPushDigit(entry.id);
-                        return bigDigit
-                          ? <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
+                        if (bigDigit) {
+                          return (
+                            <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
                               <text x={9} y={9} textAnchor="middle" dominantBaseline="central" fontSize={14} fontFamily="monospace" fontWeight="700" fill={bigDigit.color}>{bigDigit.digit}</text>
                             </svg>
-                          : <ControlGlyph visual={entry.visual} colorOverride={tEncoderColor(entry.id)} />;
+                          );
+                        }
+                        const trk = trackDigit(entry.id);
+                        if (trk) {
+                          return (
+                            <svg viewBox="0 0 18 18" width={18} height={18} aria-hidden="true">
+                              <rect x={2} y={2} width={14} height={14} rx={3} fill="#141c22" stroke={trk.color} strokeWidth={1.4} />
+                              <text x={9} y={9.5} textAnchor="middle" dominantBaseline="central" fontSize={11} fontFamily="monospace" fontWeight="900" fill={trk.color}>{trk.digit}</text>
+                            </svg>
+                          );
+                        }
+                        return <ControlGlyph visual={entry.visual} colorOverride={tEncoderColor(entry.id)} />;
                       })()}
                       <span>{entry.label}</span>
                     </button>
@@ -1025,13 +1066,19 @@ export function StudioMachinePanel({
             }}
             onPointerMove={e => {
               if (!encDrag.current) return;
-              const {idx, startY, startV} = encDrag.current;
-              const delta = Math.round((startY - e.clientY) / 3);
+              const {idx, startY, startV, lastStep = 0} = encDrag.current;
+              const delta = Math.round((startY - e.clientY) / 4);
+              const stepDelta = delta - lastStep;
               const v = Math.max(0, Math.min(127, startV + delta));
               setEncVals(arr => arr.map((x,i) => i===idx ? v : x));
               setLastEnc({ idx, v });
               const role = encRoles[idx];
-              if (role && !role.isVolume && (role.tIndex === 0 || role.tIndex === 1)) onSoundMenuEncoder?.(role.tIndex, delta);
+              if (stepDelta !== 0) {
+                encDrag.current.lastStep = delta;
+                if (role && !role.isVolume && (role.tIndex === 0 || role.tIndex === 1)) {
+                  onSoundMenuEncoder?.(role.tIndex, stepDelta > 0 ? 1 : -1);
+                }
+              }
               // CC 7 = volume MIDI standard ; CC 70-73 = T1-T4 (voir `encRoles`).
               if (mode === "midi" && role) sendMidi(role.isVolume ? [0xb0, 7, v] : [0xb0, 70 + role.tIndex, v], role.isVolume ? "VOLUME" : `T${role.tIndex + 1}`);
             }}
@@ -1221,6 +1268,11 @@ export function StudioMachinePanel({
                       soundLongPressRef.current = window.setTimeout(() => onSaveSoundSlot?.(soundSlot), 550);
                     }
                     if (fnRealId === "sequencer") onOpenRackMenu?.();
+                    const trackMatch = /^track([1-4])$/.exec(fnRealId);
+                    if (trackMatch) {
+                      const trk = Number(trackMatch[1]) - 1;
+                      onSelectTrack?.(trk);
+                    }
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 36 + i, 100]), fnLabel);
                   }}
                   onPointerUp={() => { if (soundLongPressRef.current !== null) { window.clearTimeout(soundLongPressRef.current); soundLongPressRef.current = null; } setPressedFn(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; }); }}
@@ -1278,8 +1330,15 @@ export function StudioMachinePanel({
                     if (configOpen) { e.stopPropagation(); selectConfig("transport", i, transLabel); return; }
                     (e.currentTarget as Element).setPointerCapture(e.pointerId);
                     setPressedTrans(s => new Set(s).add(i));
-                    if (i === 1 || def7B?.id === "transport-play") onTogglePlayback();
-                    if (i === 0 || def7B?.id === "transport-rec") onRecord?.();
+                    if (i === 0 || def7B?.id === "transport-rec" || binding?.realId === "transport-rec") onRecord?.();
+                    if (i === 1 || def7B?.id === "transport-play" || binding?.realId === "transport-play") onTogglePlayback();
+                    if (i === 2 || def7B?.id === "transport-stop" || binding?.realId === "transport-stop") {
+                      if (onStop) onStop();
+                      else {
+                        if (playing) onTogglePlayback();
+                        if (recording) onRecord?.();
+                      }
+                    }
                     if (mode === "midi") sendMidi(binding ? asPressSignature(binding.midi) : (def7B?.midiDefault ?? [0x99, 52 + i, 100]), transLabel);
                   }}
                   onPointerUp={() => setPressedTrans(s => { if (!s.has(i)) return s; const ns = new Set(s); ns.delete(i); return ns; })}

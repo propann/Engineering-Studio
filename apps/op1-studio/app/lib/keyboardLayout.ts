@@ -23,16 +23,12 @@ export const KEYBOARD_ROWS = 16;
 // gauche→droite, partagé pour que l'écran Exercices assigne la même note à
 // la même touche que le clavier joué en dessous.
 //
-// Recalé le 22 août 2026 sur le journal MIDI de la machine : la première
-// touche physique est le message de relâchement `80 29 40 15`. Le premier
-// octet est le statut note-off et `0x29` (41) est donc le numéro de note.
-// Le clavier virtuel doit partir de cette note, sinon sa première touche
-// joue F3/MIDI 53 alors que la machine joue F2/MIDI 41.
-// Les deux tableaux gardent les intervalles naturels/altérés de cette octave
-// de départ (B-C et E-F n'ont pas de touche noire entre elles).
-export const OP1_FIRST_KEY_NOTE = 0x29;
-export const KEYBOARD_WHITE_NOTES = [41,43,45,47,48,50,52,53,55,57,59,60,62,64];
-export const KEYBOARD_BLACK_NOTES = [42,44,46,49,51,54,56,58,61,63];
+// Alignement du clavier MIDI virtuel sur le clavier OP-1 physique :
+// La première touche physique de l'OP-1 (F3 / Fa3) transmet la note MIDI 53 (0x35).
+// Le clavier virtuel débute donc à la note 53 pour un alignement parfait 1:1.
+export const OP1_FIRST_KEY_NOTE = 53;
+export const KEYBOARD_WHITE_NOTES = [53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76];
+export const KEYBOARD_BLACK_NOTES = [54, 56, 58, 61, 63, 66, 68, 70, 73, 75];
 
 export type KeyboardBlock = { col: number; row: number; w: number; h: number; color: string; type: string };
 

@@ -27,25 +27,41 @@ type ExerciseIcon = (props: { name: "check" | "wave"; size?: number }) => ReactN
 // (une seule note) — même forme, le rendu s'adapte à la largeur. ───────────
 type Step = { label: string; notes: number[] };
 const STEP: Record<string, Step> = {
-  // Triades en Do majeur
-  C:  { label: "C",  notes: [60, 64, 67] },
-  Dm: { label: "Dm", notes: [62, 65, 69] },
-  Em: { label: "Em", notes: [64, 67, 71] },
-  F:  { label: "F",  notes: [65, 69, 72] },
-  G:  { label: "G",  notes: [67, 71, 74] },
-  Am: { label: "Am", notes: [69, 72, 76] },
+  // Triades et accords étendus (Do majeur, La mineur, etc.)
+  C:      { label: "C",      notes: [60, 64, 67] },
+  Dm:     { label: "Dm",     notes: [62, 65, 69] },
+  Em:     { label: "Em",     notes: [64, 67, 71] },
+  F:      { label: "F",      notes: [65, 69, 72] },
+  G:      { label: "G",      notes: [67, 71, 74] },
+  Am:     { label: "Am",     notes: [69, 72, 76] },
+  Bdim:   { label: "B°",     notes: [71, 74, 77] },
+  Cmaj7:  { label: "Cmaj7",  notes: [60, 64, 67, 71] },
+  Dm7:    { label: "Dm7",    notes: [62, 65, 69, 72] },
+  Em7:    { label: "Em7",    notes: [64, 67, 71, 74] },
+  Fmaj7:  { label: "Fmaj7",  notes: [65, 69, 72, 76] },
+  G7:     { label: "G7",     notes: [67, 71, 74, 77] },
+  Am7:    { label: "Am7",    notes: [69, 72, 76, 79] },
   // Notes seules pour les exercices de mélodie (C4 à C5)
-  n60: { label: "C", notes: [60] }, n62: { label: "D", notes: [62] },
-  n64: { label: "E", notes: [64] }, n65: { label: "F", notes: [65] },
-  n67: { label: "G", notes: [67] }, n69: { label: "A", notes: [69] },
-  n71: { label: "B", notes: [71] }, n72: { label: "C", notes: [72] },
+  n53: { label: "F3", notes: [53] }, n55: { label: "G3", notes: [55] },
+  n57: { label: "A3", notes: [57] }, n59: { label: "B3", notes: [59] },
+  n60: { label: "C4", notes: [60] }, n62: { label: "D4", notes: [62] },
+  n64: { label: "E4", notes: [64] }, n65: { label: "F4", notes: [65] },
+  n67: { label: "G4", notes: [67] }, n69: { label: "A4", notes: [69] },
+  n71: { label: "B4", notes: [71] }, n72: { label: "C5", notes: [72] },
+  n74: { label: "D5", notes: [74] }, n76: { label: "E5", notes: [76] },
 };
 
+// Tranches de Drum kit OP-1 physiques :
+// 41 = Kick, 45 = Snare, 47 = Clap, 49 = Hat Fermé, 53 = Hat Ouvert, 57 = Tom Low
 const DRUM_STEPS: Record<string, Step> = {
-  kick: { label: "KICK", notes: [36] }, snare: { label: "SNARE", notes: [38] },
-  hat: { label: "HAT", notes: [42] }, open: { label: "OPEN", notes: [46] },
+  kick:  { label: "KICK",  notes: [41] },
+  snare: { label: "SNARE", notes: [45] },
+  clap:  { label: "CLAP",  notes: [47] },
+  hat:   { label: "HAT",   notes: [49] },
+  open:  { label: "OPEN",  notes: [53] },
+  tom:   { label: "TOM",   notes: [57] },
 };
-const DRUM_NOTE_ORDER = [36, 38, 42, 46];
+const DRUM_NOTE_ORDER = [41, 45, 47, 49, 53, 57];
 
 // Mode Effets (feuille de route M4.5, idée du 13 août 2026 : « touches
 // d'effet ») — T3 bascule l'effet on/off sur la machine
@@ -64,27 +80,38 @@ type ExerciseMode = "drumkit" | "melodie" | "accord" | "morceau" | "effets";
 const MODE_LABEL: Record<ExerciseMode, string> = { drumkit: "DRUMKIT", melodie: "MÉLODIE", accord: "ACCORD", morceau: "MORCEAU", effets: "EFFETS" };
 const EXERCISES: Record<ExerciseMode, Record<string, { steps: string[]; beatsPerStep: number }>> = {
   drumkit: {
-    "Groove simple": { steps: ["kick", "hat", "snare", "hat", "kick", "hat", "snare", "open"], beatsPerStep: 1 },
-    "Kick & snare": { steps: ["kick", "kick", "snare", "kick", "kick", "snare", "kick", "snare"], beatsPerStep: 1 },
-    "Hi-hat régulier": { steps: ["hat", "hat", "hat", "hat", "hat", "hat", "hat", "hat"], beatsPerStep: 1 },
+    "Groove standard 4/4": { steps: ["kick", "hat", "snare", "hat", "kick", "hat", "snare", "open"], beatsPerStep: 1 },
+    "Four-on-the-floor House": { steps: ["kick", "hat", "kick", "hat", "kick", "hat", "kick", "open"], beatsPerStep: 1 },
+    "Trap Bounce & Clap": { steps: ["kick", "hat", "clap", "hat", "kick", "kick", "clap", "hat"], beatsPerStep: 1 },
+    "Boom Bap 90s": { steps: ["kick", "hat", "snare", "hat", "kick", "kick", "snare", "hat"], beatsPerStep: 1 },
+    "Tom Fill Transition": { steps: ["kick", "hat", "snare", "hat", "tom", "tom", "snare", "open"], beatsPerStep: 1 },
+    "Kick & snare rapide": { steps: ["kick", "kick", "snare", "kick", "kick", "snare", "kick", "snare"], beatsPerStep: 1 },
+    "Hi-hats réguliers": { steps: ["hat", "hat", "hat", "hat", "hat", "hat", "hat", "open"], beatsPerStep: 1 },
   },
   melodie: {
-    "Gamme montante": { steps: ["n60", "n62", "n64", "n65", "n67", "n69", "n71", "n72"], beatsPerStep: 2 },
+    "Gamme montante C-D-E-F-G-A-B-C": { steps: ["n60", "n62", "n64", "n65", "n67", "n69", "n71", "n72"], beatsPerStep: 2 },
     "Gamme descendante": { steps: ["n72", "n71", "n69", "n67", "n65", "n64", "n62", "n60"], beatsPerStep: 2 },
-    "Arpège de Do": { steps: ["n60", "n64", "n67", "n72"], beatsPerStep: 2 },
-    "Petit air": { steps: ["n64", "n64", "n65", "n67", "n67", "n65", "n64", "n62", "n60"], beatsPerStep: 2 },
+    "Pentatonique Majeure": { steps: ["n60", "n62", "n64", "n67", "n69", "n72", "n69", "n67"], beatsPerStep: 2 },
+    "Arpège de Do Majeur": { steps: ["n60", "n64", "n67", "n72", "n67", "n64", "n60", "n64"], beatsPerStep: 2 },
+    "Ode à la Joie (Beethoven)": { steps: ["n64", "n64", "n65", "n67", "n67", "n65", "n64", "n62", "n60", "n60", "n62", "n64", "n64", "n62", "n62"], beatsPerStep: 2 },
+    "Clair de Lune Thème": { steps: ["n60", "n60", "n60", "n62", "n64", "n62", "n60", "n64", "n62", "n62", "n60"], beatsPerStep: 2 },
+    "Riff R&B Soul": { steps: ["n60", "n64", "n67", "n69", "n67", "n64", "n62", "n60"], beatsPerStep: 2 },
+    "Basse Synthwave": { steps: ["n53", "n53", "n57", "n57", "n60", "n60", "n59", "n57"], beatsPerStep: 2 },
   },
   accord: {
-    "I–V–vi–IV": { steps: ["C", "G", "Am", "F"], beatsPerStep: 4 },
-    "I–IV–V": { steps: ["C", "F", "G"], beatsPerStep: 4 },
-    "ii–V–I": { steps: ["Dm", "G", "C"], beatsPerStep: 4 },
-    "vi–IV–I–V": { steps: ["Am", "F", "C", "G"], beatsPerStep: 4 },
-    "I–vi–IV–V": { steps: ["C", "Am", "F", "G"], beatsPerStep: 4 },
+    "Pop Anthem (I–V–vi–IV)": { steps: ["C", "G", "Am", "F"], beatsPerStep: 4 },
+    "Cadence Classique (I–IV–V)": { steps: ["C", "F", "G"], beatsPerStep: 4 },
+    "Jazz Standard 2-5-1 (ii–V–I)": { steps: ["Dm7", "G7", "Cmaj7"], beatsPerStep: 4 },
+    "Émotionnel (vi–IV–I–V)": { steps: ["Am", "F", "C", "G"], beatsPerStep: 4 },
+    "50s Progression (I–vi–IV–V)": { steps: ["C", "Am", "F", "G"], beatsPerStep: 4 },
+    "Neo-Soul Voicings (Fmaj7–Em7–Dm7–Cmaj7)": { steps: ["Fmaj7", "Em7", "Dm7", "Cmaj7"], beatsPerStep: 4 },
+    "House Chords (Am7–Dm7–Em7)": { steps: ["Am7", "Dm7", "Em7", "Am7"], beatsPerStep: 4 },
   },
   effets: {
-    "Rythme simple": { steps: ["on", "off", "on", "off", "on", "off", "on", "off"], beatsPerStep: 1 },
-    "Contretemps": { steps: ["off", "on", "off", "on", "off", "on", "off", "on"], beatsPerStep: 1 },
-    "Doubles": { steps: ["on", "on", "off", "off", "on", "on", "off", "off"], beatsPerStep: 1 },
+    "Pulsation Strobe 4/4": { steps: ["on", "off", "on", "off", "on", "off", "on", "off"], beatsPerStep: 1 },
+    "Contretemps Dub": { steps: ["off", "on", "off", "on", "off", "on", "off", "on"], beatsPerStep: 1 },
+    "Hachage Stutter 1/8": { steps: ["on", "on", "off", "off", "on", "on", "off", "off"], beatsPerStep: 1 },
+    "Sweep Rise Fill": { steps: ["off", "off", "off", "off", "on", "on", "on", "on"], beatsPerStep: 1 },
   },
   // Pas de suite prédéfinie : le morceau vient d'un fichier .mid importé (state `song`).
   morceau: {},

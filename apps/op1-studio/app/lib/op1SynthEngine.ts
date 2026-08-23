@@ -30,6 +30,32 @@ export type Op1EngineType =
   | "Voltage"
   | "Drum";
 
+export type DrumSoundType =
+  | "kick"
+  | "kick_punch"
+  | "snare"
+  | "rim"
+  | "clap"
+  | "hat"
+  | "hat_half"
+  | "open"
+  | "crash"
+  | "ride"
+  | "tom"
+  | "tom_low"
+  | "tom_mid"
+  | "tom_hi"
+  | "shaker"
+  | "tambourine"
+  | "cowbell"
+  | "conga"
+  | "claves"
+  | "zap"
+  | "woodblock"
+  | "triangle"
+  | "sub808"
+  | "noise_fx";
+
 export function midiToFrequency(midiNote: number): number {
   return 440 * Math.pow(2, (midiNote - 69) / 12);
 }
@@ -411,45 +437,97 @@ class Op1SynthEngine {
   }
 
   /**
-   * Moteur Drum OP-1 (Kick, Snare, Hi-Hat, Tom, etc.)
+   * Moteur Drum OP-1 (Kick, Snare, Hi-Hat, Clap, Tom, Cowbell, 808 Sub, Zap, Percs...)
    */
-  public triggerDrum(drumType: "kick" | "snare" | "hat" | "open" | "clap" | "tom" | number, velocity = 100) {
+  public triggerDrum(drumType: DrumSoundType | number, velocity = 100) {
     const ctx = this.initContext();
     const now = ctx.currentTime;
     const velFactor = Math.max(0.1, Math.min(1, velocity / 127));
     const voiceGain = ctx.createGain();
     voiceGain.connect(this.instrumentBus!);
 
-    let typeStr = typeof drumType === "string" ? drumType : "kick";
+    let typeStr: DrumSoundType = typeof drumType === "string" ? drumType : "kick";
     if (typeof drumType === "number") {
-      if (drumType === 36 || drumType === 35) typeStr = "kick";
-      else if (drumType === 38 || drumType === 40) typeStr = "snare";
-      else if (drumType === 42 || drumType === 44) typeStr = "hat";
-      else if (drumType === 46) typeStr = "open";
-      else if (drumType === 39) typeStr = "clap";
+      const n = drumType;
+      // Tranches 1 à 24 de l'OP-1 (Notes MIDI 41 à 64 : Fa2 à Mi4)
+      if (n === 41) typeStr = "kick";               // Slice 1 (Touche Fa2) : Kick Sub / Analogique
+      else if (n === 42) typeStr = "sub808";        // Slice 2 (Touche Fa#2) : Sub 808
+      else if (n === 43) typeStr = "kick_punch";    // Slice 3 (Touche Sol2) : Kick Punchy / Tranchant
+      else if (n === 44) typeStr = "zap";           // Slice 4 (Touche Sol#2) : Laser Zap / Pitch Drop
+      else if (n === 45) typeStr = "snare";         // Slice 5 (Touche La2) : Snare principal
+      else if (n === 46) typeStr = "rim";           // Slice 6 (Touche La#2) : Rimshot / Side Stick
+      else if (n === 47) typeStr = "clap";          // Slice 7 (Touche Si2) : Clap acoustique
+      else if (n === 48) typeStr = "woodblock";     // Slice 8 (Touche Do3) : Woodblock / Snap
+      else if (n === 49) typeStr = "hat";           // Slice 9 (Touche Do#3) : Hi-Hat Fermé court
+      else if (n === 50) typeStr = "hat_half";      // Slice 10 (Touche Ré3) : Hi-Hat Semi-ouvert
+      else if (n === 51) typeStr = "shaker";        // Slice 11 (Touche Ré#3) : Shaker
+      else if (n === 52) typeStr = "tambourine";    // Slice 12 (Touche Mi3) : Tambourin
+      else if (n === 53) typeStr = "open";          // Slice 13 (Touche Fa3) : Hi-Hat Ouvert
+      else if (n === 54) typeStr = "crash";         // Slice 14 (Touche Fa#3) : Cymbale Crash
+      else if (n === 55) typeStr = "ride";          // Slice 15 (Touche Sol3) : Cymbale Ride
+      else if (n === 56) typeStr = "triangle";      // Slice 16 (Touche Sol#3) : Triangle / Bell
+      else if (n === 57) typeStr = "tom_low";       // Slice 17 (Touche La3) : Tom Basse
+      else if (n === 58) typeStr = "tom_mid";       // Slice 18 (Touche La#3) : Tom Médium
+      else if (n === 59) typeStr = "tom_hi";        // Slice 19 (Touche Si3) : Tom Aigu
+      else if (n === 60) typeStr = "conga";         // Slice 20 (Touche Do4) : Conga / Bongo
+      else if (n === 61) typeStr = "claves";        // Slice 21 (Touche Do#4) : Claves
+      else if (n === 62) typeStr = "cowbell";       // Slice 22 (Touche Ré4) : Cowbell 808
+      else if (n === 63) typeStr = "noise_fx";      // Slice 23 (Touche Ré#4) : Noise Sweep FX
+      else if (n === 64) typeStr = "zap";           // Slice 24 (Touche Mi4) : Synth Glitch / Stab
+      // Rétrocompatibilité standard General MIDI (notes 35 à 40)
+      else if (n === 35 || n === 36) typeStr = "kick";
+      else if (n === 37) typeStr = "rim";
+      else if (n === 38 || n === 40) typeStr = "snare";
+      else if (n === 39) typeStr = "clap";
       else typeStr = "tom";
     }
 
-    if (typeStr === "kick") {
-      // Kick percutant OP-1 avec pitch drop rapide
+    if (typeStr === "kick" || typeStr === "kick_punch") {
+      // Kick percutant OP-1 avec pitch drop analogique + click d'attaque
       const osc = ctx.createOscillator();
-      osc.frequency.setValueAtTime(145, now);
-      osc.frequency.exponentialRampToValueAtTime(38, now + 0.12);
+      const startFreq = typeStr === "kick_punch" ? 170 : 130;
+      const endFreq = typeStr === "kick_punch" ? 42 : 36;
+      osc.frequency.setValueAtTime(startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.08);
 
-      voiceGain.gain.setValueAtTime(0.9 * velFactor, now);
-      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+      voiceGain.gain.setValueAtTime(0.95 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
 
       osc.connect(voiceGain);
       osc.start(now);
-      osc.stop(now + 0.4);
+      osc.stop(now + 0.38);
+
+      // Petit clic transitoire d'attaque OP-1
+      const click = ctx.createOscillator();
+      click.type = "sine";
+      click.frequency.setValueAtTime(600, now);
+      click.frequency.exponentialRampToValueAtTime(80, now + 0.015);
+      const clickGain = ctx.createGain();
+      clickGain.gain.setValueAtTime(0.4 * velFactor, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+      click.connect(clickGain);
+      clickGain.connect(voiceGain);
+      click.start(now);
+      click.stop(now + 0.025);
+    } else if (typeStr === "sub808") {
+      // Sub 808 profond qui descend et résonne
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(75, now);
+      osc.frequency.exponentialRampToValueAtTime(32, now + 0.2);
+      voiceGain.gain.setValueAtTime(0.95 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+      osc.connect(voiceGain);
+      osc.start(now);
+      osc.stop(now + 0.9);
     } else if (typeStr === "snare") {
-      // Snare OP-1 : corps oscillateur + bruit blanc filtré
+      // Snare OP-1 : corps triangulaire/sinus + burst de bruit blanc filtré
       const osc = ctx.createOscillator();
       osc.type = "triangle";
-      osc.frequency.setValueAtTime(180, now);
-      osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.07);
 
-      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.25), ctx.sampleRate);
+      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.22), ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
       const noise = ctx.createBufferSource();
@@ -457,28 +535,73 @@ class Op1SynthEngine {
 
       const noiseFilter = ctx.createBiquadFilter();
       noiseFilter.type = "highpass";
-      noiseFilter.frequency.setValueAtTime(900, now);
+      noiseFilter.frequency.setValueAtTime(1100, now);
 
       const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.7 * velFactor, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      noiseGain.gain.setValueAtTime(0.75 * velFactor, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
       noise.connect(noiseFilter);
       noiseFilter.connect(noiseGain);
       noiseGain.connect(voiceGain);
 
       osc.connect(voiceGain);
-      voiceGain.gain.setValueAtTime(0.7 * velFactor, now);
-      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      voiceGain.gain.setValueAtTime(0.8 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
 
       osc.start(now);
       noise.start(now);
-      osc.stop(now + 0.26);
-      noise.stop(now + 0.26);
-    } else if (typeStr === "hat" || typeStr === "open") {
-      // Hi-Hat métallique fermé ou ouvert
-      const dur = typeStr === "open" ? 0.35 : 0.08;
-      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+      osc.stop(now + 0.25);
+      noise.stop(now + 0.25);
+    } else if (typeStr === "rim" || typeStr === "woodblock" || typeStr === "claves") {
+      // Rimshot / Side Stick / Woodblock / Claves
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      const f = typeStr === "woodblock" ? 820 : typeStr === "claves" ? 1450 : 450;
+      osc.frequency.setValueAtTime(f, now);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.6, now + 0.04);
+      voiceGain.gain.setValueAtTime(0.85 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + (typeStr === "claves" ? 0.05 : 0.07));
+      osc.connect(voiceGain);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (typeStr === "triangle") {
+      // Triangle / Bell OP-1 brillant
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = "sine";
+      osc2.type = "sine";
+      osc1.frequency.setValueAtTime(1240, now);
+      osc2.frequency.setValueAtTime(1860, now);
+      voiceGain.gain.setValueAtTime(0.65 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      osc1.connect(voiceGain);
+      osc2.connect(voiceGain);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.48);
+      osc2.stop(now + 0.48);
+    } else if (typeStr === "noise_fx") {
+      // FX Noise Sweep analogique
+      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.6), ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(300, now);
+      filter.frequency.exponentialRampToValueAtTime(4500, now + 0.5);
+      filter.Q.setValueAtTime(4.0, now);
+      voiceGain.gain.setValueAtTime(0.7 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      noise.connect(filter);
+      filter.connect(voiceGain);
+      noise.start(now);
+      noise.stop(now + 0.58);
+    } else if (typeStr === "clap") {
+      // Clap OP-1 : 3 micro-rafales de bruit espacées de 11ms
+      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.25), ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
       for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
       const noise = ctx.createBufferSource();
@@ -486,39 +609,209 @@ class Op1SynthEngine {
 
       const filter = ctx.createBiquadFilter();
       filter.type = "bandpass";
-      filter.frequency.setValueAtTime(8500, now);
-      filter.Q.setValueAtTime(5, now);
+      filter.frequency.setValueAtTime(1300, now);
+      filter.Q.setValueAtTime(2.2, now);
+
+      const clapEnv = ctx.createGain();
+      clapEnv.gain.setValueAtTime(0.45 * velFactor, now);
+      clapEnv.gain.setValueAtTime(0.05, now + 0.01);
+      clapEnv.gain.setValueAtTime(0.6 * velFactor, now + 0.012);
+      clapEnv.gain.setValueAtTime(0.05, now + 0.022);
+      clapEnv.gain.setValueAtTime(0.85 * velFactor, now + 0.025);
+      clapEnv.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+      noise.connect(filter);
+      filter.connect(clapEnv);
+      clapEnv.connect(voiceGain);
+
+      noise.start(now);
+      noise.stop(now + 0.24);
+    } else if (typeStr === "hat" || typeStr === "hat_half" || typeStr === "shaker" || typeStr === "tambourine") {
+      // Hi-Hat / Shaker métallique serré
+      const dur = typeStr === "hat_half" ? 0.16 : typeStr === "tambourine" ? 0.2 : 0.06;
+      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * (dur + 0.05)), ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(typeStr === "shaker" ? 6500 : 9200, now);
+      filter.Q.setValueAtTime(typeStr === "shaker" ? 3.5 : 6.0, now);
+
+      voiceGain.gain.setValueAtTime(0.7 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
 
       noise.connect(filter);
       filter.connect(voiceGain);
-
-      voiceGain.gain.setValueAtTime(0.65 * velFactor, now);
-      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
       noise.start(now);
       noise.stop(now + dur + 0.02);
-    } else {
-      // Tom / Percussion
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(220, now);
-      osc.frequency.exponentialRampToValueAtTime(85, now + 0.25);
+    } else if (typeStr === "open" || typeStr === "crash" || typeStr === "ride") {
+      // Open Hat / Cymbale brillante et aérée
+      const dur = typeStr === "crash" ? 0.9 : typeStr === "ride" ? 0.6 : 0.36;
+      const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * (dur + 0.1)), ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < output.length; i++) output[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
 
-      voiceGain.gain.setValueAtTime(0.7 * velFactor, now);
-      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      const filter = ctx.createBiquadFilter();
+      filter.type = "highpass";
+      filter.frequency.setValueAtTime(7500, now);
+
+      voiceGain.gain.setValueAtTime(0.75 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+      noise.connect(filter);
+      filter.connect(voiceGain);
+      noise.start(now);
+      noise.stop(now + dur + 0.03);
+    } else if (typeStr === "cowbell") {
+      // Cowbell 808 OP-1 : 2 ondes carrées accordées (540Hz & 800Hz) avec filtre passe-bande
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = "square";
+      osc2.type = "square";
+      osc1.frequency.setValueAtTime(540, now);
+      osc2.frequency.setValueAtTime(800, now);
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(840, now);
+      filter.Q.setValueAtTime(4.0, now);
+
+      voiceGain.gain.setValueAtTime(0.8 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(voiceGain);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.3);
+      osc2.stop(now + 0.3);
+    } else if (typeStr === "zap") {
+      // Synth Zap / Laser OP-1
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(1800, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.12);
+
+      voiceGain.gain.setValueAtTime(0.85 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
 
       osc.connect(voiceGain);
       osc.start(now);
-      osc.stop(now + 0.32);
+      osc.stop(now + 0.15);
+    } else {
+      // Toms & Percussions accordées
+      const isHi = typeStr === "tom_hi" || typeStr === "conga";
+      const isLow = typeStr === "tom_low";
+      const baseFreq = isLow ? 110 : isHi ? 240 : 165;
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(baseFreq * 1.5, now);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq, now + 0.12);
+
+      voiceGain.gain.setValueAtTime(0.75 * velFactor, now);
+      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+      osc.connect(voiceGain);
+      osc.start(now);
+      osc.stop(now + 0.3);
     }
   }
 
   private playDrumSynth(note: number, velFactor: number, voiceGain: GainNode, ctx: AudioContext, now: number) {
-    if (note === 36 || note === 35) this.triggerDrum("kick", velFactor * 127);
-    else if (note === 38 || note === 40) this.triggerDrum("snare", velFactor * 127);
-    else if (note === 42 || note === 44) this.triggerDrum("hat", velFactor * 127);
-    else if (note === 46) this.triggerDrum("open", velFactor * 127);
-    else this.triggerDrum("tom", velFactor * 127);
+    this.triggerDrum(note, velFactor * 127);
+  }
+
+  /**
+   * Bip sonore rétro arcade pour le compte à rebours de départ (3, 2, 1, GO!)
+   */
+  public playCountdownBeep(stage: "3" | "2" | "1" | "GO") {
+    const ctx = this.initContext();
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(this.masterGain!);
+
+    if (stage === "GO") {
+      // Accord triomphal ascendant 8-bit
+      const freqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      freqs.forEach((f, idx) => {
+        const osc = ctx.createOscillator();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(f, now + idx * 0.04);
+        const subGain = ctx.createGain();
+        subGain.gain.setValueAtTime(0.25, now + idx * 0.04);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.connect(subGain);
+        subGain.connect(gain);
+        osc.start(now + idx * 0.04);
+        osc.stop(now + 0.5);
+      });
+    } else {
+      const osc = ctx.createOscillator();
+      osc.type = "square";
+      const freq = stage === "3" ? 440 : stage === "2" ? 554.37 : 659.25;
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    }
+  }
+
+  /**
+   * Effet sonore lors de la validation d'une frappe joueur (PERFECT, GREAT, MISS)
+   */
+  public playHitSound(judgment: "PERFECT" | "GREAT" | "GOOD" | "MISS") {
+    const ctx = this.initContext();
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.connect(this.masterGain!);
+
+    if (judgment === "PERFECT") {
+      // Petit arpège cristal / étoile arcade
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      osc1.type = "sine";
+      osc2.type = "triangle";
+      osc1.frequency.setValueAtTime(1174.66, now); // D6
+      osc1.frequency.setValueAtTime(1760.00, now + 0.03); // A6
+      osc2.frequency.setValueAtTime(1479.98, now); // F#6
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc1.connect(gain);
+      osc2.connect(gain);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.16);
+      osc2.stop(now + 0.16);
+    } else if (judgment === "GREAT") {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1174.66, now + 0.02);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.11);
+    } else if (judgment === "MISS") {
+      const osc = ctx.createOscillator();
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.linearRampToValueAtTime(65, now + 0.08);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      osc.connect(gain);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════════════

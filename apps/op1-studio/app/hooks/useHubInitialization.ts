@@ -6,11 +6,60 @@ const log = createLogger('OP-1.HubInit');
 
 function readImportedProfile(queryProfile: string | null) {
   if (queryProfile) return queryProfile;
+  if (typeof window === 'undefined') return null;
+
   try {
-    const cached = readHubCache<unknown>(sessionStorage.getItem('hub:playerProfile') || '') ?? readHubCache<unknown>(localStorage.getItem(HUB_CACHE_KEYS.profile) || '');
-    return cached === null ? null : JSON.stringify(cached);
+    // 1. Essai session storage hub:playerProfile
+    const fromSession = sessionStorage.getItem('hub:playerProfile');
+    if (fromSession) {
+      const parsed = readHubCache<unknown>(fromSession);
+      if (parsed) return JSON.stringify(parsed);
+    }
+
+    // 2. Essai stockage standard Studio Hub
+    const fromStudioHub = localStorage.getItem('studio-hub-profile');
+    if (fromStudioHub) {
+      const parsed = readHubCache<unknown>(fromStudioHub);
+      if (parsed) return JSON.stringify(parsed);
+    }
+
+    // 3. Essai clé cache Hub
+    const fromHubCache = localStorage.getItem(HUB_CACHE_KEYS.profile);
+    if (fromHubCache) {
+      const parsed = readHubCache<unknown>(fromHubCache);
+      if (parsed) return JSON.stringify(parsed);
+    }
+
+    // 4. Essai profil opérateur OP-1 unifié
+    const fromOp1 = localStorage.getItem('op1_character_profile_unified_v3') || localStorage.getItem('op1_character_profile_v2');
+    if (fromOp1) {
+      const parsed = JSON.parse(fromOp1);
+      if (parsed && (parsed.operatorName || parsed.name)) {
+        const synthesized = {
+          version: 2,
+          name: parsed.operatorName || parsed.name || 'Opérateur OP-1',
+          avatar: parsed.operatorAvatar || parsed.avatar || 'robot',
+          bio: 'Opérateur Studio & Machine OP-1',
+        };
+        return JSON.stringify(synthesized);
+      }
+    }
+
+    // 5. Initialisation automatique d'un profil Studio par défaut
+    const defaultProfile = {
+      version: 2,
+      name: 'Opérateur Studio',
+      avatar: 'robot',
+      bio: 'Opérateur Studio & Machine',
+    };
+    return JSON.stringify(defaultProfile);
   } catch {
-    return null;
+    return JSON.stringify({
+      version: 2,
+      name: 'Opérateur Studio',
+      avatar: 'robot',
+      bio: 'Opérateur Studio & Machine',
+    });
   }
 }
 

@@ -11,6 +11,12 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { GameGuitarHeroKeyboard } from "./GameGuitarHeroKeyboard";
+import { InvaderSprite } from "./InvaderLineSprites";
+import {
+  MidiPerformanceDebriefModal,
+  type RecordedPlayerEvent,
+  type HitJudgment,
+} from "./MidiPerformanceDebriefModal";
 import {
   GAME_SONG_THEMES,
   type GameSongTheme,
@@ -33,7 +39,10 @@ import {
   saveCharacterProfile,
   recordSessionScore,
   createDefaultProfile,
+  syncWithHubProfile,
+  calculateRank,
   OPERATOR_AVATARS,
+  HUB_AVATAR_ICONS,
   type CharacterProfile,
   type CharacterAchievement,
 } from "../lib/characterProfile";
@@ -44,8 +53,6 @@ const SCREEN_BOTTOM = 100;
 const HIT_LINE = 84; // Ligne de frappe basse juste au-dessus du clavier
 const NOTE_TRAVEL_TIME_DEFAULT = 2.4; // Secondes pour parcourir l'écran à 100% de vitesse
 
-type HitJudgment = "PERFECT" | "GREAT" | "GOOD" | "MISS";
-
 interface HitFeedback {
   id: number;
   judgment: HitJudgment;
@@ -53,6 +60,17 @@ interface HitFeedback {
   x: number;
   points: number;
   timestamp: number;
+}
+
+interface HitParticle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  color: string;
+  size: number;
+  alpha: number;
 }
 
 const CATEGORY_TABS: Record<string, { label: string; icon: string; color: string; desc: string }> = {
@@ -100,36 +118,91 @@ export function GameGuitarHeroPanel({
   const [customMidi, setCustomMidi] = useState<ParsedMidiFile | null>(null);
   const [customMidiName, setCustomMidiName] = useState<string | null>(null);
 
-  // Moteur de jeu
+  // Moteur de jeu & Compte à rebours
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [countdownStage, setCountdownStage] = useState<null | 3 | 2 | 1 | "GO">(null);
+  const [visualMode, setVisualMode] = useState<"invaders" | "classic">("invaders");
   const [speedPercent, setSpeedPercent] = useState<number>(100);
-  const [loopMode, setLoopMode] = useState<boolean>(true);
+  const [loopMode, setLoopMode] = useState<boolean>(false);
   const [autoPlaySound, setAutoPlaySound] = useState<boolean>(true);
   const [soundEngine, setSoundEngine] = useState<string>("Drum");
   const [soundPatch, setSoundPatch] = useState<string>("Kit Drum OP-1 Standard");
 
-  // Progression & Score de la session courante
+  // Progression, Score & Particules
   const [score, setScore] = useState<number>(0);
   const [comboStreak, setComboStreak] = useState<number>(0);
   const [maxCombo, setMaxCombo] = useState<number>(0);
   const [multiplier, setMultiplier] = useState<number>(1);
   const [sessionStats, setSessionStats] = useState({ perfect: 0, great: 0, good: 0, miss: 0, totalNotes: 0 });
   const [feedbacks, setFeedbacks] = useState<HitFeedback[]>([]);
+  const [particles, setParticles] = useState<HitParticle[]>([]);
   const [lastFinishedResult, setLastFinishedResult] = useState<{ xpEarned: number; newLevel: boolean } | null>(null);
+
+  // ── ENREGISTREMENT DU JEU MIDI JOUEUR & DÉBRIEFING DE FIN DE SESSION ──
+  const [recordedEvents, setRecordedEvents] = useState<RecordedPlayerEvent[]>([]);
+  const recordedEventsRef = useRef<RecordedPlayerEvent[]>([]);
+  const [showDebriefModal, setShowDebriefModal] = useState<boolean>(false);
+  const [lastDebriefData, setLastDebriefData] = useState<{
+    score: number;
+    accuracy: number;
+    rank: "S+" | "S" | "A" | "B" | "C" | "D";
+    maxCombo: number;
+    sessionStats: { perfect: number; great: number; good: number; miss: number; totalNotes: number };
+    recordedEvents: RecordedPlayerEvent[];
+    xpEarned: number;
+    newLevel: boolean;
+    newAchievements: CharacterAchievement[];
+  } | null>(null);
 
   // Clavier & Notes
   const [validatedBlocks, setValidatedBlocks] = useState(() => loadKeyboardLayoutSync());
   const [pressedKeyboardNotes, setPressedKeyboardNotes] = useState<number[]>([]);
 
-  // Horloge temps réel
+  const handleKeyboardPressedChange = useCallback((notesSet: Set<number>) => {
+    setPressedKeyboardNotes(Array.from(notesSet));
+  }, []);
+
+  // Horloge temps réel & Références synchronisées pour éviter les boucles infinies de re-render
   const [currentTime, setCurrentTime] = useState<number>(0);
+  const currentTimeRef = useRef<number>(0);
   const playbackStartTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
+  const countdownTimersRef = useRef<number[]>([]);
   const judgedNotesRef = useRef<Set<string>>(new Set());
   const soundTriggeredNotesRef = useRef<Set<string>>(new Set());
   const lastPressedStateRef = useRef<Set<number>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const profileImportInputRef = useRef<HTMLInputElement>(null);
+
+  // Refs de stabilité (évite les ré-instanciations d'effets cycliques)
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+  const scoreRef = useRef(score);
+  scoreRef.current = score;
+  const comboStreakRef = useRef(comboStreak);
+  comboStreakRef.current = comboStreak;
+  const maxComboRef = useRef(maxCombo);
+  maxComboRef.current = maxCombo;
+  const sessionStatsRef = useRef(sessionStats);
+  sessionStatsRef.current = sessionStats;
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+  const onNoticeRef = useRef(onNotice);
+  onNoticeRef.current = onNotice;
+
+  // Annulation propre des timers de compte à rebours
+  const clearCountdownTimers = useCallback(() => {
+    countdownTimersRef.current.forEach((t) => window.clearTimeout(t));
+    countdownTimersRef.current = [];
+  }, []);
+
+  // Nettoyage au démontage
+  useEffect(() => {
+    return () => {
+      clearCountdownTimers();
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [clearCountdownTimers]);
 
   // Chargement de la disposition clavier OP-1
   useEffect(() => {
@@ -169,6 +242,9 @@ export function GameGuitarHeroPanel({
     }
     return GAME_SONG_THEMES.find((t) => t.id === selectedThemeId) ?? GAME_SONG_THEMES[0];
   }, [selectedThemeId, customMidi, customMidiName, soundEngine, soundPatch]);
+
+  const currentSongRef = useRef(currentSong);
+  currentSongRef.current = currentSong;
 
   // Notes cibles actives actuellement sur la ligne de jeu
   const activeTargetNotes = useMemo(() => {
@@ -214,13 +290,23 @@ export function GameGuitarHeroPanel({
 
     // Réinitialiser la session
     setIsPlaying(false);
+    setShowDebriefModal(false);
+    setRecordedEvents([]);
+    recordedEventsRef.current = [];
+    currentTimeRef.current = 0;
     setCurrentTime(0);
+    scoreRef.current = 0;
     setScore(0);
+    comboStreakRef.current = 0;
     setComboStreak(0);
+    maxComboRef.current = 0;
     setMaxCombo(0);
     setMultiplier(1);
-    setSessionStats({ perfect: 0, great: 0, good: 0, miss: 0, totalNotes: theme.notes.length });
+    const initialStats = { perfect: 0, great: 0, good: 0, miss: 0, totalNotes: theme.notes.length };
+    sessionStatsRef.current = initialStats;
+    setSessionStats(initialStats);
     setFeedbacks([]);
+    setParticles([]);
     judgedNotesRef.current.clear();
     soundTriggeredNotesRef.current.clear();
     setActiveView("game");
@@ -235,97 +321,307 @@ export function GameGuitarHeroPanel({
         const buffer = reader.result as ArrayBuffer;
         const parsed = parseMidiFile(buffer);
         if (!parsed || parsed.notes.length === 0) {
-          onNotice?.("Aucune note jouable trouvée dans ce fichier MIDI.");
+          onNoticeRef.current?.("Aucune note jouable trouvée dans ce fichier MIDI.");
           return;
         }
         setCustomMidi(parsed);
         setCustomMidiName(file.name.replace(/\.[^/.]+$/, ""));
         setSelectedThemeId("custom_midi");
         setIsPlaying(false);
+        setShowDebriefModal(false);
+        setRecordedEvents([]);
+        recordedEventsRef.current = [];
+        currentTimeRef.current = 0;
         setCurrentTime(0);
+        scoreRef.current = 0;
         setScore(0);
+        comboStreakRef.current = 0;
         setComboStreak(0);
+        maxComboRef.current = 0;
         setMaxCombo(0);
         setMultiplier(1);
-        setSessionStats({ perfect: 0, great: 0, good: 0, miss: 0, totalNotes: parsed.notes.length });
+        const initialStats = { perfect: 0, great: 0, good: 0, miss: 0, totalNotes: parsed.notes.length };
+        sessionStatsRef.current = initialStats;
+        setSessionStats(initialStats);
         setFeedbacks([]);
+        setParticles([]);
         judgedNotesRef.current.clear();
         soundTriggeredNotesRef.current.clear();
         setActiveView("game");
-        onNotice?.(`Fichier MIDI "${file.name}" importé avec succès (${parsed.notes.length} notes) !`);
+        onNoticeRef.current?.(`Fichier MIDI "${file.name}" importé avec succès (${parsed.notes.length} notes) !`);
       } catch {
-        onNotice?.("Erreur lors de la lecture du fichier MIDI.");
+        onNoticeRef.current?.("Erreur lors de la lecture du fichier MIDI.");
       }
     };
     reader.readAsArrayBuffer(file);
-  }, [onNotice]);
+  }, []);
 
   // Jouer une note sur le moteur sonore OP-1
   const playSoundNote = useCallback((noteNumber: number, velocity = 0.85) => {
     try {
-      op1AudioEngine.triggerNoteOn(noteNumber, Math.round(velocity * 127));
+      const song = currentSongRef.current;
+      const isDrum =
+        song.category === "drum" ||
+        soundEngine === "Drum" ||
+        song.recommendedEngine === "Drum";
+
+      if (isDrum) {
+        op1AudioEngine.triggerDrum(noteNumber, Math.round(velocity * 127));
+      } else {
+        op1AudioEngine.triggerNoteOn(noteNumber, Math.round(velocity * 127), soundEngine as any);
+        window.setTimeout(() => {
+          op1AudioEngine.triggerNoteOff(noteNumber);
+          onSendMidi?.([0x80, noteNumber, 0]);
+        }, 220);
+      }
       onSendMidi?.([0x90, noteNumber, Math.round(velocity * 127)]);
-      window.setTimeout(() => {
-        op1AudioEngine.triggerNoteOff(noteNumber);
-        onSendMidi?.([0x80, noteNumber, 0]);
-      }, 200);
     } catch {
       // Audio engine fallback
     }
-  }, [onSendMidi]);
+  }, [soundEngine, onSendMidi]);
 
-  // Démarrage de la lecture
-  const startPlayback = useCallback(() => {
-    setIsPlaying(true);
-    playbackStartTimeRef.current = performance.now() - (currentTime / (speedPercent / 100)) * 1000;
+  // Lancement interactif avec compte à rebours central 3, 2, 1, GO!
+  const launchCountdown = useCallback(() => {
+    clearCountdownTimers();
+    setIsPlaying(false);
+    setShowDebriefModal(false);
+    setRecordedEvents([]);
+    recordedEventsRef.current = [];
+    currentTimeRef.current = 0;
+    setCurrentTime(0);
+    scoreRef.current = 0;
     setScore(0);
+    comboStreakRef.current = 0;
     setComboStreak(0);
+    maxComboRef.current = 0;
     setMaxCombo(0);
     setMultiplier(1);
-    setSessionStats({ perfect: 0, great: 0, good: 0, miss: 0, totalNotes: currentSong.notes.length });
+    const initialStats = { perfect: 0, great: 0, good: 0, miss: 0, totalNotes: currentSongRef.current.notes.length };
+    sessionStatsRef.current = initialStats;
+    setSessionStats(initialStats);
     setFeedbacks([]);
+    setParticles([]);
     judgedNotesRef.current.clear();
     soundTriggeredNotesRef.current.clear();
-  }, [currentTime, speedPercent, currentSong.notes.length]);
 
-  // Fin ou arrêt de session
+    setCountdownStage(3);
+    op1AudioEngine.playCountdownBeep("3");
+
+    const t1 = window.setTimeout(() => {
+      setCountdownStage(2);
+      op1AudioEngine.playCountdownBeep("2");
+    }, 700);
+
+    const t2 = window.setTimeout(() => {
+      setCountdownStage(1);
+      op1AudioEngine.playCountdownBeep("1");
+    }, 1400);
+
+    const t3 = window.setTimeout(() => {
+      setCountdownStage("GO");
+      op1AudioEngine.playCountdownBeep("GO");
+    }, 2100);
+
+    const t4 = window.setTimeout(() => {
+      setCountdownStage(null);
+      setIsPlaying(true);
+      playbackStartTimeRef.current = performance.now();
+    }, 2600);
+
+    countdownTimersRef.current = [t1, t2, t3, t4];
+  }, [clearCountdownTimers]);
+
+  // Démarrage instantané de la lecture (ou reprise)
+  const startPlayback = useCallback(() => {
+    launchCountdown();
+  }, [launchCountdown]);
+
+  // Fin ou arrêt de session & Génération du Débriefing MIDI Comparatif
   const stopPlayback = useCallback((completedNormally = false) => {
+    clearCountdownTimers();
+    setCountdownStage(null);
     setIsPlaying(false);
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
 
-    if (completedNormally && sessionStats.totalNotes > 0) {
-      const totalJudged = sessionStats.perfect + sessionStats.great + sessionStats.good + sessionStats.miss;
-      const accuracy = totalJudged > 0 ? Math.round(((sessionStats.perfect + sessionStats.great + sessionStats.good) / totalJudged) * 100) : 0;
+    const currentStats = sessionStatsRef.current;
+    const currentProfile = profileRef.current;
+    const song = currentSongRef.current;
+    const curScore = scoreRef.current;
+    const curMaxCombo = maxComboRef.current;
+    const allRecorded = [...recordedEventsRef.current];
+    setRecordedEvents(allRecorded);
 
-      const { updatedProfile, newLevel, newAchievements } = recordSessionScore(profile, {
-        songId: currentSong.id,
-        songTitle: currentSong.title,
-        category: currentSong.category,
-        score,
+    if (completedNormally && currentStats.totalNotes > 0) {
+      const totalJudged = currentStats.perfect + currentStats.great + currentStats.good + currentStats.miss;
+      const accuracy = totalJudged > 0 ? Math.round(((currentStats.perfect + currentStats.great + currentStats.good) / totalJudged) * 100) : 0;
+      const rank = calculateRank(accuracy);
+
+      const { updatedProfile, newLevel, newAchievements } = recordSessionScore(currentProfile, {
+        songId: song.id,
+        songTitle: song.title,
+        category: song.category,
+        score: curScore,
         accuracy,
-        maxCombo,
-        perfectCount: sessionStats.perfect,
-        greatCount: sessionStats.great,
-        goodCount: sessionStats.good,
-        missCount: sessionStats.miss,
-        durationSeconds: currentSong.durationSeconds,
+        maxCombo: curMaxCombo,
+        perfectCount: currentStats.perfect,
+        greatCount: currentStats.great,
+        goodCount: currentStats.good,
+        missCount: currentStats.miss,
+        durationSeconds: song.durationSeconds,
       });
 
       setProfile(updatedProfile);
-      setLastFinishedResult({ xpEarned: Math.floor(score / 10), newLevel });
+      profileRef.current = updatedProfile;
+      saveCharacterProfile(updatedProfile);
+
+      const xpEarned = Math.floor(curScore / 10);
+      setLastFinishedResult({ xpEarned, newLevel });
+
+      // Configuration des données du débriefing comparatif
+      setLastDebriefData({
+        score: curScore,
+        accuracy,
+        rank,
+        maxCombo: curMaxCombo,
+        sessionStats: { ...currentStats },
+        recordedEvents: allRecorded,
+        xpEarned,
+        newLevel,
+        newAchievements,
+      });
+
+      // Ouverture de la modale de débriefing
+      setShowDebriefModal(true);
 
       if (newLevel) {
-        onNotice?.(`🎉 NIVEAU SUPÉRIEUR ! Vous êtes maintenant Niveau ${updatedProfile.level} : ${updatedProfile.title} !`);
+        onNoticeRef.current?.(`🎉 NIVEAU SUPÉRIEUR ! Vous êtes maintenant Niveau ${updatedProfile.level} : ${updatedProfile.title} !`);
       } else if (newAchievements.length > 0) {
-        onNotice?.(`🏆 SUCCÈS DÉBLOQUÉ : ${newAchievements[0].title} (+${newAchievements[0].icon}) !`);
+        onNoticeRef.current?.(`🏆 SUCCÈS DÉBLOQUÉ : ${newAchievements[0].title} (${newAchievements[0].icon}) !`);
       } else {
-        onNotice?.(`Session terminée ! Précision : ${accuracy}% · Score : ${score.toLocaleString()} pts.`);
+        onNoticeRef.current?.(`Session terminée ! Rang ${rank} (${accuracy}%) · Score : ${curScore.toLocaleString()} pts.`);
       }
     }
-  }, [sessionStats, profile, currentSong, score, maxCombo, onNotice]);
+  }, [clearCountdownTimers]);
+
+  // Traitement robuste de la frappe d'une note (découplé du cycle de rendu)
+  const processNoteHit = useCallback((note: number) => {
+    if (!isPlayingRef.current) return;
+    const time = currentTimeRef.current;
+    const song = currentSongRef.current;
+
+    let bestMatchIdx = -1;
+    let minDiff = Infinity;
+    let timingDiffRaw = 0;
+
+    for (let i = 0; i < song.notes.length; i++) {
+      const songNote = song.notes[i];
+      const noteKey = `${i}_${songNote.note}_${songNote.startSeconds}`;
+      if (songNote.note === note && !judgedNotesRef.current.has(noteKey)) {
+        const diff = Math.abs(songNote.startSeconds - time);
+        if (diff < minDiff && diff <= 0.35) {
+          minDiff = diff;
+          bestMatchIdx = i;
+          timingDiffRaw = time - songNote.startSeconds;
+        }
+      }
+    }
+
+    if (bestMatchIdx >= 0) {
+      const matchedNote = song.notes[bestMatchIdx];
+      const noteKey = `${bestMatchIdx}_${matchedNote.note}_${matchedNote.startSeconds}`;
+      judgedNotesRef.current.add(noteKey);
+
+      let judgment: HitJudgment = "GOOD";
+      let basePoints = 50;
+
+      if (minDiff <= 0.08) {
+        judgment = "PERFECT";
+        basePoints = 200;
+      } else if (minDiff <= 0.18) {
+        judgment = "GREAT";
+        basePoints = 120;
+      }
+
+      // Enregistrement de l'événement MIDI du joueur pour analyse & comparateur
+      const timingDiffMs = Math.round(timingDiffRaw * 1000);
+      const recordedEv: RecordedPlayerEvent = {
+        id: `hit_${Date.now()}_${Math.random()}`,
+        note,
+        timestampSeconds: time,
+        velocity: 100,
+        judgment,
+        timingDiffMs,
+        matchedTargetStartSeconds: matchedNote.startSeconds,
+        matchedTargetLabel: matchedNote.label,
+      };
+      recordedEventsRef.current.push(recordedEv);
+      setRecordedEvents([...recordedEventsRef.current]);
+
+      op1AudioEngine.playHitSound(judgment);
+
+      const currentCombo = comboStreakRef.current + 1;
+      comboStreakRef.current = currentCombo;
+      setComboStreak(currentCombo);
+
+      const newMax = Math.max(maxComboRef.current, currentCombo);
+      maxComboRef.current = newMax;
+      setMaxCombo(newMax);
+
+      const currentMulti = currentCombo >= 30 ? 4 : currentCombo >= 20 ? 3 : currentCombo >= 10 ? 2 : 1;
+      setMultiplier(currentMulti);
+
+      const pointsWon = basePoints * currentMulti;
+      scoreRef.current += pointsWon;
+      setScore((prev) => prev + pointsWon);
+
+      setSessionStats((prev) => {
+        const next = {
+          ...prev,
+          perfect: judgment === "PERFECT" ? prev.perfect + 1 : prev.perfect,
+          great: judgment === "GREAT" ? prev.great + 1 : prev.great,
+          good: judgment === "GOOD" ? prev.good + 1 : prev.good,
+        };
+        sessionStatsRef.current = next;
+        return next;
+      });
+
+      const noteX = getNoteX(note);
+
+      // Particules d'impact
+      const sparkColor = judgment === "PERFECT" ? "#00ED95" : judgment === "GREAT" ? "#38bdf8" : "#fbbf24";
+      const newSparks: HitParticle[] = Array.from({ length: 6 }, (_, sIdx) => ({
+        id: Date.now() + sIdx + Math.random(),
+        x: noteX,
+        y: HIT_LINE,
+        vx: (Math.random() - 0.5) * 2.2,
+        vy: -Math.random() * 2.5 - 0.8,
+        color: sparkColor,
+        size: 0.35 + Math.random() * 0.45,
+        alpha: 1,
+      }));
+      setParticles((prev) => [...prev.slice(-24), ...newSparks]);
+
+      setFeedbacks((prev) => [
+        ...prev.filter((f) => Date.now() - f.timestamp < 700).slice(-3),
+        { id: Date.now() + bestMatchIdx, judgment, note, x: noteX, points: pointsWon, timestamp: Date.now() },
+      ]);
+    } else {
+      // Note pressée en dehors de la partition (Extra / Fausse note)
+      const recordedEv: RecordedPlayerEvent = {
+        id: `extra_${Date.now()}_${Math.random()}`,
+        note,
+        timestampSeconds: time,
+        velocity: 90,
+        judgment: "EXTRA",
+        timingDiffMs: 0,
+      };
+      recordedEventsRef.current.push(recordedEv);
+      setRecordedEvents([...recordedEventsRef.current]);
+    }
+  }, [getNoteX]);
 
   // Boucle d'animation principale temps réel (RAF)
   useEffect(() => {
@@ -337,12 +633,15 @@ export function GameGuitarHeroPanel({
     const updateLoop = () => {
       const now = performance.now();
       const elapsed = ((now - playbackStartTimeRef.current) / 1000) * speedRatio;
+      currentTimeRef.current = elapsed;
 
-      if (elapsed > songDuration + 1.5) {
+      // Détection de fin de morceau automatique
+      if (elapsed >= songDuration + 0.3) {
         if (loopMode) {
           playbackStartTimeRef.current = performance.now();
           judgedNotesRef.current.clear();
           soundTriggeredNotesRef.current.clear();
+          currentTimeRef.current = 0;
           setCurrentTime(0);
         } else {
           stopPlayback(true);
@@ -351,6 +650,29 @@ export function GameGuitarHeroPanel({
       } else {
         setCurrentTime(elapsed);
       }
+
+      // Mise à jour de la physique des particules néon d'impact (seulement si actif)
+      setParticles((prev) => {
+        if (prev.length === 0) return prev;
+        const updated = prev
+          .map((p) => ({
+            ...p,
+            x: p.x + p.vx * 0.4,
+            y: p.y + p.vy * 0.4,
+            vy: p.vy + 0.08,
+            alpha: p.alpha - 0.04,
+          }))
+          .filter((p) => p.alpha > 0.05);
+        return updated.length === 0 ? [] : updated;
+      });
+
+      // Nettoyage régulier des feedbacks expirés
+      setFeedbacks((prev) => {
+        if (prev.length === 0) return prev;
+        const nowTs = Date.now();
+        const remaining = prev.filter((f) => nowTs - f.timestamp < 700);
+        return remaining.length === prev.length ? prev : remaining;
+      });
 
       // Déclenchement automatique du son guide
       if (autoPlaySound) {
@@ -371,13 +693,20 @@ export function GameGuitarHeroPanel({
         const noteKey = `${i}_${note.note}_${note.startSeconds}`;
         if (!judgedNotesRef.current.has(noteKey) && elapsed > note.startSeconds + missThreshold) {
           judgedNotesRef.current.add(noteKey);
+          comboStreakRef.current = 0;
           setComboStreak(0);
           setMultiplier(1);
-          setSessionStats((prev) => ({ ...prev, miss: prev.miss + 1 }));
+          setSessionStats((prev) => {
+            const next = { ...prev, miss: prev.miss + 1 };
+            sessionStatsRef.current = next;
+            return next;
+          });
+
+          op1AudioEngine.playHitSound("MISS");
 
           const noteX = getNoteX(note.note);
           setFeedbacks((prev) => [
-            ...prev.slice(-4),
+            ...prev.filter((f) => Date.now() - f.timestamp < 700).slice(-3),
             { id: Date.now() + i, judgment: "MISS", note: note.note, x: noteX, points: 0, timestamp: Date.now() },
           ]);
         }
@@ -397,7 +726,7 @@ export function GameGuitarHeroPanel({
     return new Set<number>([...pressedNotes, ...pressedKeyboardNotes]);
   }, [pressedNotes, pressedKeyboardNotes]);
 
-  // Évaluation des frappes joueur
+  // Évaluation des frappes joueur lors du changement des touches pressées
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -406,74 +735,12 @@ export function GameGuitarHeroPanel({
 
     for (const note of currentPressed) {
       if (!lastPressed.has(note)) {
-        // Nouvelle frappe détectée sur la note
-        let bestMatchIdx = -1;
-        let minDiff = Infinity;
-
-        for (let i = 0; i < currentSong.notes.length; i++) {
-          const songNote = currentSong.notes[i];
-          const noteKey = `${i}_${songNote.note}_${songNote.startSeconds}`;
-          if (songNote.note === note && !judgedNotesRef.current.has(noteKey)) {
-            const diff = Math.abs(songNote.startSeconds - currentTime);
-            if (diff < minDiff && diff <= 0.35) {
-              minDiff = diff;
-              bestMatchIdx = i;
-            }
-          }
-        }
-
-        if (bestMatchIdx >= 0) {
-          const matchedNote = currentSong.notes[bestMatchIdx];
-          const noteKey = `${bestMatchIdx}_${matchedNote.note}_${matchedNote.startSeconds}`;
-          judgedNotesRef.current.add(noteKey);
-
-          let judgment: HitJudgment = "GOOD";
-          let basePoints = 50;
-
-          if (minDiff <= 0.08) {
-            judgment = "PERFECT";
-            basePoints = 200;
-          } else if (minDiff <= 0.18) {
-            judgment = "GREAT";
-            basePoints = 120;
-          }
-
-          const currentMulti = comboStreak >= 30 ? 4 : comboStreak >= 20 ? 3 : comboStreak >= 10 ? 2 : 1;
-          const pointsWon = basePoints * currentMulti;
-
-          const newCombo = comboStreak + 1;
-          setComboStreak(newCombo);
-          setMaxCombo((prev) => Math.max(prev, newCombo));
-          setMultiplier(newCombo >= 30 ? 4 : newCombo >= 20 ? 3 : newCombo >= 10 ? 2 : 1);
-          setScore((prev) => prev + pointsWon);
-
-          setSessionStats((prev) => ({
-            ...prev,
-            perfect: judgment === "PERFECT" ? prev.perfect + 1 : prev.perfect,
-            great: judgment === "GREAT" ? prev.great + 1 : prev.great,
-            good: judgment === "GOOD" ? prev.good + 1 : prev.good,
-          }));
-
-          const noteX = getNoteX(note);
-          setFeedbacks((prev) => [
-            ...prev.slice(-4),
-            { id: Date.now() + bestMatchIdx, judgment, note, x: noteX, points: pointsWon, timestamp: Date.now() },
-          ]);
-        }
+        processNoteHit(note);
       }
     }
 
     lastPressedStateRef.current = new Set(currentPressed);
-  }, [allActivePressedNotes, isPlaying, currentTime, currentSong.notes, comboStreak, getNoteX]);
-
-  // Nettoyage des feedbacks visuels après 650ms
-  useEffect(() => {
-    if (feedbacks.length === 0) return;
-    const timer = window.setTimeout(() => {
-      setFeedbacks((prev) => prev.filter((f) => Date.now() - f.timestamp < 700));
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [feedbacks]);
+  }, [allActivePressedNotes, isPlaying, processNoteHit]);
 
   // Notes visibles sur l'autoroute à l'instant T
   const visibleHighwayNotes = useMemo(() => {
@@ -809,6 +1076,24 @@ export function GameGuitarHeroPanel({
                 </button>
               )}
 
+              {/* Mode Visuel Space Invaders vs Classique */}
+              <button
+                type="button"
+                onClick={() => setVisualMode((prev) => (prev === "invaders" ? "classic" : "invaders"))}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  border: visualMode === "invaders" ? "1px solid #a855f7" : "1px solid #334155",
+                  background: visualMode === "invaders" ? "rgba(168, 85, 247, 0.2)" : "#0f172a",
+                  color: visualMode === "invaders" ? "#c084fc" : "#94a3b8",
+                }}
+              >
+                {visualMode === "invaders" ? "👾 Space Invaders" : "🎹 Notes Classiques"}
+              </button>
+
               {/* Vitesse */}
               <div
                 style={{
@@ -1106,8 +1391,26 @@ export function GameGuitarHeroPanel({
                 />
               ))}
 
-              {/* ── NOTES VECTORIELLES QUI TOMBENT ── */}
+              {/* ── RENDU DES NOTES OU DES SPACE INVADERS SELON LE MODE CHOISI ── */}
               {visibleHighwayNotes.map((note) => {
+                if (visualMode === "invaders") {
+                  return (
+                    <InvaderSprite
+                      key={note.key}
+                      note={note}
+                      x={note.x}
+                      y={note.y}
+                      width={note.width}
+                      height={note.height}
+                      level={currentSong.level}
+                      category={currentSong.category}
+                      isPastHit={note.isPastHit}
+                      time={currentTime}
+                    />
+                  );
+                }
+
+                // Mode classique
                 let noteFill = "url(#melodyGrad)";
                 let strokeColor = "#38bdf8";
 
@@ -1167,6 +1470,18 @@ export function GameGuitarHeroPanel({
                 );
               })}
 
+              {/* ÉTINCELLES & PARTICULES NÉON DE FRAPPE */}
+              {particles.map((p) => (
+                <circle
+                  key={p.id}
+                  cx={p.x}
+                  cy={p.y}
+                  r={p.size}
+                  fill={p.color}
+                  opacity={p.alpha}
+                />
+              ))}
+
               {/* Halos lumineux lors des frappes actives */}
               {Array.from(allActivePressedNotes).map((n) => {
                 const x = getNoteX(n);
@@ -1179,6 +1494,114 @@ export function GameGuitarHeroPanel({
                 );
               })}
             </svg>
+
+            {/* ── COMPTEUR CENTRAL GÉANT INTERACTIF (3, 2, 1, GO!) ── */}
+            {countdownStage !== null && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(0, 0, 0, 0.78)",
+                  backdropFilter: "blur(3px)",
+                  zIndex: 50,
+                  pointerEvents: "none",
+                }}
+              >
+                <div
+                  style={{
+                    position: "relative",
+                    width: "160px",
+                    height: "160px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {/* Anneau extérieur rotatif néon */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      border: `3px dashed ${
+                        countdownStage === "GO"
+                          ? "#FF3A5D"
+                          : countdownStage === 1
+                          ? "#00ED95"
+                          : countdownStage === 2
+                          ? "#38bdf8"
+                          : "#fbbf24"
+                      }`,
+                      boxShadow: `0 0 30px ${
+                        countdownStage === "GO"
+                          ? "rgba(255, 58, 93, 0.7)"
+                          : countdownStage === 1
+                          ? "rgba(0, 237, 149, 0.7)"
+                          : countdownStage === 2
+                          ? "rgba(56, 189, 248, 0.7)"
+                          : "rgba(251, 191, 36, 0.7)"
+                      }`,
+                    }}
+                  />
+                  {/* Disque intérieur avec chiffre */}
+                  <div
+                    style={{
+                      width: "134px",
+                      height: "134px",
+                      borderRadius: "50%",
+                      background: "radial-gradient(circle, #0f172a 0%, #000000 100%)",
+                      border: "2px solid #ffffff",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: countdownStage === "GO" ? "40px" : "60px",
+                        fontWeight: 900,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        color:
+                          countdownStage === "GO"
+                            ? "#FF3A5D"
+                            : countdownStage === 1
+                            ? "#00ED95"
+                            : countdownStage === 2
+                            ? "#38bdf8"
+                            : "#fbbf24",
+                        textShadow: "0 0 24px currentColor",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {countdownStage}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: 900,
+                        letterSpacing: "1.2px",
+                        color: "#ffffff",
+                        marginTop: "4px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {countdownStage === "GO"
+                        ? "C'EST PARTI !"
+                        : countdownStage === 1
+                        ? "POSE LES DOIGTS !"
+                        : countdownStage === 2
+                        ? "ATTENTION..."
+                        : "PRÊT ?"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Popups de feedback flottants (PERFECT, GREAT, MISS) */}
             {feedbacks.map((f) => {
@@ -1248,11 +1671,9 @@ export function GameGuitarHeroPanel({
             </div>
 
             <GameGuitarHeroKeyboard
-              pressedNotes={Array.from(allActivePressedNotes)}
+              pressedNotes={pressedNotes}
               targetNotes={activeTargetNotes}
-              onPressedChange={(notesSet) => {
-                setPressedKeyboardNotes(Array.from(notesSet));
-              }}
+              onPressedChange={handleKeyboardPressedChange}
               onSendMidi={onSendMidi}
             />
           </div>
@@ -1485,6 +1906,62 @@ export function GameGuitarHeroPanel({
       {activeView === "profile" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           
+          {/* BANNIÈRE DE SYNCHRONISATION HUB & FICHE PERSONNAGE */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              background: "#111822",
+              border: "1px solid #1e293b",
+              borderRadius: "10px",
+              padding: "12px 16px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "20px" }}>🧬</span>
+              <div>
+                <strong style={{ fontSize: "12.5px", color: "#f8fafc", display: "block" }}>
+                  Fiche de Personnage & Atelier Studio
+                </strong>
+                <span style={{ fontSize: "10.5px", color: "#94a3b8" }}>
+                  Progression RPG unifiée, avatar d'atelier et synchronisation avec le Hub Studio.
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const res = syncWithHubProfile(profile);
+                setProfile(res.updated);
+                saveCharacterProfile(res.updated);
+                setNameInput(res.updated.operatorName);
+                if (res.synced) {
+                  onNotice?.(`Profil synchronisé avec la fiche de personnage du Hub Studio (${res.updated.operatorName}) !`);
+                } else {
+                  onNotice?.("Profil OP-1 déjà à jour avec le Hub Studio.");
+                }
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "6px 14px",
+                borderRadius: "6px",
+                fontSize: "11px",
+                fontWeight: 700,
+                cursor: "pointer",
+                border: "1px solid #38bdf8",
+                background: "rgba(56, 189, 248, 0.15)",
+                color: "#38bdf8",
+              }}
+            >
+              <span>🔄</span>
+              <span>Synchroniser avec le Hub Studio</span>
+            </button>
+          </div>
+
           {/* CARTE PRINCIPALE : IDENTITÉ OPÉRATEUR & ÉTAT DU STUDIO */}
           <div
             style={{
@@ -1934,6 +2411,37 @@ export function GameGuitarHeroPanel({
           </div>
 
         </div>
+      )}
+
+      {/* ── MODALE DE DÉBRIEFING DE FIN DE SESSION & COMPARATEUR MIDI ── */}
+      {showDebriefModal && lastDebriefData && (
+        <MidiPerformanceDebriefModal
+          isOpen={showDebriefModal}
+          song={currentSong}
+          score={lastDebriefData.score}
+          accuracy={lastDebriefData.accuracy}
+          rank={lastDebriefData.rank}
+          maxCombo={lastDebriefData.maxCombo}
+          sessionStats={lastDebriefData.sessionStats}
+          recordedEvents={lastDebriefData.recordedEvents}
+          xpEarned={lastDebriefData.xpEarned}
+          newLevel={lastDebriefData.newLevel}
+          newAchievements={lastDebriefData.newAchievements}
+          profile={profile}
+          onReplay={() => {
+            setShowDebriefModal(false);
+            launchCountdown();
+          }}
+          onViewProfile={() => {
+            setShowDebriefModal(false);
+            setActiveView("profile");
+          }}
+          onBrowseCatalog={() => {
+            setShowDebriefModal(false);
+            setActiveView("catalog");
+          }}
+          onClose={() => setShowDebriefModal(false)}
+        />
       )}
     </div>
   );

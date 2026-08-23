@@ -154,10 +154,23 @@ export function createHubCacheEnvelope<T>(data: T) {
   return { data, timestamp: Date.now() };
 }
 
-export function readHubCache<T>(key: string): T | null {
+export function readHubCache<T>(keyOrRaw: string): T | null {
+  if (!keyOrRaw) return null;
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : null;
+    let raw: string | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        raw = localStorage.getItem(keyOrRaw) ?? sessionStorage.getItem(keyOrRaw);
+      } catch {
+        // Storage might be restricted
+      }
+    }
+    const candidate = raw || keyOrRaw;
+    const parsed = JSON.parse(candidate);
+    if (parsed && typeof parsed === "object" && "data" in parsed && "timestamp" in parsed) {
+      return (parsed as { data: T }).data;
+    }
+    return parsed as T;
   } catch {
     return null;
   }

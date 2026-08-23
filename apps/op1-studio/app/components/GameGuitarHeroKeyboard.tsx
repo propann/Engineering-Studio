@@ -11,7 +11,7 @@
  * - Ne casse et ne modifie JAMAIS le clavier d'origine (StudioMachinePanel), assurant l'isolation totale du code.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import {
   loadKeyboardLayout,
   loadKeyboardLayoutSync,
@@ -26,6 +26,9 @@ import {
 import { op1AudioEngine } from "../lib/op1SynthEngine";
 
 const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+function midiNoteName(note: number) {
+  return `${NOTE_NAMES[note % 12]}${Math.floor(note / 12) - 1}`;
+}
 
 const WHITE_KEY_CODES = ["KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash", "KeyQ", "KeyW", "KeyE", "KeyR"];
 const BLACK_KEY_CODES = ["KeyS", "KeyD", "KeyG", "KeyH", "KeyJ", "KeyL", "Semicolon", "Digit2", "Digit3", "Digit5"];
@@ -51,7 +54,7 @@ export function GameGuitarHeroKeyboard({
   gameMuted = false,
   showKeyLabels = true,
 }: {
-  pressedNotes?: number[];
+  pressedNotes?: number[] | Set<number>;
   targetNotes?: Set<number>;
   onPressedChange?: (notes: Set<number>) => void;
   onSendMidi?: (data: number[]) => void;
@@ -61,7 +64,15 @@ export function GameGuitarHeroKeyboard({
   showKeyLabels?: boolean;
 }) {
   const [validated, setValidated] = useState<Block[]>(() => loadKeyboardLayoutSync());
-  const [pressed, setPressed] = useState<Set<number>>(new Set(pressedNotes));
+  const [localPressed, setLocalPressed] = useState<Set<number>>(new Set());
+  const localPressedRef = useRef<Set<number>>(localPressed);
+  localPressedRef.current = localPressed;
+
+  const onPressedChangeRef = useRef(onPressedChange);
+  onPressedChangeRef.current = onPressedChange;
+
+  const onSendMidiRef = useRef(onSendMidi);
+  onSendMidiRef.current = onSendMidi;
 
   useEffect(() => {
     let active = true;
@@ -71,47 +82,44 @@ export function GameGuitarHeroKeyboard({
     return () => { active = false; };
   }, []);
 
-  // Synchronisation MIDI externe / contrôleur
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setPressed(new Set(pressedNotes));
-    }, 0);
-    return () => window.clearTimeout(timer);
+  // Conversion stable des notes externes
+  const externalPressedSet = useMemo(() => {
+    if (pressedNotes instanceof Set) return pressedNotes;
+    return new Set(pressedNotes);
   }, [pressedNotes]);
-
-  useEffect(() => {
-    onPressedChange?.(pressed);
-  }, [pressed, onPressedChange]);
-
-  useEffect(() => {
-    op1AudioEngine.setEngine(soundEngine);
-    op1AudioEngine.setPatch(soundPatch);
-  }, [soundEngine, soundPatch]);
 
   const { white: whiteBlocks, black: blackBlocks } = sortKeyBlocks(validated);
   const bounds = layoutBounds([...whiteBlocks, ...blackBlocks], COLS, ROWS);
 
-  const noteOn = useCallback((note: number) => {
-    setPressed((s) => new Set(s).add(note));
-    if (!gameMuted) {
-      op1AudioEngine.triggerNoteOn(note, 110);
-    }
-    if (onSendMidi) {
-      onSendMidi([0x90, Math.max(0, Math.min(127, note)), 100]);
-    }
-  }, [gameMuted, onSendMidi]);
+  const noteOn = (note: number) => {
+    const next = new Set(localPressedRef.current);
+    next.add(note);
+    setLocalPressed(next);
+    onPressedChangeRef.current?.(next);
 
-  const noteOff = useCallback((note: number) => {
-    setPressed((s) => {
-      const ns = new Set(s);
-      ns.delete(note);
-      return ns;
-    });
-    op1AudioEngine.triggerNoteOff(note);
-    if (onSendMidi) {
-      onSendMidi([0x80, Math.max(0, Math.min(127, note)), 0]);
+    if (!gameMuted) {
+      if (soundEngine === "Drum") {
+        op1AudioEngine.triggerDrum(note, 110);
+      } else {
+        op1AudioEngine.triggerNoteOn(note, 110, soundEngine as any);
+      }
     }
-  }, [onSendMidi]);
+    if (onSendMidiRef.current) {
+      onSendMidiRef.current([0x90, Math.max(0, Math.min(127, note)), 100]);
+    }
+  };
+
+  const noteOff = (note: number) => {
+    const next = new Set(localPressedRef.current);
+    next.delete(note);
+    setLocalPressed(next);
+    onPressedChangeRef.current?.(next);
+
+    op1AudioEngine.triggerNoteOff(note);
+    if (onSendMidiRef.current) {
+      onSendMidiRef.current([0x80, Math.max(0, Math.min(127, note)), 0]);
+    }
+  };
 
   // Raccourcis clavier physique ordinateur (AZERTY / QWERTY)
   useEffect(() => {
@@ -149,7 +157,7 @@ export function GameGuitarHeroKeyboard({
       window.removeEventListener("keyup", onKeyUp);
       heldKeys.clear();
     };
-  }, [noteOff, noteOn]);
+  }, [gameMuted, soundEngine]);
 
   return (
     <div
@@ -217,7 +225,7 @@ export function GameGuitarHeroKeyboard({
         {/* ── 1. Touches blanches ── */}
         {whiteBlocks.map((b, i) => {
           const note = WHITE_NOTES[i] ?? (53 + i * 2);
-          const isDown = pressed.has(note);
+          const isDown = localPressed.has(note) || externalPressedSet.has(note);
           const isTarget = targetNotes.has(note);
           const name = NOTE_NAMES[note % 12];
 
@@ -231,7 +239,7 @@ export function GameGuitarHeroKeyboard({
               }}
               onPointerUp={() => noteOff(note)}
               onPointerLeave={() => {
-                if (pressed.has(note)) noteOff(note);
+                if (localPressed.has(note)) noteOff(note);
               }}
               style={{ cursor: "pointer" }}
             >
@@ -309,7 +317,7 @@ export function GameGuitarHeroKeyboard({
         {/* ── 2. Touches noires ── */}
         {blackBlocks.map((b, i) => {
           const note = BLACK_NOTES[i] ?? (61 + i * 2);
-          const isDown = pressed.has(note);
+          const isDown = localPressed.has(note) || externalPressedSet.has(note);
           const isTarget = targetNotes.has(note);
 
           return (
@@ -322,7 +330,7 @@ export function GameGuitarHeroKeyboard({
               }}
               onPointerUp={() => noteOff(note)}
               onPointerLeave={() => {
-                if (pressed.has(note)) noteOff(note);
+                if (localPressed.has(note)) noteOff(note);
               }}
               style={{ cursor: "pointer" }}
             >

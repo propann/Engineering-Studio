@@ -83,6 +83,57 @@ export interface CharacterProfile {
 
 const STORAGE_KEY = "op1_character_profile_unified_v3";
 
+export const HUB_AVATAR_ICONS: Record<string, string> = {
+  teacher: "🧑‍🏫",
+  carpenter: "🪚",
+  artist: "🎨",
+  barista: "☕",
+  support: "🎧",
+  architect: "📐",
+  activist: "📢",
+  "mail-carrier": "📬",
+  builder: "👷",
+  scientist: "🧪",
+  student: "🎒",
+  librarian: "📚",
+  trainer: "🏋️",
+  "office-worker": "💼",
+  influencer: "📱",
+  chef: "🍳",
+  courier: "📦",
+  grandma: "👵",
+  musician: "🎵",
+  paramedic: "🚑",
+  knight: "🛡️",
+  rogue: "🗡️",
+  smith: "🔨",
+  archer: "🏹",
+  scholar: "📜",
+  warrior: "⚔️",
+  goblin: "👺",
+  cyborg: "🦾",
+  "cat-adventurer": "🐱",
+  pirate: "🏴‍☠️",
+  sorceress: "🔮",
+  viking: "🪓",
+  engineer: "⚙️",
+  necromancer: "💀",
+  ranger: "🌲",
+  "royal-guard": "💂",
+  fighter: "🥊",
+  samurai: "🥋",
+  cultist: "🕯️",
+  explorer: "🧭",
+  robot: "🤖",
+  synth: "🎹",
+  drum: "🥁",
+  tape: "📼",
+  cyber: "👾",
+  astronaut: "👨‍🚀",
+  wizard: "🧙‍♂️",
+  dj: "🎧",
+};
+
 export const OPERATOR_AVATARS = [
   { id: "robot", icon: "🤖", name: "Androïde OP-1" },
   { id: "synth", icon: "🎹", name: "Maître des Ondes" },
@@ -90,8 +141,12 @@ export const OPERATOR_AVATARS = [
   { id: "tape", icon: "📼", name: "Gardien du Ruban" },
   { id: "cyber", icon: "👾", name: "Cyberpunk 2077" },
   { id: "astronaut", icon: "👨‍🚀", name: "Cosmonaute Sonore" },
+  { id: "engineer", icon: "⚙️", name: "Ingénieur Studio" },
+  { id: "musician", icon: "🎵", name: "Artiste Compositeur" },
   { id: "wizard", icon: "🧙‍♂️", name: "Alchimiste Audio" },
   { id: "dj", icon: "🎧", name: "Beatmaker Studio" },
+  { id: "cyborg", icon: "🦾", name: "Cyborg Modifié" },
+  { id: "cat-adventurer", icon: "🐱", name: "Félin Rythmique" },
 ];
 
 export const OPERATOR_TITLES = [
@@ -335,12 +390,51 @@ export function createDefaultProfile(): CharacterProfile {
   };
 }
 
+export function syncWithHubProfile(profile: CharacterProfile): { updated: CharacterProfile; synced: boolean; hubName?: string } {
+  if (typeof window === "undefined") return { updated: profile, synced: false };
+  try {
+    const hubRaw = localStorage.getItem("studio-hub-profile");
+    if (!hubRaw) return { updated: profile, synced: false };
+    const hubProfile = JSON.parse(hubRaw);
+    if (!hubProfile) return { updated: profile, synced: false };
+
+    let changed = false;
+    const updated: CharacterProfile = { ...profile };
+
+    if (hubProfile.name && typeof hubProfile.name === "string" && hubProfile.name.trim() && hubProfile.name !== profile.operatorName) {
+      updated.operatorName = hubProfile.name.trim();
+      changed = true;
+    }
+
+    if (hubProfile.avatar && typeof hubProfile.avatar === "string") {
+      updated.operatorAvatar = hubProfile.avatar;
+      changed = true;
+    }
+
+    if (hubProfile.workspace?.name) {
+      updated.studioInfo = {
+        ...updated.studioInfo,
+        deviceRef: hubProfile.workspace.name.toUpperCase(),
+      };
+    }
+
+    if (changed) {
+      saveCharacterProfile(updated);
+    }
+
+    return { updated, synced: true, hubName: hubProfile.name };
+  } catch {
+    return { updated: profile, synced: false };
+  }
+}
+
 export function loadCharacterProfile(): CharacterProfile {
   if (typeof window === "undefined") {
     return createDefaultProfile();
   }
 
   try {
+    let result: CharacterProfile;
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
       // Tentative de migration depuis l'ancienne clé v2 si présente
@@ -348,7 +442,7 @@ export function loadCharacterProfile(): CharacterProfile {
       if (oldRaw) {
         const oldParsed = JSON.parse(oldRaw);
         const def = createDefaultProfile();
-        return {
+        result = {
           ...def,
           operatorName: oldParsed.operatorName || def.operatorName,
           operatorAvatar: oldParsed.operatorAvatar || def.operatorAvatar,
@@ -361,26 +455,46 @@ export function loadCharacterProfile(): CharacterProfile {
             ...(oldParsed.stats || {}),
           },
         };
+      } else {
+        result = createDefaultProfile();
       }
-      return createDefaultProfile();
+    } else {
+      const parsed = JSON.parse(raw) as CharacterProfile;
+      if (!parsed || typeof parsed.level !== "number") {
+        result = createDefaultProfile();
+      } else {
+        // Injection garantie des nouveaux achievements sans casser les déblocages
+        const existingIds = new Set((parsed.achievements || []).map((a) => a.id));
+        const mergedAchievements = [...(parsed.achievements || [])];
+        for (const ach of INITIAL_ACHIEVEMENTS) {
+          if (!existingIds.has(ach.id)) {
+            mergedAchievements.push(ach);
+          }
+        }
+        parsed.achievements = mergedAchievements;
+        if (!parsed.stats.bestScoresBySong) parsed.stats.bestScoresBySong = {};
+        if (!parsed.studioInfo) parsed.studioInfo = createDefaultProfile().studioInfo;
+        result = parsed;
+      }
     }
 
-    const parsed = JSON.parse(raw) as CharacterProfile;
-    if (!parsed || typeof parsed.level !== "number") return createDefaultProfile();
-
-    // Injection garantie des nouveaux achievements sans casser les déblocages
-    const existingIds = new Set((parsed.achievements || []).map((a) => a.id));
-    const mergedAchievements = [...(parsed.achievements || [])];
-    for (const ach of INITIAL_ACHIEVEMENTS) {
-      if (!existingIds.has(ach.id)) {
-        mergedAchievements.push(ach);
+    // Auto-sync doux avec la fiche de personnage du Studio Hub si présente
+    try {
+      const hubRaw = localStorage.getItem("studio-hub-profile");
+      if (hubRaw) {
+        const hubProfile = JSON.parse(hubRaw);
+        if (hubProfile.name && (result.operatorName === "Opérateur OP-1" || result.operatorName === "NOUVEAU MEMBRE")) {
+          result.operatorName = hubProfile.name.trim();
+        }
+        if (hubProfile.avatar && result.operatorAvatar === "robot") {
+          result.operatorAvatar = hubProfile.avatar;
+        }
       }
+    } catch {
+      // Ignorer
     }
-    parsed.achievements = mergedAchievements;
-    if (!parsed.stats.bestScoresBySong) parsed.stats.bestScoresBySong = {};
-    if (!parsed.studioInfo) parsed.studioInfo = createDefaultProfile().studioInfo;
 
-    return parsed;
+    return result;
   } catch {
     return createDefaultProfile();
   }
