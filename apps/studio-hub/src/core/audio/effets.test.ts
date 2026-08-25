@@ -371,6 +371,41 @@ describe("delai multi-prises", () => {
     expect(tempsDesPrises(200, NaN, 50)).toHaveLength(1);
   });
 
+  it("garde toutes les prises distinctes, meme sur un delai long", () => {
+    // Chaque prise etait bornee separement a 2 s. Passe un certain temps de
+    // base, plusieurs retombaient donc sur la meme valeur : a 1200 ms et 100 %
+    // d'ecart, quatre prises n'en donnaient que DEUX distinctes, trois
+    // empilees sur 2,0 s. Elles sonnaient comme un seul echo plus fort, et
+    // leurs noeuds tournaient pour rien.
+    for (const base of [200, 600, 1000, 1200]) {
+      for (const n of [2, 4, TAPS_MAX]) {
+        const t = tempsDesPrises(base, n, 100);
+        const distinctes = new Set(t.map((v) => v.toFixed(6))).size;
+        expect(distinctes, `${n} prises a ${base} ms : ${t.join(", ")}`).toBe(n);
+      }
+    }
+  });
+
+  it("la derniere prise vise le plafond quand l'ecart le demande", () => {
+    // C'est ce qui remplace le rognage : l'etalement se met a l'echelle de ce
+    // qui tient, au lieu d'ecraser les prises intermediaires sur la borne.
+    const t = tempsDesPrises(1200, TAPS_MAX, 100);
+    expect(t[t.length - 1]).toBeCloseTo(2, 10);
+    expect(t[0]).toBeCloseTo(tempsRetardSec(1200), 10);
+  });
+
+  it("ne met pas a l'echelle quand tout tient deja", () => {
+    // Un delai court garde l'ecart demande tel quel : la mise a l'echelle ne
+    // doit se declencher que sous la contrainte du plafond.
+    const base = tempsRetardSec(200);
+    const t = tempsDesPrises(200, 4, 100);
+    // Ecart de 100 % : chaque prise s'eloigne d'une fois le temps de base.
+    expect(t).toHaveLength(4);
+    for (let i = 0; i < t.length; i++) {
+      expect(t[i], `prise ${i}`).toBeCloseTo(base * (1 + i), 10);
+    }
+  });
+
   it("resiste a un ecart aberrant", () => {
     for (const e of [NaN, Infinity, -50, 1e9]) {
       const t = tempsDesPrises(200, 3, e);

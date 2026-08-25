@@ -150,7 +150,7 @@ export function estCourbeAppliquee(
 export const REINJECTION_MAX = 0.85;
 
 /** Nombre maximal de prises. Au-delà, elles se confondent en réverbération. */
-export const TAPS_MAX = 4;
+export const TAPS_MAX = 8;
 
 /**
  * Temps des prises d'un délai multi-prises.
@@ -173,10 +173,31 @@ export function tempsDesPrises(msBase: number, prises: number, ecartPourcent: nu
     ? Math.max(0, Math.min(100, ecartPourcent)) / 100
     : 0;
   if (ecart === 0) return [base];
+
+  // L'écart se met à l'échelle de ce qui TIENT sous le plafond, au lieu d'être
+  // rogné prise par prise.
+  //
+  // Chaque prise était bornée séparément à 2 s — le maximum de `createDelay(2)`.
+  // Passé un certain temps de base, plusieurs prises retombaient donc sur la
+  // même valeur : à 1200 ms et 100 % d'écart, quatre prises n'en donnaient que
+  // deux distinctes, trois d'entre elles empilées sur 2,0 s. Ce n'est pas un
+  // détail d'arrondi — ces trois-là sonnaient comme un seul écho plus fort, et
+  // les nœuds correspondants tournaient pour rien.
+  //
+  // La dernière prise vise maintenant le plafond, et les autres se répartissent
+  // jusqu'à elle. Le curseur d'écart règle donc l'étalement réel plutôt que de
+  // saturer : au-delà d'un certain point il n'ajoute plus rien, mais il ne
+  // détruit plus les prises intermédiaires.
+  const facteurVoulu = 1 + (n - 1) * ecart;
+  const facteurTenable = 2 / base;
+  const echelle = facteurVoulu > facteurTenable
+    ? Math.max(0, (facteurTenable - 1) / (facteurVoulu - 1))
+    : 1;
+
   return Array.from({ length: n }, (_, i) => {
-    // La première prise reste au temps de base ; les suivantes s'en éloignent
-    // proportionnellement, sans jamais dépasser ce que le nœud accepte.
-    const facteur = 1 + (i * ecart);
+    // La première prise reste au temps de base : sinon changer le nombre de
+    // prises déplacerait aussi le premier écho.
+    const facteur = 1 + i * ecart * echelle;
     return Math.max(0.01, Math.min(2, base * facteur));
   });
 }

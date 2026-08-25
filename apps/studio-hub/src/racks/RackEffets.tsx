@@ -3,6 +3,7 @@ import {
   BANDES_EQ,
   COURBES_EQ,
   EQ_DB_MAX,
+  TAPS_MAX,
   estCourbeAppliquee,
   type ParamsEffets,
 } from "../core/audio/effets";
@@ -298,8 +299,10 @@ export function RackEffets({
           <input type="range" min={0} max={100} value={params.fxDelayFeedback}
             onChange={(e) => onParam("fxDelayFeedback", Number(e.target.value))} />
         </label>
+        {/* Le plafond vient de la logique : ecrit en dur ici, il aurait fige le
+            curseur a quatre le jour ou la chaine en accepte huit. */}
         <label>PRISES {params.fxDelayTaps}
-          <input type="range" min={1} max={4} step={1} value={params.fxDelayTaps}
+          <input type="range" min={1} max={TAPS_MAX} step={1} value={params.fxDelayTaps}
             onChange={(e) => onParam("fxDelayTaps", Number(e.target.value))} />
         </label>
         {params.fxDelayTaps > 1 && (

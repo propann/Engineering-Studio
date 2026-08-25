@@ -9,7 +9,7 @@
 | | Module | État |
 |---|---|---|
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
-| 2 | Multi-Tap Delay | ✅ livré — 1 à 4 prises, SYNC au tempo, seule la première réinjecte |
+| 2 | Multi-Tap Delay | ✅ livré — 1 à 8 prises toutes distinctes, SYNC au tempo, seule la première réinjecte |
 | 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 enveloppes prédéfinies |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
@@ -137,20 +137,27 @@ Un delai avec reinjection dans le rack (`construireChaineEffets`) : melange,
 temps, retour, boucle amortie par un passe-bas. La reinjection est bornee a 0,85
 pour qu'un curseur a 100 % ne parte pas en larsen.
 
-Les prises sont la (`fxDelayTaps`, 1 a 4, et `fxDelaySpread` pour leur ecart),
+Les prises sont la (`fxDelayTaps`, 1 a 8, et `fxDelaySpread` pour leur ecart),
 avec `tempsDesPrises` et `niveauPrise`. Seule la premiere reinjecte : boucler
 sur toutes multiplierait le gain de boucle par leur nombre, et le plafond ne
 protegerait plus rien. La synchronisation au tempo de l'hote est branchee
 (`delaySync` + division musicale).
 
+L'ecart se met a l'echelle de ce qui tient sous le plafond de `createDelay(2)`,
+au lieu d'etre rogne prise par prise. Avant, a 1200 ms et 100 % d'ecart, quatre
+prises n'en donnaient que deux distinctes -- trois empilees sur 2,0 s, qui
+sonnaient comme un seul echo plus fort pendant que leurs noeuds tournaient pour
+rien. La derniere prise vise maintenant le plafond et les autres se
+repartissent jusqu'a elle.
+
 **Ce qui manque** : le panoramique par prise — la chaine est mono jusqu'a la
-sortie, donc c'est un changement de topologie, pas un curseur de plus. Et huit
-prises au lieu de quatre.
+sortie, donc c'est un changement de topologie, pas un curseur de plus.
 
 **Files**:
 - ✅ `core/audio/effets.ts` - `tempsDesPrises`, `niveauPrise`, la chaine
-- ✅ `core/audio/effets.test.ts` - les prises, la reinjection, le plafond
-- ✅ `racks/RackEffets.tsx` - PRISES, ECART, SYNC + division
+- ✅ `core/audio/effets.test.ts` - les prises distinctes, la reinjection, le plafond
+- ✅ `racks/RackEffets.tsx` - PRISES (jusqu'a `TAPS_MAX`), ECART, SYNC + division
+- ❌ panoramique par prise - TODO (topologie stereo)
 
 **Description**: 2-8 tap delay with feedback, pan, and tempo sync. Real-time parameter control.
 
