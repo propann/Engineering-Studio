@@ -101,7 +101,14 @@ jobs:
         # Le test rendered-html reste bloqué séparément tant que le build Vinext
         # ne produit pas dist/server/index.js ; on ne transforme pas ce manque
         # d'artefact en validation fictive du transfert OP-1.
-        run: node --experimental-strip-types --test tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs
+        #
+        # Cette liste est nommée en dur, elle NE SUIT PAS le script `test` du
+        # package.json : un fichier de test ajouté là-bas ne tourne pas ici, et
+        # ne protège donc personne — `npm test` exige un build complet que
+        # personne ne lance à la main. Tout garde-fou ajouté doit être inscrit
+        # sur cette ligne, sans quoi il n'est vert que sur le poste de qui
+        # l'a écrit.
+        run: node --experimental-strip-types --test tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs tests/highway-alignment.test.mjs
 
   studio-ep133:
     name: EP-133 Studio Checks
