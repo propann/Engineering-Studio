@@ -500,7 +500,11 @@ describe("fabrique d'echantillons", () => {
       SOURCE.indexOf("const empreinte")
     );
     expect(rendu).toMatch(/setValueAtTime\([^)]*SUSTAIN/);
-    expect(rendu).toMatch(/exponentialRampToValueAtTime\(0\.0001/);
+    expect(rendu).toMatch(/rampeVers\(voix\.env\.gain, 0,/);
+    // Et la MEME forme de rampe qu'au jeu. Un rendu fige en exponentiel
+    // pendant que le jeu monte en droite donnerait un fichier qui ne sonne pas
+    // comme ce qu'on entend — sans que rien ne le signale.
+    expect(rendu).toMatch(/rampeVers\([^)]*formeRampe\(p\)\)/);
   });
 
   it("dimensionne le tampon par planifierRendu", () => {

@@ -11,12 +11,35 @@
  * ramèneraient le clic que l'enveloppe existe pour supprimer.
  */
 
+/**
+ * La forme des rampes.
+ *
+ * - `exp` — exponentielle, comme depuis l'origine. C'est la façon dont
+ *   l'oreille perçoit le volume, donc un déclin exponentiel s'entend
+ *   « régulier ». C'est aussi ce qui interdit le zéro.
+ * - `lin` — droite. Une attaque linéaire monte plus vite au début puis
+ *   semble ralentir ; c'est le grain des vieilles machines numériques, et
+ *   c'est franchement audible sur une attaque lente.
+ */
+export type CourbeRampe = "exp" | "lin";
+
 export type ParamsEnveloppe = {
   envAttack: number;   // ms
   envDecay: number;    // ms
   envSustain: number;  // %
   envRelease: number;  // ms
+  envCourbe: CourbeRampe;
 };
+
+/**
+ * Les phases chiffrées — tout `ParamsEnveloppe` sauf la forme des rampes.
+ *
+ * Les enveloppes prédéfinies ne fixent que celles-ci : la forme des rampes est
+ * un goût qui traverse tous les sons, pas une caractéristique du PERCUSSIF ou
+ * de la NAPPE. Rappeler une enveloppe ne doit donc pas la changer sous les
+ * doigts.
+ */
+export type PhaseEnveloppe = Exclude<keyof ParamsEnveloppe, "envCourbe">;
 
 /** Valeurs d'origine, câblées jusqu'ici. Elles restent les défauts. */
 export const ENVELOPPE_DEFAUT: ParamsEnveloppe = {
@@ -24,6 +47,7 @@ export const ENVELOPPE_DEFAUT: ParamsEnveloppe = {
   envDecay: 120,
   envSustain: 75,
   envRelease: 220,
+  envCourbe: "exp",
 };
 
 /**
@@ -117,8 +141,15 @@ export function courbeEnveloppe(
   const e = resoudreEnveloppe(p);
   const tenue = (e.ATTACK + e.DECAY + e.RELEASE) / 3;
 
-  // v0 · (v1/v0)^x, l'interpolation exponentielle de Web Audio.
-  const rampe = (v0: number, v1: number, x: number) => v0 * Math.pow(v1 / v0, x);
+  // La MEME forme que celle qui sera jouee. Un trace toujours exponentiel
+  // pendant que le moteur monte en droite montrerait une attaque qu'on
+  // n'entend pas — exactement le defaut que la courbe existe pour eviter.
+  const droite = formeRampe(p) === "lin";
+  const rampe = droite
+    // `linearRampToValueAtTime` interpole en droite entre les deux valeurs.
+    ? (v0: number, v1: number, x: number) => v0 + (v1 - v0) * x
+    // v0 · (v1/v0)^x, l'interpolation exponentielle de Web Audio.
+    : (v0: number, v1: number, x: number) => v0 * Math.pow(v1 / v0, x);
 
   const points: PointEnveloppe[] = [];
   const segment = (t0: number, duree: number, v0: number, v1: number) => {
@@ -165,7 +196,7 @@ export type EnveloppePredefinie = {
   nom: string;
   /** Ce qu'elle fait à l'oreille, en une phrase. Sert d'infobulle. */
   aide: string;
-  reglages: Record<keyof ParamsEnveloppe, number>;
+  reglages: Record<PhaseEnveloppe, number>;
 };
 
 /**
@@ -185,7 +216,12 @@ export const ENVELOPPES: readonly EnveloppePredefinie[] = [
   {
     nom: "DÉFAUT",
     aide: "Le réglage d'origine : attaque courte, maintien haut, queue brève",
-    reglages: { ...ENVELOPPE_DEFAUT },
+    reglages: {
+      envAttack: ENVELOPPE_DEFAUT.envAttack,
+      envDecay: ENVELOPPE_DEFAUT.envDecay,
+      envSustain: ENVELOPPE_DEFAUT.envSustain,
+      envRelease: ENVELOPPE_DEFAUT.envRelease,
+    },
   },
   {
     nom: "PERCUSSIF",
@@ -218,9 +254,44 @@ export const ENVELOPPES: readonly EnveloppePredefinie[] = [
  * enveloppes différentes se seraient dites égales.
  */
 export function estEnveloppeAppliquee(
-  params: ParamsEnveloppe,
+  // Seules les phases chiffrees, pas tout `ParamsEnveloppe` : la forme des
+  // rampes n'entre pas dans la comparaison, puisqu'une enveloppe predefinie ne
+  // la fixe pas. Le type le dit, plutot que le commentaire seul.
+  params: Pick<ParamsEnveloppe, PhaseEnveloppe>,
   enveloppe: EnveloppePredefinie,
 ): boolean {
-  return (Object.keys(enveloppe.reglages) as Array<keyof ParamsEnveloppe>)
+  return (Object.keys(enveloppe.reglages) as PhaseEnveloppe[])
     .every((nom) => params[nom] === enveloppe.reglages[nom]);
+}
+
+
+/**
+ * Applique une rampe vers une valeur, selon la forme choisie.
+ *
+ * **Un seul point d'application.** Les rampes d'enveloppe sont programmées à
+ * cinq endroits du rack — attaque, déclin, relâchement d'une note tenue,
+ * relâchement d'une note ponctuelle, et le rendu hors ligne. Écrire le choix
+ * de forme cinq fois, c'est se garantir qu'un des cinq restera exponentiel
+ * après une retouche : le son rendu ne correspondrait plus à ce qu'on entend
+ * en jouant, et rien ne le signalerait.
+ *
+ * Le plancher reste appliqué en linéaire, où il n'est pourtant pas obligatoire
+ * — `linearRampToValueAtTime` accepte zéro. Le garder évite un second chemin
+ * de résolution : à −80 dB, la différence est inaudible, et une enveloppe qui
+ * change de valeur de repos selon la forme choisie serait un piège.
+ */
+export function rampeVers(
+  parametre: AudioParam,
+  cible: number,
+  quand: number,
+  forme: CourbeRampe,
+): void {
+  const valeur = Math.max(PLANCHER, cible);
+  if (forme === "lin") parametre.linearRampToValueAtTime(valeur, quand);
+  else parametre.exponentialRampToValueAtTime(valeur, quand);
+}
+
+/** La forme des rampes d'un réglage, `exp` par défaut si elle manque ou ment. */
+export function formeRampe(p: Partial<ParamsEnveloppe>): CourbeRampe {
+  return p.envCourbe === "lin" ? "lin" : "exp";
 }

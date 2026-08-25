@@ -11,7 +11,7 @@
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 8 prises toutes distinctes, SYNC au tempo, seule la première réinjecte |
 | 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
-| 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 enveloppes prédéfinies |
+| 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 prédéfinies, rampes exp/droites |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
 | 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié |
 | 7 | LFO Generator | ✅ livré — trémolo, balayage de filtre, SYNC au tempo, déphasage à l'origine |
@@ -228,7 +228,7 @@ recu sa valeur.
 ---
 
 ### Module 4: ADSR Envelope Generator ⏱️ 3-4h
-**Status**: 🟢 LIVRE (2026-08-25) — sauf le choix lineaire/exponentiel  
+**Status**: ✅ LIVRE (2026-08-25) — complet  
 
 Une enveloppe ADSR native est en place dans le moteur depuis le 2026-08-20
 (`construireVoix`), avec des rampes exponentielles qui ne passent jamais par
@@ -259,15 +259,29 @@ reprend `ENVELOPPE_DEFAUT` sans le recopier -- deux jeux de valeurs
 divergeraient au premier defaut change, et le bouton ne ramenerait plus au
 point de depart.
 
-**Ce qui manque** : le choix lineaire/exponentiel. Ce n'est pas un curseur de
-plus : les rampes s'appliquent a quatre endroits du rack de moteurs plus le
-rendu hors ligne, et le mode doit descendre jusqu'a chacun.
+Le choix lineaire/exponentiel est livre. Les rampes s'appliquaient a CINQ
+endroits — attaque, declin, relachement d'une note tenue, relachement d'une
+note ponctuelle, et le rendu hors ligne. Elles passent toutes par `rampeVers` :
+ecrire le choix cinq fois, c'etait se garantir qu'un des cinq resterait
+exponentiel apres une retouche, et le fichier rendu ne sonnerait plus comme ce
+qu'on entend en jouant.
+
+Chaque voix emporte la forme choisie AU DEPART de la note. Le relachement est
+programme plus tard, quand la touche se leve : relire le reglage courant a ce
+moment-la ferait qu'une note commencee en courbe se relacherait en droite si on
+a bouge le bouton entre les deux.
+
+Les enveloppes predefinies ne touchent PAS a la forme : c'est un gout qui
+traverse tous les sons, pas une caracteristique du PERCUSSIF ou de la NAPPE.
+Le type le dit — leurs `reglages` sont un `Record<PhaseEnveloppe, number>`, la
+forme etant exclue.
+
+**Ce qui manque** : rien d'identifie.
 
 **Files**:
-- ✅ `core/audio/enveloppe.ts` - resolution, courbe, enveloppes predefinies
-- ✅ `core/audio/enveloppe.test.ts` - bornes, forme de la courbe, predefinies
-- ✅ `racks/PanneauEnveloppe.tsx` - commandes, trace SVG et rappels
-- ❌ choix lineaire/exponentiel - TODO
+- ✅ `core/audio/enveloppe.ts` - resolution, courbe, predefinies, `rampeVers`
+- ✅ `core/audio/enveloppe.test.ts` - bornes, formes, courbe, predefinies
+- ✅ `racks/PanneauEnveloppe.tsx` - commandes, trace SVG, rappels, forme
 
 **Description**: Full ADSR envelope with linear/exponential curves and visualizer.
 

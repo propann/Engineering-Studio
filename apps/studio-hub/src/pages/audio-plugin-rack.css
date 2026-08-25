@@ -999,6 +999,7 @@
 .env-courbe-aire     { fill: rgba(0,237,149,.14); stroke: none; }
 .env-courbe-trait    { fill: none; stroke: #00ed95; stroke-width: 1.1; stroke-linejoin: round; }
 .env-predefinies { flex-basis: 100%; }
+.env-formes { flex-basis: 100%; }
 
 /* ── Delay synchronise au tempo de l'hote ───────────────────────────────── */
 .fx-sync { display: flex; gap: 6px; align-items: center; margin-top: 2px; }

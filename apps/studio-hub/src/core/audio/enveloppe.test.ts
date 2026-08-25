@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BORNES, ENVELOPPE_DEFAUT, PLANCHER, RAMPE_MIN_SEC,
   dureeAttaqueDeclin, resoudreEnveloppe, courbeEnveloppe, dureeCourbe,
-  ENVELOPPES, estEnveloppeAppliquee,
+  ENVELOPPES, estEnveloppeAppliquee, formeRampe,
 } from "./enveloppe";
 
 describe("resolution des reglages", () => {
@@ -182,7 +182,19 @@ describe("enveloppes predefinies", () => {
     // depart, sans que rien ne le signale.
     const defaut = ENVELOPPES[0];
     expect(defaut.nom).toBe("DÉFAUT");
-    expect(defaut.reglages).toEqual({ ...ENVELOPPE_DEFAUT });
+    for (const nom of ["envAttack", "envDecay", "envSustain", "envRelease"] as const) {
+      expect(defaut.reglages[nom], nom).toBe(ENVELOPPE_DEFAUT[nom]);
+    }
+  });
+
+  it("aucune ne touche a la forme des rampes", () => {
+    // La forme est un gout qui traverse tous les sons, pas une caracteristique
+    // du PERCUSSIF ou de la NAPPE. Rappeler une enveloppe ne doit pas la
+    // changer sous les doigts — surtout qu'on ne la reglerait plus qu'a
+    // l'aveugle, chaque predefinie la ramenant a la sienne.
+    for (const e of ENVELOPPES) {
+      expect(Object.keys(e.reglages), e.nom).not.toContain("envCourbe");
+    }
   });
 
   it("aucune ne sort des bornes des curseurs", () => {
@@ -255,5 +267,56 @@ describe("reconnaissance de l'enveloppe courante", () => {
   it("ne confond pas deux enveloppes", () => {
     expect(estEnveloppeAppliquee(DEFAUT.reglages, AUTRE)).toBe(false);
     expect(estEnveloppeAppliquee(AUTRE.reglages, DEFAUT)).toBe(false);
+  });
+});
+
+describe("forme des rampes", () => {
+  const REGLAGE = { envAttack: 400, envDecay: 200, envSustain: 50, envRelease: 300 } as const;
+
+  it("l'exponentielle reste le defaut", () => {
+    // Changer la forme par defaut ferait changer de son a TOUS les patches
+    // existants, sans qu'aucun ait demande quoi que ce soit.
+    expect(ENVELOPPE_DEFAUT.envCourbe).toBe("exp");
+    expect(formeRampe({})).toBe("exp");
+  });
+
+  it("retombe sur l'exponentielle si le reglage ment", () => {
+    // Un patch importe peut porter n'importe quoi. Une forme inconnue passee
+    // telle quelle ferait tomber dans la branche lineaire par accident.
+    for (const v of [undefined, "carre" as never, null as never, 42 as never]) {
+      expect(formeRampe({ envCourbe: v })).toBe("exp");
+    }
+  });
+
+  it("la droite est une droite", () => {
+    // Aux quarts de l'attaque, une droite vaut exactement 0,25, 0,50, 0,75.
+    const c = courbeEnveloppe({ ...REGLAGE, envCourbe: "lin" });
+    const e = resoudreEnveloppe(REGLAGE);
+    const au = (t: number) => c.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a)).v;
+    for (const x of [0.25, 0.5, 0.75]) {
+      expect(au(e.ATTACK * x), `a ${x * 100} %`).toBeCloseTo(x, 2);
+    }
+  });
+
+  it("l'exponentielle part bien plus bas que la droite", () => {
+    // C'est toute la difference audible : a mi-attaque, l'exponentielle est
+    // encore a un centieme du sommet. Un trace fige sur une seule forme
+    // montrerait une attaque que l'on n'entend pas.
+    const e = resoudreEnveloppe(REGLAGE);
+    const auMilieu = (forme: "exp" | "lin") => {
+      const c = courbeEnveloppe({ ...REGLAGE, envCourbe: forme });
+      return c.reduce((a, b) => (Math.abs(b.t - e.ATTACK / 2) < Math.abs(a.t - e.ATTACK / 2) ? b : a)).v;
+    };
+    expect(auMilieu("exp")).toBeLessThan(auMilieu("lin") / 10);
+  });
+
+  it("les deux formes gardent les memes bornes et la meme duree", () => {
+    // Seule la route change, pas les points de passage : sinon changer de
+    // forme deplacerait aussi le sommet ou la fin.
+    for (const forme of ["exp", "lin"] as const) {
+      const c = courbeEnveloppe({ ...REGLAGE, envCourbe: forme });
+      expect(Math.max(...c.map((q) => q.v)), forme).toBeCloseTo(1, 6);
+      expect(c[c.length - 1].t, forme).toBeCloseTo(dureeCourbe(REGLAGE), 10);
+    }
   });
 });

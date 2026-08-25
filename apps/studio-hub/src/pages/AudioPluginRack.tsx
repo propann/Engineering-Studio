@@ -21,7 +21,7 @@ import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@stu
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
 import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
-import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
+import { ENVELOPPE_DEFAUT, formeRampe, rampeVers, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
 import { lirePatchImporte } from "../core/audio/importPatch";
 import { construireArchivePatches, lireArchivePatches } from "../core/audio/archivePatches";
 import {
@@ -389,6 +389,7 @@ export default function AudioPluginRack({
   const [envDecay, setEnvDecay] = useState<number>(ENVELOPPE_DEFAUT.envDecay);
   const [envSustain, setEnvSustain] = useState<number>(ENVELOPPE_DEFAUT.envSustain);
   const [envRelease, setEnvRelease] = useState<number>(ENVELOPPE_DEFAUT.envRelease);
+  const [envCourbe, setEnvCourbe] = useState<ParamsEnveloppe["envCourbe"]>(ENVELOPPE_DEFAUT.envCourbe);
 
   // LFO global (module 7). Plusieurs moteurs ont deja leur LFO interne ;
   // celui-ci s'applique a TOUTES les voix. Inactif par defaut : ajouter le
@@ -536,7 +537,7 @@ export default function AudioPluginRack({
     masterDetune,
     fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
     fxEqLow, fxEqMid, fxEqHigh,
-    envAttack, envDecay, envSustain, envRelease,
+    envAttack, envDecay, envSustain, envRelease, envCourbe,
     lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase, bpmHote,
     fxDriveMix, fxDriveAmount, fxDriveMode,
     fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
@@ -565,7 +566,7 @@ export default function AudioPluginRack({
       masterDetune,
       fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
       fxEqLow, fxEqMid, fxEqHigh,
-      envAttack, envDecay, envSustain, envRelease,
+      envAttack, envDecay, envSustain, envRelease, envCourbe,
       lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase, bpmHote,
       fxDriveMix, fxDriveAmount, fxDriveMode,
       fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
@@ -637,6 +638,15 @@ export default function AudioPluginRack({
     release: number;
     sources: AudioScheduledSourceNode[];
     naturalEnd: number; // dernier arrêt de source
+    /**
+     * La forme de rampe choisie AU DÉPART de la note.
+     *
+     * Le relâchement est programmé plus tard, quand la touche se lève. Relire
+     * le réglage courant à ce moment-là ferait qu'une note commencée en courbe
+     * exponentielle se relâcherait en droite si on a bougé le bouton entre
+     * les deux — une seule note à cheval sur deux formes.
+     */
+    forme: ParamsEnveloppe["envCourbe"];
   };
   const voicesRef = useRef<Map<string, Voice>>(new Map());
 
@@ -710,7 +720,7 @@ export default function AudioPluginRack({
       const current = Math.max(0.0001, voice.env.gain.value);
       voice.env.gain.cancelScheduledValues(t);
       voice.env.gain.setValueAtTime(current, t);
-      voice.env.gain.exponentialRampToValueAtTime(0.0001, t + voice.release);
+      rampeVers(voice.env.gain, 0, t + voice.release, voice.forme);
     } catch (error) {
       log.warn("release ramp failed", error);
     }
@@ -775,15 +785,16 @@ export default function AudioPluginRack({
   const appliquerParamEffet = <N extends keyof ParamsEffets>(nom: N, valeur: ParamsEffets[N]) => {
     updateParam(nom, valeur, SETTERS_EFFETS[nom]);
   };
-  const SETTERS_ENVELOPPE: Record<keyof ParamsEnveloppe, (v: number) => void> = {
+  const SETTERS_ENVELOPPE: { [N in keyof ParamsEnveloppe]: (v: ParamsEnveloppe[N]) => void } = {
     envAttack: setEnvAttack,
     envDecay: setEnvDecay,
     envSustain: setEnvSustain,
     envRelease: setEnvRelease,
+    envCourbe: setEnvCourbe,
   };
   
-  const appliquerParamEnveloppe = (nom: keyof ParamsEnveloppe, valeur: number) => {
-    updateParam(nom, valeur, SETTERS_ENVELOPPE[nom]);
+  const appliquerParamEnveloppe = <N extends keyof ParamsEnveloppe>(nom: N, valeur: ParamsEnveloppe[N]) => {
+    updateParam(nom, valeur, SETTERS_ENVELOPPE[nom] as (v: any) => void);
   };
   
   const SETTERS_LFO: { [N in keyof ParamsLfo]: (v: ParamsLfo[N]) => void } = {
@@ -1123,9 +1134,10 @@ export default function AudioPluginRack({
     const { ATTACK, DECAY, SUSTAIN, RELEASE } = resoudreEnveloppe(p);
 
     const env = ctx.createGain();
+    const forme = formeRampe(p);
     env.gain.setValueAtTime(0.0001, now);
-    env.gain.exponentialRampToValueAtTime(1, now + ATTACK);
-    env.gain.exponentialRampToValueAtTime(SUSTAIN, now + ATTACK + DECAY);
+    rampeVers(env.gain, 1, now + ATTACK, forme);
+    rampeVers(env.gain, SUSTAIN, now + ATTACK + DECAY, forme);
 
     const masterGain = ctx.createGain();
     const vol = (p.masterVolume / 100) * 0.45;
@@ -1999,7 +2011,7 @@ export default function AudioPluginRack({
     voix.env.connect(effets.entree);
     effets.sortie.connect(offline.destination);
     voix.env.gain.setValueAtTime(voix.SUSTAIN, plan.debutRelachement);
-    voix.env.gain.exponentialRampToValueAtTime(0.0001, plan.debutRelachement + voix.RELEASE);
+    rampeVers(voix.env.gain, 0, plan.debutRelachement + voix.RELEASE, formeRampe(p));
 
     const rendu = await offline.startRendering();
     return rendu.getChannelData(0);
@@ -2165,13 +2177,13 @@ export default function AudioPluginRack({
       if (voiceId) {
         // Note tenue : la voix reste au niveau de sustain jusqu'au
         // relâchement, qui programmera la rampe de release.
-        voicesRef.current.set(voiceId, { env, release: RELEASE, sources, naturalEnd });
+        voicesRef.current.set(voiceId, { env, release: RELEASE, sources, naturalEnd, forme: formeRampe(p) });
       } else {
         // Note ponctuelle : release calé sur la fin du son perçu, pas sur
         // l'arrêt des sources.
         const at = Math.max(now + ATTACK + DECAY + 0.01, audibleEnd - RELEASE);
         env.gain.setValueAtTime(SUSTAIN, at);
-        env.gain.exponentialRampToValueAtTime(0.0001, at + RELEASE);
+        rampeVers(env.gain, 0, at + RELEASE, formeRampe(p));
         window.setTimeout(() => {
           try {
             env.disconnect();
@@ -3204,7 +3216,7 @@ export default function AudioPluginRack({
                 a part parce que ce fichier fait deja 3900 lignes, pas parce que ce
                 serait un quatrieme rack. */}
             <PanneauEnveloppe
-              params={{ envAttack, envDecay, envSustain, envRelease }}
+              params={{ envAttack, envDecay, envSustain, envRelease, envCourbe }}
               onParam={appliquerParamEnveloppe}
             />
             <PanneauLfo

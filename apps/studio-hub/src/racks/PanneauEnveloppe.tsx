@@ -2,6 +2,7 @@ import {
   BORNES,
   ENVELOPPES,
   PLANCHER,
+  type PhaseEnveloppe,
   courbeEnveloppe,
   dureeCourbe,
   estEnveloppeAppliquee,
@@ -20,7 +21,12 @@ import {
  */
 export type ProprietesPanneauEnveloppe = {
   params: ParamsEnveloppe;
-  onParam: (nom: keyof ParamsEnveloppe, valeur: number) => void;
+  /**
+   * Un seul rappel, dont le type de la valeur est DERIVE du nom : sans cela,
+   * la forme des rampes — la seule valeur non chiffree — aurait demande un
+   * second rappel rien que pour elle.
+   */
+  onParam: <N extends keyof ParamsEnveloppe>(nom: N, valeur: ParamsEnveloppe[N]) => void;
 };
 
 /** Repère du tracé, en unités SVG. Mis à l'échelle par la feuille de style. */
@@ -127,6 +133,25 @@ export function PanneauEnveloppe({ params, onParam }: ProprietesPanneauEnveloppe
           onChange={(e) => onParam("envRelease", Number(e.target.value))}
         />
       </label>
+      {/* La forme des rampes. Deux boutons plutot qu'un interrupteur : « EXP »
+          et « DROIT » se lisent tous les deux, la ou une case a cocher
+          « lineaire » laisserait deviner ce que vaut l'etat decoche. */}
+      <div className="fx-modes env-formes">
+        {(["exp", "lin"] as const).map((forme) => (
+          <button
+            key={forme}
+            type="button"
+            className={`fx-mode-btn ${params.envCourbe === forme ? "actif" : ""}`}
+            onClick={() => onParam("envCourbe", forme)}
+            title={forme === "exp"
+              ? "Rampes exponentielles : la facon dont l'oreille percoit le volume, un declin s'y entend regulier"
+              : "Rampes droites : monte vite puis semble ralentir, le grain des vieilles machines numeriques"}
+          >
+            {forme === "exp" ? "COURBE EXP" : "COURBE DROITE"}
+          </button>
+        ))}
+      </div>
+
       <CourbeEnveloppe params={params} />
       {/* Les enveloppes prédéfinies. Chacune pousse ses quatre réglages par le
           rappel habituel : quatre appels d'affilée, chaque phase ayant son
@@ -143,7 +168,7 @@ export function PanneauEnveloppe({ params, onParam }: ProprietesPanneauEnveloppe
             type="button"
             className={`fx-mode-btn ${estEnveloppeAppliquee(params, enveloppe) ? "actif" : ""}`}
             onClick={() => {
-              for (const nom of Object.keys(enveloppe.reglages) as Array<keyof ParamsEnveloppe>) {
+              for (const nom of Object.keys(enveloppe.reglages) as PhaseEnveloppe[]) {
                 onParam(nom, enveloppe.reglages[nom]);
               }
             }}
