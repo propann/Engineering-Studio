@@ -427,8 +427,23 @@ Le rendu est hors ligne, donc plus rapide que le temps reel — indispensable po
 un pack. Il reutilise `construireVoix`, le meme code moteur que pour jouer : un
 second chemin audio aurait diverge des la premiere evolution.
 
-**Ce qui manque** : le choix de la profondeur (24 et 32 bits), et les
-metadonnees de titre.
+**Ce qui manque — et pourquoi ca ne se construira sans doute pas tel quel** :
+
+Le plan demandait le choix de la profondeur (24 et 32 bits). Verifie le
+2026-08-25 : les CINQ cibles d'export sont des machines, pas un export
+generique. L'EP-133 est documente « PCM 16 bits » dans sa reference SysEx, et
+l'OP-1 lit du 16 bits pour `synth/user` et `drum/user`. Offrir le 24 bits ici
+laisserait fabriquer des fichiers que les deux machines refusent — l'inverse
+du service rendu. L'item attend donc une cible qui le justifie : un export
+« vers le disque » sans machine derriere.
+
+A noter : le LECTEUR AIFF (`packages/audio-formats/aiff.ts`) accepte deja 8,
+16, 24 et 32 bits. C'est l'ecriture qui est volontairement limitee.
+
+Les metadonnees de titre (chunk `NAME` en AIFF) sont possibles sur le papier,
+mais le micrologiciel de l'OP-1 n'est pas une implementation de reference :
+ajouter un chunk qu'il pourrait ne pas ignorer se verifie sur la machine, pas
+au jugé. A tenter par son proprietaire, avec un fichier temoin.
 
 **Priority**: 🔴 HIGH
 
