@@ -59,3 +59,43 @@ describe("le recensement suit les pages reelles", () => {
     }
   });
 });
+
+describe("on ne peut pas perdre la derniere porte d'une page", () => {
+  /**
+   * Trois pages ne s'ouvrent que depuis ce registre : `advanced-image`,
+   * `sound-patch-creator` et `rhythm-hero`, sorti du Hub le 2026-08-25.
+   *
+   * « Retirer » persiste dans `localStorage` et seule la DERNIERE suppression
+   * s'annule : deux retraits d'affilee en scellent un. Sur une page dont ce
+   * registre est le seul chemin, le retrait ne range pas — il coupe la
+   * derniere porte, et le code reste sans que rien ne l'ouvre.
+   */
+  it("le retrait est refuse quand ce registre est le seul chemin", () => {
+    expect(RECENSEMENT).toContain("const estSeulAcces =");
+    const bloc = RECENSEMENT.slice(RECENSEMENT.indexOf("const removeEntry"));
+    expect(bloc.slice(0, 400)).toContain("if (estSeulAcces(page))");
+  });
+
+  it("le bouton le dit avant le clic, il ne se contente pas de refuser", () => {
+    expect(RECENSEMENT).toContain("disabled={estSeulAcces(page)}");
+  });
+
+  it("chaque page du registre declare par ou on y entre", () => {
+    // Un lien manquant ferait passer une page atteignable pour une orpheline,
+    // et une orpheline pour une page qu'on peut retirer sans risque.
+    const liens = new Set([...RECENSEMENT.matchAll(/^\s*"([a-z0-9-]+)": \[/gm)].map((m) => m[1]));
+    for (const id of recensees()) {
+      expect(liens.has(id), `« ${id} » n'a aucune entree dans PAGE_LINKS`).toBe(true);
+    }
+  });
+
+  it("les pages sans autre porte sont bien reconnues comme telles", () => {
+    // Verrouille le fait, pas seulement le mecanisme : si l'une de ces trois
+    // retrouve un bouton ailleurs, ce test tombe et rappelle de le declarer.
+    for (const id of ["advanced-image", "sound-patch-creator", "rhythm-hero"]) {
+      const m = new RegExp(`"${id}": \\[([^\\]]*)\\]`).exec(RECENSEMENT);
+      expect(m, `${id} absent de PAGE_LINKS`).not.toBeNull();
+      expect(m![1].trim(), `${id} n'est plus une orpheline`).toBe('"Page manager"');
+    }
+  });
+});

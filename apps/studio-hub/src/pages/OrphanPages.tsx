@@ -72,7 +72,10 @@ const PAGE_LINKS: Record<string, string[]> = {
   "doc-ep133": ["Hub · Documentation"],
   "studio-op1": ["TopBar · OP-1 Studio", "Hub · OP-1 Studio", "Hub · Tape"],
   "studio-ep133": ["TopBar · EP-133 Studio", "Hub · EP-133 Studio", "Hub · Pattern & Song"],
-  "rhythm-hero": ["Hub · Apprendre"],
+  // Sorti du groupe « Apprendre » le 2026-08-25 : la carte EP-133 ouvre
+  // desormais le studio directement. Ce registre est le seul chemin qui
+  // reste vers cette page.
+  "rhythm-hero": ["Page manager"],
   "image-editor-op1": ["Hub · Éditeur d’image"],
   "firmware-lab": ["Hub · Firmware Lab"],
   "advanced-image": ["Page manager"],
@@ -119,7 +122,29 @@ export default function OrphanPages() {
     setArchived(next);
     persist(ARCHIVED_KEY, next);
   };
+  /**
+   * Une page dont ce registre est le SEUL chemin d'accès.
+   *
+   * `PAGE_LINKS` recense les boutons qui mènent à chaque page. Quand il n'en
+   * reste qu'un et que c'est celui-ci, retirer l'entrée ne « range » pas la
+   * page : elle coupe la dernière porte, et le retrait est persisté dans
+   * `localStorage`. La page devient alors inatteignable pour de bon — son code
+   * est toujours là, mais plus rien ne l'ouvre. Seule la DERNIÈRE suppression
+   * peut être annulée, donc deux retraits d'affilée en scellent un.
+   */
+  const estSeulAcces = (page: PageRecord) => {
+    const liens = PAGE_LINKS[page.id] || [];
+    return liens.length <= 1 && (liens.length === 0 || liens[0] === "Page manager");
+  };
+
   const removeEntry = (page: PageRecord) => {
+    if (estSeulAcces(page)) {
+      window.alert(
+        `« ${page.label} » n'est ouverte que depuis ce registre. La retirer la rendrait inatteignable.\n\n` +
+        "Utilise plutôt « Archiver » : la page sort de la liste par défaut et reste rappelable par le filtre « Archivées »."
+      );
+      return;
+    }
     if (!window.confirm(`Retirer « ${page.label} » du registre local ? Le code de la page ne sera pas supprimé.`)) return;
     const next = [...removed, page.id];
     setRemoved(next);
@@ -183,7 +208,16 @@ export default function OrphanPages() {
                   <div className="orphan-page-actions">
                     <button type="button" onClick={() => openPage(page)}>Voir la page →</button>
                     <button type="button" onClick={() => toggleArchived(page.id)}>{isArchived ? "Restaurer" : "Archiver"}</button>
-                    <button type="button" onClick={() => removeEntry(page)}>Retirer</button>
+                    <button
+                      type="button"
+                      onClick={() => removeEntry(page)}
+                      disabled={estSeulAcces(page)}
+                      title={estSeulAcces(page)
+                        ? "Seul chemin vers cette page : la retirer la rendrait inatteignable. Archive-la plutôt."
+                        : "Retire l'entrée du registre local. Le code de la page reste."}
+                    >
+                      Retirer
+                    </button>
                   </div>
                 </article>
               );
