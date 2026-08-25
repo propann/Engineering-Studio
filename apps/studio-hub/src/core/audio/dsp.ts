@@ -48,22 +48,45 @@ export function buildBitcrushCurve(bits: number): Float32Array<ArrayBuffer> {
 }
 
 /**
+ * Les trois écrêtages.
+ *
+ * Le type ET l'ordre d'affichage au même endroit : une liste des modes tenue
+ * ailleurs se serait tue le jour où un quatrième arrive, et le bouton aurait
+ * manqué pour un mode que la courbe sait pourtant produire.
+ */
+export type ModeSaturation = "soft" | "fold" | "hard";
+export const ORDRE_SATURATION: readonly ModeSaturation[] = ["soft", "hard", "fold"];
+
+/**
  * Courbe de saturation.
  *  - "soft" : tanh, écrêtage progressif, chaleur analogique.
+ *  - "hard" : écrêtage franc. Le signal passe intact jusqu'au seuil, puis
+ *    s'arrête net. Le coin anguleux est ce qui produit les harmoniques
+ *    impaires dures — c'est un autre son que le tanh, pas un tanh plus fort.
  *  - "fold" : repliement d'onde. L'amplitude qui dépasse ne sature pas,
  *    elle se replie et crée des harmoniques supérieures. C'est le
  *    traitement que faust_dsp annonçait sans jamais l'appliquer.
+ *
+ * Les trois partagent le même gain d'entrée `1 + k·12` — sauf le repliement,
+ * qui replierait bien trop tôt. À réglage égal, passer d'un mode à l'autre
+ * change donc le grain, pas le volume.
  */
-export function buildSaturationCurve(amount: number, mode: "soft" | "fold" = "soft"): Float32Array<ArrayBuffer> {
+export function buildSaturationCurve(amount: number, mode: ModeSaturation = "soft"): Float32Array<ArrayBuffer> {
   const n = 4096;
   const curve = new Float32Array(new ArrayBuffer(n * 4));
   const k = Math.max(0.001, amount / 100);
   for (let i = 0; i < n; i++) {
     const x = (i / (n - 1)) * 2 - 1;
-    curve[i] =
-      mode === "fold"
-        ? Math.sin(x * (1 + k * 6) * Math.PI * 0.5)
-        : Math.tanh(x * (1 + k * 12)) / Math.tanh(1 + k * 12);
+    if (mode === "fold") {
+      curve[i] = Math.sin(x * (1 + k * 6) * Math.PI * 0.5);
+    } else if (mode === "hard") {
+      // Pas de normalisation : l'écrêtage franc atteint ±1 de lui-même des
+      // que le seuil est franchi. Diviser par le maximum ramenerait le
+      // plateau sous 1 et rendrait le mode plus discret que les autres.
+      curve[i] = Math.max(-1, Math.min(1, x * (1 + k * 12)));
+    } else {
+      curve[i] = Math.tanh(x * (1 + k * 12)) / Math.tanh(1 + k * 12);
+    }
   }
   return curve;
 }

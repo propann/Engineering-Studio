@@ -1,4 +1,4 @@
-import { attachLfo, buildSaturationCurve } from "@studio-hub/core/audio/dsp";
+import { attachLfo, buildSaturationCurve, type ModeSaturation } from "@studio-hub/core/audio/dsp";
 
 /**
  * Le rack d'effets — tout ce qui **traite** le son.
@@ -21,7 +21,7 @@ import { attachLfo, buildSaturationCurve } from "@studio-hub/core/audio/dsp";
 export type ParamsEffets = {
   fxDriveMix: number;      // %
   fxDriveAmount: number;   // %
-  fxDriveMode: "soft" | "fold";
+  fxDriveMode: ModeSaturation;
   fxEqLow: number;         // dB
   fxEqMid: number;         // dB
   fxEqHigh: number;        // dB

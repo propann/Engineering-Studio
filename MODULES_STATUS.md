@@ -1,6 +1,6 @@
 # 🎛️ Audio Rack Modules - Development Status
 
-**Last Updated**: 2026-08-20  
+**Last Updated**: 2026-08-25  
 **Total Modules**: 12  
 **Status**: Setup Complete ✅ | Development Ready
 
@@ -10,12 +10,12 @@
 |---|---|---|
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 4 prises, SYNC au tempo, seule la première réinjecte |
-| 3 | Parametric EQ | 🟢 trois bandes livrées, sans le graphe |
+| 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
 | 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié |
 | 7 | LFO Generator | ✅ livré — trémolo et balayage de filtre, SYNC au tempo, global aux 15 moteurs |
-| 8 | Distortion Stack | 🟢 saturation douce et par repliement, dans le rack d'effets |
+| 8 | Distortion Stack | ✅ livré — trois écrêtages : doux, dur, repliement |
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
 | 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
@@ -131,19 +131,26 @@ Voir `docs/FOLDER_PICKER.md`.
 ---
 
 ### Module 2: Multi-Tap Delay Effect ⏱️ 3-4h
-**Status**: 🟡 PARTIEL (2026-08-21) — delai simple, pas multi-tap  
+**Status**: 🟢 LIVRE (2026-08-25) — multi-prises et synchronise  
 
-Un delai avec reinjection est livre dans le rack (`construireEffets`) : melange,
+Un delai avec reinjection dans le rack (`construireChaineEffets`) : melange,
 temps, retour, boucle amortie par un passe-bas. La reinjection est bornee a 0,85
 pour qu'un curseur a 100 % ne parte pas en larsen.
 
-**Ce qui manque pour le module complet** : plusieurs prises (2 a 8), leur
-panoramique, et la synchronisation au tempo. Le delai actuel est mono-prise.
+Les prises sont la (`fxDelayTaps`, 1 a 4, et `fxDelaySpread` pour leur ecart),
+avec `tempsDesPrises` et `niveauPrise`. Seule la premiere reinjecte : boucler
+sur toutes multiplierait le gain de boucle par leur nombre, et le plafond ne
+protegerait plus rien. La synchronisation au tempo de l'hote est branchee
+(`delaySync` + division musicale).
+
+**Ce qui manque** : le panoramique par prise — la chaine est mono jusqu'a la
+sortie, donc c'est un changement de topologie, pas un curseur de plus. Et huit
+prises au lieu de quatre.
 
 **Files**:
-- ❌ `MultiTapDelayProcessor.ts` - TODO
-- ❌ `MultiTapDelayModule.tsx` - TODO
-- ❌ `multi-tap-delay.test.ts` - TODO
+- ✅ `core/audio/effets.ts` - `tempsDesPrises`, `niveauPrise`, la chaine
+- ✅ `core/audio/effets.test.ts` - les prises, la reinjection, le plafond
+- ✅ `racks/RackEffets.tsx` - PRISES, ECART, SYNC + division
 
 **Description**: 2-8 tap delay with feedback, pan, and tempo sync. Real-time parameter control.
 
@@ -247,12 +254,23 @@ le choix lineaire/exponentiel. Les valeurs sont aujourd'hui fixes.
 ---
 
 ### Module 5: Arpeggiator ⏱️ 3-4h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE — dans `packages/musique`, monte dans le panneau MIDI  
+
+Les six motifs annonces existent : haut, bas, haut-bas, bas-haut, aleatoire,
+accord. L'etendue d'octaves est bornee a 1-4, le tempo vient de l'horloge de
+l'hote, et les notes sont quantifiees sur la gamme choisie — ce dernier point
+n'etait pas au plan.
+
+**Ce qui manque** : la longueur de gate et l'enregistrement des notes MIDI. Le
+gate n'est pas un oubli : la note court jusqu'au pas suivant, donc sa duree est
+liee a la division, sans seconde minuterie. Le rendre reglable demande cette
+seconde minuterie — c'est une decision, pas un curseur.
+
 **Files**:
-- ❌ `ArpeggiatorEngine.ts` - TODO
-- ❌ `ArpeggiatorModule.tsx` - TODO
-- ❌ `StepDisplay.tsx` - TODO
-- ❌ `arpeggiator.test.ts` - TODO
+- ✅ `packages/musique/arpege.ts` - motifs, reservoir, quantification
+- ✅ `packages/musique/Arpegiateur.tsx` - l'interface
+- ✅ `packages/musique/arpege.test.ts`
+- ✅ `apps/studio-hub/src/MidiSyncPanel.tsx` - l'horloge et le deroulement
 
 **Description**: Multi-mode arpeggiator with tempo sync and octave range.
 
@@ -274,36 +292,88 @@ le choix lineaire/exponentiel. Les valeurs sont aujourd'hui fixes.
 ## Phase 2: Advanced Sequencing (Week 1.5)
 
 ### Module 6: Step Sequencer ⏱️ 5-6h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE — dans `packages/musique`, monte dans le panneau MIDI  
 **Priority**: 🟠 MEDIUM
 
 **Description**: 16-step grid with per-step note, velocity, duration.
 
+La grille va de 1 a 32 pas, pas seulement 16, et chaque pas porte sa note, sa
+velocite et son actif. Quatre directions de lecture en plus du plan : avant,
+arriere, aller-retour, aleatoire. Redimensionner conserve les pas existants —
+passer de 16 a 8 pour essayer, puis revenir, ne doit pas rendre une grille vide.
+
+**Ce qui manque** : la duree par pas. Comme pour l'arpege, la note court
+jusqu'au pas suivant.
+
+**Files**:
+- ✅ `packages/musique/sequenceur.ts` - pas, directions, redimensionnement
+- ✅ `packages/musique/Sequenceur.tsx` - la grille
+- ✅ `packages/musique/sequenceur.test.ts`
+
 ---
 
 ### Module 7: LFO Generator ⏱️ 3-4h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE — quatre formes, deux cibles, synchronise  
 **Priority**: 🟠 MEDIUM
 
 **Description**: Multiple LFO shapes with tempo sync and phase offset.
+
+Quatre formes (sinus, triangle, carre, dent de scie), deux cibles (tremolo,
+filtre) plus l'arret, vitesse de 0,05 a 20 Hz, et la synchronisation au tempo
+de l'hote avec division musicale.
+
+**Ce qui manque** : le dephasage a l'origine.
+
+**Files**:
+- ✅ `apps/studio-hub/src/core/audio/lfo.ts`
+- ✅ `apps/studio-hub/src/core/audio/lfo.test.ts`
+- ✅ `apps/studio-hub/src/racks/PanneauLfo.tsx`
 
 ---
 
 ## Phase 3: Advanced Effects (Week 2)
 
 ### Module 8: Distortion Stack ⏱️ 3-4h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE (2026-08-25) — trois ecretages  
 **Priority**: 🟠 MEDIUM
 
 **Description**: Soft/hard clipping with waveshaper and tone control.
 
+Un `WaveShaperNode` avec trois courbes : DOUX (tanh, la crete s'arrondit), DUR
+(ecretage franc, le signal s'arrete net au seuil) et REPLI (repliement d'onde,
+en plus du plan). Les trois partagent le meme gain d'entree, donc changer de
+mode change le grain et non le volume.
+
+**La tonalite n'a pas de curseur a elle** : l'egaliseur trois bandes suit
+immediatement dans la chaine, et egaliser APRES la saturation est justement ce
+qui permet de dompter les aigus qu'elle cree. Un reglage de tonalite propre au
+module ferait double emploi avec la bande AIGUS, juste a cote.
+
+**Files**:
+- ✅ `apps/studio-hub/src/core/audio/dsp.ts` - `buildSaturationCurve`
+- ✅ `apps/studio-hub/src/core/audio/dsp.test.ts` - les trois courbes
+- ✅ `apps/studio-hub/src/racks/RackEffets.tsx` - MIX, GAIN, les trois modes
+
 ---
 
 ### Module 9: Chorus/Flanger/Phaser ⏱️ 4-5h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE — les trois, sur un graphe partage  
 **Priority**: 🟠 MEDIUM
 
 **Description**: 3-in-1 modulation effects.
+
+Les trois partagent un LFO et une voie parallele dosee ; ce qui les separe est
+l'ordre de grandeur du delai — long et module pour le chorus, dix fois plus
+court et reinjecte pour le flanger — et, pour le phaser, des filtres passe-tout
+balayes au lieu d'un delai. Chaque mode garde SA marge : la profondeur du
+flanger ne peut pas depasser son propre delai de base.
+
+**Ce qui manque** : rien d'identifie.
+
+**Files**:
+- ✅ `apps/studio-hub/src/core/audio/effets.ts` - les trois modes
+- ✅ `apps/studio-hub/src/core/audio/effets.test.ts` - marges et ordres de grandeur
+- ✅ `apps/studio-hub/src/racks/RackEffets.tsx`
 
 ---
 
@@ -364,10 +434,22 @@ marqueurs. C'est un format de bibliotheque, pour les DAW et les studios.
 ---
 
 ### Module 12: Patch Import/Export ⏱️ 2-3h
-**Status**: 🔴 NOT STARTED (0%)  
+**Status**: 🟢 LIVRE — JSON dans les deux sens  
 **Priority**: 🟠 MEDIUM
 
 **Description**: Save/load patches as JSON, ZIP archives for backup.
+
+Export vers un fichier JSON telecharge, et relecture par `lirePatchImporte`,
+qui valide au lieu de faire confiance : un fichier trafique ou d'une version
+plus ancienne ne doit pas installer des reglages hors bornes dans le moteur.
+
+**Ce qui manque** : l'archive ZIP pour sauvegarder plusieurs patches d'un coup.
+`fflate` est deja une dependance du depot, donc c'est a portee.
+
+**Files**:
+- ✅ `apps/studio-hub/src/core/audio/importPatch.ts`
+- ✅ `apps/studio-hub/src/core/audio/importPatch.test.ts`
+- ✅ `apps/studio-hub/src/pages/AudioPluginRack.tsx` - export et import
 
 ---
 
@@ -441,6 +523,8 @@ ce qui reste à couvrir module par module.
 ---
 
 **Created**: 2026-08-20  
-**Last Updated**: 2026-08-20  
-**Next Review**: After Module 1 completion
+**Last Updated**: 2026-08-25  
+**Next Review**: le module 1 est boucle depuis longtemps — la prochaine revue
+porte sur ce qui reste identifie : panoramique par prise (2), gate (5 et 6),
+dephasage du LFO (7), archive ZIP de patches (12).
 

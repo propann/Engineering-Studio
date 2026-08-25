@@ -7,6 +7,7 @@ import {
   type ParamsEffets,
 } from "../core/audio/effets";
 import { courbeEq } from "../core/audio/reponseEq";
+import { ORDRE_SATURATION, type ModeSaturation } from "@studio-hub/core/audio/dsp";
 
 /**
  * Ce que chaque mode fait, en une phrase.
@@ -14,6 +15,25 @@ import { courbeEq } from "../core/audio/reponseEq";
  * Les trois partagent le meme graphe : sans explication, le choix entre eux
  * releve du tatonnement.
  */
+/**
+ * Ce que chaque ecretage fait au son.
+ *
+ * Des `Record` complets : un quatrieme mode ajoute a `ModeSaturation` casse le
+ * typecheck ici tant qu'il n'a ni nom ni explication. Les deux ternaires
+ * qu'ils remplacent tenaient tant qu'il n'y avait que deux modes — et le
+ * troisieme se serait affiche sous le nom du deuxieme.
+ */
+const SATURATION_NOM: Record<ModeSaturation, string> = {
+  soft: "DOUX",
+  hard: "DUR",
+  fold: "REPLI",
+};
+const SATURATION_AIDE: Record<ModeSaturation, string> = {
+  soft: "Ecretage progressif, facon lampe : la crete s'arrondit",
+  hard: "Ecretage franc : le signal s'arrete net au seuil, harmoniques dures",
+  fold: "Repliement : le signal se replie au lieu d'ecreter",
+};
+
 const MODULATION_NOM = { chorus: "CHORUS", flanger: "FLANGER", phaser: "PHASER" } as const;
 const MODULATION_AIDE = {
   chorus: "Delai long module : on entend deux sources, l'ensemble s'epaissit",
@@ -192,16 +212,16 @@ export function RackEffets({
             onChange={(e) => onParam("fxDriveAmount", Number(e.target.value))} />
         </label>
         <div className="fx-modes">
-          {(["soft", "fold"] as const).map((m) => (
+          {ORDRE_SATURATION.map((m) => (
             <button
               key={m}
               type="button"
               className={`fx-mode-btn ${params.fxDriveMode === m ? "actif" : ""}`}
               disabled={params.fxDriveMix === 0}
               onClick={() => onParam("fxDriveMode", m)}
-              title={m === "soft" ? "Écrêtage doux, façon lampe" : "Repliement : le signal se replie au lieu d'écrêter"}
+              title={SATURATION_AIDE[m]}
             >
-              {m === "soft" ? "DOUX" : "REPLI"}
+              {SATURATION_NOM[m]}
             </button>
           ))}
         </div>

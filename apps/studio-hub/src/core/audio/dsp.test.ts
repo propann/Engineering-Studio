@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildBitcrushCurve, buildSaturationCurve } from "./dsp";
+import {
+  ORDRE_SATURATION, buildBitcrushCurve, buildSaturationCurve } from "./dsp";
 
 /**
  * Ces tests portent sur les proprietes du signal, pas sur des valeurs
@@ -54,7 +55,7 @@ describe("buildBitcrushCurve", () => {
 
 describe("buildSaturationCurve", () => {
   it("reste dans les bornes -1..1 quel que soit le reglage", () => {
-    for (const mode of ["soft", "fold"] as const) {
+    for (const mode of ORDRE_SATURATION) {
       for (const amount of [0, 25, 50, 100]) {
         for (const v of buildSaturationCurve(amount, mode)) {
           expect(v).toBeGreaterThanOrEqual(-1.05);
@@ -107,9 +108,56 @@ describe("buildSaturationCurve", () => {
   it("passe par zero au centre", () => {
     // Un decalage introduirait une composante continue, qui fait claquer
     // les enceintes et decale l'enveloppe.
-    for (const mode of ["soft", "fold"] as const) {
+    for (const mode of ORDRE_SATURATION) {
       const c = buildSaturationCurve(50, mode);
       expect(Math.abs(c[Math.floor(c.length / 2)])).toBeLessThan(0.05);
     }
+  });
+});
+
+describe("ecretage franc", () => {
+  it("laisse passer intact sous le seuil", () => {
+    // C'est ce qui le distingue du tanh : celui-ci comprime des le depart,
+    // l'ecretage franc ne touche a rien tant que le seuil n'est pas atteint.
+    const curve = buildSaturationCurve(50, "hard");
+    const n = curve.length;
+    // Un point tres pres du centre, donc loin sous le seuil.
+    const i = Math.floor(n / 2) + 4;
+    const x = (i / (n - 1)) * 2 - 1;
+    expect(curve[i]).toBeCloseTo(x * (1 + 0.5 * 12), 5);
+  });
+
+  it("s'arrete net, et reste net", () => {
+    // Le plateau est la signature du mode. Sans lui, ce serait un tanh.
+    const curve = buildSaturationCurve(50, "hard");
+    let plateau = 0;
+    for (let i = 1; i < curve.length; i++) {
+      if (curve[i] === 1 && curve[i - 1] === 1) plateau++;
+    }
+    expect(plateau, "aucun plateau : la courbe n'ecrete pas").toBeGreaterThan(100);
+  });
+
+  it("ne redescend jamais", () => {
+    // Un repliement ici serait un autre mode. L'ecretage franc est monotone.
+    const curve = buildSaturationCurve(80, "hard");
+    for (let i = 1; i < curve.length; i++) {
+      expect(curve[i]).toBeGreaterThanOrEqual(curve[i - 1] - 1e-6);
+    }
+  });
+
+  it("ecrete plus tot quand le drive monte", () => {
+    // Le seuil recule avec le gain d'entree : c'est ce que fait le curseur.
+    const largeurPlateau = (amount: number) =>
+      buildSaturationCurve(amount, "hard").filter((v) => v === 1).length;
+    expect(largeurPlateau(90)).toBeGreaterThan(largeurPlateau(10));
+  });
+
+  it("reste distinct du mode doux au meme reglage", () => {
+    // Deux modes qui rendraient la meme courbe donneraient deux boutons pour
+    // un seul son.
+    const dur = buildSaturationCurve(60, "hard");
+    const doux = buildSaturationCurve(60, "soft");
+    const ecart = Math.max(...dur.map((v, i) => Math.abs(v - doux[i])));
+    expect(ecart).toBeGreaterThan(0.05);
   });
 });

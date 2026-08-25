@@ -14,6 +14,7 @@ import {
   buildImpulseResponse,
   buildPulseWave,
   buildSaturationCurve,
+  type ModeSaturation,
 } from "@studio-hub/core/audio/dsp";
 import { PatchSearchEngine } from "../modules/audio-rack-01-patch-search/PatchSearchEngine";
 import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@studio-hub/core/audio/rendu";
@@ -401,7 +402,7 @@ export default function AudioPluginRack({
   // defaut — un rack qui sature des l'ouverture ferait croire a un defaut.
   const [fxDriveMix, setFxDriveMix] = useState<number>(0);
   const [fxDriveAmount, setFxDriveAmount] = useState<number>(40);
-  const [fxDriveMode, setFxDriveMode] = useState<"soft" | "fold">("soft");
+  const [fxDriveMode, setFxDriveMode] = useState<ModeSaturation>("soft");
   const [fxModMix, setFxModMix] = useState<number>(0);
   const [fxModRate, setFxModRate] = useState<number>(15);
   const [fxModDepth, setFxModDepth] = useState<number>(4);
