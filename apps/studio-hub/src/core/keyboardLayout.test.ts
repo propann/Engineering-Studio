@@ -46,12 +46,21 @@ describe("correspondance notes / touches", () => {
     for (let note = 0; note <= 127; note++) {
       const folded = foldNoteToPlayableKeyboard(note);
       expect(isPlayableKeyboardNote(folded)).toBe(true);
-      expect((folded - note) % 12).toBe(0);
+      // `Math.abs` et non le reste brut : en JS, `-12 % 12` vaut `-0`, qui
+      // n'est pas `+0` au sens de `Object.is` — donc `toBe(0)` echouait sur
+      // toute note repliee vers le BAS, sans qu'aucun defaut existe dans
+      // `foldNoteToPlayableKeyboard`.
+      expect(Math.abs((folded - note) % 12)).toBe(0);
     }
   });
 
-  it("rend chaque note des 40 exercices jouable", () => {
-    expect(GAME_SONG_THEMES).toHaveLength(40);
+  it("rend jouable chaque note de chaque exercice", () => {
+    // Un plancher, pas un compte exact. Le catalogue grandit — il est passe de
+    // 40 a 48 le 2026-08-25 — et figer le nombre fait tomber ce test a chaque
+    // exercice ajoute, alors qu'il ne surveille pas la quantite mais le fait
+    // qu'aucune note ne tombe hors du clavier. Le plancher garde ce qu'il
+    // protegeait vraiment : un catalogue tronque.
+    expect(GAME_SONG_THEMES.length).toBeGreaterThanOrEqual(40);
     for (const theme of GAME_SONG_THEMES) {
       for (const note of theme.notes) expect(isPlayableKeyboardNote(note.note)).toBe(true);
     }

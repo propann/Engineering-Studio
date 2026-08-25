@@ -195,11 +195,17 @@ describe("le regroupement est une donnee", () => {
 
 describe("ce que la fusion ne devait pas casser", () => {
   it("les destinations connues sont toujours atteignables", () => {
+    // `rhythm-hero` a quitte cette liste le 2026-08-25 : la carte
+    // d'entrainement EP-133 ouvre desormais le studio directement, et
+    // `Exercises.layout.test.ts` verrouille explicitement son absence du groupe
+    // « Apprendre ». Les deux tests se contredisaient, celui-ci etant le plus
+    // ancien. La page n'est pas perdue pour autant — elle reste joignable par
+    // `orphan-pages`, qui l'enregistre avec sa provenance.
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
     for (const page of [
       "studio-op1", "studio-ep133", "firmware-lab", "backup-lab",
       "audio-plugin-rack", "sound-library", "image-editor-op1",
-      "midi-settings", "op1-settings", "exercises", "rhythm-hero",
+      "midi-settings", "op1-settings", "exercises",
       "doc-op1", "doc-ep133", "documentation",
     ]) {
       expect(bloc, `plus rien n'ouvre « ${page} »`).toContain(`page: "${page}"`);
