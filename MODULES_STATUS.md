@@ -9,7 +9,7 @@
 | | Module | État |
 |---|---|---|
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
-| 2 | Multi-Tap Delay | ✅ livré — 1 à 8 prises toutes distinctes, SYNC au tempo, seule la première réinjecte |
+| 2 | Multi-Tap Delay | ✅ livré — 1 à 8 prises distinctes, panoramique en renvoi de balle, SYNC au tempo |
 | 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 prédéfinies, rampes exp/droites |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
@@ -150,8 +150,26 @@ sonnaient comme un seul echo plus fort pendant que leurs noeuds tournaient pour
 rien. La derniere prise vise maintenant le plafond et les autres se
 repartissent jusqu'a elle.
 
-**Ce qui manque** : le panoramique par prise — la chaine est mono jusqu'a la
-sortie, donc c'est un changement de topologie, pas un curseur de plus.
+Le panoramique par prise est livre (2026-08-25), en renvoi de balle : la
+premiere prise reste au centre — c'est l'echo principal, celui qui porte le
+temps regle — et les suivantes alternent gauche/droite. Alternance plutot
+qu'etalement progressif : a deux prises, qui est le cas le plus courant, un
+etalement ne bougerait presque rien.
+
+**Le point delicat, et sa consequence.** Les CINQ cibles d'export sont mono, et
+le rendu hors ligne tourne dans un `OfflineAudioContext(1, ...)`. Un panneur
+insere puis replie par le moteur audio vaut 0,5·(G+D) : une prise a fond a
+gauche ressortirait 3 dB SOUS une prise centree, et l'equilibre du fichier ne
+serait plus celui qu'on entend en jouant. Les panneurs ne sont donc pas
+construits du tout quand le contexte est mono — chaque prise garde exactement
+le niveau que `niveauPrise` lui donne, et le fichier reste la somme fidele du
+jeu. La largeur ne s'entend qu'en jouant ; l'infobulle du curseur le dit.
+
+La largeur du contexte est passee PAR l'appelant, jamais lue sur la destination :
+la chaine doit l'ignorer pour rester identique au jeu et au rendu, et un test le
+lui interdit par le texte.
+
+**Ce qui manque** : rien d'identifie.
 
 **Files**:
 - ✅ `core/audio/effets.ts` - `tempsDesPrises`, `niveauPrise`, la chaine

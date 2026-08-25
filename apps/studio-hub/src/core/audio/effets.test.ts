@@ -8,7 +8,7 @@ import {
   TAPS_MAX, frequenceEtagePhaser, melange, niveauPrise,
   profondeurChorusSec, profondeurModulationSec,
   reinjection, reinjectionFlanger, tempsDesPrises, tempsRetardSec, vitesseChorusHz,
-  BANDES_EQ, COURBES_EQ, EQ_DB_MAX, estCourbeAppliquee,
+  BANDES_EQ, COURBES_EQ, EQ_DB_MAX, estCourbeAppliquee, panoramiquePrise,
 } from "./effets";
 
 /**
@@ -549,5 +549,75 @@ describe("reconnaissance de la courbe courante", () => {
   it("ne confond pas deux courbes", () => {
     expect(estCourbeAppliquee(PLAT.gains, AUTRE)).toBe(false);
     expect(estCourbeAppliquee(AUTRE.gains, PLAT)).toBe(false);
+  });
+});
+
+describe("panoramique des prises", () => {
+  it("laisse la premiere prise au centre, quelle que soit la largeur", () => {
+    // C'est l'echo principal, celui qui porte le temps regle. Le deplacer
+    // decalerait tout l'effet d'un cote — y compris a UNE seule prise, ou
+    // « panoramique des prises » ne veut rien dire.
+    for (const largeur of [0, 25, 50, 100]) {
+      expect(panoramiquePrise(0, largeur), `largeur ${largeur}`).toBe(0);
+    }
+  });
+
+  it("alterne gauche et droite a partir de la deuxieme", () => {
+    // Le renvoi de balle. Un etalement progressif ne bougerait presque rien a
+    // deux prises, qui est le cas le plus courant.
+    expect(panoramiquePrise(1, 100)).toBe(-1);
+    expect(panoramiquePrise(2, 100)).toBe(1);
+    expect(panoramiquePrise(3, 100)).toBe(-1);
+    expect(panoramiquePrise(4, 100)).toBe(1);
+  });
+
+  it("reste centre a largeur nulle", () => {
+    // Le defaut. Aucun patch existant ne doit changer de son.
+    for (let i = 0; i < 8; i++) expect(panoramiquePrise(i, 0), `prise ${i}`).toBe(0);
+  });
+
+  it("ne sort jamais de -1..1", () => {
+    // Au-dela, `StereoPannerNode` leve.
+    for (const largeur of [-500, 0, 50, 100, 1e9, NaN, Infinity]) {
+      for (let i = 0; i < 8; i++) {
+        const v = panoramiquePrise(i, largeur);
+        expect(Number.isFinite(v), `${largeur}/${i}`).toBe(true);
+        expect(v).toBeGreaterThanOrEqual(-1);
+        expect(v).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it("l'ecartement croit avec le reglage", () => {
+    expect(Math.abs(panoramiquePrise(1, 100))).toBeGreaterThan(Math.abs(panoramiquePrise(1, 40)));
+  });
+});
+
+describe("le panoramique et le rendu mono", () => {
+  const DIR4 = path.dirname(fileURLToPath(import.meta.url));
+  const S4 = readFileSync(path.join(DIR4, "effets.ts"), "utf-8");
+
+  it("ne construit aucun panneur quand le contexte est mono", () => {
+    // L'invariant qui protege le fichier exporte. Insere puis replie par le
+    // moteur audio, un panneur vaut 0,5·(G+D) : une prise a fond a gauche
+    // ressortirait 3 dB SOUS une prise centree, et l'equilibre du fichier ne
+    // serait plus celui qu'on entend en jouant. Les cinq cibles d'export sont
+    // mono, donc ce cas est la regle, pas l'exception.
+    expect(S4).toContain("canaux >= 2 ? panoramiquePrise(i, p.fxDelayPan) : 0");
+    expect(S4).toContain("if (place !== 0) {");
+  });
+
+  it("la largeur du contexte vient de l'appelant", () => {
+    // La chaine ne doit rien connaitre de la destination : c'est ce qui lui
+    // permet d'etre la meme au jeu et au rendu. Le parametre porte la valeur
+    // a sa place.
+    expect(S4).toMatch(/canaux = 2\s*\)/);
+  });
+
+  it("n'ajoute pas de noeud quand il n'y a rien a placer", () => {
+    // Un panneur au centre coute un noeud par prise et par note, pour un
+    // resultat strictement identique.
+    const i = S4.indexOf("── Délai");
+    expect(S4.slice(i)).toContain("niveau.connect(dose);");
   });
 });

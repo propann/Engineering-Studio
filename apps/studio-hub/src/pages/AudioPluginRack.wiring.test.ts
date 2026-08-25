@@ -399,14 +399,18 @@ describe("effets globaux", () => {
     // borne, voie directe — sont testes pour de vrai sur des fonctions pures
     // par core/audio/effets.test.ts, au lieu d'etre lus dans le source.
     expect(SOURCE).toContain('from "../core/audio/effets"');
-    expect(SOURCE).toContain("construireChaineEffets(ctx, p, now)");
+    // La largeur du contexte est passee PAR le rack, qui connait sa
+    // destination — la chaine, elle, doit l'ignorer pour rester identique au
+    // jeu et au rendu. Un test de effets.test.ts lui interdit d'aller la lire ;
+    // celui-ci verifie l'autre moitie du contrat, que quelqu'un la lui donne.
+    expect(SOURCE).toContain("construireChaineEffets(ctx, p, now, ctx.destination.channelCount)");
   });
 
   it("l'adaptation ne reintroduit aucune construction de noeud", () => {
     // Le risque de la delegation : qu'on rajoute « juste un filtre » ici, hors
     // du rack d'effets, et que le rendu hors ligne ne l'ait pas.
     const i = SOURCE.indexOf("const construireEffets = (");
-    const bloc = SOURCE.slice(i, SOURCE.indexOf("construireChaineEffets(ctx, p, now)", i));
+    const bloc = SOURCE.slice(i, SOURCE.indexOf("construireChaineEffets(ctx, p, now", i));
     expect(bloc).not.toMatch(/ctx\.create/);
   });
 });

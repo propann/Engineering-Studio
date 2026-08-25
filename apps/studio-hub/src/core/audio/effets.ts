@@ -35,6 +35,7 @@ export type ParamsEffets = {
   fxDelayFeedback: number; // %
   fxDelayTaps: number;     // nombre de prises, 1 = délai simple
   fxDelaySpread: number;   // % — écart entre prises, 0 = toutes au même temps
+  fxDelayPan: number;      // % — largeur stéréo des prises, 0 = toutes au centre
 };
 
 /**
@@ -144,6 +145,32 @@ export function estCourbeAppliquee(
   courbe: CourbeEqPredefinie,
 ): boolean {
   return BANDES_EQ.every((bande) => params[bande.reglage] === courbe.gains[bande.reglage]);
+}
+
+/**
+ * Position stéréo d'une prise, de -1 (gauche) à +1 (droite).
+ *
+ * **La première reste au centre**, toujours. C'est l'écho principal, celui qui
+ * porte le temps réglé ; le déplacer décalerait tout l'effet d'un côté, y
+ * compris avec une seule prise — où « panoramique des prises » ne veut rien
+ * dire. Les suivantes alternent, ce qui donne le renvoi de balle habituel.
+ *
+ * Alternance et non étalement progressif : avec deux prises, un étalement ne
+ * bougerait presque rien, alors que l'alternance sépare immédiatement l'écho
+ * de sa source. C'est le réglage à une ou deux prises qui décide, puisque
+ * c'est le plus courant.
+ */
+export function panoramiquePrise(index: number, largeurPourcent: number): number {
+  if (index <= 0) return 0;
+  const largeur = Number.isFinite(largeurPourcent)
+    ? Math.max(0, Math.min(100, largeurPourcent)) / 100
+    : 0;
+  // Sortie anticipée à largeur nulle, et pas seulement par économie : la
+  // négation d'un zéro rend -0, qui sonne comme 0 mais ne lui est pas égal au
+  // sens de `Object.is`. Une prise impaire rendrait donc « -0 » là où sa
+  // voisine rend « 0 », et la valeur voyagerait ainsi dans les patches.
+  if (largeur === 0) return 0;
+  return index % 2 === 1 ? -largeur : largeur;
 }
 
 /** Plafond de réinjection. Au-delà, la boucle diverge et sature indéfiniment. */
@@ -326,10 +353,28 @@ export function vitesseChorusHz(valeurCurseur: number): number {
  * fabriquer un échantillon. C'est ce qui garantit qu'un sample porte
  * exactement les effets qu'on entend.
  */
+/**
+ * `canaux` : la largeur du contexte, donnée par l'APPELANT.
+ *
+ * Elle n'est PAS lue sur la destination du contexte : la chaîne ne doit rien
+ * en connaître, c'est ce qui permet au rendu hors ligne d'utiliser exactement
+ * le même code. Un test l'interdit d'ailleurs par le texte — ce commentaire
+ * évite jusqu'à la mentionner littéralement, faute de quoi il ferait tomber
+ * le garde qu'il explique.
+ *
+ * Elle sert au seul panoramique des prises. En mono, les `StereoPannerNode`
+ * ne sont PAS construits, au lieu d'être insérés puis repliés par le moteur
+ * audio. Ce repli n'est pas neutre : il vaut 0,5·(G+D), donc une prise à fond
+ * à gauche ressortirait 3 dB sous une prise centrée — l'équilibre du fichier
+ * exporté ne serait plus celui qu'on entend en jouant. Sans panoramique,
+ * chaque prise garde exactement le niveau que `niveauPrise` lui donne, et le
+ * fichier mono reste la somme fidèle de ce qui est joué.
+ */
 export function construireChaineEffets(
   ctx: BaseAudioContext,
   p: ParamsEffets,
-  now: number
+  now: number,
+  canaux = 2
 ): { entree: AudioNode; sortie: AudioNode } {
   const entree = ctx.createGain();
   const sortie = ctx.createGain();
@@ -477,7 +522,20 @@ export function construireChaineEffets(
       }
 
       retard.connect(niveau);
-      niveau.connect(dose);
+
+      // Le panoramique ne se construit que s'il a quelque chose à dire : un
+      // contexte stéréo, et une largeur non nulle. À 0 %, insérer un panneur
+      // au centre ajouterait un nœud par prise et par note pour un gain
+      // strictement identique.
+      const place = canaux >= 2 ? panoramiquePrise(i, p.fxDelayPan) : 0;
+      if (place !== 0) {
+        const panoramique = ctx.createStereoPanner();
+        panoramique.pan.setValueAtTime(place, now);
+        niveau.connect(panoramique);
+        panoramique.connect(dose);
+      } else {
+        niveau.connect(dose);
+      }
     });
   }
 

@@ -311,6 +311,19 @@ export function RackEffets({
               onChange={(e) => onParam("fxDelaySpread", Number(e.target.value))} />
           </label>
         )}
+        {/* Comme l'ecart : sans seconde prise, il n'y a rien a placer — la
+            premiere reste au centre par construction. Et l'infobulle dit ce
+            que l'export ne gardera pas, sinon la difference entre ce qu'on
+            entend et le fichier obtenu resterait a decouvrir. */}
+        {params.fxDelayTaps > 1 && (
+          <label
+            title="Renvoi de balle : les prises alternent gauche et droite. La première reste au centre. Les échantillons exportés sont mono — la largeur ne s'y entend pas, mais aucun niveau ne change."
+          >
+            LARGEUR {params.fxDelayPan}%
+            <input type="range" min={0} max={100} step={5} value={params.fxDelayPan}
+              onChange={(e) => onParam("fxDelayPan", Number(e.target.value))} />
+          </label>
+        )}
       </div>
       <div className="fx-groupe">
         <span className="fx-groupe-nom">ÉGALISEUR</span>

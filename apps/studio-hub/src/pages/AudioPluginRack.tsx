@@ -376,6 +376,9 @@ export default function AudioPluginRack({
   // et ajouter le reglage ne doit pas changer le son des patches existants.
   const [fxDelayTaps, setFxDelayTaps] = useState<number>(1);
   const [fxDelaySpread, setFxDelaySpread] = useState<number>(50);
+  // Panoramique des prises a zero par defaut : le delai reste centre tant
+  // qu'on ne demande rien, donc aucun patch existant ne change de son.
+  const [fxDelayPan, setFxDelayPan] = useState<number>(0);
   const [fxEqLow, setFxEqLow] = useState<number>(0);
   const [fxEqMid, setFxEqMid] = useState<number>(0);
   const [fxEqHigh, setFxEqHigh] = useState<number>(0);
@@ -535,7 +538,7 @@ export default function AudioPluginRack({
     activeEngine,
     masterVolume,
     masterDetune,
-    fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
+    fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread, fxDelayPan,
     fxEqLow, fxEqMid, fxEqHigh,
     envAttack, envDecay, envSustain, envRelease, envCourbe,
     lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase, bpmHote,
@@ -564,7 +567,7 @@ export default function AudioPluginRack({
       activeEngine,
       masterVolume,
       masterDetune,
-      fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
+      fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread, fxDelayPan,
       fxEqLow, fxEqMid, fxEqHigh,
       envAttack, envDecay, envSustain, envRelease, envCourbe,
       lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase, bpmHote,
@@ -780,6 +783,7 @@ export default function AudioPluginRack({
     fxDelayFeedback: setFxDelayFeedback,
     fxDelayTaps: setFxDelayTaps,
     fxDelaySpread: setFxDelaySpread,
+    fxDelayPan: setFxDelayPan,
   };
 
   const appliquerParamEffet = <N extends keyof ParamsEffets>(nom: N, valeur: ParamsEffets[N]) => {
@@ -1877,11 +1881,18 @@ export default function AudioPluginRack({
   // Elle reste ici parce que le RENDU d'echantillon l'appelle avec un contexte
   // hors-ligne. C'est ce qui garantit qu'un sample porte exactement les effets
   // qu'on entend.
+  //
+  // La largeur du contexte se lit ICI, pas dans la chaine : c'est l'appelant
+  // qui connait sa destination, et la chaine doit l'ignorer pour rester la
+  // meme au jeu et au rendu. Elle ne sert qu'au panoramique des prises, qui
+  // n'a pas de sens dans un rendu mono — et dont le repli automatique
+  // deplacerait l'equilibre du fichier.
   const construireEffets = (
     ctx: BaseAudioContext,
     p: typeof paramsRef.current,
     now: number
-  ): { entree: AudioNode; sortie: AudioNode } => construireChaineEffets(ctx, p, now);
+  ): { entree: AudioNode; sortie: AudioNode } =>
+    construireChaineEffets(ctx, p, now, ctx.destination.channelCount);
 
   // ===== FIN DES MOTEURS =====
   // Borne lue par AudioPluginRack.wiring.test.ts pour delimiter le code moteur.
@@ -3230,7 +3241,7 @@ export default function AudioPluginRack({
               fxDriveMix, fxDriveAmount, fxDriveMode,
               fxEqLow, fxEqMid, fxEqHigh,
               fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
-              fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
+              fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread, fxDelayPan,
             }}
               onParam={appliquerParamEffet}
               delaySync={delaySync}
