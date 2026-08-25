@@ -162,20 +162,30 @@ panoramique, et la synchronisation au tempo. Le delai actuel est mono-prise.
 ---
 
 ### Module 3: Parametric EQ ⏱️ 4-5h
-**Status**: 🟢 LIVRE (2026-08-21) — sans le graphe de reponse  
+**Status**: 🟢 LIVRE (2026-08-25) — graphe de reponse compris  
 
 Egaliseur trois bandes dans le rack : lowshelf a 220 Hz, peaking a 1,2 kHz,
 highshelf a 5,2 kHz, ±18 dB chacune. Applique apres les moteurs, donc a la
 superposition entiere, et traverse le rendu hors ligne comme le jeu.
 
-**Ce qui manque** : le visualiseur de reponse en frequence, et les courbes
-predefinies.
+Les trois bandes vivent dans une seule table, `BANDES_EQ`. Le graphe audio et
+la courbe affichee la lisent tous les deux : c'est ce qui garantit que le trace
+montre ce qu'on entend. Deux listes divergeraient au premier reglage change,
+chacune restant coherente de son cote, et rien ne le signalerait.
+
+La courbe est calculee, pas mesuree — les coefficients biquad de l'Audio EQ
+Cookbook, ceux que la specification Web Audio reprend. `getFrequencyResponse`
+aurait exige un contexte audio ouvert, donc un navigateur, et rendu le calcul
+intestable.
+
+**Ce qui manque** : les courbes predefinies.
 
 **Files**:
-- ❌ `ParametricEQProcessor.ts` - TODO
-- ❌ `FrequencyResponseGraph.tsx` - TODO
-- ❌ `ParametricEQModule.tsx` - TODO
-- ❌ `parametric-eq.test.ts` - TODO
+- ✅ `core/audio/effets.ts` - la table `BANDES_EQ` et la chaine de filtres
+- ✅ `core/audio/reponseEq.ts` - la reponse calculee, fonction pure
+- ✅ `core/audio/reponseEq.test.ts` - les valeurs exactes de la reponse
+- ✅ `racks/RackEffets.tsx` - curseurs et trace SVG, tires de la meme table
+- ❌ courbes predefinies - TODO
 
 **Description**: 3-band EQ (Low/Mid/High) with frequency response visualizer.
 
@@ -187,10 +197,12 @@ predefinies.
 - Preset curves
 
 **Next Steps**:
-1. Implement BiquadFilter chain
-2. Create frequency response canvas visualizer
-3. Build React UI
-4. Test frequency response accuracy
+1. ~~Implement BiquadFilter chain~~ — fait
+2. ~~Create frequency response visualizer~~ — fait, en SVG plutot qu'en canvas :
+   le trace se redessine a chaque mouvement de curseur, et un `path` se relit.
+3. ~~Build React UI~~ — fait
+4. ~~Test frequency response accuracy~~ — fait
+5. Courbes predefinies
 
 ---
 

@@ -150,7 +150,18 @@ describe("cablage des parametres", () => {
     // etendre ce qu'il lit le garde entier — un parametre lu nulle part
     // echoue toujours.
     const corps = moteurSansAffichage() + EFFETS + ENVELOPPE + LFO;
-    const inertes = parametres().filter((p) => !corps.includes(`p.${p}`));
+    // Les gains d'egaliseur ne se lisent plus `p.fxEqLow` mais `p[bande.reglage]`,
+    // la bande venant de `BANDES_EQ`. Le nom du parametre reste ecrit une fois
+    // et une seule — dans la table — donc il reste cherchable ; l'accepter la
+    // garde le garde-fou entier, tandis qu'exempter les parametres fxEq en bloc
+    // l'aurait desarme pour trois curseurs.
+    //
+    // L'indirection elle-meme est verifiee juste en dessous : sans cette ligne,
+    // une table dont plus personne ne lit le champ `reglage` passerait pour
+    // cablee.
+    expect(EFFETS, "les bandes ne sont plus lues par leur champ `reglage`").toContain("p[bande.reglage]");
+    const lu = (p: string) => corps.includes(`p.${p}`) || corps.includes(`reglage: "${p}"`);
+    const inertes = parametres().filter((p) => !lu(p));
     expect(inertes, `parametres sans effet sur le son : ${inertes.join(", ")}`).toEqual([]);
   });
 

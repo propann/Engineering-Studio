@@ -974,6 +974,18 @@
 .fx-groupe label { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 110px; color: #cbd5e1; font-size: .62rem; font-variant-numeric: tabular-nums; }
 .fx-groupe input[type="range"] { width: 100%; accent-color: #00ed95; }
 
+/* ── Egaliseur : la courbe de reponse ───────────────────────────────────────
+   Elle occupe sa propre ligne sous les curseurs — `flex-basis: 100%` la fait
+   passer a la ligne dans le `.fx-groupe`, qui enveloppe deja. Hauteur libre :
+   le rapport du viewBox tient le cadre bas et large, comme l'axe qu'il porte. */
+.fx-courbe { flex-basis: 100%; width: 100%; height: auto; margin-top: 2px; border-radius: 3px; background: rgba(0,0,0,.35); }
+.fx-courbe-zero   { stroke: rgba(148,163,184,.45); stroke-width: .6; }
+.fx-courbe-grille { stroke: rgba(148,163,184,.16); stroke-width: .5; stroke-dasharray: 3 3; }
+.fx-courbe-bande  { stroke: rgba(0,237,149,.14); stroke-width: .5; }
+.fx-courbe-aire   { fill: rgba(0,237,149,.14); stroke: none; }
+.fx-courbe-trait  { fill: none; stroke: #00ed95; stroke-width: 1.1; stroke-linejoin: round; }
+.fx-courbe-hz     { fill: rgba(148,163,184,.55); font-size: 6px; font-family: ui-monospace, monospace; }
+
 /* ── Delay synchronise au tempo de l'hote ───────────────────────────────── */
 .fx-sync { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
 .fx-sync-btn {

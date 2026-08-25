@@ -37,6 +37,42 @@ export type ParamsEffets = {
   fxDelaySpread: number;   // % — écart entre prises, 0 = toutes au même temps
 };
 
+/**
+ * Les trois bandes de l'égaliseur.
+ *
+ * Une seule table, lue par la construction du graphe audio ET par le calcul de
+ * la courbe de réponse affichée dans le rack. Le jour où l'une des deux recopie
+ * ces valeurs, elles divergent au premier réglage — et le graphe montre une
+ * courbe que le son ne produit pas, sans que rien ne le signale : chacun reste
+ * cohérent de son côté.
+ *
+ * `reglage` désigne le champ de `ParamsEffets` qui porte le gain de la bande.
+ * Le dériver évite la table de correspondance parallèle qu'il faudrait tenir à
+ * jour à chaque bande ajoutée.
+ *
+ * Le Q ne concerne que la cloche : l'API Web Audio IGNORE `Q` sur un filtre en
+ * plateau et impose une pente S = 1. Le préciser sur les plateaux laisserait
+ * croire qu'il agit.
+ */
+export type BandeEq = {
+  nom: string;
+  type: "lowshelf" | "peaking" | "highshelf";
+  frequence: number;
+  /** Le champ de `ParamsEffets` qui porte le gain de cette bande, en dB. */
+  reglage: "fxEqLow" | "fxEqMid" | "fxEqHigh";
+  /** Cloche seulement — voir ci-dessus. */
+  q?: number;
+};
+
+export const BANDES_EQ: readonly BandeEq[] = [
+  { nom: "GRAVES",  type: "lowshelf",  frequence: 220,  reglage: "fxEqLow" },
+  { nom: "MÉDIUMS", type: "peaking",   frequence: 1200, reglage: "fxEqMid",  q: 0.9 },
+  { nom: "AIGUS",   type: "highshelf", frequence: 5200, reglage: "fxEqHigh" },
+];
+
+/** Débattement d'une bande, en dB. Les curseurs du rack s'y accordent. */
+export const EQ_DB_MAX = 18;
+
 /** Plafond de réinjection. Au-delà, la boucle diverge et sature indéfiniment. */
 export const REINJECTION_MAX = 0.85;
 
@@ -232,26 +268,23 @@ export function construireChaineEffets(
   // Un gain à 0 dB laisse passer sans rien changer : inutile de conditionner
   // la construction, le coût d'un filtre neutre est négligeable et le graphe
   // reste le même dans tous les cas.
-  const grave = ctx.createBiquadFilter();
-  grave.type = "lowshelf";
-  grave.frequency.setValueAtTime(220, now);
-  grave.gain.setValueAtTime(p.fxEqLow, now);
-
-  const medium = ctx.createBiquadFilter();
-  medium.type = "peaking";
-  medium.frequency.setValueAtTime(1200, now);
-  medium.Q.setValueAtTime(0.9, now);
-  medium.gain.setValueAtTime(p.fxEqMid, now);
-
-  const aigu = ctx.createBiquadFilter();
-  aigu.type = "highshelf";
-  aigu.frequency.setValueAtTime(5200, now);
-  aigu.gain.setValueAtTime(p.fxEqHigh, now);
-
-  tete.connect(grave);
-  grave.connect(medium);
-  medium.connect(aigu);
-  let courant: AudioNode = aigu;
+  //
+  // Les trois bandes se lisent dans `BANDES_EQ`, jamais recopiées : le graphe
+  // de réponse affiché dans le rack se calcule sur la MÊME table. Deux listes
+  // divergeraient au premier réglage changé, et le graphe montrerait alors une
+  // courbe que le son ne produit pas — un défaut invisible, puisque les deux
+  // resteraient cohérents chacun de leur côté.
+  let precedent: AudioNode = tete;
+  for (const bande of BANDES_EQ) {
+    const filtre = ctx.createBiquadFilter();
+    filtre.type = bande.type;
+    filtre.frequency.setValueAtTime(bande.frequence, now);
+    if (bande.q !== undefined) filtre.Q.setValueAtTime(bande.q, now);
+    filtre.gain.setValueAtTime(p[bande.reglage], now);
+    precedent.connect(filtre);
+    precedent = filtre;
+  }
+  let courant: AudioNode = precedent;
 
   // ── Modulation : chorus, flanger ou phaser ───────────────────────────
   // Les trois partagent un LFO et une voie parallèle dosée. Ce qui les

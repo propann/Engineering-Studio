@@ -57,9 +57,38 @@ describe("controle, pas autonomie", () => {
 
   it("lit toutes ses valeurs dans ses proprietes", () => {
     // Une valeur lue ailleurs serait un fil qui traverse la frontiere.
-    for (const nom of ["fxDriveMix", "fxEqLow", "fxModMix", "fxModMode", "fxDelayTime"]) {
+    for (const nom of ["fxDriveMix", "fxModMix", "fxModMode", "fxDelayTime"]) {
       expect(UI, `${nom} n'est pas lu dans params`).toContain(`params.${nom}`);
     }
+  });
+
+  it("lit les gains d'egaliseur par la table des bandes", () => {
+    // Les trois bandes ne sont plus ecrites a la main : elles se lisent dans
+    // `BANDES_EQ`, la table que lit aussi la construction du graphe audio.
+    // Le nom du parametre n'apparait donc plus derriere un point — il apparait
+    // dans la table. Ce test remplace la recherche de `params.fxEqLow` par
+    // l'indirection elle-meme : elle passe toujours par les proprietes, et
+    // aucune bande n'est recopiee ici.
+    expect(UI).toContain("BANDES_EQ.map");
+    expect(UI).toContain("params[bande.reglage]");
+    for (const nom of ["GRAVES", "MÉDIUMS", "AIGUS"]) {
+      expect(UI, `${nom} recopie dans l'interface au lieu d'etre lu dans BANDES_EQ`).not.toContain(`>${nom} `);
+    }
+  });
+
+  it("le debattement des curseurs vient de la logique", () => {
+    // Le +/-18 dB etait ecrit dans les deux fichiers. Elargir la plage d'un
+    // cote laissait l'autre couper le reglage en silence.
+    expect(UI).toContain("EQ_DB_MAX");
+    expect(UI).not.toContain("min={-18}");
+  });
+
+  it("montre ce que l'egaliseur fait au son", () => {
+    // Trois nombres en dB ne disent pas la forme qui en sort. La courbe la
+    // montre — calculee sur la meme table que le son, sinon elle montrerait
+    // une courbe qu'on n'entend pas.
+    expect(UI).toContain("courbeEq");
+    expect(UI).toContain('from "../core/audio/reponseEq"');
   });
 
   it("ne touche ni au son ni au MIDI", () => {

@@ -1,5 +1,6 @@
 import { ORDRE_DIVISIONS, type Division } from "../core/audio/tempo";
-import type { ParamsEffets } from "../core/audio/effets";
+import { BANDES_EQ, EQ_DB_MAX, type ParamsEffets } from "../core/audio/effets";
+import { courbeEq } from "../core/audio/reponseEq";
 
 /**
  * Ce que chaque mode fait, en une phrase.
@@ -44,6 +45,123 @@ export type ProprietesRackEffets = {
   onDelayDivision: (division: Division) => void;
   bpmHote: number;
 };
+
+/**
+ * Le tracé de la réponse de l'égaliseur.
+ *
+ * Trois curseurs en dB ne disent pas ce qu'ils font au son : ils donnent trois
+ * nombres, et l'oreille doit deviner la forme qui en sort — surtout aux
+ * recouvrements, là où deux bandes s'additionnent sans le montrer.
+ *
+ * Le tracé se calcule sur `BANDES_EQ`, la table même que lit le graphe audio.
+ * C'est la condition pour qu'il montre ce qu'on entend : deux listes
+ * divergeraient au premier réglage changé, chacune restant cohérente de son
+ * côté, et rien ne le signalerait.
+ *
+ * Repère en unités SVG, mis à l'échelle par la feuille de style.
+ */
+const COURBE_L = 320;
+const COURBE_H = 64;
+const COURBE_MIN_HZ = 20;
+const COURBE_MAX_HZ = 20000;
+
+/**
+ * Débattement vertical du repère, en dB.
+ *
+ * Trois dB de plus que le débattement d'une bande. Les bandes sont assez
+ * écartées — 220, 1200, 5200 Hz — pour ne se recouvrir qu'à peine : poussées
+ * toutes les trois à +18, elles culminent à +18,1 dB, pas à +54. Un repère
+ * calé sur la somme théorique écraserait le tracé au milieu du cadre pour une
+ * réserve que rien n'atteint.
+ */
+const COURBE_DB_VUE = EQ_DB_MAX + 3;
+
+/** Les graduations de l'axe des fréquences. */
+const REPERES_HZ = [
+  { hz: 100, nom: "100" },
+  { hz: 1000, nom: "1k" },
+  { hz: 10000, nom: "10k" },
+];
+
+/** L'axe des fréquences est logarithmique : l'oreille entend des octaves. */
+function abscisse(hz: number): number {
+  return (Math.log(hz / COURBE_MIN_HZ) / Math.log(COURBE_MAX_HZ / COURBE_MIN_HZ)) * COURBE_L;
+}
+
+/**
+ * Un gain en dB vers sa hauteur dans le cadre, 0 dB au milieu.
+ *
+ * Le rabattage ne sert qu'à garantir un tracé dans le cadre : aucun réglage
+ * accessible n'y arrive, mais un point hors cadre déformerait le remplissage
+ * sans rien signaler.
+ */
+function ordonnee(db: number): number {
+  const borne = Math.max(-COURBE_DB_VUE, Math.min(COURBE_DB_VUE, db));
+  return COURBE_H / 2 - (borne / COURBE_DB_VUE) * (COURBE_H / 2);
+}
+
+/**
+ * La courbe de réponse, dessinée.
+ *
+ * Pas d'état, pas de mémoïsation : 160 points × 3 bandes se recalculent en
+ * quelques dizaines de microsecondes, et le rack se rend déjà à chaque
+ * mouvement de curseur. Un cache ici n'économiserait rien et ajouterait une
+ * dépendance à tenir juste.
+ *
+ * La courbe se calcule à 44,1 kHz alors que le contexte audio tourne peut-être
+ * à 48 : l'écart ne se voit qu'aux dernières centaines de hertz sous Nyquist,
+ * et le composant, contrôlé, n'a pas de contexte audio à interroger.
+ */
+function CourbeEq({ params }: { params: ParamsEffets }) {
+  const points = courbeEq(params, 160, COURBE_MIN_HZ, COURBE_MAX_HZ);
+  const trace = points
+    .map((p, i) => `${i === 0 ? "M" : "L"}${abscisse(p.frequence).toFixed(1)} ${ordonnee(p.db).toFixed(1)}`)
+    .join(" ");
+  const zero = ordonnee(0).toFixed(1);
+  // Le remplissage est le tracé refermé sur la ligne des 0 dB : il montre d'un
+  // coup d'œil de quel côté du neutre chaque région se trouve.
+  const remplissage = `${trace} L${COURBE_L} ${zero} L0 ${zero} Z`;
+
+  return (
+    <svg
+      className="fx-courbe"
+      viewBox={`0 0 ${COURBE_L} ${COURBE_H}`}
+      role="img"
+      // Un tracé est muet pour qui ne le voit pas. Les trois réglages, eux, se
+      // lisent — c'est l'information que la courbe porte.
+      aria-label={`Réponse de l'égaliseur : ${BANDES_EQ.map(
+        (b) => `${b.nom.toLowerCase()} ${params[b.reglage] > 0 ? "+" : ""}${params[b.reglage]} dB`,
+      ).join(", ")}`}
+    >
+      {/* Graduations horizontales : le neutre, puis la moitié du débattement. */}
+      <line x1={0} y1={zero} x2={COURBE_L} y2={zero} className="fx-courbe-zero" />
+      {[EQ_DB_MAX / 2, -EQ_DB_MAX / 2].map((db) => (
+        <line key={db} x1={0} y1={ordonnee(db)} x2={COURBE_L} y2={ordonnee(db)} className="fx-courbe-grille" />
+      ))}
+
+      {/* Là où chaque bande agit : sans ces repères, un creux reste anonyme. */}
+      {BANDES_EQ.map((b) => (
+        <line
+          key={b.nom}
+          x1={abscisse(b.frequence)}
+          y1={0}
+          x2={abscisse(b.frequence)}
+          y2={COURBE_H}
+          className="fx-courbe-bande"
+        />
+      ))}
+
+      <path d={remplissage} className="fx-courbe-aire" />
+      <path d={trace} className="fx-courbe-trait" />
+
+      {REPERES_HZ.map((r) => (
+        <text key={r.hz} x={abscisse(r.hz) + 3} y={COURBE_H - 3} className="fx-courbe-hz">
+          {r.nom}
+        </text>
+      ))}
+    </svg>
+  );
+}
 
 export function RackEffets({
   params,
@@ -167,18 +285,24 @@ export function RackEffets({
       </div>
       <div className="fx-groupe">
         <span className="fx-groupe-nom">ÉGALISEUR</span>
-        <label>GRAVES {params.fxEqLow > 0 ? "+" : ""}{params.fxEqLow} dB
-          <input type="range" min={-18} max={18} value={params.fxEqLow}
-            onChange={(e) => onParam("fxEqLow", Number(e.target.value))} />
-        </label>
-        <label>MÉDIUMS {params.fxEqMid > 0 ? "+" : ""}{params.fxEqMid} dB
-          <input type="range" min={-18} max={18} value={params.fxEqMid}
-            onChange={(e) => onParam("fxEqMid", Number(e.target.value))} />
-        </label>
-        <label>AIGUS {params.fxEqHigh > 0 ? "+" : ""}{params.fxEqHigh} dB
-          <input type="range" min={-18} max={18} value={params.fxEqHigh}
-            onChange={(e) => onParam("fxEqHigh", Number(e.target.value))} />
-        </label>
+        {/* Un curseur par bande, tirés de `BANDES_EQ` : le nom affiché, la
+            fréquence tracée et le filtre construit viennent de la même ligne.
+            Recopiés ici, ils auraient fini par désigner des bandes différentes
+            — « GRAVES » sur le curseur d'une bande déplacée ailleurs. */}
+        {BANDES_EQ.map((bande) => (
+          <label key={bande.nom}>
+            {bande.nom} {params[bande.reglage] > 0 ? "+" : ""}{params[bande.reglage]} dB
+            <input
+              type="range"
+              min={-EQ_DB_MAX}
+              max={EQ_DB_MAX}
+              value={params[bande.reglage]}
+              title={`${bande.frequence} Hz`}
+              onChange={(e) => onParam(bande.reglage, Number(e.target.value))}
+            />
+          </label>
+        ))}
+        <CourbeEq params={params} />
       </div>
     </div>
   );
