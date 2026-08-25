@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -258,5 +258,58 @@ describe("aucun compte volatil fige dans la doc vivante", () => {
         }
       }
     }
+  });
+});
+
+describe("aucun lien mort dans la doc vivante", () => {
+  /**
+   * Les documents se citent les uns les autres. Un lien qui ne mene nulle part
+   * ne casse rien et ne se voit pas : on clique, il ne se passe rien, et on
+   * conclut que la page n'existe pas — alors qu'elle a seulement demenage.
+   *
+   * **Les archives sont exclues, et c'est voulu.** `docs/archived/` et
+   * `docs/backup/` sont des instantanes figes : leurs liens pointent vers des
+   * fichiers d'alors, dont certains n'existent plus. Les reparer falsifierait
+   * ce qu'ils constatent a leur date. 39 liens y sont morts, tous la-bas.
+   *
+   * Les references de la forme `fichier.ts:42` sont ecartees aussi : ce n'est
+   * pas un chemin mais un renvoi a une ligne, que rien ne peut ouvrir comme
+   * un lien.
+   */
+  /** Tous les documents du depot, sauf archives et dependances. */
+  function documentsVivants(dossier = RACINE, vus: string[] = []): string[] {
+    for (const entree of readdirSync(dossier)) {
+      if (entree === "node_modules" || entree === ".git" || entree === "dist" ||
+          entree === "archived" || entree === "backup" || entree === ".next") continue;
+      const chemin = path.join(dossier, entree);
+      if (statSync(chemin).isDirectory()) documentsVivants(chemin, vus);
+      else if (entree.endsWith(".md")) vus.push(chemin);
+    }
+    return vus;
+  }
+
+  it("parcourt bien tout le depot, pas trois fichiers", () => {
+    // Sans ce garde, une erreur de chemin rendrait une liste vide et le test
+    // suivant serait vert sans avoir rien lu.
+    expect(documentsVivants().length).toBeGreaterThan(100);
+  });
+
+  it("chaque lien interne mene a un fichier qui existe", () => {
+    const morts: string[] = [];
+    for (const doc of documentsVivants()) {
+      const texte = readFileSync(doc, "utf-8");
+      for (const m of texte.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g)) {
+        const cible = m[2].split("#")[0].trim();
+        if (!cible) continue;
+        if (/^(https?:|mailto:|<)/.test(cible)) continue;
+        // `fichier.ts:42` renvoie a une ligne, ce n'est pas un chemin.
+        if (/:\d+$/.test(cible)) continue;
+        const vise = path.resolve(path.dirname(doc), cible);
+        if (!existsSync(vise)) {
+          morts.push(`${path.relative(RACINE, doc)} : « ${m[1]} » -> ${cible}`);
+        }
+      }
+    }
+    expect(morts, `liens morts :\n${morts.join("\n")}`).toEqual([]);
   });
 });
