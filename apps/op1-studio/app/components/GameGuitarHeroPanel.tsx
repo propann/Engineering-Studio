@@ -1668,12 +1668,20 @@ export function GameGuitarHeroPanel({
             })}
           </div>
 
-          {/* Le clavier partage cette boîte avec l'écran : même largeur, même repère. */}
+          {/* Le clavier partage cette boîte avec l'écran : même largeur, même
+              repère. Aucun retrait horizontal, et la MÊME bordure latérale que
+              l'écran — `box-sizing: border-box` étant global, une bordure d'un
+              côté seulement décalerait les deux boîtes de 1 px et les
+              rétrécirait de 2. Les colonnes de l'écran ne tomberaient plus tout
+              à fait sur les touches, d'autant plus loin qu'on s'écarte du
+              centre. La bordure haute reste absente : les deux boîtes se
+              touchent, c'est le même cadre. */}
           <div
             style={{
               background: "#080c10",
               borderRadius: "0 0 8px 8px",
-              border: "none",
+              border: "1px solid #1e293b",
+              borderTop: "none",
               padding: 0,
             }}
           >

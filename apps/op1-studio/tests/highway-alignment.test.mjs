@@ -48,14 +48,67 @@ function blocApres(marqueur, fin) {
   return SOURCE.slice(i, j);
 }
 
+/**
+ * Le conteneur qui enveloppe le clavier, remonte DEPUIS le composant.
+ *
+ * L'ancrage precedent etait un commentaire — « CLAVIER MACHINE ALIGNE AU PIXEL
+ * PRES ». Une refonte du panneau l'a supprime, et le garde est tombe en
+ * annoncant un marqueur introuvable au lieu du defaut qu'il surveille. Un test
+ * qui depend d'un commentaire pour exister ne survit pas au premier remaniement.
+ *
+ * `<GameGuitarHeroKeyboard` ne peut pas disparaitre sans que le clavier
+ * disparaisse : c'est le seul ancrage qui vaille.
+ */
+function conteneurDuClavier() {
+  const i = SOURCE.indexOf("<GameGuitarHeroKeyboard");
+  assert.notEqual(i, -1, "le clavier n'est plus monte dans le panneau");
+  const debut = SOURCE.lastIndexOf("<div", i);
+  assert.notEqual(debut, -1, "aucun conteneur avant le clavier");
+  return SOURCE.slice(debut, i);
+}
+
+/**
+ * Largeur de bordure gauche/droite declaree dans un bloc de style.
+ *
+ * Elle compte autant que le retrait : `box-sizing: border-box` est global, donc
+ * une bordure laterale d'un cote seulement decale les deux boites de 1 px et
+ * les retrecit de 2. Moins spectaculaire que les 20 px du `padding` d'origine,
+ * mais du meme genre — un ecart nul au centre et maximal aux extremes.
+ */
+function bordureHorizontale(bloc) {
+  const m = /\bborder:\s*"([^"]+)"/.exec(bloc);
+  if (!m) return 0;
+  if (/^none\b/.test(m[1].trim())) return 0;
+  const largeur = /^([\d.]+)px/.exec(m[1].trim());
+  return largeur ? Number(largeur[1]) : 0;
+}
+
 test("le conteneur du clavier n'a aucun retrait horizontal", () => {
-  const bloc = blocApres("CLAVIER MACHINE ALIGNÉ AU PIXEL PRÈS", "<GameGuitarHeroKeyboard");
+  const bloc = conteneurDuClavier();
   const m = /padding:\s*"([^"]+)"/.exec(bloc);
-  assert.ok(m, "le conteneur du clavier n'a plus de padding declare — verifier le bloc");
+  // `padding: 0` sans guillemets est aussi valide, et vaut zero.
+  if (!m) {
+    assert.match(bloc, /padding:\s*0\b/, "aucun padding declare sur le conteneur du clavier");
+    return;
+  }
   const [g, d] = retraitsHorizontaux(m[1]);
   assert.ok(
     NUL(g) && NUL(d),
     `retrait horizontal de ${g}/${d} sur le conteneur du clavier : les colonnes de l'ecran ne tombent plus sur les touches`,
+  );
+});
+
+test("le clavier et l'ecran portent la meme bordure laterale", () => {
+  // Le retrait n'est qu'une facon de decaler les deux boites ; la bordure en
+  // est une autre, plus discrete. L'ecran encadre son OLED d'un pixel : si le
+  // clavier ne le fait pas, sa boite est 2 px plus large et commence 1 px plus
+  // a gauche.
+  const clavier = bordureHorizontale(conteneurDuClavier());
+  const ecran = bordureHorizontale(blocApres('className="op1-highway-screen-oled"', "<svg"));
+  assert.equal(
+    clavier,
+    ecran,
+    `bordures laterales differentes — clavier ${clavier}px, ecran ${ecran}px : les deux boites n'ont pas la meme largeur`,
   );
 });
 
