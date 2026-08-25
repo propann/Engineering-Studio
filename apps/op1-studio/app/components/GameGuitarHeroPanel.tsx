@@ -31,6 +31,8 @@ import {
   KEYBOARD_ROWS,
   KEYBOARD_WHITE_NOTES,
   KEYBOARD_BLACK_NOTES,
+  foldNoteToPlayableKeyboard,
+  isPlayableKeyboardNote,
   type KeyboardBlock,
 } from "../lib/keyboardLayout";
 import { parseMidiFile, type ParsedMidiFile } from "../lib/midiFileImport";
@@ -242,13 +244,16 @@ export function GameGuitarHeroPanel({
         durationSeconds: customMidi.durationSeconds,
         recommendedEngine: soundEngine,
         recommendedPatch: soundPatch,
-        notes: customMidi.notes.map((n) => ({
-          note: n.note,
-          startSeconds: n.startSeconds,
-          durationSeconds: n.durationSeconds,
-          velocity: n.velocity,
-          label: `${["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][n.note % 12]}${Math.floor(n.note / 12) - 1}`,
-        })),
+        notes: customMidi.notes.map((n) => {
+          const note = foldNoteToPlayableKeyboard(n.note);
+          return {
+            note,
+            startSeconds: n.startSeconds,
+            durationSeconds: n.durationSeconds,
+            velocity: n.velocity,
+            label: `${["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"][note % 12]}${Math.floor(note / 12) - 1}`,
+          };
+        }),
       };
     }
     return GAME_SONG_THEMES.find((t) => t.id === selectedThemeId) ?? GAME_SONG_THEMES[0];
@@ -287,8 +292,9 @@ export function GameGuitarHeroPanel({
   // Calcul horizontal X exact correspondant à la colonne de la touche
   const getNoteX = useCallback((note: number): number => {
     const b = blocDeNote(note);
-    return b ? b.col + b.w / 2 : bounds.minX + bounds.width / 2;
-  }, [blocDeNote, bounds]);
+    if (!b) throw new Error(`Note MIDI ${note} absente du clavier OP-1`);
+    return b.col + b.w / 2;
+  }, [blocDeNote]);
 
   /**
    * Largeur de la note qui tombe — une FRACTION de sa touche, pas une taille.
@@ -309,7 +315,7 @@ export function GameGuitarHeroPanel({
    */
   const getNoteWidth = useCallback((note: number): number => {
     const b = blocDeNote(note);
-    if (!b) return PART_BLANCHE * 2;
+    if (!b) throw new Error(`Note MIDI ${note} absente du clavier OP-1`);
     return b.w * (b.type === "black" ? PART_NOIRE : PART_BLANCHE);
   }, [blocDeNote]);
 
@@ -754,10 +760,17 @@ export function GameGuitarHeroPanel({
     };
   }, [isPlaying, speedPercent, loopMode, currentSong, autoPlaySound, playSoundNote, stopPlayback, getNoteX]);
 
+  // L'OP-1 peut décaler son octave : les 24 touches matérielles sont repliées
+  // sur les 24 touches visibles avant le jeu et la surbrillance.
+  const playablePressedNotes = useMemo(
+    () => pressedNotes.map(foldNoteToPlayableKeyboard),
+    [pressedNotes]
+  );
+
   // Combinaison des notes appuyées (Physique MIDI + Clavier Virtuel)
   const allActivePressedNotes = useMemo(() => {
-    return new Set<number>([...pressedNotes, ...pressedKeyboardNotes]);
-  }, [pressedNotes, pressedKeyboardNotes]);
+    return new Set<number>([...playablePressedNotes, ...pressedKeyboardNotes].filter(isPlayableKeyboardNote));
+  }, [playablePressedNotes, pressedKeyboardNotes]);
 
   // Évaluation des frappes joueur lors du changement des touches pressées
   useEffect(() => {
@@ -882,7 +895,7 @@ export function GameGuitarHeroPanel({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
+        gap: "6px",
         background: "#080c10",
         color: "#f8fafc",
         fontFamily: "'JetBrains Mono', 'Segoe UI', monospace",
@@ -896,34 +909,26 @@ export function GameGuitarHeroPanel({
           alignItems: "center",
           background: "#111822",
           border: "1px solid #1e293b",
-          borderRadius: "10px",
-          padding: "10px 16px",
+          borderRadius: "7px",
+          padding: "5px 8px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
           {/* Logo Arcade OP-1 */}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "24px" }}>👾</span>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 900, color: "#00ED95", letterSpacing: "0.5px" }}>
-                OP-1 STUDIO ACADEMY & ARCADIA
-              </div>
-              <div style={{ fontSize: "10px", color: "#64748b" }}>
-                40 Exercices · Niveaux 1 à 10 · Styles Modernes · Fiche Unifiée
-              </div>
-            </div>
+          <div style={{ fontSize: "12px", fontWeight: 900, color: "#00ED95", whiteSpace: "nowrap" }}>
+            OP-1 · EXERCICES
           </div>
 
           {/* Onglets de Vue */}
-          <div style={{ display: "flex", gap: "6px", marginLeft: "12px" }}>
+          <div style={{ display: "flex", gap: "4px" }}>
             <button
               type="button"
               onClick={() => setActiveView("game")}
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                padding: "6px 12px",
+                gap: "4px",
+                padding: "4px 8px",
                 borderRadius: "6px",
                 fontSize: "11px",
                 fontWeight: 700,
@@ -934,7 +939,7 @@ export function GameGuitarHeroPanel({
               }}
             >
               <span>🎮</span>
-              <span>Session de Jeu</span>
+              <span>Jouer</span>
             </button>
 
             <button
@@ -943,8 +948,8 @@ export function GameGuitarHeroPanel({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                padding: "6px 12px",
+                gap: "4px",
+                padding: "4px 8px",
                 borderRadius: "6px",
                 fontSize: "11px",
                 fontWeight: 700,
@@ -955,7 +960,7 @@ export function GameGuitarHeroPanel({
               }}
             >
               <span>📚</span>
-              <span>Banque d'Exercices (40)</span>
+              <span>Exercices</span>
             </button>
 
             <button
@@ -964,8 +969,8 @@ export function GameGuitarHeroPanel({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                padding: "6px 12px",
+                gap: "4px",
+                padding: "4px 8px",
                 borderRadius: "6px",
                 fontSize: "11px",
                 fontWeight: 700,
@@ -976,7 +981,7 @@ export function GameGuitarHeroPanel({
               }}
             >
               <span>👤</span>
-              <span>Fiche de Personnage & Studio</span>
+              <span>Profil</span>
               <span
                 style={{
                   background: "#38bdf8",
@@ -1002,14 +1007,14 @@ export function GameGuitarHeroPanel({
               background: "#1e293b",
               border: "1px solid #475569",
               color: "#f8fafc",
-              padding: "5px 12px",
+              padding: "4px 8px",
               borderRadius: "6px",
               cursor: "pointer",
               fontSize: "11px",
               fontWeight: 700,
             }}
           >
-            ✕ Quitter
+            ✕
           </button>
         )}
       </div>
@@ -1018,7 +1023,7 @@ export function GameGuitarHeroPanel({
           VUE 1 : SESSION DE JEU (HIGHWAY OLED FOND NOIR VECTORIEL)
          ══════════════════════════════════════════════════════════════════════ */}
       {activeView === "game" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           
           {/* Bandeau d'état du morceau & transport */}
           <div
@@ -1028,15 +1033,15 @@ export function GameGuitarHeroPanel({
               alignItems: "center",
               background: "#111822",
               border: "1px solid #1e293b",
-              borderRadius: "8px",
-              padding: "8px 14px",
+              borderRadius: "7px",
+              padding: "5px 8px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "24px" }}>{currentSong.icon}</span>
-              <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
+              <span style={{ fontSize: "15px" }}>{currentSong.icon}</span>
+              <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <strong style={{ fontSize: "13px", color: "#f8fafc" }}>{currentSong.title}</strong>
+                  <strong style={{ fontSize: "11px", color: "#f8fafc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{currentSong.title}</strong>
                   <span
                     style={{
                       fontSize: "9px",
@@ -1054,18 +1059,17 @@ export function GameGuitarHeroPanel({
                       color: "#0f172a",
                     }}
                   >
-                    NIV. {currentSong.level} · {currentSong.difficulty.toUpperCase()}
+                    NIV. {currentSong.level}
                   </span>
                   <span style={{ fontSize: "10px", color: "#64748b" }}>
-                    BPM: {currentSong.bpm} · {currentSong.notes.length} notes · {currentSong.durationSeconds}s
+                    {currentSong.bpm} BPM · {currentSong.notes.length} NOTES
                   </span>
                 </div>
-                <div style={{ fontSize: "10px", color: "#94a3b8" }}>{currentSong.description}</div>
               </div>
             </div>
 
             {/* Boutons de contrôle de lecture */}
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {!isPlaying ? (
                 <button
                   type="button"
@@ -1077,7 +1081,7 @@ export function GameGuitarHeroPanel({
                     background: "#00ED95",
                     color: "#05160e",
                     border: "none",
-                    padding: "6px 14px",
+                    padding: "4px 9px",
                     borderRadius: "6px",
                     fontWeight: 900,
                     fontSize: "12px",
@@ -1098,7 +1102,7 @@ export function GameGuitarHeroPanel({
                     background: "#FF3A5D",
                     color: "#ffffff",
                     border: "none",
-                    padding: "6px 14px",
+                    padding: "4px 9px",
                     borderRadius: "6px",
                     fontWeight: 900,
                     fontSize: "12px",
@@ -1124,7 +1128,7 @@ export function GameGuitarHeroPanel({
                   color: visualMode === "invaders" ? "#c084fc" : "#94a3b8",
                 }}
               >
-                {visualMode === "invaders" ? "👾 Space Invaders" : "🎹 Notes Classiques"}
+                {visualMode === "invaders" ? "👾" : "🎹"}
               </button>
 
               {/* Vitesse */}
@@ -1140,7 +1144,7 @@ export function GameGuitarHeroPanel({
                   fontSize: "10px",
                 }}
               >
-                <span style={{ color: "#94a3b8" }}>Vitesse:</span>
+                <span style={{ color: "#94a3b8" }}>VIT.</span>
                 <select
                   value={speedPercent}
                   onChange={(e) => setSpeedPercent(Number(e.target.value))}
@@ -1153,11 +1157,11 @@ export function GameGuitarHeroPanel({
                     fontWeight: 700,
                   }}
                 >
-                  <option value={50}>50% (Très lent)</option>
-                  <option value={75}>75% (Ralenti)</option>
-                  <option value={100}>100% (Normal)</option>
-                  <option value={125}>125% (Accéléré)</option>
-                  <option value={150}>150% (Virtuose)</option>
+                  <option value={50}>50%</option>
+                  <option value={75}>75%</option>
+                  <option value={100}>100%</option>
+                  <option value={125}>125%</option>
+                  <option value={150}>150%</option>
                 </select>
               </div>
 
@@ -1176,7 +1180,7 @@ export function GameGuitarHeroPanel({
                   color: loopMode ? "#00ED95" : "#94a3b8",
                 }}
               >
-                🔁 Boucle {loopMode ? "ON" : "OFF"}
+                🔁 {loopMode ? "ON" : "OFF"}
               </button>
 
               {/* Son Guide */}
@@ -1194,28 +1198,28 @@ export function GameGuitarHeroPanel({
                   color: autoPlaySound ? "#38bdf8" : "#94a3b8",
                 }}
               >
-                🔊 Guide {autoPlaySound ? "ON" : "OFF"}
+                🔊 {autoPlaySound ? "ON" : "OFF"}
               </button>
             </div>
           </div>
 
-          {/* ── BANDEAU DE STATISTIQUES TEMPS RÉEL (SCORE / MULTI / XP / PRÉCISION) ── */}
+          {/* Statistiques utiles pendant la partie. */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(5, 1fr)",
-              gap: "8px",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gap: "4px",
               background: "#0c1017",
               border: "1px solid #1e293b",
               borderRadius: "8px",
-              padding: "8px 12px",
+              padding: "4px 8px",
             }}
           >
             {/* 1. Score & Multiplicateur */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase" }}>Score Total</span>
+              <span style={{ fontSize: "8px", color: "#64748b", textTransform: "uppercase" }}>Score</span>
               <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                <strong style={{ fontSize: "18px", color: "#00ED95" }}>{score.toLocaleString()}</strong>
+                <strong style={{ fontSize: "14px", color: "#00ED95" }}>{score.toLocaleString()}</strong>
                 <span
                   style={{
                     fontSize: "11px",
@@ -1233,18 +1237,18 @@ export function GameGuitarHeroPanel({
 
             {/* 2. Combo & Max Combo */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase" }}>Combo Actuel</span>
+              <span style={{ fontSize: "8px", color: "#64748b", textTransform: "uppercase" }}>Combo</span>
               <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                <strong style={{ fontSize: "18px", color: "#38bdf8" }}>{comboStreak}</strong>
+                <strong style={{ fontSize: "14px", color: "#38bdf8" }}>{comboStreak}</strong>
                 <span style={{ fontSize: "10px", color: "#64748b" }}>Max: {maxCombo}</span>
               </div>
             </div>
 
             {/* 3. Précision */}
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase" }}>Précision</span>
+              <span style={{ fontSize: "8px", color: "#64748b", textTransform: "uppercase" }}>Précision</span>
               <div>
-                <strong style={{ fontSize: "18px", color: "#fbbf24" }}>
+                <strong style={{ fontSize: "14px", color: "#fbbf24" }}>
                   {sessionStats.perfect + sessionStats.great + sessionStats.good + sessionStats.miss === 0
                     ? "100%"
                     : `${Math.round(
@@ -1258,7 +1262,7 @@ export function GameGuitarHeroPanel({
 
             {/* 4. Jugements détaillés */}
             <div style={{ display: "flex", flexDirection: "column", fontSize: "10px" }}>
-              <span style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase" }}>Jugements</span>
+              <span style={{ fontSize: "8px", color: "#64748b", textTransform: "uppercase" }}>Frappes</span>
               <div style={{ display: "flex", gap: "6px", marginTop: "2px" }}>
                 <span style={{ color: "#00ED95" }}>P:{sessionStats.perfect}</span>
                 <span style={{ color: "#38bdf8" }}>G:{sessionStats.great}</span>
@@ -1267,33 +1271,13 @@ export function GameGuitarHeroPanel({
               </div>
             </div>
 
-            {/* 5. XP & Progression Personnage */}
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "9px", color: "#64748b", textTransform: "uppercase" }}>
-                Opérateur Niv. {profile.level}
-              </span>
-              <div style={{ fontSize: "11px", fontWeight: 700, color: "#e2e8f0" }}>{profile.title}</div>
-              <div
-                style={{
-                  width: "100%",
-                  height: "4px",
-                  background: "#1e293b",
-                  borderRadius: "2px",
-                  marginTop: "3px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${Math.min(100, Math.round((profile.currentXp / Math.max(1, profile.xpForNextLevel)) * 100))}%`,
-                    height: "100%",
-                    background: "linear-gradient(90deg, #38bdf8, #a855f7)",
-                  }}
-                />
-              </div>
-            </div>
           </div>
 
+          <div
+            className="op1-training-stage"
+            data-key-columns="24"
+            style={{ width: "min(100%, 1100px)", margin: "0 auto" }}
+          >
           {/* ══════════════════════════════════════════════════════════════════
               ÉCRAN OLED SIMULATEUR : FOND NOIR VECTORIEL AVEC POINTILLÉS BLANCS
              ══════════════════════════════════════════════════════════════════ */}
@@ -1302,7 +1286,7 @@ export function GameGuitarHeroPanel({
             style={{
               position: "relative",
               width: "100%",
-              aspectRatio: "100 / 38",
+              aspectRatio: "100 / 32",
               background: "#000000",
               borderRadius: "8px 8px 0 0",
               border: "1px solid #1e293b",
@@ -1684,47 +1668,22 @@ export function GameGuitarHeroPanel({
             })}
           </div>
 
-          {/* ── CLAVIER MACHINE ALIGNÉ AU PIXEL PRÈS SOUS L'ÉCRAN ──
-
-              AUCUN retrait horizontal ici. Le SVG du clavier et celui de l'écran
-              tracent tous deux leur x dans le repère `bounds` (même `minX`, même
-              `width`) et s'étirent en `preserveAspectRatio="none"` : ils ne se
-              superposent que si leurs deux boîtes font EXACTEMENT la même
-              largeur au même endroit.
-
-              Un `padding: 10px` vivait ici. Il rentrait le clavier de 10 px de
-              chaque côté, donc les touches étaient tracées dans une boîte plus
-              étroite de 20 px que les colonnes de l'écran : les deux repères ne
-              se décalaient pas d'un bloc, ils n'avaient pas la même échelle —
-              l'écart était nul au centre et maximal aux extrêmes. Le retrait est
-              passé sur la légende, qui, elle, n'a aucun alignement à tenir.
-
-              Les bordures ne comptent pas : `box-sizing: border-box` est global
-              (globals.css), et l'écran porte la même bordure de 1 px. ── */}
+          {/* Le clavier partage cette boîte avec l'écran : même largeur, même repère. */}
           <div
             style={{
               background: "#080c10",
               borderRadius: "0 0 8px 8px",
-              border: "1px solid #1e293b",
-              borderTop: "none",
-              padding: "10px 0",
+              border: "none",
+              padding: 0,
             }}
           >
-            <div style={{ marginBottom: "6px", padding: "0 10px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#64748b" }}>
-              <span>
-                {currentSong.category === "drum"
-                  ? "🥁 Mapping OP-1 : 53/Kick, 54/808, 55/Snare, 56/Clap, 57/Hat, 59/OpenHat, 60/Crash, 65/Shaker, 75/Vox, 76/Sub..."
-                  : "🎹 Clavier OP-1 (24 touches de Fa2 à Mi4 / C2 à C4)"}
-              </span>
-              <span>Jouez au clavier virtuel, en MIDI USB ou via les touches machine</span>
-            </div>
-
             <GameGuitarHeroKeyboard
-              pressedNotes={pressedNotes}
+              pressedNotes={playablePressedNotes}
               targetNotes={activeTargetNotes}
               onPressedChange={handleKeyboardPressedChange}
               onSendMidi={onSendMidi}
             />
+          </div>
           </div>
         </div>
       )}

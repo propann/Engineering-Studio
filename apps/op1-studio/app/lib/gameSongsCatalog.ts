@@ -4,9 +4,11 @@
  * 4 Catégories distinctes avec progression pédagogique complète :
  * 1. "melody" : Mélodies & Leads Modernes (Lo-Fi, Synthwave, Jazz, Afrobeat, etc.)
  * 2. "chord"  : Accords & Harmonies Contemporaines (Neo-Soul, French Touch, Bossa, J-Pop, Gospel)
- * 3. "drum"   : Finger Drumming OP-1 (Pads physiques alignés 41 à 64 : Fa2 à Mi4)
+ * 3. "drum"   : Finger Drumming OP-1 (24 touches physiques MIDI 53 à 76)
  * 4. "arcade" : Arcade & Rétro Virtuosité (Chiptune, 8-Bit Classics, Boss Fights, Phonk)
  */
+
+import { foldNoteToPlayableKeyboard } from "./keyboardLayout";
 
 export interface GameNote {
   note: number;            // MIDI Note number (ex: 41 = Kick, 45 = Snare, 60 = C4)
@@ -31,7 +33,7 @@ export interface GameSongTheme {
   notes: GameNote[];
 }
 
-export const GAME_SONG_THEMES: GameSongTheme[] = [
+const RAW_GAME_SONG_THEMES: GameSongTheme[] = [
   {
     "id": "melody_lvl1_pentatonic_rnb",
     "title": "Gamme Pentatonique & Riff Lo-Fi R&B",
@@ -8122,13 +8124,13 @@ export const GAME_SONG_THEMES: GameSongTheme[] = [
   },
   {
     "id": "drum_lvl1_basic_groove",
-    "title": "Finger Drumming : Initiation Pulse (Kick 41, Snare 45 & Hat 49)",
+    "title": "Finger Drumming : Initiation Pulse",
     "category": "drum",
     "level": 1,
     "icon": "🥁",
     "bpm": 85,
     "difficulty": "Débutant",
-    "description": "Apprentissage fondamental de la coordination Kick (41), Snare (45) et Closed Hat (49) en 8 mesures.",
+    "description": "Coordination Kick, Snare et Closed Hat sur les 24 touches OP-1.",
     "durationSeconds": 28,
     "recommendedEngine": "Drum",
     "recommendedPatch": "Kit Drum OP-1 Standard",
@@ -22575,3 +22577,12 @@ export const GAME_SONG_THEMES: GameSongTheme[] = [
     ]
   }
 ];
+
+/** Tous les exercices livrés sont jouables sur les 24 touches visibles. */
+export const GAME_SONG_THEMES: GameSongTheme[] = RAW_GAME_SONG_THEMES.map((theme) => ({
+  ...theme,
+  notes: theme.notes.map((note) => ({
+    ...note,
+    note: foldNoteToPlayableKeyboard(note.note),
+  })),
+}));

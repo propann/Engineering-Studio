@@ -88,7 +88,7 @@ export default function Exercises() {
         </div>
       )}
 
-      <div style={{ flex: 1, padding: "12px 16px" }}>
+      <div style={{ flex: 1, padding: "6px 8px" }}>
         <GameGuitarHeroPanel
           onClose={handleClose}
           pressedNotes={pressedMidiNotes}

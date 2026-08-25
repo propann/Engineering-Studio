@@ -5,10 +5,14 @@ import {
   KEYBOARD_COLS,
   KEYBOARD_ROWS,
   KEYBOARD_WHITE_NOTES,
+  KEYBOARD_PLAYABLE_NOTES,
+  foldNoteToPlayableKeyboard,
+  isPlayableKeyboardNote,
   layoutBounds,
   sortKeyBlocks,
   type KeyboardBlock,
 } from "../../../op1-studio/app/lib/keyboardLayout";
+import { GAME_SONG_THEMES } from "../../../op1-studio/app/lib/gameSongsCatalog";
 
 /**
  * La disposition du clavier est partagee par trois lecteurs : le clavier joue
@@ -30,6 +34,29 @@ const block = (over: Partial<KeyboardBlock> = {}): KeyboardBlock => ({
 });
 
 describe("correspondance notes / touches", () => {
+  it("expose exactement 24 notes chromatiques de 53 a 76", () => {
+    expect(KEYBOARD_PLAYABLE_NOTES).toEqual(Array.from({ length: 24 }, (_, i) => 53 + i));
+  });
+
+  it("replie les octaves hors clavier sans changer la hauteur", () => {
+    expect(foldNoteToPlayableKeyboard(41)).toBe(53);
+    expect(foldNoteToPlayableKeyboard(45)).toBe(57);
+    expect(foldNoteToPlayableKeyboard(49)).toBe(61);
+    expect(foldNoteToPlayableKeyboard(88)).toBe(76);
+    for (let note = 0; note <= 127; note++) {
+      const folded = foldNoteToPlayableKeyboard(note);
+      expect(isPlayableKeyboardNote(folded)).toBe(true);
+      expect((folded - note) % 12).toBe(0);
+    }
+  });
+
+  it("rend chaque note des 40 exercices jouable", () => {
+    expect(GAME_SONG_THEMES).toHaveLength(40);
+    for (const theme of GAME_SONG_THEMES) {
+      for (const note of theme.notes) expect(isPlayableKeyboardNote(note.note)).toBe(true);
+    }
+  });
+
   it("part de la première note matérielle MIDI 53", () => {
     /**
      * Deux commits se sont contredits ici, et le desaccord est consigne pour

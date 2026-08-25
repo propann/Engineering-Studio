@@ -37,6 +37,25 @@ export const KEYBOARD_ROWS = 16;
 export const OP1_FIRST_KEY_NOTE = 53;
 export const KEYBOARD_WHITE_NOTES = [53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72, 74, 76];
 export const KEYBOARD_BLACK_NOTES = [54, 56, 58, 61, 63, 66, 68, 70, 73, 75];
+export const KEYBOARD_PLAYABLE_NOTES = [...KEYBOARD_WHITE_NOTES, ...KEYBOARD_BLACK_NOTES].sort((a, b) => a - b);
+
+/**
+ * Replie une note sur les 24 touches du clavier OP-1 affiché, sans changer
+ * sa hauteur dans l'octave. Ainsi un kick 41 devient 53 et ne tombe jamais
+ * dans une colonne fictive au centre de l'écran.
+ */
+export function foldNoteToPlayableKeyboard(note: number): number {
+  let folded = Math.round(note);
+  const first = KEYBOARD_PLAYABLE_NOTES[0];
+  const last = KEYBOARD_PLAYABLE_NOTES[KEYBOARD_PLAYABLE_NOTES.length - 1];
+  while (folded < first) folded += 12;
+  while (folded > last) folded -= 12;
+  return folded;
+}
+
+export function isPlayableKeyboardNote(note: number): boolean {
+  return KEYBOARD_PLAYABLE_NOTES.includes(note);
+}
 
 export type KeyboardBlock = { col: number; row: number; w: number; h: number; color: string; type: string };
 
