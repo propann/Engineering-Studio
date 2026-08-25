@@ -74,6 +74,21 @@ export function InvaderSprite({
   // Touche la plus grave (F2 = 53).
   const lineIndex = Math.abs((note.note - 53 + 24)) % 12;
 
+  /**
+   * Le rang : 0 pour l'octave grave, 1 pour l'aiguë.
+   *
+   * Douze silhouettes pour vingt-quatre touches — les deux octaves partagent
+   * la même. Deux colonnes distantes d'une octave envoyaient donc exactement
+   * le même alien, et rien à l'écran ne disait laquelle des deux viser.
+   *
+   * Le rang se lit sur la traînée, pas sur la silhouette. Douze secondes
+   * silhouettes auraient doublé le dessin à tenir ; et un ornement posé sur
+   * les épaules entrerait en collision avec les pinces du crabe ou les
+   * ailerons du cuirassé, qui débordent déjà à ±0,54 w. La traînée, elle,
+   * appartient à tous les sprites et n'en touche aucun.
+   */
+  const rang = Math.floor(((((note.note - 53) % 24) + 24) % 24) / 12);
+
   // Cycle d'animation à 2 positions synchronisé sur le tempo et la colonne
   const animFrame = Math.floor(time * 6 + lineIndex * 0.4) % 2;
 
@@ -102,18 +117,28 @@ export function InvaderSprite({
 
   return (
     <g transform={`translate(${x}, ${y - h})`} opacity={opacity}>
-      {/* ── TRAÎNÉE D'ÉNERGIE PLASMA ARRIÈRE ── */}
-      <line
-        x1={0}
-        y1={-2.2}
-        x2={0}
-        y2={-0.3}
-        stroke={primaryColor}
-        strokeWidth={0.22}
-        strokeDasharray="0.35 0.35"
-        opacity={0.75}
-      />
+      {/* ── TRAÎNÉE D'ÉNERGIE PLASMA ARRIÈRE ──
+          Simple à l'octave grave, double à l'aiguë : c'est elle qui sépare les
+          deux colonnes qui partagent une silhouette. ── */}
+      {(rang === 0 ? [0] : [-0.22, 0.22]).map((dx) => (
+        <line
+          key={`trainee-${dx}`}
+          x1={dx}
+          y1={-2.2}
+          x2={dx}
+          y2={-0.3}
+          stroke={primaryColor}
+          strokeWidth={0.22}
+          strokeDasharray="0.35 0.35"
+          opacity={0.75}
+        />
+      ))}
       <circle cx={0} cy={-0.3} r={0.3} fill="none" stroke={primaryColor} strokeWidth={TRAIT} opacity={0.9} />
+      {/* Second anneau au rang aigu : quand la note tombe trop près du haut du
+          cadre, la traînée sort du champ et ne distingue plus rien. */}
+      {rang === 1 && (
+        <circle cx={0} cy={-0.3} r={0.52} fill="none" stroke={primaryColor} strokeWidth={TRAIT} opacity={0.65} />
+      )}
 
       {/* ── CORPS DU SPACE INVADER UNIQUE PAR LIGNE (0 à 11) ── */}
 
@@ -441,17 +466,23 @@ export function InvaderSprite({
       )}
 
       {/* ── CAPSULE D'IMPACT SUR LA HIT LINE ──
-          Son contour etait noir parce qu'elle etait pleine et blanche. Videe,
-          un contour noir sur l'ecran noir de l'OP-1 ne se voit plus : elle
-          passe au blanc, et prend un trait plus epais que les aliens pour
-          rester l'element le plus lisible de la chute. ── */}
+          Son contour était noir parce qu'elle était pleine et blanche. Vidée,
+          un contour noir sur l'écran noir de l'OP-1 ne se voit plus : elle
+          passe au blanc, et prend un trait plus épais que les aliens pour
+          rester l'élément le plus lisible de la chute.
+
+          Elle garde un aplat, mais NOIR — celui du fond de l'écran. Ce n'est
+          pas un retour en arrière sur le parti pris du trait : sur une note
+          courte, la capsule recouvre le bas du sprite, et sans aplat les
+          pattes et tentacules la traversaient de part en part, par-dessus le
+          libellé. Le noir la rend opaque sans rien ajouter de visible. ── */}
       <rect
         x={-w * 0.46}
         y={h - 1.85}
         width={w * 0.92}
         height={1.85}
         rx={0.28}
-        fill="none"
+        fill="#000000"
         stroke="#ffffff"
         strokeWidth={0.14}
         filter={`drop-shadow(0 0 4px ${glowColor})`}

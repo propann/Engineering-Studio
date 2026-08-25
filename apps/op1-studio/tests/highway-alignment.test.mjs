@@ -85,3 +85,49 @@ test("les deux lisent le meme repere horizontal", () => {
   const clavier = readFileSync(new URL("../app/components/GameGuitarHeroKeyboard.tsx", import.meta.url), "utf-8");
   assert.match(clavier, /const bounds = layoutBounds\(/);
 });
+
+/**
+ * L'ECRAN DES EXERCICES — le meme contrat, tenu autrement.
+ *
+ * `ExercisePanel` fait tomber ses notes dans un SVG en `preserveAspectRatio="none"`
+ * et affiche dessous le clavier de `StudioMachinePanel`, qui, lui, est en
+ * `xMidYMid meet`. Deux conventions differentes sous le meme alignement : ca
+ * tient, mais pas par hasard, et pas inconditionnellement.
+ *
+ * `meet` met a l'echelle par la dimension la plus contraignante, puis centre.
+ * Tant que la boite est RELATIVEMENT PLUS HAUTE que le viewBox, c'est la
+ * largeur qui contraint : le contenu occupe toute la largeur, le vide se met
+ * en haut et en bas, et l'axe X reste identique a `none`. Le jour ou la boite
+ * devient plus LARGE que le rapport du viewBox, c'est la hauteur qui
+ * contraint : le clavier se retrouve centre entre deux marges horizontales, et
+ * les colonnes de l'ecran ne tombent plus sur les touches.
+ *
+ * Mesure sur la disposition livree, mode `notesOnly` : viewBox `5 9 30 7`,
+ * rapport 4,286 ; la zone porte `aspectRatio: layoutWidth / layoutHeight`,
+ * donc exactement le meme rapport, et le retrait horizontal vaut 0,0 px. Meme
+ * si la regle de la feuille de style l'emportait (64/16 = 4,0), la boite
+ * resterait plus haute que le viewBox, donc toujours 0 px.
+ *
+ * Ce que ce test verrouille, c'est la CAUSE : le rapport de la boite est tire
+ * des memes bornes que le viewBox. Ecrire ce rapport en dur, ou le laisser a
+ * la valeur de la feuille de style, remettrait l'alignement au hasard de la
+ * disposition chargee.
+ */
+const MACHINE = readFileSync(new URL("../app/components/StudioMachinePanel.tsx", import.meta.url), "utf-8");
+const EXERCICE = readFileSync(new URL("../app/components/ExercisePanel.tsx", import.meta.url), "utf-8");
+
+test("le cadre du clavier tire son rapport des memes bornes que son viewBox", () => {
+  assert.match(MACHINE, /const layoutWidth = bounds\.width;/);
+  assert.match(MACHINE, /const layoutHeight = bounds\.height;/);
+  assert.match(MACHINE, /aspectRatio: `\$\{layoutWidth\} \/ \$\{layoutHeight\}`/);
+  assert.match(MACHINE, /viewBox=\{layoutViewBox\}/);
+  assert.match(MACHINE, /const layoutViewBox = bounds\.viewBox;/);
+});
+
+test("l'ecran des exercices etire son repere sans conserver le rapport", () => {
+  assert.match(EXERCICE, /preserveAspectRatio="none"/);
+  // Et il lit le repere du clavier, pas un calcul a lui.
+  assert.match(EXERCICE, /const bounds = layoutBounds\(/);
+  assert.match(EXERCICE, /const screenMinX = usesPadLayout \? 0 : bounds\.minX;/);
+  assert.match(EXERCICE, /const screenWidth = usesPadLayout \? 100 : bounds\.width;/);
+});
