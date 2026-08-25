@@ -1,4 +1,4 @@
-import { ORDRE_DIVISIONS, type Division } from "./divisions";
+import { GATE_MAX, GATE_MIN, ORDRE_DIVISIONS, type Division } from "./divisions";
 import { NOMS_NOTES, type Gamme } from "./gammes";
 import { NOMS_DIRECTIONS, ORDRE_DIRECTIONS, type Direction, type Pas } from "./sequenceur";
 import { SelecteurGamme } from "./SelecteurGamme";
@@ -26,6 +26,9 @@ export type ProprietesSequenceur = {
   onLongueur: (longueur: number) => void;
   direction: Direction;
   onDirection: (direction: Direction) => void;
+  /** Longueur de note, en % du pas. 100 = notes liées, comme avant ce réglage. */
+  gate: number;
+  onGate: (gate: number) => void;
   division: Division;
   onDivision: (division: Division) => void;
   gamme: Gamme;
@@ -46,6 +49,7 @@ const AMBITUS = 24;
 export function Sequenceur({
   sequence, pasCourant, enMarche, onMarche, pret,
   longueur, onLongueur, direction, onDirection, division, onDivision,
+  gate, onGate,
   gamme, onGamme, tonique, onTonique,
   onEcrire, onBasculer, onRemplir, onEffacer,
   prefixe = "sequenceur",
@@ -88,6 +92,18 @@ export function Sequenceur({
             {ORDRE_DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </label>
+        {/* Longueur de note, en % du pas. A 100 la note court jusqu'au pas
+            suivant — les pas sont lies, c'est le comportement d'origine. En
+            dessous, elle est coupee avant : le jeu devient detache. */}
+        <label title="Longueur de note en % du pas. 100 % = notes liées, en dessous = jeu détaché.">
+          Longueur {gate}%
+          <input
+            type="range" min={GATE_MIN} max={GATE_MAX} step={5}
+            value={gate}
+            onChange={(e) => onGate(Number(e.target.value))}
+          />
+        </label>
+
         <SelecteurGamme
           gamme={gamme}
           onGamme={onGamme}

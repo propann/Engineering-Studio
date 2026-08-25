@@ -3,7 +3,7 @@ import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, build
 import { sAbonner } from "@studio-hub/midi-dispatch";
 import {
   Arpegiateur, Sequenceur,
-  pasArpege, quantifier, type Gamme, type Motif,
+  pasArpege, quantifier, coupureGateMs, GATE_DEFAUT, GATE_MAX, GATE_MIN, type Gamme, type Motif,
   basculerPas, ecrirePas, pasAJouer, redimensionner, remplirAuHasard, sequenceVide,
   type Direction, type Pas,
 } from "@studio-hub/musique";
@@ -73,6 +73,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const [arpGamme, setArpGamme] = useState<Gamme>("chromatique");
   const [arpTonique, setArpTonique] = useState(60);
   const [arpOctaves, setArpOctaves] = useState(1);
+  // Longueur de note en % du pas. A 100 — le defaut — la note court jusqu'au
+  // pas suivant, exactement comme avant ce reglage.
+  const [arpGate, setArpGate] = useState(GATE_DEFAUT);
   const [arpDivision, setArpDivision] = useState<Division>("1/8");
   const [arpNotes, setArpNotes] = useState<number[]>([]);
   const arpNotesRef = useRef<Set<number>>(new Set());
@@ -83,6 +86,8 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   // arrêt laisse des notes suspendues sur la machine — le défaut classique
   // de l'arpégiateur, et celui qui oblige à débrancher pour s'en sortir.
   const arpSoundingRef = useRef<number[]>([]);
+  /** Meme role que `seqGateRef`, pour l'arpege. Annulee dans `arpRelacherSonnantes`. */
+  const arpGateRef = useRef<number | undefined>(undefined);
   const arpEnabledRef = useRef(false);
   // ── Sequenceur pas a pas ───────────────────────────────────────────────
   //
@@ -92,6 +97,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const [seqSequence, setSeqSequence] = useState<Pas[]>(() => sequenceVide(16));
   const [seqLongueur, setSeqLongueur] = useState(16);
   const [seqDirection, setSeqDirection] = useState<Direction>("avant");
+  const [seqGate, setSeqGate] = useState(GATE_DEFAUT);
   const [seqDivision, setSeqDivision] = useState<Division>("1/8");
   const [seqGamme, setSeqGamme] = useState<Gamme>("pentatonique_mineure");
   const [seqTonique, setSeqTonique] = useState(60);
@@ -103,14 +109,24 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   // Ce qui sonne, pour pouvoir le couper. Meme raison que l'arpege : sans ce
   // releve, tout arret laisse une note suspendue sur la machine.
   const seqSonnanteRef = useRef<number | null>(null);
+  /**
+   * Minuterie de coupure — la SECONDE, celle que le module n'avait pas.
+   *
+   * Elle n'existe que si le gate est sous 100 % ; a fond, la note est coupee
+   * par le pas suivant comme avant, et aucune minuterie n'est programmee. Elle
+   * s'annule dans `seqRelacher`, appele par TOUS les chemins d'arret : c'est
+   * le seul moyen de garantir qu'aucun n'oublie de la couper, et une minuterie
+   * oubliee, c'est une note qui reste tenue apres l'arret.
+   */
+  const seqGateRef = useRef<number | undefined>(undefined);
   // Les reglages lus DANS la minuterie, pas dans la portee capturee.
-  const seqParamsRef = useRef({ sequence: seqSequence, direction: seqDirection, division: seqDivision, gamme: seqGamme, tonique: seqTonique, bpm });
-  seqParamsRef.current = { sequence: seqSequence, direction: seqDirection, division: seqDivision, gamme: seqGamme, tonique: seqTonique, bpm };
+  const seqParamsRef = useRef({ sequence: seqSequence, direction: seqDirection, division: seqDivision, gamme: seqGamme, tonique: seqTonique, bpm, gate: seqGate });
+  seqParamsRef.current = { sequence: seqSequence, direction: seqDirection, division: seqDivision, gamme: seqGamme, tonique: seqTonique, bpm, gate: seqGate };
   // Les réglages lus DANS la minuterie. Une minuterie capture la portée de
   // son tour de rendu : sans ce relevé, changer le tempo ou le motif ne
   // prendrait effet qu'au prochain re-rendu déclenché par autre chose.
-  const arpParamsRef = useRef({ motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm });
-  arpParamsRef.current = { motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm };
+  const arpParamsRef = useRef({ motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm, gate: arpGate });
+  arpParamsRef.current = { motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm, gate: arpGate };
   arpEnabledRef.current = arpEnabled;
 
   useEffect(() => {
@@ -289,6 +305,12 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       arpRunningRef.current = false;
       if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
       arpTimerRef.current = undefined;
+      // Le demontage relache a la main, sans passer par les deux fonctions de
+      // relachement : il doit donc annuler les coupures lui-meme.
+      if (arpGateRef.current !== undefined) window.clearTimeout(arpGateRef.current);
+      arpGateRef.current = undefined;
+      if (seqGateRef.current !== undefined) window.clearTimeout(seqGateRef.current);
+      seqGateRef.current = undefined;
       seqRunningRef.current = false;
     if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
     seqTimerRef.current = undefined;
@@ -307,7 +329,38 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   
   // ── Moteur du sequenceur ───────────────────────────────────────────────
 
+  /**
+   * Coupe le sequenceur sans envoyer de note-off.
+   *
+   * Ce bloc etait ecrit DEUX fois — dans `panic()` et dans `arpArreter()` —
+   * et c'est precisement ce qui a laisse passer un defaut : la minuterie de
+   * coupure du gate, ajoutee plus tard, n'etait dans aucune des deux copies.
+   * Elle aurait donc survecu au bouton d'urgence, et coupe une note bien apres
+   * que tout soit cense s'etre tu.
+   *
+   * Pas de note-off ici, volontairement : les deux appelants s'en chargent
+   * autrement — `panic()` par sa rafale MIDI, qui coupe tout sur tous les
+   * canaux, et `arpArreter()` parce que le sequenceur y est arrete en
+   * dommage collateral, pas relache note par note.
+   */
+  function seqCouperSansRelacher() {
+    seqRunningRef.current = false;
+    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
+    seqTimerRef.current = undefined;
+    if (seqGateRef.current !== undefined) window.clearTimeout(seqGateRef.current);
+    seqGateRef.current = undefined;
+    seqSonnanteRef.current = null;
+    setSeqEnMarche(false);
+    setSeqPasCourant(null);
+  }
+
   function seqRelacher() {
+    // La coupure s'annule ICI, et pas dans chaque chemin d'arret. `seqRelacher`
+    // est appele par le pas suivant, par `seqArreter`, par `arpArreter` (le
+    // PANIC) et au demontage : mettre l'annulation ailleurs, c'est se garantir
+    // qu'un de ces chemins l'oubliera, et qu'une note restera tenue.
+    if (seqGateRef.current !== undefined) window.clearTimeout(seqGateRef.current);
+    seqGateRef.current = undefined;
     const note = seqSonnanteRef.current;
     seqSonnanteRef.current = null;
     if (note !== null) broadcastNote("note-off", note, 0);
@@ -334,6 +387,23 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     if (aJouer) {
       broadcastNote("note-on", aJouer.note, aJouer.velocite);
       seqSonnanteRef.current = aJouer.note;
+
+      // `null` = jouer lie, donc aucune minuterie : c'est le cas a 100 %, et
+      // le comportement d'origine reste alors intact au noeud pres.
+      const coupure = coupureGateMs(attente, p.gate);
+      if (coupure !== null) {
+        seqGateRef.current = window.setTimeout(() => {
+          seqGateRef.current = undefined;
+          // Relire l'etat : entre la programmation et le declenchement, un
+          // arret a pu passer. Couper sans verifier enverrait une note-off
+          // apres le silence — inoffensif ici, mais c'est la meme minuterie
+          // qui, sur un autre chemin, couperait la note SUIVANTE.
+          if (!seqRunningRef.current) return;
+          const note = seqSonnanteRef.current;
+          seqSonnanteRef.current = null;
+          if (note !== null) broadcastNote("note-off", note, 0);
+        }, coupure);
+      }
     }
 
     seqTimerRef.current = window.setTimeout(seqPas, attente);
@@ -365,6 +435,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     seqPas();
   }
   function arpRelacherSonnantes() {
+    // Meme raison que dans `seqRelacher` : un seul endroit qui annule.
+    if (arpGateRef.current !== undefined) window.clearTimeout(arpGateRef.current);
+    arpGateRef.current = undefined;
     for (const note of arpSoundingRef.current) broadcastNote("note-off", note, 0);
     arpSoundingRef.current = [];
   }
@@ -389,19 +462,25 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   
     for (const note of notes) broadcastNote("note-on", note);
     arpSoundingRef.current = notes;
-  
+
+    // Meme regle que le sequenceur : rien a programmer quand on joue lie.
+    const coupure = notes.length ? coupureGateMs(attente, p.gate) : null;
+    if (coupure !== null) {
+      arpGateRef.current = window.setTimeout(() => {
+        arpGateRef.current = undefined;
+        if (!arpRunningRef.current) return;
+        for (const note of arpSoundingRef.current) broadcastNote("note-off", note, 0);
+        arpSoundingRef.current = [];
+      }, coupure);
+    }
+
     arpTimerRef.current = window.setTimeout(arpPas, attente);
   }
   
   function arpArreter() {
     // Le sequenceur aussi : un PANIC qui laisse une minuterie tourner
     // renverrait des notes juste apres avoir tout coupe.
-    seqRunningRef.current = false;
-    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
-    seqTimerRef.current = undefined;
-    seqSonnanteRef.current = null;
-    setSeqEnMarche(false);
-    setSeqPasCourant(null);
+    seqCouperSansRelacher();
     arpRunningRef.current = false;
     if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
     arpTimerRef.current = undefined;
@@ -446,15 +525,12 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     // renverrait des notes juste après avoir tout coupé.
     // Le sequenceur aussi : un PANIC qui laisse une minuterie tourner
     // renverrait des notes juste apres avoir tout coupe.
-    seqRunningRef.current = false;
-    if (seqTimerRef.current !== undefined) window.clearTimeout(seqTimerRef.current);
-    seqTimerRef.current = undefined;
-    seqSonnanteRef.current = null;
-    setSeqEnMarche(false);
-    setSeqPasCourant(null);
+    seqCouperSansRelacher();
     arpRunningRef.current = false;
     if (arpTimerRef.current !== undefined) window.clearTimeout(arpTimerRef.current);
     arpTimerRef.current = undefined;
+    if (arpGateRef.current !== undefined) window.clearTimeout(arpGateRef.current);
+    arpGateRef.current = undefined;
     arpSoundingRef.current = [];
     setArpEnabled(false);
     if (!hasDestination()) {
@@ -645,6 +721,8 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             notesTenues={arpNotes}
             onBasculerNote={arpBasculerNote}
             onToutRelacher={arpToutRelacher}
+            gate={arpGate}
+            onGate={setArpGate}
           />
           {/* Le sequenceur partage l'horloge et les sorties de ce panneau, rien
               d'autre. L'arpege deroule ce qu'on tient ; lui joue ce qu'on a ecrit. */}
@@ -670,6 +748,8 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             onRemplir={() => setSeqSequence(remplirAuHasard(seqLongueur, seqGamme, seqTonique))}
             onEffacer={() => setSeqSequence(sequenceVide(seqLongueur))}
             prefixe="seq"
+            gate={seqGate}
+            onGate={setSeqGate}
           />
         </div>
       </div>

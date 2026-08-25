@@ -163,6 +163,86 @@ describe("aucune note suspendue", () => {
   });
 });
 
+describe("la longueur de note ne laisse aucune minuterie derriere elle", () => {
+  /**
+   * Le module n'avait qu'UNE minuterie, et c'etait ecrit dans son code comme
+   * une decision : « les pas sont donc lies, sans deuxieme minuterie pour la
+   * duree de note ». La longueur de note en ajoute une seconde par module.
+   *
+   * Une seconde minuterie, c'est une note qui peut rester tenue apres l'arret
+   * — le defaut qui oblige a debrancher la machine. Ces tests verrouillent les
+   * deux moyens de l'eviter : un SEUL endroit qui annule, et une relecture de
+   * l'etat au declenchement.
+   */
+
+  it("le relachement annule la coupure, dans les deux modules", () => {
+    // L'invariant central. `seqRelacher` et `arpRelacherSonnantes` sont
+    // appeles par TOUS les chemins d'arret : mettre l'annulation ailleurs,
+    // c'est se garantir qu'un chemin l'oubliera.
+    expect(corps(PANNEAU, "function seqRelacher()")).toContain("clearTimeout(seqGateRef.current)");
+    expect(corps(PANNEAU, "function arpRelacherSonnantes()")).toContain("clearTimeout(arpGateRef.current)");
+  });
+
+  it("l'arret passe bien par le relachement", () => {
+    // Ce qui rend l'invariant precedent suffisant. Si un arret coupait la
+    // minuterie de pas sans relacher, la coupure survivrait.
+    expect(corps(PANNEAU, "function seqArreter()")).toContain("seqRelacher()");
+    expect(corps(PANNEAU, "function arpArreter()")).toContain("arpRelacherSonnantes()");
+  });
+
+  it("l'arret sans note-off annule quand meme la coupure", () => {
+    // `panic()` et `arpArreter()` coupent le sequenceur SANS le relacher note
+    // par note — la rafale MIDI s'en charge pour l'un, l'autre l'arrete en
+    // dommage collateral. Ils ne passent donc pas par `seqRelacher`, ou vit
+    // l'annulation. Ce bloc etait ecrit deux fois et la minuterie de coupure
+    // n'etait dans aucune des deux copies : elle aurait survecu au bouton
+    // d'urgence. Une seule fonction desormais, et les deux l'appellent.
+    expect(corps(PANNEAU, "function seqCouperSansRelacher()")).toContain("clearTimeout(seqGateRef.current)");
+    expect(corps(PANNEAU, "function arpArreter()")).toContain("seqCouperSansRelacher()");
+    expect(corps(PANNEAU, "function panic()")).toContain("seqCouperSansRelacher()");
+  });
+
+  it("PANIC annule aussi la coupure de l'arpege", () => {
+    // Meme raison, cote arpege : `panic()` vide `arpSoundingRef` sans passer
+    // par `arpRelacherSonnantes`.
+    expect(corps(PANNEAU, "function panic()")).toContain("clearTimeout(arpGateRef.current)");
+  });
+
+  it("le demontage annule les deux, a la main", () => {
+    // Il relache directement sur les ports, sans passer par les fonctions de
+    // relachement : il doit donc annuler lui-meme.
+    const i = PANNEAU.indexOf("// Démontage : couper la minuterie");
+    const fin = PANNEAU.indexOf("}, []);", i);
+    const bloc = PANNEAU.slice(i, fin + 7);
+    expect(bloc).toContain("clearTimeout(arpGateRef.current)");
+    expect(bloc).toContain("clearTimeout(seqGateRef.current)");
+  });
+
+  it("la coupure relit l'etat avant de couper", () => {
+    // Entre la programmation et le declenchement, un arret a pu passer.
+    // Couper sans verifier enverrait une note-off apres le silence — et sur un
+    // autre chemin, la meme minuterie couperait la note SUIVANTE.
+    expect(corps(PANNEAU, "function seqPas()")).toContain("if (!seqRunningRef.current) return;");
+    expect(corps(PANNEAU, "function arpPas()")).toContain("if (!arpRunningRef.current) return;");
+  });
+
+  it("aucune minuterie n'est programmee quand on joue lie", () => {
+    // A 100 %, le comportement doit rester EXACTEMENT celui d'avant, pas
+    // « presque, a une minuterie pres ». `coupureGateMs` rend `null`, et les
+    // deux moteurs ne programment rien dans ce cas.
+    for (const fn of ["function seqPas()", "function arpPas()"]) {
+      expect(corps(PANNEAU, fn), fn).toContain("if (coupure !== null) {");
+    }
+  });
+
+  it("les deux moteurs lisent la longueur dans leurs parametres", () => {
+    // Lue dans l'etat React plutot que dans la ref, elle serait celle du rendu
+    // ou la minuterie a ete posee — pas celle du moment.
+    expect(corps(PANNEAU, "function seqPas()")).toContain("coupureGateMs(attente, p.gate)");
+    expect(corps(PANNEAU, "function arpPas()")).toContain("coupureGateMs(attente, p.gate)");
+  });
+});
+
 describe("le mode controleur alimente l'arpege", () => {
   it("le controleur choisit les notes au lieu de les relayer", () => {
     // Relayer en plus ferait sonner deux fois la meme touche : une fois en
@@ -274,9 +354,16 @@ describe("le sequenceur, a cote de l'arpege", () => {
   it("PANIC arrete aussi le sequenceur", () => {
     // Un PANIC qui laisse une minuterie tourner renverrait des notes juste
     // apres avoir tout coupe.
-    const bloc = corpsSeq("function panic()");
-    expect(bloc).toContain("seqRunningRef.current = false");
-    expect(bloc).toContain("clearTimeout(seqTimerRef.current)");
+    //
+    // Ce bloc etait ecrit deux fois — ici et dans `arpArreter` — et une
+    // minuterie ajoutee plus tard n'est entree dans aucune des deux copies.
+    // Il vit maintenant dans `seqCouperSansRelacher`, seul endroit a tenir a
+    // jour ; ce test verifie donc l'appel ET ce que la fonction appelee fait
+    // reellement, sans quoi il suffirait d'appeler une fonction vide.
+    expect(corpsSeq("function panic()")).toContain("seqCouperSansRelacher()");
+    const coupe = corpsSeq("function seqCouperSansRelacher()");
+    expect(coupe).toContain("seqRunningRef.current = false");
+    expect(coupe).toContain("clearTimeout(seqTimerRef.current)");
   });
 
   it("le demontage relache la note du sequenceur aussi", () => {

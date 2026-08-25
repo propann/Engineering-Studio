@@ -47,3 +47,51 @@ export function bpmSain(bpm: number): number {
 export function dureeMs(bpm: number, division: Division): number {
   return (60000 / bpmSain(bpm)) * 4 * DIVISIONS[division];
 }
+
+/**
+ * Longueur de note, en pourcentage du pas.
+ *
+ * Sans ce réglage, une note court jusqu'au pas suivant : les pas sont liés, et
+ * tout se joue legato. C'est le comportement d'origine, et il reste celui de
+ * 100 %.
+ */
+export const GATE_MIN = 10;
+export const GATE_MAX = 100;
+export const GATE_DEFAUT = GATE_MAX;
+
+/**
+ * Durée minimale d'une note, en millisecondes.
+ *
+ * En dessous, une machine n'a pas le temps de faire sonner quoi que ce soit :
+ * la note-off arrive dans la même bouffée MIDI que la note-on, et on entend un
+ * clic ou rien du tout. À 200 BPM en 1/32, un pas fait déjà 37 ms — un gate de
+ * 10 % y demanderait 3,7 ms.
+ */
+export const NOTE_MIN_MS = 15;
+
+/**
+ * Quand couper la note, en millisecondes après son départ — ou `null` si elle
+ * doit tenir jusqu'au pas suivant.
+ *
+ * **`null` n'est pas un cas d'erreur, c'est le cas normal à 100 %.** Il dit à
+ * l'appelant de ne programmer AUCUNE seconde minuterie : la note sera coupée
+ * par le pas suivant, comme depuis toujours. C'est ce qui garantit qu'un gate
+ * à fond se comporte exactement comme avant le réglage — pas « presque comme
+ * avant, à une minuterie près ».
+ *
+ * `null` revient aussi quand la coupure calculée atteindrait le pas suivant :
+ * programmer une note-off au moment même où la note-on suivante part, c'est
+ * une course dont l'issue dépend de l'ordonnanceur. Elle couperait parfois la
+ * note NEUVE.
+ */
+export function coupureGateMs(dureePasMs: number, gatePourcent: number): number | null {
+  if (!Number.isFinite(dureePasMs) || dureePasMs <= 0) return null;
+  if (!Number.isFinite(gatePourcent)) return null;
+
+  const gate = Math.max(GATE_MIN, Math.min(GATE_MAX, gatePourcent));
+  if (gate >= GATE_MAX) return null;
+
+  const coupure = Math.max(NOTE_MIN_MS, (dureePasMs * gate) / 100);
+  // La coupure rejoint le pas suivant : rien à gagner, et une course à perdre.
+  return coupure >= dureePasMs ? null : coupure;
+}

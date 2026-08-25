@@ -12,8 +12,8 @@
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 8 prises distinctes, panoramique en renvoi de balle, SYNC au tempo |
 | 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 prédéfinies, rampes exp/droites |
-| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
-| 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié |
+| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs, longueur de note |
+| 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié, longueur de note |
 | 7 | LFO Generator | ✅ livré — trémolo, balayage de filtre, SYNC au tempo, déphasage à l'origine |
 | 8 | Distortion Stack | ✅ livré — trois écrêtages : doux, dur, repliement |
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |
@@ -326,10 +326,18 @@ accord. L'etendue d'octaves est bornee a 1-4, le tempo vient de l'horloge de
 l'hote, et les notes sont quantifiees sur la gamme choisie — ce dernier point
 n'etait pas au plan.
 
-**Ce qui manque** : la longueur de gate et l'enregistrement des notes MIDI. Le
-gate n'est pas un oubli : la note court jusqu'au pas suivant, donc sa duree est
-liee a la division, sans seconde minuterie. Le rendre reglable demande cette
-seconde minuterie — c'est une decision, pas un curseur.
+La longueur de note est livree (2026-08-25), en % du pas. A 100 % — le defaut —
+la note court jusqu'au pas suivant et AUCUNE minuterie n'est programmee : le
+comportement d'origine reste intact au noeud pres. En dessous, une seconde
+minuterie coupe la note avant le pas suivant.
+
+Cette seconde minuterie etait le vrai sujet, pas l'arithmetique : une minuterie
+oubliee, c'est une note qui reste tenue apres l'arret — le defaut qui oblige a
+debrancher la machine. Elle s'annule dans les fonctions de relachement, par
+lesquelles passent tous les chemins d'arret, et la coupure relit l'etat avant
+d'agir : entre sa programmation et son declenchement, un arret a pu passer.
+
+**Ce qui manque** : l'enregistrement des notes MIDI.
 
 **Files**:
 - ✅ `packages/musique/arpege.ts` - motifs, reservoir, quantification
@@ -367,8 +375,12 @@ velocite et son actif. Quatre directions de lecture en plus du plan : avant,
 arriere, aller-retour, aleatoire. Redimensionner conserve les pas existants —
 passer de 16 a 8 pour essayer, puis revenir, ne doit pas rendre une grille vide.
 
-**Ce qui manque** : la duree par pas. Comme pour l'arpege, la note court
-jusqu'au pas suivant.
+La longueur de note est livree (2026-08-25), meme mecanique que l'arpege : un
+pourcentage du pas, 100 % laissant le jeu lie sans programmer de minuterie.
+
+**Ce qui manque** : rien d'identifie. La longueur est globale et non par pas —
+un gate par pas ferait de `Pas` un objet a trois champs regles a la main sur
+trente-deux cases, pour un gain que le reglage global couvre deja.
 
 **Files**:
 - ✅ `packages/musique/sequenceur.ts` - pas, directions, redimensionnement

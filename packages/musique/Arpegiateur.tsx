@@ -1,5 +1,6 @@
 import { ORDRE_DIVISIONS, type Division } from "./divisions";
 import { NOMS_MOTIFS, ORDRE_MOTIFS, type Motif } from "./arpege";
+import { GATE_MAX, GATE_MIN } from "./divisions";
 import { NOMS_NOTES, type Gamme } from "./gammes";
 import { SelecteurGamme } from "./SelecteurGamme";
 
@@ -36,6 +37,9 @@ export type ProprietesArpegiateur = {
   onDivision: (division: Division) => void;
   octaves: number;
   onOctaves: (octaves: number) => void;
+  /** Longueur de note, en % du pas. 100 = notes liées, comme avant ce réglage. */
+  gate: number;
+  onGate: (gate: number) => void;
   notesTenues: number[];
   onBasculerNote: (note: number) => void;
   onToutRelacher: () => void;
@@ -50,6 +54,7 @@ export function Arpegiateur({
   tonique, onTonique,
   division, onDivision,
   octaves, onOctaves,
+  gate, onGate,
   notesTenues, onBasculerNote, onToutRelacher,
 }: ProprietesArpegiateur) {
   return (
@@ -86,6 +91,17 @@ export function Arpegiateur({
         <select value={octaves} onChange={(e) => onOctaves(Number(e.target.value))}>
           {[1, 2, 3, 4].map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
+      </label>
+      {/* Longueur de note, en % du pas. A 100 la note court jusqu'au pas
+          suivant — les pas sont lies, c'est le comportement d'origine. En
+          dessous, elle est coupee avant : le jeu devient detache. */}
+      <label title="Longueur de note en % du pas. 100 % = notes liées, en dessous = jeu détaché.">
+        Longueur {gate}%
+        <input
+          type="range" min={GATE_MIN} max={GATE_MAX} step={5}
+          value={gate}
+          onChange={(e) => onGate(Number(e.target.value))}
+        />
       </label>
     </div>
     <div className="arp-clavier">
