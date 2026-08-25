@@ -3,7 +3,7 @@ import { buildMidiClockWindow, buildMidiNotePacket, buildMidiPanicPackets, build
 import { sAbonner } from "@studio-hub/midi-dispatch";
 import {
   Arpegiateur, Sequenceur,
-  pasArpege, quantifier, coupureGateMs, GATE_DEFAUT, GATE_MAX, GATE_MIN, type Gamme, type Motif,
+  pasArpege, quantifier, capturer, coupureGateMs, GATE_DEFAUT, GATE_MAX, GATE_MIN, type Gamme, type Motif,
   basculerPas, ecrirePas, pasAJouer, redimensionner, remplirAuHasard, sequenceVide,
   type Direction, type Pas,
 } from "@studio-hub/musique";
@@ -98,6 +98,19 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const [seqLongueur, setSeqLongueur] = useState(16);
   const [seqDirection, setSeqDirection] = useState<Direction>("avant");
   const [seqGate, setSeqGate] = useState(GATE_DEFAUT);
+  // Enregistrement pas a pas : chaque note jouee tombe dans la case suivante.
+  const [seqEnregistre, setSeqEnregistre] = useState(false);
+  const seqEnregistreRef = useRef(false);
+  const seqCurseurEnrRef = useRef(0);
+  /**
+   * Le meme curseur, pour l'affichage.
+   *
+   * La ref sert la capture, qui doit lire la valeur a l'instant meme — un etat
+   * React arriverait un rendu trop tard et deux notes jouees coup sur coup
+   * tomberaient dans la meme case. L'etat, lui, sert le bouton : sans lui, le
+   * compteur resterait fige a 1/16 pendant tout l'enregistrement.
+   */
+  const [seqCurseurEnr, setSeqCurseurEnr] = useState(0);
   const [seqDivision, setSeqDivision] = useState<Division>("1/8");
   const [seqGamme, setSeqGamme] = useState<Gamme>("pentatonique_mineure");
   const [seqTonique, setSeqTonique] = useState(60);
@@ -128,6 +141,7 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
   const arpParamsRef = useRef({ motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm, gate: arpGate });
   arpParamsRef.current = { motif: arpMotif, gamme: arpGamme, tonique: arpTonique, octaves: arpOctaves, division: arpDivision, bpm, gate: arpGate };
   arpEnabledRef.current = arpEnabled;
+  seqEnregistreRef.current = seqEnregistre;
 
   useEffect(() => {
     const refreshTargets = () => setStudioCount(getTransportTargets?.().length ?? 0);
@@ -208,6 +222,10 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
       });
     const message = createHubNoteMessage(action, note, velocity, channel, timestamp);
     targets.forEach(({ target, origin }) => target.postMessage(message, origin));
+    // Le clavier joue directement — l'arpege est eteint, on est passe a cote
+    // de sa capture plus haut. Une velocite nulle est un relachement deguise,
+    // pas une note : l'enregistrer poserait un silence sous le nom d'une note.
+    if (action === "note-on" && velocity > 0) capturerSiEnregistre(note, velocity);
     if (action === "note-on") setStatus(`Contrôleur OP‑1 : note ${note} relayée vers EP‑133 et les studios ouverts.`);
   }
 
@@ -354,6 +372,55 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     setSeqPasCourant(null);
   }
 
+  /**
+   * Capture une note jouee dans la sequence, si l'enregistrement tourne.
+   *
+   * **Appelee depuis l'arpege et depuis le clavier, JAMAIS depuis `seqPas`.**
+   * Le sequenceur emet lui aussi des notes : les capturer le ferait se
+   * reenregistrer sur lui-meme a chaque tour, et la phrase deriverait toute
+   * seule. C'est la raison d'un appel explicite a chaque source plutot que
+   * d'un branchement dans `broadcastNote`, par lequel TOUT passe — un
+   * branchement la-bas aurait attrape le sequenceur avec le reste.
+   */
+  /**
+   * Arme ou desarme l'enregistrement.
+   *
+   * Le curseur repart de zero A L'ARMEMENT, pas a l'arret : couper puis
+   * reprendre reprendrait sinon la ou on s'etait arrete, ce qui est
+   * exactement le contraire de ce qu'on attend d'un bouton qu'on vient de
+   * rappuyer. Repartir du debut est le comportement previsible.
+   */
+  function basculerEnregistrement() {
+    const suivant = !seqEnregistreRef.current;
+    seqEnregistreRef.current = suivant;
+    setSeqEnregistre(suivant);
+    if (suivant) {
+      seqCurseurEnrRef.current = 0;
+      setSeqCurseurEnr(0);
+      setStatus("Enregistrement arme : joue, chaque note tombe dans la case suivante.");
+    } else {
+      setStatus("Enregistrement arrete.");
+    }
+  }
+
+  function capturerSiEnregistre(note: number, velocite?: number) {
+    if (!seqEnregistreRef.current) return;
+    const r = capturer(seqParamsRef.current.sequence, seqCurseurEnrRef.current, note, velocite);
+    seqCurseurEnrRef.current = r.curseur;
+    setSeqCurseurEnr(r.curseur);
+    setSeqSequence(r.sequence);
+    // La ref sert le moteur, qui tourne peut-etre pendant l'enregistrement :
+    // sans cette ligne il jouerait la sequence d'avant jusqu'au rendu suivant.
+    seqParamsRef.current = { ...seqParamsRef.current, sequence: r.sequence };
+    if (r.termine) {
+      setSeqEnregistre(false);
+      seqEnregistreRef.current = false;
+      seqCurseurEnrRef.current = 0;
+      setSeqCurseurEnr(0);
+      setStatus("Enregistrement termine : la phrase est complete.");
+    }
+  }
+
   function seqRelacher() {
     // La coupure s'annule ICI, et pas dans chaque chemin d'arret. `seqRelacher`
     // est appele par le pas suivant, par `seqArreter`, par `arpArreter` (le
@@ -461,6 +528,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
     if (tenues.length) arpStepRef.current += 1;
   
     for (const note of notes) broadcastNote("note-on", note);
+    // Ce que l'arpege joue s'enregistre : c'est tout l'interet du couple, une
+    // improvisation tenue au clavier devient une phrase modifiable.
+    for (const note of notes) capturerSiEnregistre(note);
     arpSoundingRef.current = notes;
 
     // Meme regle que le sequenceur : rien a programmer quand on joue lie.
@@ -750,6 +820,9 @@ export function MidiSyncPanel({ getTransportTargets }: MidiSyncPanelProps) {
             prefixe="seq"
             gate={seqGate}
             onGate={setSeqGate}
+            enregistre={seqEnregistre}
+            onEnregistre={basculerEnregistrement}
+            curseurEnr={seqCurseurEnr}
           />
         </div>
       </div>

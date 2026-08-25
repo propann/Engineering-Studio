@@ -4212,6 +4212,15 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
 .seq__marche:hover:not(:disabled) { background: #2b4270; }
 .seq__marche:disabled { cursor: not-allowed; opacity: .45; }
 .seq__marche.actif { color: #0d1a14; background: #6fe3b0; border-color: #6fe3b0; }
+/* Enregistrement : rouge une fois arme, comme sur n'importe quelle machine.
+   La meme forme que le bouton de marche, pour qu'ils se lisent en paire. */
+.seq__enr {
+  min-width: 130px; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+  color: #ecf3ff; background: #1c2b47; border: 1px solid #516c9f;
+  font: 800 12px ui-monospace, monospace;
+}
+.seq__enr:hover { background: #2b4270; }
+.seq__enr.actif { color: #2a0710; background: #ff5470; border-color: #ff5470; }
 .seq__reglages { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
 .seq__reglages > label { display: grid; gap: 4px; color: #8e9db5; font: 700 10px ui-monospace, monospace; letter-spacing: .05em; text-transform: uppercase; }
 .seq__reglages select, .seq-gamme__gamme, .seq-gamme__tonique {

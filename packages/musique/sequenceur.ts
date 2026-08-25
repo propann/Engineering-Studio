@@ -193,3 +193,48 @@ export function remplirAuHasard(
     };
   });
 }
+
+/**
+ * Écrit une note jouée dans la séquence, à la position du curseur.
+ *
+ * L'enregistrement pas à pas : on joue, chaque note tombe dans la case
+ * suivante. C'est ce qui transforme une improvisation en phrase modifiable,
+ * plutôt que de demander de saisir trente-deux notes une par une.
+ *
+ * **Il s'arrête tout seul à la fin du tour.** Repartir à zéro effacerait
+ * silencieusement ce qu'on vient d'enregistrer, et on ne s'en apercevrait
+ * qu'en écoutant — c'est-à-dire trop tard. `termine` le dit à l'appelant,
+ * qui coupe l'enregistrement et le fait savoir.
+ *
+ * Rend une NOUVELLE séquence : la précédente reste intacte, donc React voit
+ * le changement et un annulable reste possible.
+ */
+export function capturer(
+  sequence: Pas[],
+  curseur: number,
+  note: number,
+  velocite = VELOCITE_DEFAUT,
+): { sequence: Pas[]; curseur: number; termine: boolean } {
+  const longueur = sequence.length;
+  // Séquence vide : rien où écrire. Rendre la même séquence plutôt que d'en
+  // fabriquer une d'office — la longueur est un réglage, pas un accident.
+  if (longueur === 0) return { sequence, curseur: 0, termine: true };
+
+  const note_ = Math.round(note);
+  if (!Number.isFinite(note_) || note_ < NOTE_MIN || note_ > NOTE_MAX) {
+    // Note hors du MIDI : on ne l'écrit pas, et le curseur n'avance PAS.
+    // Avancer laisserait un trou dans la phrase pour une note que la machine
+    // n'a de toute façon pas pu jouer.
+    return { sequence, curseur, termine: false };
+  }
+
+  const index = Math.max(0, Math.min(longueur - 1, Math.floor(curseur)));
+  const vel = Number.isFinite(velocite)
+    ? Math.max(1, Math.min(127, Math.round(velocite)))
+    : VELOCITE_DEFAUT;
+
+  const suivante = sequence.slice();
+  suivante[index] = { note: note_, velocite: vel, actif: true };
+
+  return { sequence: suivante, curseur: index + 1, termine: index + 1 >= longueur };
+}

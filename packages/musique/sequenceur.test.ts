@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GAMMES } from "./gammes";
 import {
+  capturer,
   NOMS_DIRECTIONS, ORDRE_DIRECTIONS, PAS_MAX, PAS_MIN, VELOCITE_DEFAUT,
   basculerPas, ecrirePas, indexDuPas, pasAJouer, redimensionner,
   remplirAuHasard, sequenceVide, transposer, type Pas,
@@ -237,5 +238,80 @@ describe("listes d'affichage", () => {
   it("couvrent toutes les directions", () => {
     expect([...ORDRE_DIRECTIONS].sort()).toEqual(Object.keys(NOMS_DIRECTIONS).sort());
     for (const d of ORDRE_DIRECTIONS) expect(NOMS_DIRECTIONS[d]).toBeTruthy();
+  });
+});
+
+describe("enregistrement pas a pas", () => {
+  const vide = (n: number) => sequenceVide(n);
+
+  it("ecrit la note jouee dans la case du curseur", () => {
+    const r = capturer(vide(4), 0, 60, 90);
+    expect(r.sequence[0]).toEqual({ note: 60, velocite: 90, actif: true });
+  });
+
+  it("avance d'une case a chaque note", () => {
+    let etat = { sequence: vide(4), curseur: 0, termine: false };
+    for (const note of [60, 62, 64]) etat = capturer(etat.sequence, etat.curseur, note);
+    expect(etat.curseur).toBe(3);
+    expect(etat.sequence.map((p) => p.note)).toEqual([60, 62, 64, null]);
+  });
+
+  it("s'annonce termine a la derniere case, et pas avant", () => {
+    // Le point qui compte. Repartir a zero effacerait silencieusement ce qu'on
+    // vient d'enregistrer, et on ne s'en apercevrait qu'en ecoutant — trop
+    // tard. `termine` laisse l'appelant couper l'enregistrement.
+    let etat = { sequence: vide(3), curseur: 0, termine: false };
+    etat = capturer(etat.sequence, etat.curseur, 60);
+    expect(etat.termine).toBe(false);
+    etat = capturer(etat.sequence, etat.curseur, 62);
+    expect(etat.termine).toBe(false);
+    etat = capturer(etat.sequence, etat.curseur, 64);
+    expect(etat.termine).toBe(true);
+  });
+
+  it("ne touche jamais la sequence d'origine", () => {
+    // Une ecriture en place laisserait React aveugle au changement, et
+    // interdirait tout retour en arriere.
+    const avant = vide(4);
+    const copie = JSON.parse(JSON.stringify(avant));
+    capturer(avant, 0, 60);
+    expect(avant).toEqual(copie);
+  });
+
+  it("laisse le curseur ou il est sur une note hors MIDI", () => {
+    // Avancer laisserait un TROU dans la phrase pour une note que la machine
+    // n'a de toute facon pas pu jouer.
+    for (const note of [-1, 128, 999, NaN, Infinity]) {
+      const r = capturer(vide(4), 2, note);
+      expect(r.curseur, `note ${note}`).toBe(2);
+      expect(r.sequence[2].note, `note ${note}`).toBeNull();
+    }
+  });
+
+  it("borne la velocite au lieu de la transmettre telle quelle", () => {
+    expect(capturer(vide(2), 0, 60, 999).sequence[0].velocite).toBe(127);
+    expect(capturer(vide(2), 0, 60, 0).sequence[0].velocite).toBe(1);
+    expect(capturer(vide(2), 0, 60, NaN).sequence[0].velocite).toBe(VELOCITE_DEFAUT);
+  });
+
+  it("ramene un curseur aberrant dans la sequence", () => {
+    // Une longueur reduite pendant l'enregistrement laisserait le curseur
+    // au-dela de la fin.
+    const r = capturer(vide(3), 99, 60);
+    expect(r.sequence[2].note).toBe(60);
+    expect(r.termine).toBe(true);
+  });
+
+  it("ne fabrique pas de sequence quand il n'y en a pas", () => {
+    // La longueur est un reglage, pas un accident : en inventer une ici
+    // ferait apparaitre des pas que personne n'a demandes.
+    const r = capturer([], 0, 60);
+    expect(r.sequence).toEqual([]);
+    expect(r.termine).toBe(true);
+  });
+
+  it("marque le pas actif : une note enregistree doit s'entendre", () => {
+    const desactive = vide(2).map((p) => ({ ...p, actif: false }));
+    expect(capturer(desactive, 0, 60).sequence[0].actif).toBe(true);
   });
 });

@@ -29,6 +29,14 @@ export type ProprietesSequenceur = {
   /** Longueur de note, en % du pas. 100 = notes liées, comme avant ce réglage. */
   gate: number;
   onGate: (gate: number) => void;
+  /**
+   * Enregistrement pas à pas : chaque note jouée tombe dans la case suivante.
+   * S'arrête tout seul au bout de la phrase.
+   */
+  enregistre: boolean;
+  onEnregistre: () => void;
+  /** Case où la prochaine note tombera. Enregistrer à l'aveugle n'est pas un outil. */
+  curseurEnr: number;
   division: Division;
   onDivision: (division: Division) => void;
   gamme: Gamme;
@@ -50,6 +58,7 @@ export function Sequenceur({
   sequence, pasCourant, enMarche, onMarche, pret,
   longueur, onLongueur, direction, onDirection, division, onDivision,
   gate, onGate,
+  enregistre, onEnregistre, curseurEnr,
   gamme, onGamme, tonique, onTonique,
   onEcrire, onBasculer, onRemplir, onEffacer,
   prefixe = "sequenceur",
@@ -68,6 +77,17 @@ export function Sequenceur({
           onClick={onMarche}
         >
           {enMarche ? "■ Arrêter" : "▶ Démarrer"}
+        </button>
+        {/* L'enregistrement ne demande pas de destination : il ECRIT la phrase,
+            il ne l'envoie pas. Le griser faute de machine branchee empecherait
+            de composer hors ligne. */}
+        <button
+          type="button"
+          className={`${prefixe}__enr ${enregistre ? "actif" : ""}`}
+          onClick={onEnregistre}
+          title="Enregistre ce que tu joues, case par case. S'arrête tout seul au bout de la phrase."
+        >
+          {enregistre ? `● Enr. ${curseurEnr + 1}/${longueur}` : "● Enregistrer"}
         </button>
       </div>
 

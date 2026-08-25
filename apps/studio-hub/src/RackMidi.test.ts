@@ -243,6 +243,59 @@ describe("la longueur de note ne laisse aucune minuterie derriere elle", () => {
   });
 });
 
+describe("l'enregistrement pas a pas", () => {
+  it("le sequenceur ne s'enregistre JAMAIS lui-meme", () => {
+    // L'invariant central. Le sequenceur emet des notes comme les autres : les
+    // capturer le ferait se reenregistrer sur lui-meme a chaque tour, et la
+    // phrase deriverait toute seule sans que rien ne le signale.
+    expect(corps(PANNEAU, "function seqPas()")).not.toContain("capturerSiEnregistre");
+  });
+
+  it("la capture est appelee source par source, pas branchee sur l'envoi", () => {
+    // `broadcastNote` est le point par lequel TOUT passe, sequenceur compris.
+    // Y brancher la capture aurait attrape le sequenceur avec le reste — d'ou
+    // un appel explicite a chaque source musicale.
+    expect(corps(PANNEAU, "function broadcastNote(")).not.toContain("capturerSiEnregistre");
+    expect(corps(PANNEAU, "function arpPas()")).toContain("capturerSiEnregistre");
+    expect(corps(PANNEAU, "function relayControllerNote(")).toContain("capturerSiEnregistre");
+  });
+
+  it("n'enregistre pas un relachement deguise en note", () => {
+    // Une note-on a velocite nulle est un relachement dans le protocole MIDI.
+    // L'enregistrer poserait un silence sous le nom d'une note.
+    expect(corps(PANNEAU, "function relayControllerNote("))
+      .toContain('action === "note-on" && velocity > 0');
+  });
+
+  it("la capture lit la sequence dans la ref, et la remet a jour", () => {
+    // Le moteur tourne peut-etre pendant l'enregistrement : sans remise a jour
+    // de la ref, il jouerait la sequence d'AVANT jusqu'au rendu suivant.
+    const bloc = corps(PANNEAU, "function capturerSiEnregistre(");
+    expect(bloc).toContain("seqParamsRef.current.sequence");
+    expect(bloc).toContain("seqParamsRef.current = { ...seqParamsRef.current, sequence: r.sequence }");
+  });
+
+  it("s'arrete tout seul au bout de la phrase", () => {
+    // Repartir a zero effacerait silencieusement ce qu'on vient d'enregistrer,
+    // et on ne s'en apercevrait qu'en ecoutant.
+    const bloc = corps(PANNEAU, "function capturerSiEnregistre(");
+    expect(bloc).toContain("if (r.termine)");
+    expect(bloc).toContain("seqEnregistreRef.current = false");
+  });
+
+  it("le curseur repart de zero a l'armement", () => {
+    const bloc = corps(PANNEAU, "function basculerEnregistrement()");
+    expect(bloc).toContain("seqCurseurEnrRef.current = 0");
+  });
+
+  it("la note de test n'entre pas dans la phrase", () => {
+    // C'est une rangee de diagnostic — « routage de notes » — pas une entree
+    // musicale. Enregistrer ces clics melangerait un essai de branchement a
+    // une phrase.
+    expect(corps(PANNEAU, "function testNote(")).not.toContain("capturerSiEnregistre");
+  });
+});
+
 describe("le mode controleur alimente l'arpege", () => {
   it("le controleur choisit les notes au lieu de les relayer", () => {
     // Relayer en plus ferait sonner deux fois la meme touche : une fois en

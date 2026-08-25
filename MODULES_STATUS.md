@@ -12,7 +12,7 @@
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 8 prises distinctes, panoramique en renvoi de balle, SYNC au tempo |
 | 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 prédéfinies, rampes exp/droites |
-| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs, longueur de note |
+| 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs, longueur de note, enregistrement |
 | 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié, longueur de note |
 | 7 | LFO Generator | ✅ livré — trémolo, balayage de filtre, SYNC au tempo, déphasage à l'origine |
 | 8 | Distortion Stack | ✅ livré — trois écrêtages : doux, dur, repliement |
@@ -337,7 +337,22 @@ debrancher la machine. Elle s'annule dans les fonctions de relachement, par
 lesquelles passent tous les chemins d'arret, et la coupure relit l'etat avant
 d'agir : entre sa programmation et son declenchement, un arret a pu passer.
 
-**Ce qui manque** : l'enregistrement des notes MIDI.
+L'enregistrement pas a pas est livre (2026-08-25) : arme le bouton du
+sequenceur, joue, et chaque note tombe dans la case suivante. Ce qui sort de
+l'arpege s'enregistre aussi — c'est tout l'interet du couple, une improvisation
+tenue au clavier devient une phrase modifiable.
+
+Deux decisions y tiennent tout :
+
+- **Le sequenceur ne s'enregistre jamais lui-meme.** Il emet des notes comme
+  les autres : les capturer le ferait se reenregistrer a chaque tour, et la
+  phrase deriverait toute seule. La capture est donc appelee source par source
+  et non branchee sur `broadcastNote`, par lequel TOUT passe.
+- **L'enregistrement s'arrete au bout de la phrase.** Repartir a zero
+  effacerait silencieusement ce qu'on vient d'enregistrer, et on ne s'en
+  apercevrait qu'en ecoutant.
+
+**Ce qui manque** : rien d'identifie.
 
 **Files**:
 - ✅ `packages/musique/arpege.ts` - motifs, reservoir, quantification
