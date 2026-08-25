@@ -109,8 +109,73 @@ export function buildPulseWave(ctx: BaseAudioContext, duty: number): PeriodicWav
 }
 
 /**
+ * Nombre d'harmoniques retenues pour un LFO déphasé.
+ *
+ * 32 : au-delà, un LFO à 20 Hz place sa 33ᵉ harmonique à 660 Hz, bien
+ * au-dessus de ce qu'une modulation d'amplitude laisse entendre comme forme.
+ * En dessous, le carré et la dent de scie s'arrondissent visiblement.
+ */
+export const HARMONIQUES_LFO = 32;
+
+/**
+ * Les coefficients de Fourier d'une forme de LFO, tournés d'une phase.
+ *
+ * **Pourquoi passer par là.** Un `OscillatorNode` n'a pas de phase réglable :
+ * il démarre toujours à zéro. Les deux contournements évidents échouent —
+ * démarrer l'oscillateur dans le passé n'est pas permis, et le démarrer plus
+ * tard retarde le LFO au lieu de le décaler. La seule façon exacte est de
+ * fabriquer la forme d'onde avec la phase déjà dedans, via `createPeriodicWave`.
+ *
+ * **La rotation.** Les quatre formes de la spécification Web Audio sont des
+ * séries de sinus pures : x(θ) = Σ bₖ·sin(kθ). Décaler de φ revient à remplacer
+ * θ par θ+φ, et
+ *
+ *   bₖ·sin(k(θ+φ)) = bₖ·cos(kφ)·sin(kθ) + bₖ·sin(kφ)·cos(kθ)
+ *
+ * donc `imag[k] = bₖ·cos(kφ)` et `real[k] = bₖ·sin(kφ)`. Chaque harmonique
+ * tourne de **k·φ** et non de φ : c'est ce facteur k qui distingue un vrai
+ * décalage temporel d'une simple rotation du fondamental, laquelle déformerait
+ * la forme au lieu de la déplacer.
+ *
+ * L'indice 0 reste nul : c'est la composante continue, qui décalerait le LFO
+ * hors de son axe.
+ */
+export function coefficientsFormeLfo(
+  forme: OscillatorType,
+  phaseDeg: number,
+  harmoniques = HARMONIQUES_LFO,
+): { real: Float32Array; imag: Float32Array } {
+  const n = Math.max(2, Math.floor(harmoniques) + 1);
+  const real = new Float32Array(new ArrayBuffer(n * 4));
+  const imag = new Float32Array(new ArrayBuffer(n * 4));
+  const phi = ((Number.isFinite(phaseDeg) ? phaseDeg : 0) * Math.PI) / 180;
+
+  for (let k = 1; k < n; k++) {
+    let b = 0;
+    if (forme === "sine") {
+      b = k === 1 ? 1 : 0;
+    } else if (forme === "square") {
+      b = k % 2 === 1 ? 4 / (Math.PI * k) : 0;
+    } else if (forme === "sawtooth") {
+      b = ((2 / Math.PI) * (k % 2 === 1 ? 1 : -1)) / k;
+    } else if (forme === "triangle") {
+      b = k % 2 === 1 ? ((8 / (Math.PI * Math.PI)) * ((k - 1) / 2 % 2 === 0 ? 1 : -1)) / (k * k) : 0;
+    }
+    if (b === 0) continue;
+    real[k] = b * Math.sin(k * phi);
+    imag[k] = b * Math.cos(k * phi);
+  }
+  return { real, imag };
+}
+
+/**
  * LFO branché sur un AudioParam. Renvoie l'oscillateur pour que l'appelant
  * puisse l'arrêter avec la voix.
+ *
+ * `phaseDeg` décale l'origine du cycle. À 0 — le défaut — on garde le type
+ * natif : les formes intégrées sont exactement ces séries-là, mais rendues par
+ * le moteur audio, et ne rien changer au cas courant évite de faire bouger le
+ * son de tous les patches existants pour une fonction qu'ils n'utilisent pas.
  */
 export function attachLfo(
   ctx: BaseAudioContext,
@@ -118,11 +183,21 @@ export function attachLfo(
   rateHz: number,
   depth: number,
   now: number,
-  shape: OscillatorType = "sine"
+  shape: OscillatorType = "sine",
+  phaseDeg = 0
 ): OscillatorNode {
   const lfo = ctx.createOscillator();
   const amt = ctx.createGain();
-  lfo.type = shape;
+  if (phaseDeg % 360 === 0) {
+    lfo.type = shape;
+  } else {
+    const { real, imag } = coefficientsFormeLfo(shape, phaseDeg);
+    // Normalisation active : elle ramène la crête à 1, donc la profondeur
+    // réglée reste la profondeur entendue quelle que soit la phase. Sans
+    // elle, le rebond de Gibbs du carré ferait moduler ~9 % plus fort qu'un
+    // sinus au même réglage.
+    lfo.setPeriodicWave(ctx.createPeriodicWave(real, imag, { disableNormalization: false }));
+  }
   lfo.frequency.setValueAtTime(Math.max(0.01, rateHz), now);
   amt.gain.setValueAtTime(depth, now);
   lfo.connect(amt);

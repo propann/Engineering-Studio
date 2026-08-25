@@ -30,6 +30,15 @@ export type ParamsLfo = {
   lfoDepth: number;    // %
   lfoSync: boolean;
   lfoDivision: Division;
+  /**
+   * Déphasage à l'origine, en degrés.
+   *
+   * Le LFO est construit avec chaque voix : la phase décide donc de l'endroit
+   * du cycle où une note DÉMARRE. À 0 — le défaut — un trémolo commence au
+   * milieu de sa course et monte ; à 270, il commence en creux, et l'attaque
+   * de la note se fait en fondu.
+   */
+  lfoPhase: number;    // degrés
 };
 
 export const LFO_DEFAUT: ParamsLfo = {
@@ -39,6 +48,7 @@ export const LFO_DEFAUT: ParamsLfo = {
   lfoDepth: 50,
   lfoSync: false,
   lfoDivision: "1/4",
+  lfoPhase: 0,
 };
 
 export const ORDRE_CIBLES: CibleLfo[] = ["aucun", "tremolo", "filtre"];
@@ -111,4 +121,18 @@ export function amplitudeFiltre(pourcent: number): number {
 /** Le LFO a-t-il un effet ? Sert à éviter de construire des nœuds pour rien. */
 export function lfoActif(p: ParamsLfo): boolean {
   return p.lfoCible !== "aucun" && Number.isFinite(p.lfoDepth) && p.lfoDepth > 0;
+}
+
+/**
+ * Déphasage ramené à un tour, toujours défini.
+ *
+ * Un patch importé ou corrompu peut porter n'importe quoi ; `createPeriodicWave`
+ * n'aurait pas d'objection à un NaN, il rendrait simplement un LFO muet — le
+ * genre de panne qui ne se voit qu'en jouant.
+ *
+ * Le modulo garde le tour : 450° vaut 90°, et −90° vaut 270°.
+ */
+export function phaseLfoDeg(p: Pick<ParamsLfo, "lfoPhase">): number {
+  if (!Number.isFinite(p.lfoPhase)) return 0;
+  return ((p.lfoPhase % 360) + 360) % 360;
 }

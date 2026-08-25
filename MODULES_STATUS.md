@@ -14,7 +14,7 @@
 | 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 enveloppes prédéfinies |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
 | 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié |
-| 7 | LFO Generator | ✅ livré — trémolo et balayage de filtre, SYNC au tempo, global aux 15 moteurs |
+| 7 | LFO Generator | ✅ livré — trémolo, balayage de filtre, SYNC au tempo, déphasage à l'origine |
 | 8 | Distortion Stack | ✅ livré — trois écrêtages : doux, dur, repliement |
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
@@ -355,11 +355,30 @@ Quatre formes (sinus, triangle, carre, dent de scie), deux cibles (tremolo,
 filtre) plus l'arret, vitesse de 0,05 a 20 Hz, et la synchronisation au tempo
 de l'hote avec division musicale.
 
-**Ce qui manque** : le dephasage a l'origine.
+Le dephasage a l'origine est livre (2026-08-25). Le LFO est construit avec
+chaque voix, donc la phase decide de l'endroit du cycle ou une note DEMARRE :
+a 0 un tremolo part du milieu et monte, a 270 il part du creux et l'attaque se
+fait en fondu.
+
+Un `OscillatorNode` n'a pas de phase reglable — il demarre toujours a zero, et
+les deux contournements evidents echouent : demarrer dans le passe n'est pas
+permis, demarrer plus tard RETARDE le LFO au lieu de le decaler. La forme est
+donc fabriquee avec la phase dedans, par `createPeriodicWave`. Les quatre
+formes de la specification sont des series de sinus pures, et decaler de phi
+revient a tourner chaque harmonique de **k·phi** — c'est ce facteur k qui
+distingue un vrai decalage temporel d'une rotation du seul fondamental, laquelle
+deformerait la forme au lieu de la deplacer.
+
+A phase nulle — le defaut — le type natif est conserve : le son des patches
+existants ne bouge pas pour une fonction qu'ils n'utilisent pas.
+
+**Ce qui manque** : rien d'identifie.
 
 **Files**:
-- ✅ `apps/studio-hub/src/core/audio/lfo.ts`
+- ✅ `apps/studio-hub/src/core/audio/lfo.ts` - reglages, vitesse, phase
 - ✅ `apps/studio-hub/src/core/audio/lfo.test.ts`
+- ✅ `apps/studio-hub/src/core/audio/dsp.ts` - `coefficientsFormeLfo`, `attachLfo`
+- ✅ `apps/studio-hub/src/core/audio/dsp.test.ts` - la rotation, verifiee par reconstruction
 - ✅ `apps/studio-hub/src/racks/PanneauLfo.tsx`
 
 ---

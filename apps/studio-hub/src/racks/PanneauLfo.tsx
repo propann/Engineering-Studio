@@ -53,6 +53,18 @@ export function PanneauLfo({ params, onParam, bpmHote }: ProprietesPanneauLfo) {
         </select>
       </label>
 
+      {/* Le LFO est construit avec chaque voix : la phase decide de l'endroit
+          du cycle ou une note DEMARRE. A 0 un tremolo part du milieu et monte ;
+          a 270 il part du creux, et l'attaque se fait en fondu. Pas de 360 :
+          ce serait 0 sous un autre nom, et le curseur aurait deux extremites
+          identiques. */}
+      <label>PHASE {params.lfoPhase}°
+        <input
+          type="range" min={0} max={359} step={1} value={params.lfoPhase} disabled={!actif}
+          onChange={(e) => onParam("lfoPhase", Number(e.target.value))}
+        />
+      </label>
+
       <label>PROFONDEUR {params.lfoDepth}%
         <input
           type="range" min={0} max={100} value={params.lfoDepth} disabled={!actif}

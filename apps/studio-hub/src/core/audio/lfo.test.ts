@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  phaseLfoDeg,
   FILTRE_CENTRE_HZ, FILTRE_MIN_HZ, LFO_DEFAUT, LFO_HZ_MAX, LFO_HZ_MIN,
   NOMS_CIBLES, NOMS_FORMES, ORDRE_CIBLES, ORDRE_FORMES,
   amplitudeFiltre, lfoActif, profondeurTremolo, vitesseLfoHz,
@@ -155,5 +156,36 @@ describe("listes d'affichage", () => {
   it("le defaut ne module rien", () => {
     // Ajouter le module ne doit pas changer le son des 91 patches d'usine.
     expect(lfoActif(LFO_DEFAUT)).toBe(false);
+  });
+});
+
+describe("dephasage a l'origine", () => {
+  it("part a zero : le defaut ne change rien aux patches existants", () => {
+    expect(LFO_DEFAUT.lfoPhase).toBe(0);
+  });
+
+  it("ramene au tour", () => {
+    // 450 degres, c'est 90. Sans le modulo, `createPeriodicWave` ne
+    // protesterait pas — la forme serait juste ailleurs qu'annonce.
+    expect(phaseLfoDeg({ lfoPhase: 450 })).toBe(90);
+    expect(phaseLfoDeg({ lfoPhase: 360 })).toBe(0);
+    expect(phaseLfoDeg({ lfoPhase: 0 })).toBe(0);
+  });
+
+  it("ramene un angle negatif dans le tour, sans changer le point du cycle", () => {
+    // -90 et 270 designent le meme endroit. Un modulo naif rendrait -90, et
+    // le curseur afficherait une valeur qu'il ne peut pas atteindre.
+    expect(phaseLfoDeg({ lfoPhase: -90 })).toBe(270);
+    expect(phaseLfoDeg({ lfoPhase: -360 })).toBe(0);
+  });
+
+  it("rend toujours un angle utilisable", () => {
+    // Un NaN ne fait pas lever `createPeriodicWave` : il rend un LFO muet.
+    for (const v of [NaN, Infinity, -Infinity, undefined as unknown as number]) {
+      const d = phaseLfoDeg({ lfoPhase: v });
+      expect(Number.isFinite(d), `${v}`).toBe(true);
+      expect(d).toBeGreaterThanOrEqual(0);
+      expect(d).toBeLessThan(360);
+    }
   });
 });

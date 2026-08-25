@@ -25,7 +25,7 @@ import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../co
 import { lirePatchImporte } from "../core/audio/importPatch";
 import { construireArchivePatches, lireArchivePatches } from "../core/audio/archivePatches";
 import {
-  FILTRE_CENTRE_HZ, LFO_DEFAUT, amplitudeFiltre, lfoActif, profondeurTremolo,
+  FILTRE_CENTRE_HZ, LFO_DEFAUT, amplitudeFiltre, lfoActif, phaseLfoDeg, profondeurTremolo,
   vitesseLfoHz, type CibleLfo, type FormeLfo, type ParamsLfo,
 } from "../core/audio/lfo";
 import { PanneauEnveloppe } from "../racks/PanneauEnveloppe";
@@ -398,6 +398,7 @@ export default function AudioPluginRack({
   const [lfoRate, setLfoRate] = useState<number>(LFO_DEFAUT.lfoRate);
   const [lfoDepth, setLfoDepth] = useState<number>(LFO_DEFAUT.lfoDepth);
   const [lfoSync, setLfoSync] = useState<boolean>(LFO_DEFAUT.lfoSync);
+  const [lfoPhase, setLfoPhase] = useState<number>(LFO_DEFAUT.lfoPhase);
   const [lfoDivision, setLfoDivision] = useState<Division>(LFO_DEFAUT.lfoDivision);
   // Rack d'effets : saturation (module 8) et chorus (module 9). Tous a 0 par
   // defaut — un rack qui sature des l'ouverture ferait croire a un defaut.
@@ -536,7 +537,7 @@ export default function AudioPluginRack({
     fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
     fxEqLow, fxEqMid, fxEqHigh,
     envAttack, envDecay, envSustain, envRelease,
-    lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, bpmHote,
+    lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase, bpmHote,
     fxDriveMix, fxDriveAmount, fxDriveMode,
     fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
     plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
@@ -565,7 +566,7 @@ export default function AudioPluginRack({
       fxDelayMix, fxDelayTime, fxDelayFeedback, fxDelayTaps, fxDelaySpread,
       fxEqLow, fxEqMid, fxEqHigh,
       envAttack, envDecay, envSustain, envRelease,
-      lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, bpmHote,
+      lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase, bpmHote,
       fxDriveMix, fxDriveAmount, fxDriveMode,
       fxModMode, fxModMix, fxModRate, fxModDepth, fxModFeedback,
       plaitsEngine, plaitsHarmonics, plaitsTimbre, plaitsMorph, plaitsDecay,
@@ -792,6 +793,7 @@ export default function AudioPluginRack({
     lfoDepth: setLfoDepth,
     lfoSync: setLfoSync,
     lfoDivision: setLfoDivision,
+    lfoPhase: setLfoPhase,
   };
   
   const appliquerParamLfo = <N extends keyof ParamsLfo>(nom: N, valeur: ParamsLfo[N]) => {
@@ -1140,13 +1142,13 @@ export default function AudioPluginRack({
         // Proportionnel au volume, et borne sous lui : le LFO AJOUTE au gain.
         // Un creux qui passe sous zero n'attenue pas, il INVERSE LA PHASE — et
         // sur une superposition de patches, deux voix en opposition s'annulent.
-        attachLfo(ctx, masterGain.gain, vitesse, profondeurTremolo(p.lfoDepth) * vol, now, p.lfoForme);
+        attachLfo(ctx, masterGain.gain, vitesse, profondeurTremolo(p.lfoDepth) * vol, now, p.lfoForme, phaseLfoDeg(p));
       } else {
         const balaye = ctx.createBiquadFilter();
         balaye.type = "lowpass";
         balaye.frequency.setValueAtTime(FILTRE_CENTRE_HZ, now);
         balaye.Q.setValueAtTime(4, now);
-        attachLfo(ctx, balaye.frequency, vitesse, amplitudeFiltre(p.lfoDepth), now, p.lfoForme);
+        attachLfo(ctx, balaye.frequency, vitesse, amplitudeFiltre(p.lfoDepth), now, p.lfoForme, phaseLfoDeg(p));
         masterGain.connect(balaye);
         apresGain = balaye;
       }
@@ -3206,7 +3208,7 @@ export default function AudioPluginRack({
               onParam={appliquerParamEnveloppe}
             />
             <PanneauLfo
-              params={{ lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision }}
+              params={{ lfoCible, lfoForme, lfoRate, lfoDepth, lfoSync, lfoDivision, lfoPhase }}
               onParam={appliquerParamLfo}
               bpmHote={bpmHote}
             />

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  ORDRE_SATURATION, buildBitcrushCurve, buildSaturationCurve } from "./dsp";
+  ORDRE_SATURATION,
+  coefficientsFormeLfo,
+  HARMONIQUES_LFO, buildBitcrushCurve, buildSaturationCurve } from "./dsp";
 
 /**
  * Ces tests portent sur les proprietes du signal, pas sur des valeurs
@@ -159,5 +161,118 @@ describe("ecretage franc", () => {
     const doux = buildSaturationCurve(60, "soft");
     const ecart = Math.max(...dur.map((v, i) => Math.abs(v - doux[i])));
     expect(ecart).toBeGreaterThan(0.05);
+  });
+});
+
+describe("dephasage du LFO", () => {
+  /** Reconstruit x(theta) depuis les coefficients, comme le moteur audio. */
+  const rendre = (c: { real: Float32Array; imag: Float32Array }, th: number) => {
+    let v = 0;
+    for (let k = 1; k < c.real.length; k++) v += c.real[k] * Math.cos(k * th) + c.imag[k] * Math.sin(k * th);
+    return v;
+  };
+
+  /** Les quatre formes ideales de la specification Web Audio. */
+  const IDEAL: Record<string, (t: number) => number> = {
+    sine: (t) => Math.sin(t),
+    square: (t) => (Math.sin(t) >= 0 ? 1 : -1),
+    sawtooth: (t) => { const x = (((t / (2 * Math.PI)) % 1) + 1) % 1; return x < 0.5 ? 2 * x : 2 * x - 2; },
+    triangle: (t) => { const x = (((t / (2 * Math.PI)) % 1) + 1) % 1; return x < 0.25 ? 4 * x : x < 0.75 ? 2 - 4 * x : 4 * x - 4; },
+  };
+
+  it("a phase nulle, le sinus est un sinus pur", () => {
+    const c = coefficientsFormeLfo("sine", 0);
+    expect(c.imag[1]).toBeCloseTo(1, 10);
+    expect(c.real[1]).toBeCloseTo(0, 10);
+    for (let k = 2; k < c.imag.length; k++) expect(c.imag[k]).toBeCloseTo(0, 10);
+  });
+
+  it("ne cree jamais de composante continue", () => {
+    // L'indice 0 decalerait le LFO hors de son axe : un tremolo qui module
+    // autour d'autre chose que le volume regle.
+    for (const forme of ["sine", "triangle", "square", "sawtooth"] as const) {
+      for (const deg of [0, 37, 90, 180, 300]) {
+        const c = coefficientsFormeLfo(forme, deg);
+        expect(c.real[0], `${forme} a ${deg}`).toBe(0);
+        expect(c.imag[0], `${forme} a ${deg}`).toBe(0);
+      }
+    }
+  });
+
+  it("decale la forme sans la deformer", () => {
+    // L'invariant central. L'ecart a la forme ideale doit etre le MEME a
+    // toutes les phases : ce qui reste est la troncature des harmoniques, pas
+    // le dephasage.
+    for (const forme of ["sine", "triangle", "square", "sawtooth"] as const) {
+      const ecarts = [0, 45, 90, 180, 270].map((deg) => {
+        const c = coefficientsFormeLfo(forme, deg);
+        const phi = (deg * Math.PI) / 180;
+        let pire = 0;
+        for (let i = 0; i < 720; i++) {
+          const th = (i / 720) * 2 * Math.PI;
+          // A l'ecart des sauts : une serie finie y sonne toujours (Gibbs).
+          const saut = ["square", "sawtooth"].includes(forme)
+            && [0, Math.PI, 2 * Math.PI].some((d) => Math.abs(((th + phi) % (2 * Math.PI)) - d) < 0.25);
+          if (saut) continue;
+          pire = Math.max(pire, Math.abs(rendre(c, th) - IDEAL[forme](th + phi)));
+        }
+        return pire;
+      });
+      for (const e of ecarts) expect(e, `${forme}`).toBeCloseTo(ecarts[0], 6);
+    }
+  });
+
+  it("tourne chaque harmonique de k·phi, pas de phi", () => {
+    // Le defaut classique : tourner tout le spectre du meme angle tourne le
+    // FONDAMENTAL mais deforme la forme, au lieu de la deplacer. Il ne se voit
+    // pas sur un sinus — qui n'a qu'une harmonique — d'ou ce test sur le carre.
+    const deg = 30, phi = (deg * Math.PI) / 180;
+    const c = coefficientsFormeLfo("square", deg);
+    const b3 = 4 / (Math.PI * 3);
+    expect(c.imag[3]).toBeCloseTo(b3 * Math.cos(3 * phi), 6);
+    expect(c.real[3]).toBeCloseTo(b3 * Math.sin(3 * phi), 6);
+    // Et surtout : ce n'est PAS la rotation d'angle phi.
+    expect(c.imag[3]).not.toBeCloseTo(b3 * Math.cos(phi), 3);
+  });
+
+  it("deplace le sommet du triangle d'exactement la phase demandee", () => {
+    // La lecture directe de ce que fait le reglage : la crete recule de phi.
+    for (const deg of [0, 45, 90, 180]) {
+      const c = coefficientsFormeLfo("triangle", deg);
+      let sommet = 0, max = -Infinity;
+      for (let i = 0; i < 3600; i++) {
+        const th = (i / 3600) * 2 * Math.PI;
+        const v = rendre(c, th);
+        if (v > max) { max = v; sommet = (th * 180) / Math.PI; }
+      }
+      expect(sommet, `phase ${deg}`).toBeCloseTo(((90 - deg) % 360 + 360) % 360, 0);
+    }
+  });
+
+  it("un tour complet revient au point de depart", () => {
+    const a = coefficientsFormeLfo("sawtooth", 0);
+    const b = coefficientsFormeLfo("sawtooth", 360);
+    for (let k = 0; k < a.real.length; k++) {
+      expect(b.real[k]).toBeCloseTo(a.real[k], 6);
+      expect(b.imag[k]).toBeCloseTo(a.imag[k], 6);
+    }
+  });
+
+  it("resiste a une phase aberrante", () => {
+    // Un NaN ne ferait pas lever `createPeriodicWave` : il rendrait un LFO
+    // muet, panne qui ne se voit qu'en jouant.
+    for (const deg of [NaN, Infinity, -Infinity]) {
+      const c = coefficientsFormeLfo("triangle", deg);
+      expect(c.real.every((v) => Number.isFinite(v))).toBe(true);
+      expect(c.imag.every((v) => Number.isFinite(v))).toBe(true);
+    }
+  });
+
+  it("garde assez d'harmoniques pour que le carre reste carre", () => {
+    expect(HARMONIQUES_LFO).toBeGreaterThanOrEqual(16);
+    const c = coefficientsFormeLfo("square", 0);
+    expect(c.imag.length).toBe(HARMONIQUES_LFO + 1);
+    // Le plateau du carre doit tenir a 1, pas s'arrondir vers zero.
+    expect(rendre(c, Math.PI / 2)).toBeCloseTo(1, 1);
   });
 });
