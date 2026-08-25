@@ -19,7 +19,7 @@
 | 9 | Chorus/Flanger/Phaser | ✅ livré — trois modes, un seul graphe |
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
 | 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
-| 12 | Patch Import/Export | ✅ livré — import validé, les trois formats se relisent |
+| 12 | Patch Import/Export | ✅ livré — import validé, trois formats, et archive ZIP de tout le travail |
 
 **Quatre acquis qui ne figuraient dans aucun module** et qui conditionnaient
 tout le reste :
@@ -476,13 +476,29 @@ Export vers un fichier JSON telecharge, et relecture par `lirePatchImporte`,
 qui valide au lieu de faire confiance : un fichier trafique ou d'une version
 plus ancienne ne doit pas installer des reglages hors bornes dans le moteur.
 
-**Ce qui manque** : l'archive ZIP pour sauvegarder plusieurs patches d'un coup.
-`fflate` est deja une dependance du depot, donc c'est a portee.
+L'archive ZIP sauvegarde TOUT le travail personnel en une fois (TOUT
+SAUVEGARDER / RESTAURER). Un fichier JSON par patch et non un gros document :
+l'archive se relit alors PARTIELLEMENT, donc un patch corrompu n'emporte pas
+les vingt-neuf autres — un unique document aurait la propriete inverse, une
+accolade de trop et tout est perdu. Les echecs sont nommes a l'ecran plutot que
+tus.
+
+Les noms de fichiers passent par une liste blanche : un nom de patch contenant
+une barre oblique creuserait un sous-dossier, et `..` sortirait du dossier de
+destination chez un lecteur d'archive naif. Le nom d'origine survit a
+l'interieur du fichier, donc rien n'est perdu par ce nettoyage.
+
+Chaque fichier de l'archive repasse par `lirePatchImporte` : une archive est
+une entree non fiable comme une autre.
+
+**Ce qui manque** : rien d'identifie.
 
 **Files**:
 - ✅ `apps/studio-hub/src/core/audio/importPatch.ts`
 - ✅ `apps/studio-hub/src/core/audio/importPatch.test.ts`
-- ✅ `apps/studio-hub/src/pages/AudioPluginRack.tsx` - export et import
+- ✅ `apps/studio-hub/src/core/audio/archivePatches.ts` - l'archive ZIP
+- ✅ `apps/studio-hub/src/core/audio/archivePatches.test.ts`
+- ✅ `apps/studio-hub/src/pages/AudioPluginRack.tsx` - export, import, archive
 
 ---
 

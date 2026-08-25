@@ -23,6 +23,7 @@ import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/t
 import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
 import { ENVELOPPE_DEFAUT, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
 import { lirePatchImporte } from "../core/audio/importPatch";
+import { construireArchivePatches, lireArchivePatches } from "../core/audio/archivePatches";
 import {
   FILTRE_CENTRE_HZ, LFO_DEFAUT, amplitudeFiltre, lfoActif, profondeurTremolo,
   vitesseLfoHz, type CibleLfo, type FormeLfo, type ParamsLfo,
@@ -588,6 +589,7 @@ export default function AudioPluginRack({
   // Web Audio Context & Oscilloscope
   const audioCtxRef = useRef<AudioContext | null>(null);
   const fichierImportRef = useRef<HTMLInputElement | null>(null);
+  const fichierArchiveRef = useRef<HTMLInputElement | null>(null);
   const oscCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const debounceTimerRef = useRef<any>(null);
@@ -2531,6 +2533,79 @@ export default function AudioPluginRack({
     }
   };
 
+  /**
+   * Sauvegarde de TOUS les patches personnels, en une archive.
+   *
+   * Les patches vivent dans `localStorage`, que le navigateur peut vider sans
+   * prevenir. Exporter un patch a la fois, c'est trente clics pour sauvegarder
+   * trente patches — donc, en pratique, aucune sauvegarde.
+   */
+  const exporterArchive = () => {
+    if (userPatches.length === 0) {
+      showToast("⚠️ Aucun patch personnel à sauvegarder.");
+      return;
+    }
+    const octets = construireArchivePatches(userPatches);
+    // `Uint8Array` -> `BlobPart` : le tampon sous-jacent peut etre plus grand
+    // que la vue, d'ou la tranche explicite.
+    const blob = new Blob([octets.slice()], { type: "application/zip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `patches_studio_hub_${new Date().toISOString().slice(0, 10)}.zip`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`💾 ${userPatches.length} patch(es) sauvegardé(s)`);
+  };
+
+  /**
+   * Relecture d'une archive.
+   *
+   * Les patches lus rejoignent la bibliotheque personnelle ; ils ne remplacent
+   * pas le reglage courant, contrairement a l'import a l'unite. Restaurer une
+   * sauvegarde de trente patches en n'en chargeant qu'un serait absurde.
+   *
+   * Un fichier illisible n'annule pas les autres : c'est toute la raison
+   * d'avoir un fichier par patch. Les echecs sont comptes a l'ecran plutot que
+   * tus, pour qu'on sache qu'il manque quelque chose.
+   */
+  const importerArchive = async (evt: React.ChangeEvent<HTMLInputElement>) => {
+    const fichier = evt.target.files?.[0];
+    evt.target.value = "";
+    if (!fichier) return;
+
+    try {
+      const octets = new Uint8Array(await fichier.arrayBuffer());
+      const { patches, echecs } = lireArchivePatches(octets, Object.keys(paramsRef.current));
+      if (patches.length === 0) {
+        showToast(`⚠️ Aucun patch lisible dans cette archive (${echecs.length} échec(s)).`);
+        return;
+      }
+
+      // Un identifiant neuf par patch restaure : reprendre celui du fichier
+      // ecraserait un patch existant portant le meme, sans que rien ne le dise.
+      const arrivants = patches.map(({ patch }, i) => ({
+        ...patch,
+        id: `usr_${Date.now()}_${i}`,
+        isUserPatch: true,
+      }));
+      const fusion = [...userPatches, ...arrivants];
+      setUserPatches(fusion);
+      try {
+        localStorage.setItem("studio_hub_user_patches", JSON.stringify(fusion));
+      } catch (e) {
+        log.error("Failed to save restored patches", e);
+      }
+      showToast(
+        echecs.length
+          ? `📥 ${arrivants.length} patch(es) restauré(s), ${echecs.length} illisible(s)`
+          : `📥 ${arrivants.length} patch(es) restauré(s)`
+      );
+    } catch {
+      showToast("⚠️ Impossible de lire cette archive.");
+    }
+  };
+
   const exportPreset = (format: "standard" | "op1" | "ep133") => {
     const p = paramsRef.current;
     let exportData: any;
@@ -3093,6 +3168,22 @@ export default function AudioPluginRack({
                   accept="application/json,.json"
                   style={{ display: "none" }}
                   onChange={importerPatch}
+                />
+                {/* Sauvegarde de tout le travail personnel en une fois. Les
+                    patches vivent dans localStorage, que le navigateur peut
+                    vider sans prevenir. */}
+                <button type="button" className="action-btn export-btn" onClick={exporterArchive}>
+                  💾 TOUT SAUVEGARDER
+                </button>
+                <button type="button" className="action-btn import-btn" onClick={() => fichierArchiveRef.current?.click()}>
+                  🗂️ RESTAURER
+                </button>
+                <input
+                  ref={fichierArchiveRef}
+                  type="file"
+                  accept="application/zip,.zip"
+                  style={{ display: "none" }}
+                  onChange={importerArchive}
                 />
               </div>
             </div>
