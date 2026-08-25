@@ -7,6 +7,7 @@ const PANEL = readFileSync(
   path.join(DIR, "..", "..", "..", "op1-studio", "app", "components", "GameGuitarHeroPanel.tsx"),
   "utf-8"
 );
+const TOOLS = readFileSync(path.join(DIR, "ToolsHub.tsx"), "utf-8");
 
 describe("exercice OP-1 compact et aligne", () => {
   it("place ecran et clavier dans une seule scene de 24 colonnes", () => {
@@ -29,5 +30,21 @@ describe("exercice OP-1 compact et aligne", () => {
   it("ne recentre jamais silencieusement une note absente", () => {
     expect(PANEL).not.toContain("bounds.minX + bounds.width / 2");
     expect(PANEL).toContain("absente du clavier OP-1");
+  });
+});
+
+describe("fenetre apprendre par machine", () => {
+  it("montre les deux vraies machines", () => {
+    expect(TOOLS).toContain('src: "/media/op1.jpeg"');
+    expect(TOOLS).toContain('src: "/media/ep133.jpeg"');
+    expect(TOOLS).toContain('alt: "Teenage Engineering OP-1"');
+    expect(TOOLS).toContain('alt: "Teenage Engineering EP-133 K.O. II"');
+  });
+
+  it("ouvre directement un entrainement jouable pour chaque carte", () => {
+    const formation = TOOLS.slice(TOOLS.indexOf("Membres du groupe « Apprendre »"), TOOLS.indexOf("Membres du groupe « Documentation »"));
+    expect(formation).toContain('page: "exercises"');
+    expect(formation).toContain('page: "studio-ep133"');
+    expect(formation).not.toContain('page: "rhythm-hero"');
   });
 });

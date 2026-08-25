@@ -165,15 +165,17 @@ const tools: Tool[] = [
   // ── Membres du groupe « Apprendre » ───────────────────────────────────
   {
     id: "op1-exercise", code: "KEY-01", category: "TRAINING LAB", title: "Exercices OP-1",
-    text: "Suites d’accords, clavier et retour MIDI pour progresser.",
-    accent: "yellow", visual: "grid", status: "OUVRIR →",
+    text: "24 touches · notes alignées · aucun changement d’octave.",
+    accent: "yellow", visual: "grid", status: "S’ENTRAÎNER →",
     action: { type: "page", page: "exercises" }, section: "op1", groupe: "formation",
+    image: { src: "/media/op1.jpeg", alt: "Teenage Engineering OP-1", tag: "OP-1", bouton: "S’ENTRAÎNER →", boutonClasse: "op1-btn" },
   },
   {
-    id: "rhythm", code: "GAME-01", category: "TRAINING LAB", title: "Rhythm Hero",
-    text: "Styles, niveaux, BPM, partitions animées, scores et progression aux pads.",
-    accent: "orange", visual: "grid", status: "OUVRIR →",
-    action: { type: "page", page: "rhythm-hero" }, section: "ep133", groupe: "formation",
+    id: "rhythm", code: "PAD-12", category: "TRAINING LAB", title: "Exercices EP-133",
+    text: "12 pads · patterns animés · entraînement Rhythm Hero.",
+    accent: "orange", visual: "grid", status: "S’ENTRAÎNER →",
+    action: { type: "page", page: "studio-ep133" }, section: "ep133", groupe: "formation",
+    image: { src: "/media/ep133.jpeg", alt: "Teenage Engineering EP-133 K.O. II", tag: "EP-133 K.O. II", bouton: "S’ENTRAÎNER →", boutonClasse: "ep133-btn" },
   },
 
   // ── Membres du groupe « Documentation » ───────────────────────────────
@@ -345,15 +347,17 @@ function TrainingModal({training,onClose,onSelectTool}:{training:Tool[];onClose:
   <section className="training-modal" onClick={e=>e.stopPropagation()}>
    <button className="training-modal-close" onClick={onClose}>✕</button>
    <div className="training-modal-header">
-    <h2>📚 APPRENDRE & S'ENTRAÎNER</h2>
-    <p>Progressez à votre rythme</p>
+    <h2>APPRENDRE & S’ENTRAÎNER</h2>
+    <p>Choisissez votre machine.</p>
    </div>
    <div className="training-grid">
     {training.map(course => (
      <button key={course.id} className={`training-card-item ${course.accent}`} onClick={()=>onSelectTool(course)}>
-      <ToolGraphic type={course.visual}/>
+      {course.image&&<div className={`training-machine-preview training-machine-${course.section}`}>
+       <img src={course.image.src} alt={course.image.alt}/>
+       <span>{course.image.tag}</span>
+      </div>}
       <h3>{course.title}</h3>
-      <small>{course.category}</small>
       <p>{course.text}</p>
       <div className="training-status">{course.status}</div>
      </button>
