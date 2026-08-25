@@ -131,3 +131,30 @@ test("l'ecran des exercices etire son repere sans conserver le rapport", () => {
   assert.match(EXERCICE, /const screenMinX = usesPadLayout \? 0 : bounds\.minX;/);
   assert.match(EXERCICE, /const screenWidth = usesPadLayout \? 100 : bounds\.width;/);
 });
+
+/**
+ * LA LARGEUR DES NOTES suit la touche, elle ne la double pas.
+ *
+ * `getNoteWidth` rendait `1.18` et `0.82`, ecrits en dur. Sur la disposition
+ * livree, les blanches font 2 et les noires 2 OU 3 : la note couvrait 59 %
+ * d'une blanche, 41 % des deux noires etroites et 27 % des huit larges. Trois
+ * tailles relatives sur un ecran qui promet de tomber « exactement au-dessus
+ * de sa touche » — et invisible en relecture, puisque deux nombres plausibles
+ * ne ressemblent pas a un defaut.
+ *
+ * La disposition s'edite (`KeyboardEditor`). Une taille absolue ne suit pas
+ * une touche elargie ; une fraction, si.
+ */
+test("la largeur des notes est une fraction de la touche visee", () => {
+  assert.match(SOURCE, /const PART_BLANCHE = /);
+  assert.match(SOURCE, /const PART_NOIRE = /);
+  // La largeur se lit sur le bloc, pas sur une constante rendue telle quelle.
+  assert.match(SOURCE, /return b\.w \* \(b\.type === "black" \? PART_NOIRE : PART_BLANCHE\);/);
+});
+
+test("position et largeur cherchent la touche au meme endroit", () => {
+  // Deux recherches separees pouvaient repondre sur des blocs differents.
+  assert.match(SOURCE, /const blocDeNote = useCallback\(/);
+  const nb = (SOURCE.match(/KEYBOARD_WHITE_NOTES\.indexOf\(/g) ?? []).length;
+  assert.equal(nb, 1, `${nb} recherches de touche blanche dans le panneau : il n'en faut qu'une`);
+});

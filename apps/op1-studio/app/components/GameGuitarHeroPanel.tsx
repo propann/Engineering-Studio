@@ -31,8 +31,19 @@ import {
   KEYBOARD_ROWS,
   KEYBOARD_WHITE_NOTES,
   KEYBOARD_BLACK_NOTES,
+  type KeyboardBlock,
 } from "../lib/keyboardLayout";
 import { parseMidiFile, type ParsedMidiFile } from "../lib/midiFileImport";
+
+/**
+ * Part de sa touche occupée par la note qui tombe.
+ *
+ * Choisies pour laisser la disposition livrée telle qu'elle était : une
+ * blanche de 2 donne toujours 1,18, une noire étroite de 2 toujours 0,82. Ce
+ * qui change, ce sont les huit noires larges, qui suivent enfin leur touche.
+ */
+const PART_BLANCHE = 0.59;
+const PART_NOIRE = 0.41;
 import { op1AudioEngine } from "../lib/op1SynthEngine";
 import {
   loadCharacterProfile,
@@ -258,27 +269,49 @@ export function GameGuitarHeroPanel({
     return targetSet;
   }, [currentSong.notes, currentTime]);
 
+  /**
+   * La touche qui porte une note, ou `null` si aucune ne la porte.
+   *
+   * Une seule recherche, lue par la position ET par la largeur. Deux
+   * recherches séparées pouvaient déjà répondre sur des blocs différents — la
+   * largeur ne cherchait même pas de bloc, elle rendait une constante.
+   */
+  const blocDeNote = useCallback((note: number): KeyboardBlock | null => {
+    const iBlanche = KEYBOARD_WHITE_NOTES.indexOf(note);
+    if (iBlanche >= 0 && whiteBlocks[iBlanche]) return whiteBlocks[iBlanche];
+    const iNoire = KEYBOARD_BLACK_NOTES.indexOf(note);
+    if (iNoire >= 0 && blackBlocks[iNoire]) return blackBlocks[iNoire];
+    return null;
+  }, [whiteBlocks, blackBlocks]);
+
   // Calcul horizontal X exact correspondant à la colonne de la touche
   const getNoteX = useCallback((note: number): number => {
-    const whiteIdx = KEYBOARD_WHITE_NOTES.indexOf(note);
-    if (whiteIdx >= 0 && whiteBlocks[whiteIdx]) {
-      const b = whiteBlocks[whiteIdx];
-      return b.col + b.w / 2;
-    }
-    const blackIdx = KEYBOARD_BLACK_NOTES.indexOf(note);
-    if (blackIdx >= 0 && blackBlocks[blackIdx]) {
-      const b = blackBlocks[blackIdx];
-      return b.col + b.w / 2;
-    }
-    return bounds.minX + bounds.width / 2;
-  }, [whiteBlocks, blackBlocks, bounds]);
+    const b = blocDeNote(note);
+    return b ? b.col + b.w / 2 : bounds.minX + bounds.width / 2;
+  }, [blocDeNote, bounds]);
 
-  // Largeur de colonne de touche
+  /**
+   * Largeur de la note qui tombe — une FRACTION de sa touche, pas une taille.
+   *
+   * `1.18` et `0.82` étaient écrits en dur. Sur la disposition livrée, les
+   * touches blanches font 2 et les noires 2 OU 3 : la note couvrait donc 59 %
+   * d'une blanche, mais 41 % des deux noires étroites et seulement 27 % des
+   * huit larges. Trois tailles relatives différentes pour un écran qui promet
+   * de tomber « exactement au-dessus de sa touche ».
+   *
+   * Et la disposition s'édite (`KeyboardEditor`) : élargir une touche déplaçait
+   * sa colonne sans toucher à la note qui y tombe. C'est précisément ce que le
+   * module `keyboardLayout` existe pour empêcher.
+   *
+   * Deux fractions, pas une : les noires de cette disposition sont dessinées
+   * PLUS larges que les blanches, et une fraction unique donnerait des notes
+   * noires plus lourdes que les blanches à l'écran.
+   */
   const getNoteWidth = useCallback((note: number): number => {
-    const blackIdx = KEYBOARD_BLACK_NOTES.indexOf(note);
-    if (blackIdx >= 0) return 0.82;
-    return 1.18;
-  }, []);
+    const b = blocDeNote(note);
+    if (!b) return PART_BLANCHE * 2;
+    return b.w * (b.type === "black" ? PART_NOIRE : PART_BLANCHE);
+  }, [blocDeNote]);
 
   // Sélection d'un thème depuis le catalogue
   const handleSelectTheme = useCallback((theme: GameSongTheme) => {
