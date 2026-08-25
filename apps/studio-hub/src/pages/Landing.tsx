@@ -23,13 +23,23 @@ export default function Home() {
     <main className="landing-rich-page">
       <TopBar activePage="landing" profileName={profileName} />
 
-      {/* Avertissement : le site est publiquement accessible alors que le
-          développement est en cours. */}
-      <aside className="wip-banner" role="alert">
-        <strong>Site en cours de développement</strong>
-        <span>
-          Rien n’est stable ici : certaines fonctions restent en intégration.
-          Les données utilisateur restent locales au navigateur.
+      {/* Ce bandeau fait partie du contrat de securite du serveur public : il
+          ne doit jamais dependre d'une feuille de style chargee a la demande. */}
+      <aside className="wip-banner" role="alert" aria-labelledby="test-server-title">
+        <span className="wip-signal" aria-hidden="true">!</span>
+        <div className="wip-copy">
+          <span className="wip-kicker">SERVEUR PUBLIC DE TEST · VERSION EXPÉRIMENTALE</span>
+          <strong id="test-server-title">
+            Attention : fonctions en test et potentiellement dangereuses
+          </strong>
+          <p>
+            La restauration et l’écriture vers une machine ne sont pas encore
+            validées de bout en bout. Garde toujours une copie indépendante de tes fichiers.
+          </p>
+        </div>
+        <span className="wip-machine-state">
+          ÉCRITURE MACHINE
+          <b>NON VALIDÉE</b>
         </span>
       </aside>
 
@@ -37,8 +47,8 @@ export default function Home() {
       <section className="rich-hero" id="top">
         <div className="hero-badge-strip">
           <span className="badge-dot" />
-          <b>TEENAGE ENGINEERING SUITE</b>
-          <small>· OP-1 STUDIO & EP-133 K.O. II</small>
+          <b>ENGINEERING STUDIO · SERVEUR DE TEST</b>
+          <small>· OP-1 & EP-133 K.O. II</small>
         </div>
 
         <div className="rich-hero-grid">
@@ -50,8 +60,9 @@ export default function Home() {
               <em className="highlight-orange">TE HARDWARE</em>
             </h1>
             <p className="hero-lead">
-              Un écosystème unique pour gérer vos projets <strong>OP-1</strong> et <strong>EP-133</strong>. 
-              Sauvegardes, banques de sons, clone de pads et édition de bande magnétique en temps réel.
+              Le laboratoire public d’Engineering Studio pour préparer, tester et sauvegarder
+              vos projets <strong>OP-1</strong> et <strong>EP-133</strong>. Les données restent locales ;
+              les écritures machine sont encore expérimentales.
             </p>
 
             <div className="hero-buttons-row">
@@ -81,9 +92,9 @@ export default function Home() {
             </div>
 
             <div className="hero-features-chips">
-              <span>⚡ Connexion WebMIDI Directe</span>
-              <span>💾 100% Local (Sans Cloud)</span>
-              <span>🎵 Synthétiseur & Samples 24-bit</span>
+              <span>⚡ WebMIDI expérimental</span>
+              <span>💾 Données locales au navigateur</span>
+              <span>🔒 Écriture machine non validée</span>
             </div>
           </div>
 
@@ -97,7 +108,7 @@ export default function Home() {
             >
               <div className="card-status-bar op1-bar">
                 <span>🎹 OP-1 WORKSTATION</span>
-                <span className="pill-active">READY</span>
+                <span className="pill-test">TEST</span>
               </div>
               <div className="img-multiply-blend">
                 <img
@@ -120,7 +131,7 @@ export default function Home() {
             >
               <div className="card-status-bar ep133-bar">
                 <span>🥁 EP-133 K.O. II</span>
-                <span className="pill-orange">SAMPLER</span>
+                <span className="pill-test">TEST</span>
               </div>
               <div className="ep-crop-container">
                 <img
@@ -170,7 +181,7 @@ export default function Home() {
           <div className="preview-card" onClick={() => openTool("sounds")}>
             <div className="card-icon">🎵</div>
             <h3>Éditeur de Sons</h3>
-            <p>Convertisseur WAV/AIFF, détection de silence, normalisation 24-bit et banques partagées.</p>
+            <p>Convertisseur WAV/AIFF, détection de silence, normalisation et banques partagées.</p>
             <span className="card-link">Lancer l'Éditeur ↗</span>
           </div>
 

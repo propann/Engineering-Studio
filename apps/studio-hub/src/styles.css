@@ -149,6 +149,94 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
   font-family: "Courier New", monospace;
 }
 
+/* Alerte du serveur public de test.
+   Elle vit dans la feuille globale : la version precedente etait rangee dans
+   outils.css, chargee seulement apres l'ouverture du Hub Outils. Sur la page
+   d'accueil, le texte de securite apparaissait donc sans aucun habillage. */
+.wip-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 15px clamp(18px, 4vw, 64px);
+  color: #fff;
+  background:
+    repeating-linear-gradient(135deg, #771425 0 10px, #85182b 10px 20px);
+  border-block: 3px solid #111311;
+  box-shadow: inset 0 -1px 0 #ff9bab55;
+}
+
+.wip-signal {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: #111311;
+  background: #d9ff43;
+  border: 2px solid #111311;
+  border-radius: 50%;
+  box-shadow: 3px 3px 0 #111311;
+  font: 900 24px/1 "Courier New", monospace;
+}
+
+.wip-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.wip-kicker {
+  color: #ffd6dd;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.wip-copy strong {
+  font-size: clamp(14px, 1.5vw, 19px);
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.wip-copy p {
+  max-width: 88ch;
+  margin: 1px 0 0;
+  color: #fff1f3;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.wip-machine-state {
+  display: grid;
+  gap: 3px;
+  min-width: 158px;
+  padding: 9px 11px;
+  color: #ffc3cd;
+  background: #111311;
+  border: 1px solid #ff7188;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.wip-machine-state b {
+  color: #d9ff43;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .wip-banner {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    padding-block: 14px;
+  }
+
+  .wip-machine-state {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+}
+
 .rich-hero {
   padding: 40px 6vw 60px;
   max-width: 1600px;
@@ -337,6 +425,15 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
   color: #111311;
   padding: 2px 6px;
   border-radius: 3px;
+}
+
+.pill-test {
+  padding: 2px 7px;
+  color: #ffffff;
+  background: #c81e3a;
+  border: 1px solid #8f1327;
+  border-radius: 3px;
+  letter-spacing: .08em;
 }
 
 .pill-orange {
