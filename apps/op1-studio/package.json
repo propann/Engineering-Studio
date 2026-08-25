@@ -16,7 +16,7 @@
     "build": "vinext build",
     "typecheck": "tsc --noEmit",
     "start": "vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs",
+    "test": "npm run build && node --test tests/rendered-html.test.mjs tests/audio-oracle.test.mjs tests/aiff-patch-oracle.test.mjs tests/midi-file-import.test.mjs tests/audio-convert.test.mjs tests/highway-alignment.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"

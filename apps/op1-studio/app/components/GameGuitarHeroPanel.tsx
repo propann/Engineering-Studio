@@ -1651,17 +1651,33 @@ export function GameGuitarHeroPanel({
             })}
           </div>
 
-          {/* ── CLAVIER MACHINE ALIGNÉ AU PIXEL PRÈS SOUS L'ÉCRAN ── */}
+          {/* ── CLAVIER MACHINE ALIGNÉ AU PIXEL PRÈS SOUS L'ÉCRAN ──
+
+              AUCUN retrait horizontal ici. Le SVG du clavier et celui de l'écran
+              tracent tous deux leur x dans le repère `bounds` (même `minX`, même
+              `width`) et s'étirent en `preserveAspectRatio="none"` : ils ne se
+              superposent que si leurs deux boîtes font EXACTEMENT la même
+              largeur au même endroit.
+
+              Un `padding: 10px` vivait ici. Il rentrait le clavier de 10 px de
+              chaque côté, donc les touches étaient tracées dans une boîte plus
+              étroite de 20 px que les colonnes de l'écran : les deux repères ne
+              se décalaient pas d'un bloc, ils n'avaient pas la même échelle —
+              l'écart était nul au centre et maximal aux extrêmes. Le retrait est
+              passé sur la légende, qui, elle, n'a aucun alignement à tenir.
+
+              Les bordures ne comptent pas : `box-sizing: border-box` est global
+              (globals.css), et l'écran porte la même bordure de 1 px. ── */}
           <div
             style={{
               background: "#080c10",
               borderRadius: "0 0 8px 8px",
               border: "1px solid #1e293b",
               borderTop: "none",
-              padding: "10px",
+              padding: "10px 0",
             }}
           >
-            <div style={{ marginBottom: "6px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#64748b" }}>
+            <div style={{ marginBottom: "6px", padding: "0 10px", display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#64748b" }}>
               <span>
                 {currentSong.category === "drum"
                   ? "🥁 Mapping OP-1 : 53/Kick, 54/808, 55/Snare, 56/Clap, 57/Hat, 59/OpenHat, 60/Crash, 65/Shaker, 75/Vox, 76/Sub..."
@@ -2259,7 +2275,7 @@ export function GameGuitarHeroPanel({
                     display: "flex",
                     gap: "10px",
                     alignItems: "center",
-                    padding: "10px",
+                    padding: "10px 0",
                     borderRadius: "8px",
                     border: ach.unlocked ? "1px solid rgba(0, 237, 149, 0.4)" : "1px solid #1e293b",
                     background: ach.unlocked ? "rgba(0, 237, 149, 0.08)" : "#0c1017",
