@@ -989,6 +989,17 @@
    en bout de rangee, cinq boutons auraient comprime les trois curseurs. */
 .fx-courbes-eq { flex-basis: 100%; }
 
+/* ── Enveloppe : le trace ADSR ─────────────────────────────────────────────
+   Meme place que la courbe d'egaliseur : sa propre ligne sous les curseurs. */
+.env-courbe { flex-basis: 100%; width: 100%; height: auto; margin-top: 2px; border-radius: 3px; background: rgba(0,0,0,.35); }
+.env-courbe-grille   { stroke: rgba(148,163,184,.16); stroke-width: .5; stroke-dasharray: 3 3; }
+.env-courbe-zero     { stroke: rgba(148,163,184,.45); stroke-width: .6; }
+.env-courbe-maintien { stroke: rgba(0,237,149,.3);  stroke-width: .5; stroke-dasharray: 2 3; }
+.env-courbe-phase    { stroke: rgba(148,163,184,.2); stroke-width: .5; }
+.env-courbe-aire     { fill: rgba(0,237,149,.14); stroke: none; }
+.env-courbe-trait    { fill: none; stroke: #00ed95; stroke-width: 1.1; stroke-linejoin: round; }
+.env-predefinies { flex-basis: 100%; }
+
 /* ── Delay synchronise au tempo de l'hote ───────────────────────────────── */
 .fx-sync { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
 .fx-sync-btn {

@@ -11,7 +11,7 @@
 | 1 | Patch Search & Tagging | ✅ branché — recherche, favoris, étiquettes |
 | 2 | Multi-Tap Delay | ✅ livré — 1 à 4 prises, SYNC au tempo, seule la première réinjecte |
 | 3 | Parametric EQ | ✅ livré — trois bandes, courbe de réponse tracée, 5 courbes prédéfinies |
-| 4 | ADSR Envelope | ✅ livré — quatre commandes, bornes qui empêchent les rampes de lever |
+| 4 | ADSR Envelope | ✅ livré — quatre commandes, courbe tracée, 5 enveloppes prédéfinies |
 | 5 | Arpeggiator | ✅ livré — **dans le rack MIDI**, 30 gammes, 6 motifs |
 | 6 | Step Sequencer | ✅ livré — **dans le rack MIDI**, 1 à 32 pas, 4 sens, quantifié |
 | 7 | LFO Generator | ✅ livré — trémolo et balayage de filtre, SYNC au tempo, global aux 15 moteurs |
@@ -221,21 +221,46 @@ recu sa valeur.
 ---
 
 ### Module 4: ADSR Envelope Generator ⏱️ 3-4h
-**Status**: 🟡 PARTIEL — l'enveloppe existe, pas le module  
+**Status**: 🟢 LIVRE (2026-08-25) — sauf le choix lineaire/exponentiel  
 
 Une enveloppe ADSR native est en place dans le moteur depuis le 2026-08-20
 (`construireVoix`), avec des rampes exponentielles qui ne passent jamais par
 zero. C'est elle qui supprime les clics, et elle est reutilisee par le rendu
 hors ligne.
 
-**Ce qui manque** : des commandes pour la regler, le visualiseur de courbe, et
-le choix lineaire/exponentiel. Les valeurs sont aujourd'hui fixes.
+Les quatre commandes sont dans le panneau ENVELOPPE, bornees pour que les
+rampes ne levent pas : `exponentialRampToValueAtTime` rejette zero, donc un
+maintien a 0 % passe par un plancher a -80 dB plutot que par zero.
+
+La courbe est tracee sous les curseurs, calculee sur les MEMES rampes
+exponentielles que le moteur joue -- v(t) = v0 · (v1/v0)^(t/d), la formule de
+la specification Web Audio. Des segments droits montreraient une attaque qui
+monte regulierement la ou le moteur la fait bondir puis ralentir.
+
+L'axe des temps est LINEAIRE, contrairement a celui de l'egaliseur. L'oreille
+entend les hauteurs en octaves, mais les durees telles quelles : un axe
+comprime montrerait une attaque de 8 ms aussi large qu'un relachement de 4 s.
+Plus lisible, et faux.
+
+La duree du maintien est une convention d'affichage -- on ne sait pas combien
+de temps une touche sera tenue. Le palier montre un NIVEAU, donc il occupe le
+quart du trace quels que soient les reglages, sinon il disparaitrait des qu'un
+relachement long ecrase le reste.
+
+Cinq enveloppes predefinies : DEFAUT, PERCUSSIF, PINCE, ORGUE, NAPPE. DEFAUT
+reprend `ENVELOPPE_DEFAUT` sans le recopier -- deux jeux de valeurs
+divergeraient au premier defaut change, et le bouton ne ramenerait plus au
+point de depart.
+
+**Ce qui manque** : le choix lineaire/exponentiel. Ce n'est pas un curseur de
+plus : les rampes s'appliquent a quatre endroits du rack de moteurs plus le
+rendu hors ligne, et le mode doit descendre jusqu'a chacun.
 
 **Files**:
-- ❌ `ADSREnvelopeProcessor.ts` - TODO
-- ❌ `EnvelopeVisualizerGraph.tsx` - TODO
-- ❌ `ADSREnvelopeModule.tsx` - TODO
-- ❌ `adsr-envelope.test.ts` - TODO
+- ✅ `core/audio/enveloppe.ts` - resolution, courbe, enveloppes predefinies
+- ✅ `core/audio/enveloppe.test.ts` - bornes, forme de la courbe, predefinies
+- ✅ `racks/PanneauEnveloppe.tsx` - commandes, trace SVG et rappels
+- ❌ choix lineaire/exponentiel - TODO
 
 **Description**: Full ADSR envelope with linear/exponential curves and visualizer.
 
@@ -246,10 +271,11 @@ le choix lineaire/exponentiel. Les valeurs sont aujourd'hui fixes.
 - Preset envelopes
 
 **Next Steps**:
-1. Implement ADSREnvelopeProcessor
-2. Create envelope visualizer (Canvas)
-3. Build curve selector UI
-4. Performance testing
+1. ~~Implement ADSREnvelopeProcessor~~ — fait (`resoudreEnveloppe`)
+2. ~~Create envelope visualizer~~ — fait, en SVG plutot qu'en canvas : le trace
+   se redessine a chaque mouvement de curseur, et un `path` se relit.
+3. Build curve selector UI — reste a faire (lineaire/exponentiel)
+4. ~~Preset envelopes~~ — fait
 
 ---
 
