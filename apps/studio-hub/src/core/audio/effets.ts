@@ -73,6 +73,79 @@ export const BANDES_EQ: readonly BandeEq[] = [
 /** Débattement d'une bande, en dB. Les curseurs du rack s'y accordent. */
 export const EQ_DB_MAX = 18;
 
+/**
+ * Une courbe prête à rappeler.
+ *
+ * `gains` est un `Record` **complet** des bandes, pas un partiel. Ajouter une
+ * bande à `BANDES_EQ` casse alors le typecheck sur chaque courbe tant qu'elle
+ * n'a pas reçu sa valeur. Un partiel aurait compilé : la bande neuve serait
+ * restée là où le curseur précédent l'avait laissée, et la courbe rappelée
+ * n'aurait pas été celle que son nom annonce — sans que rien ne le signale.
+ */
+export type CourbeEqPredefinie = {
+  nom: string;
+  /** Ce qu'elle fait à l'oreille, en une phrase. Sert d'infobulle. */
+  aide: string;
+  gains: Record<BandeEq["reglage"], number>;
+};
+
+/**
+ * Les courbes prédéfinies.
+ *
+ * Trois curseurs en dB demandent de savoir d'avance ce qu'on cherche. Ces
+ * courbes donnent des points de départ nommés, qu'on retouche ensuite au
+ * curseur : elles ne verrouillent rien.
+ *
+ * PLAT ouvre la liste et n'est pas décoratif. Sans retour au neutre, essayer
+ * une courbe est une porte à sens unique — il faudrait se rappeler trois
+ * nombres pour revenir. C'est ce qui décide de s'autoriser à essayer.
+ *
+ * Les valeurs restent modestes — le tiers du débattement au plus. Une courbe
+ * prédéfinie qui pousse à ±18 dB ne laisse plus de place au réglage fin, et
+ * sature l'étage suivant de la chaîne alors qu'elle prétend juste colorer.
+ */
+export const COURBES_EQ: readonly CourbeEqPredefinie[] = [
+  {
+    nom: "PLAT",
+    aide: "Les trois bandes à zéro : l'égaliseur laisse passer sans rien changer",
+    gains: { fxEqLow: 0, fxEqMid: 0, fxEqHigh: 0 },
+  },
+  {
+    nom: "CHALEUR",
+    aide: "Graves posés, aigus retenus : arrondit un son dur sans l'assourdir",
+    gains: { fxEqLow: 5, fxEqMid: 0, fxEqHigh: -3 },
+  },
+  {
+    nom: "SOURIRE",
+    aide: "Les deux bouts relevés, le milieu creusé : le son d'une sono de club",
+    gains: { fxEqLow: 6, fxEqMid: -5, fxEqHigh: 5 },
+  },
+  {
+    nom: "PRÉSENCE",
+    aide: "Médiums en avant : fait ressortir le corps d'un son noyé dans la superposition",
+    gains: { fxEqLow: -2, fxEqMid: 5, fxEqHigh: 1 },
+  },
+  {
+    nom: "AIR",
+    aide: "Aigus ouverts : aère un son mat, au risque de réveiller le souffle",
+    gains: { fxEqLow: 0, fxEqMid: -2, fxEqHigh: 6 },
+  },
+];
+
+/**
+ * La courbe courante est-elle exactement celle-ci ?
+ *
+ * Lu sur `BANDES_EQ` : une bande ajoutée entre dans la comparaison sans qu'on
+ * y pense. Comparer trois champs nommés à la main aurait laissé la quatrième
+ * bande hors du test, et deux courbes différentes se seraient dites égales.
+ */
+export function estCourbeAppliquee(
+  params: Pick<ParamsEffets, "fxEqLow" | "fxEqMid" | "fxEqHigh">,
+  courbe: CourbeEqPredefinie,
+): boolean {
+  return BANDES_EQ.every((bande) => params[bande.reglage] === courbe.gains[bande.reglage]);
+}
+
 /** Plafond de réinjection. Au-delà, la boucle diverge et sature indéfiniment. */
 export const REINJECTION_MAX = 0.85;
 

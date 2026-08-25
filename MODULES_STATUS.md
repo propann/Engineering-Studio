@@ -162,7 +162,7 @@ panoramique, et la synchronisation au tempo. Le delai actuel est mono-prise.
 ---
 
 ### Module 3: Parametric EQ ⏱️ 4-5h
-**Status**: 🟢 LIVRE (2026-08-25) — graphe de reponse compris  
+**Status**: 🟢 LIVRE (2026-08-25) — complet  
 
 Egaliseur trois bandes dans le rack : lowshelf a 220 Hz, peaking a 1,2 kHz,
 highshelf a 5,2 kHz, ±18 dB chacune. Applique apres les moteurs, donc a la
@@ -178,14 +178,21 @@ Cookbook, ceux que la specification Web Audio reprend. `getFrequencyResponse`
 aurait exige un contexte audio ouvert, donc un navigateur, et rendu le calcul
 intestable.
 
-**Ce qui manque** : les courbes predefinies.
+Cinq courbes predefinies donnent des points de depart nommes — PLAT, CHALEUR,
+SOURIRE, PRESENCE, AIR — qu'on retouche ensuite au curseur. PLAT ouvre la liste
+et n'est pas decoratif : sans retour au neutre, essayer une courbe serait une
+porte a sens unique. Leurs gains sont un `Record` complet des bandes, donc une
+bande ajoutee a `BANDES_EQ` casse le typecheck tant que chaque courbe n'a pas
+recu sa valeur.
+
+**Ce qui manque** : rien d'identifie.
 
 **Files**:
-- ✅ `core/audio/effets.ts` - la table `BANDES_EQ` et la chaine de filtres
+- ✅ `core/audio/effets.ts` - la table `BANDES_EQ`, les courbes, la chaine de filtres
 - ✅ `core/audio/reponseEq.ts` - la reponse calculee, fonction pure
 - ✅ `core/audio/reponseEq.test.ts` - les valeurs exactes de la reponse
-- ✅ `racks/RackEffets.tsx` - curseurs et trace SVG, tires de la meme table
-- ❌ courbes predefinies - TODO
+- ✅ `core/audio/effets.test.ts` - les courbes et la reconnaissance de la courbe courante
+- ✅ `racks/RackEffets.tsx` - curseurs, trace SVG et rappels, tires de la meme table
 
 **Description**: 3-band EQ (Low/Mid/High) with frequency response visualizer.
 
@@ -202,7 +209,7 @@ intestable.
    le trace se redessine a chaque mouvement de curseur, et un `path` se relit.
 3. ~~Build React UI~~ — fait
 4. ~~Test frequency response accuracy~~ — fait
-5. Courbes predefinies
+5. ~~Courbes predefinies~~ — fait
 
 ---
 

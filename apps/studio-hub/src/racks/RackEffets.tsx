@@ -1,5 +1,11 @@
 import { ORDRE_DIVISIONS, type Division } from "../core/audio/tempo";
-import { BANDES_EQ, EQ_DB_MAX, type ParamsEffets } from "../core/audio/effets";
+import {
+  BANDES_EQ,
+  COURBES_EQ,
+  EQ_DB_MAX,
+  estCourbeAppliquee,
+  type ParamsEffets,
+} from "../core/audio/effets";
 import { courbeEq } from "../core/audio/reponseEq";
 
 /**
@@ -303,6 +309,29 @@ export function RackEffets({
           </label>
         ))}
         <CourbeEq params={params} />
+        {/* Les courbes prédéfinies. Chacune pousse ses trois gains par le
+            rappel habituel : trois appels d'affilée, chaque gain ayant son
+            propre setter, donc aucun ne s'écrase. Un second rappel « applique
+            cette courbe » aurait doublé la frontière pour rien.
+
+            Le bouton s'allume quand les trois gains sont exactement les siens
+            — y compris apres un retour au curseur, qui l'eteint. Sans cela il
+            resterait allume sur une courbe qu'on vient de quitter. */}
+        <div className="fx-modes fx-courbes-eq">
+          {COURBES_EQ.map((courbe) => (
+            <button
+              key={courbe.nom}
+              type="button"
+              className={`fx-mode-btn ${estCourbeAppliquee(params, courbe) ? "actif" : ""}`}
+              onClick={() => {
+                for (const bande of BANDES_EQ) onParam(bande.reglage, courbe.gains[bande.reglage]);
+              }}
+              title={courbe.aide}
+            >
+              {courbe.nom}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

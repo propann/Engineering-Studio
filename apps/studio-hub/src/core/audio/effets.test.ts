@@ -8,6 +8,7 @@ import {
   TAPS_MAX, frequenceEtagePhaser, melange, niveauPrise,
   profondeurChorusSec, profondeurModulationSec,
   reinjection, reinjectionFlanger, tempsDesPrises, tempsRetardSec, vitesseChorusHz,
+  BANDES_EQ, COURBES_EQ, EQ_DB_MAX, estCourbeAppliquee,
 } from "./effets";
 
 /**
@@ -429,5 +430,89 @@ describe("structure du delai multi-prises", () => {
 
   it("chaque prise a son propre niveau", () => {
     expect(S3).toContain("niveauPrise(i, temps.length)");
+  });
+});
+
+describe("courbes predefinies de l'egaliseur", () => {
+  it("ouvre par un retour au neutre", () => {
+    // Sans PLAT, essayer une courbe est une porte a sens unique : il faudrait
+    // se rappeler trois nombres pour revenir. C'est ce qui decide de s'y
+    // risquer, donc ce n'est pas un ornement de la liste.
+    const plat = COURBES_EQ[0];
+    expect(plat.nom).toBe("PLAT");
+    for (const bande of BANDES_EQ) expect(plat.gains[bande.reglage]).toBe(0);
+  });
+
+  it("aucune ne sort du debattement des curseurs", () => {
+    // Une courbe hors plage serait rognee par le curseur en silence : le
+    // bouton ne s'allumerait jamais, et le son ne serait pas celui annonce.
+    for (const courbe of COURBES_EQ) {
+      for (const bande of BANDES_EQ) {
+        const gain = courbe.gains[bande.reglage];
+        expect(Math.abs(gain), `${courbe.nom}/${bande.nom} hors plage`).toBeLessThanOrEqual(EQ_DB_MAX);
+      }
+    }
+  });
+
+  it("aucune ne pousse au-dela du tiers du debattement", () => {
+    // Un point de depart, pas un reglage fini. A fond, il ne resterait plus de
+    // place pour retoucher, et l'etage suivant de la chaine saturerait alors
+    // qu'elle pretend juste colorer.
+    for (const courbe of COURBES_EQ) {
+      for (const bande of BANDES_EQ) {
+        expect(Math.abs(courbe.gains[bande.reglage]), `${courbe.nom} pousse trop`)
+          .toBeLessThanOrEqual(EQ_DB_MAX / 3);
+      }
+    }
+  });
+
+  it("chacune donne une valeur a chaque bande", () => {
+    // Le `Record` complet le garantit au typecheck ; ce test le garantit aussi
+    // le jour ou quelqu'un elargit le type en `Partial`. Une bande omise
+    // resterait ou le curseur precedent l'avait laissee, et la courbe rappelee
+    // ne serait pas celle que son nom annonce.
+    for (const courbe of COURBES_EQ) {
+      for (const bande of BANDES_EQ) {
+        expect(typeof courbe.gains[bande.reglage], `${courbe.nom} n'a rien pour ${bande.nom}`).toBe("number");
+      }
+    }
+  });
+
+  it("porte des noms distincts, et une aide chacune", () => {
+    const noms = COURBES_EQ.map((c) => c.nom);
+    expect(new Set(noms).size).toBe(noms.length);
+    // Le nom seul ne dit pas ce que la courbe fait a l'oreille — c'est
+    // l'infobulle qui evite d'avoir a les essayer une par une.
+    for (const courbe of COURBES_EQ) expect(courbe.aide.length, courbe.nom).toBeGreaterThan(20);
+  });
+
+  it("deux courbes ne peuvent pas s'allumer ensemble", () => {
+    // Deux entrees aux memes gains donneraient deux boutons allumes a la fois,
+    // sans qu'aucun soit faux.
+    const empreintes = COURBES_EQ.map((c) => BANDES_EQ.map((b) => c.gains[b.reglage]).join("/"));
+    expect(new Set(empreintes).size).toBe(empreintes.length);
+  });
+});
+
+describe("reconnaissance de la courbe courante", () => {
+  const PLAT = COURBES_EQ[0];
+  const AUTRE = COURBES_EQ[1];
+
+  it("reconnait ses propres gains", () => {
+    expect(estCourbeAppliquee(AUTRE.gains, AUTRE)).toBe(true);
+  });
+
+  it("s'eteint des qu'une seule bande bouge — la derniere comprise", () => {
+    // Une comparaison qui n'en lirait que deux laisserait le bouton allume sur
+    // une courbe qu'on vient de quitter au curseur.
+    for (const bande of BANDES_EQ) {
+      const retouche = { ...AUTRE.gains, [bande.reglage]: AUTRE.gains[bande.reglage] + 1 };
+      expect(estCourbeAppliquee(retouche, AUTRE), `${bande.nom} ignoree par la comparaison`).toBe(false);
+    }
+  });
+
+  it("ne confond pas deux courbes", () => {
+    expect(estCourbeAppliquee(PLAT.gains, AUTRE)).toBe(false);
+    expect(estCourbeAppliquee(AUTRE.gains, PLAT)).toBe(false);
   });
 });

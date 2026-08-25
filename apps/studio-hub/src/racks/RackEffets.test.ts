@@ -83,6 +83,24 @@ describe("controle, pas autonomie", () => {
     expect(UI).not.toContain("min={-18}");
   });
 
+  it("rappelle les courbes predefinies par le rappel habituel", () => {
+    // Un second rappel « applique cette courbe » aurait double la frontiere :
+    // trois `onParam` d'affilee suffisent, chaque gain ayant son propre setter.
+    expect(UI).toContain("COURBES_EQ.map");
+    expect(UI).toContain("onParam(bande.reglage, courbe.gains[bande.reglage])");
+    expect(UI).not.toMatch(/onCourbe|onPreset/);
+    // Les noms ne sont pas recopies ici : ils viennent de la table.
+    for (const nom of ["PLAT", "SOURIRE", "CHALEUR"]) {
+      expect(UI, `${nom} recopie dans l'interface`).not.toContain(`>${nom}<`);
+    }
+  });
+
+  it("allume la courbe courante, et elle seule", () => {
+    // Sans cela le bouton resterait allume sur une courbe qu'on vient de
+    // quitter au curseur — l'interface annoncerait un reglage qui n'est plus.
+    expect(UI).toContain("estCourbeAppliquee(params, courbe)");
+  });
+
   it("montre ce que l'egaliseur fait au son", () => {
     // Trois nombres en dB ne disent pas la forme qui en sort. La courbe la
     // montre — calculee sur la meme table que le son, sinon elle montrerait
