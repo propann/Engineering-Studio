@@ -1,6 +1,6 @@
 # État actuel — Engineering Studio
 
-Date de référence : **2026-08-22**
+Date de référence : **2026-08-26**
 
 ## Synthèse
 
@@ -19,7 +19,7 @@ les tests automatiques ne peuvent pas prouver.
 | Dépôt GitHub | Opérationnel, branche `main` |
 | Intégration continue | ✅ tourne sur `main`, la branche réellement déployée |
 | Déploiement Coolify | Opérationnel, HTTPS via le proxy |
-| Tests automatisés | 🔶 contrôles natifs séparés OP-1 / EP-133 en CI ; validation complète en cours |
+| Tests automatisés | ✅ CI verte sur les six travaux ; contrôles natifs OP-1 et EP-133 séparés |
 | Profil local | ✅ récupérable depuis le dossier de travail |
 | Dossier de travail | ✅ mémorisé, permission vérifiée au rechargement |
 | Coffre — sauvegarde | ✅ validée à l'usage, dossiers vides compris |
@@ -28,10 +28,10 @@ les tests automatiques ne peuvent pas prouver.
 | Web MIDI | ✅ instantané à l'usage sur l'OP-1 |
 | Rack — synthèse | ✅ 15 moteurs, 76 patches, superposition par patch |
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
-| Rack — effets | ✅ quatre familles : saturation, égaliseur, modulation (chorus/flanger/phaser), delay à quatre prises |
+| Rack — effets | ✅ quatre familles : saturation (doux, dur, repliement), égaliseur (courbe tracée, 5 prédéfinies), modulation (chorus/flanger/phaser), delay 1 à 8 prises avec panoramique |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
-| Rack MIDI (arpégiateur, 30 gammes, séquenceur pas à pas) | ✅ |
-| Enveloppe ADSR et LFO global | ✅ panneaux dédiés, LFO appliqué aux quinze moteurs |
+| Rack MIDI (arpégiateur, 30 gammes, séquenceur pas à pas) | ✅ longueur de note réglable et enregistrement pas à pas |
+| Enveloppe ADSR et LFO global | ✅ courbe tracée, 5 enveloppes prédéfinies, rampes exponentielles ou droites ; LFO avec déphasage à l'origine, appliqué aux quinze moteurs |
 | Chaque rack porte son interface | ✅ verrouillé par test |
 | Rack principal : une source unique | ✅ un seul tableau d'outils, plus de cartes écrites à la main |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
@@ -39,6 +39,9 @@ les tests automatiques ne peuvent pas prouver.
 | OP-1 Studio — clone tactile | ✅ quatre pistes, transport, REC piste active, écran/racks, clavier MIDI et couleurs machine | 
 | OP-1 Studio — samples sauvegardés | ✅ préécoute et chargement sur la piste active depuis la bibliothèque locale | 
 | OP-1 Studio — persistance après actualisation | ✅ métadonnées `localStorage` + blobs audio `IndexedDB` | 
+| Registre des pages | ✅ les 21 routes recensées avec leur provenance, leur source et leurs portes |
+| Sauvegarde des patches | ✅ archive ZIP de tout le travail personnel, relue fichier par fichier |
+| Thème clair / sombre | 🔶 variables et TopBar posées ; les 21 pages restent en couleurs codées en dur |
 
 **Ce qu'il ne faut pas déclarer validé** : la restauration *par l'application*
 vers une machine. Le mécanisme d'écriture l'est — écrire, démonter, relire,
@@ -47,6 +50,36 @@ comparer les empreintes — mais pas son orchestration.
 **Contrat machine :** la CI partage le niveau de sécurité, pas le protocole matériel. Les contrôles OP-1 couvrent ses AIFF, patches, volume et MIDI ; les contrôles EP-133 couvrent ses projets, samples et échanges MIDI/SysEx. Un test de l'un ne constitue jamais une preuve pour l'autre.
 
 ## Derniers travaux
+
+### 25 et 26 août 2026
+
+- Égaliseur : courbe de réponse tracée, calculée sur la même table de bandes que
+  le graphe audio — deux tables divergeraient sans que rien ne le signale. Cinq
+  courbes prédéfinies, PLAT en tête pour que l'essai ne soit pas à sens unique.
+- Saturation : écrêtage franc ajouté aux modes doux et repliement.
+- Enveloppe : courbe tracée sur les mêmes rampes exponentielles que le moteur
+  joue, cinq enveloppes prédéfinies, et le choix rampes courbes ou droites,
+  appliqué aux cinq endroits du rack par un point unique.
+- Délai : de quatre à huit prises, toutes distinctes — l'écart se met à
+  l'échelle du plafond au lieu de les empiler dessus. Panoramique en renvoi de
+  balle, non construit en mono pour que le fichier exporté garde l'équilibre du
+  jeu.
+- LFO : déphasage à l'origine, par rotation de chaque harmonique de k·φ.
+- Patches : archive ZIP de tout le travail personnel, un fichier JSON par patch
+  pour qu'un patch corrompu n'emporte pas les autres.
+- Arpégiateur et séquenceur : longueur de note réglable, et enregistrement pas
+  à pas de ce qu'on joue.
+- Écran des exercices OP-1 : colonnes alignées sur les touches — l'écart était
+  une différence d'échelle, nul au centre et de 8,7 px aux extrêmes.
+- Registre des pages : les 21 routes recensées avec leur provenance, leur
+  fichier source et leurs portes d'entrée, vérifiées contre le code.
+- Studio EP-133 : le jeu redevient accessible depuis le Hub, deux cartes
+  menaient au même écran.
+- Documentation : garde-fou contre les liens morts sur les 157 documents
+  vivants ; les 39 liens morts sont tous dans les archives, et c'est assumé.
+
+### Jusqu'au 22 août 2026
+
 
 - Configuration Coolify/Nixpacks alignée sur Bun.
 - Domaine de production autorisé dans Vite preview.
@@ -69,10 +102,21 @@ comparer les empreintes — mais pas son orchestration.
 
 ## Prochaines étapes recommandées
 
-1. Ajouter des tests de démarrage avec localStorage vide et IndexedDB vide.
-2. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS et vérifier la restauration d’un projet audio.
-3. Ajouter un scénario navigateur de remplacement et suppression d’une source persistée.
-4. Brancher les pages restantes sur le module profil partagé.
+1. **Uniformiser l'interface.** Les variables de thème et la TopBar sont posées ;
+   les 21 pages restent en couleurs codées en dur — `styles.css` en compte 306
+   distinctes. Voir [l'audit visuel](audits/AUDIT_VISUEL_2026-08-26.md) et le
+   [système de design](design/DESIGN_SYSTEM.md).
+2. **Couvrir les deux studios.** `apps/op1-studio` fait 38 900 lignes pour sept
+   fichiers de test, `apps/ep133-studio` 8 400 pour deux. C'est le déséquilibre
+   le plus net du dépôt.
+3. Trancher `RhythmHero` : page de texte annonçant un entraînement, alors que le
+   vrai jeu EP-133 est désormais accessible. La réécrire ou la retirer du Hub.
+4. Trancher la route `sound-editor-hub` : le composant est déjà monté dans la
+   Bibliothèque sonore, et sa route directe s'ouvre sans barre de navigation.
+5. Ajouter des tests de démarrage avec localStorage vide et IndexedDB vide.
+6. Tester manuellement une nouvelle fenêtre privée sur le domaine HTTPS et vérifier la restauration d’un projet audio.
+7. Ajouter un scénario navigateur de remplacement et suppression d’une source persistée.
+8. Brancher les pages restantes sur le module profil partagé.
 5. Conserver les installations des studios synchronisées avec leurs manifests.
 6. Auditer les états locaux indépendants des modules.
 7. Préparer un routage URL stable avant de rendre les pages partageables.
