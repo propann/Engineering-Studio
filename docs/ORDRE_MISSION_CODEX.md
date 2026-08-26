@@ -1,5 +1,9 @@
 # Ordre de mission — Codex
 
+> **Lot spécialisé.** La feuille de route principale est [`ROADMAP.md`](ROADMAP.md) ;
+> ce document en détaille le lot Studios et jeu. En cas de contradiction, la principale gagne.
+
+
 ## Lot immédiat livré
 
 - déposer l'audit sectoriel ;

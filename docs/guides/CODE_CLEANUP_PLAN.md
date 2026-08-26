@@ -1,5 +1,10 @@
 # 🧹 CODE CLEANUP & SOLIDIFICATION PLAN
 
+> **Remplacé en partie.** Le nettoyage d'interface est repris par le ticket UI-801 de
+> [`docs/design/UI_ROADMAP.md`](../design/UI_ROADMAP.md), sous la feuille de route principale
+> [`docs/ROADMAP.md`](../ROADMAP.md). Conservé pour le reste.
+
+
 **Phase 4.1 Implementation Plan**
 
 ---

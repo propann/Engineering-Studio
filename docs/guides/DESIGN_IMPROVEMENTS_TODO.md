@@ -1,5 +1,10 @@
 # 📋 Design Improvements - À faire
 
+> **Remplacé.** Ce document date d'avant le design system. Le travail d'interface se pilote
+> désormais depuis [`docs/design/UI_ROADMAP.md`](../design/UI_ROADMAP.md), sous la feuille de
+> route principale [`docs/ROADMAP.md`](../ROADMAP.md). Conservé pour mémoire.
+
+
 **Date**: 2026-08-18  
 **Notes de l'utilisateur**
 

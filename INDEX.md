@@ -14,11 +14,11 @@
 ### 🚀 Ready to Code?
 1. **[docs/guides/STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md)** - Complete setup
 2. **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)** - System design
-3. **[docs/ROADMAP.md](docs/ROADMAP.md)** - What to work on next
+3. **[docs/ROADMAP.md](docs/ROADMAP.md)** - Main roadmap: who decides what, active lots, priorities
 4. **[docs/design/UI_DEVELOPMENT_PLAYBOOK.md](docs/design/UI_DEVELOPMENT_PLAYBOOK.md)** - Mandatory UI rules
 
 ### 📊 Project Manager?
-1. **[docs/ROADMAP.md](docs/ROADMAP.md)** - Project timeline & phases
+1. **[docs/ROADMAP.md](docs/ROADMAP.md)** - Main roadmap and active lots
 2. **[docs/STATUS.md](docs/STATUS.md)** - Current project status
 3. **[docs/TEAM_SYNC.md](docs/TEAM_SYNC.md)** - Team updates
 
@@ -54,7 +54,8 @@
 ### 📅 Project Planning & Status
 | Document | Purpose | Audience |
 |----------|---------|----------|
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Project timeline & phases | PMs, leads |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Main roadmap: source hierarchy, active lots, priorities | Everyone |
+| [docs/archived/ROADMAP_PHASES_2026-08.md](docs/archived/ROADMAP_PHASES_2026-08.md) | Phase journal 1-6, historical only | Memory |
 | [docs/STATUS.md](docs/STATUS.md) | Current status & blockers | Team members |
 | [docs/TEAM_SYNC.md](docs/TEAM_SYNC.md) | Team updates & decisions | Team |
 | [docs/VERSION_SYNC_REPORT.md](docs/VERSION_SYNC_REPORT.md) | Dependency sync status | Developers |
@@ -92,7 +93,7 @@ Located in [docs/archived/](docs/archived/) with 30+ historical documents:
 → [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
 
 #### See What Needs Work
-→ [docs/ROADMAP.md](docs/ROADMAP.md) (Phase 4 section)
+→ [docs/ROADMAP.md](docs/ROADMAP.md) (section « Les trois chantiers prioritaires »)
 
 #### Check Project Status
 → [docs/STATUS.md](docs/STATUS.md)
@@ -135,7 +136,7 @@ Engineering-Studio/
 ├─ RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md ← Orchestration (symlink)
 │
 ├─ docs/                              ← All documentation
-│  ├─ ROADMAP.md                      ← Project timeline
+│  ├─ ROADMAP.md                      ← Main roadmap
 │  ├─ STATUS.md                       ← Current status
 │  ├─ TEAM_SYNC.md                    ← Team updates
 │  ├─ VERSION_SYNC_REPORT.md          ← Dependencies
@@ -204,7 +205,7 @@ Engineering-Studio/
 | Document | Date |
 |----------|------|
 | INDEX.md | 2026-08-19 |
-| ROADMAP.md | 2026-08-19 |
+| ROADMAP.md | 2026-08-26 |
 | ARCHITECTURE.md | 2026-08-19 |
 | STATUS.md | Updating next |
 

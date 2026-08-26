@@ -8,6 +8,10 @@ Dernière synchronisation documentaire : **2026-08-26**, sur `main`. Les derniè
 
 ## À lire en premier
 
+**Commencer par la [feuille de route principale](ROADMAP.md)** : elle dit qui décide
+de quoi, quels lots sont actifs et dans quel ordre travailler. Toutes les autres
+feuilles de route en dépendent.
+
 1. [Vue d’ensemble du projet](PROJECT_AUDIT_2026-08-20.md)
 2. [Architecture actuelle](architecture/ARCHITECTURE_CURRENT.md)
 3. [Démarrage local](guides/QUICK_START.md)

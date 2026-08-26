@@ -1,5 +1,9 @@
 # Feuille de route — EP-133 KO II Studio
 
+> **Lot spécialisé.** La feuille de route principale du dépôt est
+> [`docs/ROADMAP.md`](../../../docs/ROADMAP.md) ; ce document ne couvre que le module EP-133.
+
+
 > **DOCUMENT HISTORIQUE — détail du studio EP‑133.** L’état produit global et
 > les priorités de l’intégration Hub sont dans
 > [`../../../docs/ROADMAP.md`](../../../docs/ROADMAP.md).

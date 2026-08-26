@@ -1,5 +1,9 @@
 # Ordre de mission — Claude
 
+> **Lot spécialisé.** La feuille de route principale est [`ROADMAP.md`](ROADMAP.md) ;
+> ce document en détaille le lot Registre. En cas de contradiction, la principale gagne.
+
+
 ## Objectif
 
 Transformer la fenêtre **Pages** en registre professionnel de tous les outils du dépôt, sans perdre de code et sans présenter une maquette comme une fonction réelle.

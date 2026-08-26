@@ -1,4 +1,8 @@
 # 🎛️ Audio Rack Development Roadmap
+
+> **Lot spécialisé.** La feuille de route principale est [`docs/ROADMAP.md`](docs/ROADMAP.md) ;
+> ce document en détaille le plan du rack audio. En cas de contradiction, la principale gagne.
+
 **Status**: In Development  
 **Timeline**: 2 weeks (intensive)  
 **Team**: Full-stack audio development  

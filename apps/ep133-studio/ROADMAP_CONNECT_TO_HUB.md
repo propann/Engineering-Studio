@@ -1,5 +1,9 @@
 # EP-133 Studio: Hub Integration Roadmap
 
+> **Lot spécialisé.** La feuille de route principale du dépôt est
+> [`docs/ROADMAP.md`](../../docs/ROADMAP.md) ; ce document ne couvre que le raccordement au Hub.
+
+
 > **DOCUMENT HISTORIQUE — spécification de raccord initiale.** La feuille de
 > route active du monorepo est
 > [`../../docs/ROADMAP.md`](../../docs/ROADMAP.md).

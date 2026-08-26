@@ -1,5 +1,9 @@
 # Feuille de route UI — Engineering Studio
 
+> **Lot spécialisé.** La feuille de route principale est [`docs/ROADMAP.md`](../ROADMAP.md) ;
+> ce document en détaille le lot Interface. En cas de contradiction, la principale gagne.
+
+
 Version : 1.0 — 26 août 2026  
 Responsable documentaire : Codex  
 Branche de livraison : `main`
