@@ -481,8 +481,13 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  /* Rattrape `nav { display: none }` de styles.css:89. Tant que cette regle
+     generique existe, toute barre construite avec <nav> disparait sous 900px :
+     `.orphan-pages-filters` y a ete oubliee et le registre des pages perdait
+     ses filtres sur mobile. `.lab-tabs` ne survit que par un style inline. */
   .sound-library-view-tabs,
   .editor-machine-tabs,
+  .orphan-pages-filters,
   .nav-tabs {
     display: flex !important;
     overflow-x: auto;
