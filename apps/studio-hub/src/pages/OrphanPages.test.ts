@@ -131,9 +131,9 @@ describe("on ne peut pas perdre la derniere porte d'une page", () => {
   });
 
   it("les pages sans autre porte sont bien reconnues comme telles", () => {
-    // Verrouille le fait, pas seulement le mecanisme : si l'une de ces quatre
+    // Verrouille le fait, pas seulement le mecanisme : si l'une de ces trois
     // retrouve un bouton ailleurs, ce test tombe et rappelle de le declarer.
-    for (const id of ["advanced-image", "sound-patch-creator", "rhythm-hero", "sound-editor-hub"]) {
+    for (const id of ["advanced-image", "sound-patch-creator", "sound-editor-hub"]) {
       const m = new RegExp(`"${id}": \\[([^\\]]*)\\]`).exec(RECENSEMENT);
       expect(m, `${id} absent de PAGE_LINKS`).not.toBeNull();
       expect(m![1].trim(), `${id} n'est plus une orpheline`).toBe('"Page manager"');
@@ -217,7 +217,9 @@ describe("les portes declarees sont les portes reelles", () => {
 describe("la nature declaree correspond au fichier", () => {
   /**
    * « Il y a des pages de doc a la place des vraies pages. » Mesuree sur les
-   * 21, la reponse est : une seule, `rhythm-hero`.
+   * 21 pages du 2026-08-26, la reponse etait : une seule, `rhythm-hero`. Elle
+   * a ete supprimee le jour meme, le vrai jeu EP-133 etant atteignable par la
+   * carte « Exercices EP-133 ». Il reste 20 pages et plus aucun cas.
    *
    * Le piege etait de compter les boutons. `MidiSettings` fait 28 lignes et
    * n'en a aucun — mais elle monte tout le panneau MIDI. Compter l'aurait
@@ -281,8 +283,13 @@ describe("la nature declaree correspond au fichier", () => {
     }
   });
 
-  it("rhythm-hero reste identifié comme présentation, pas comme jeu jouable", () => {
+  it("seules les vraies pages de documentation sont classees document", () => {
+    // Verrouille le FAIT constate, pas seulement le mecanisme. `rhythm-hero`
+    // figurait ici : page de texte annoncant un entrainement, retiree le
+    // 2026-08-26 quand la carte « Exercices EP-133 » a ouvert le vrai jeu.
+    // Si un nouvel identifiant apparait dans cette liste, c'est qu'une page
+    // promet un outil et ne rend que du texte.
     const documents = [...naturesParId()].filter(([, n]) => n === "document").map(([id]) => id).sort();
-    expect(documents).toEqual(["doc-ep133", "doc-op1", "documentation", "rhythm-hero"]);
+    expect(documents).toEqual(["doc-ep133", "doc-op1", "documentation"]);
   });
 });

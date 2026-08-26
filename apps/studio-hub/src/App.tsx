@@ -18,7 +18,6 @@ const Documentation = lazy(() => import("./pages/Documentation"));
 const Exercises = lazy(() => import("./pages/Exercises"));
 const DocOP1 = lazy(() => import("./pages/DocOP1"));
 const DocEP133 = lazy(() => import("./pages/DocEP133"));
-const RhythmHero = lazy(() => import("./pages/RhythmHero"));
 const ImageEditorOP1 = lazy(() => import("./pages/ImageEditorOP1"));
 const FirmwareLab = lazy(() => import("./pages/FirmwareLab"));
 const AdvancedImageEditor = lazy(() => import("./pages/AdvancedImageEditor"));
@@ -43,7 +42,6 @@ type Page =
   | "doc-ep133" 
   | "studio-ep133"
   | "studio-op1"
-  | "rhythm-hero" 
   | "image-editor-op1" 
   | "firmware-lab"
   | "advanced-image"
@@ -99,8 +97,6 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
       return <EP133StudioPage />;
     case "studio-op1":
       return <OP1StudioPage />;
-    case "rhythm-hero":
-      return <RhythmHero />;
     case "image-editor-op1":
       return <ImageEditorOP1 />;
     case "firmware-lab":

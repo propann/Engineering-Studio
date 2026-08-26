@@ -5,7 +5,7 @@ import { DEFAULT_PROFILE_NAME, readProfileName } from "../core/profile";
 type PageId =
   | "landing" | "outils" | "profil" | "documentation" | "exercises"
   | "doc-op1" | "doc-ep133" | "studio-op1" | "studio-ep133"
-  | "rhythm-hero" | "image-editor-op1" | "firmware-lab"
+  | "image-editor-op1" | "firmware-lab"
   | "advanced-image"
   | "sound-patch-creator" | "audio-plugin-rack" | "sound-library" | "sound-editor-hub"
   | "midi-settings" | "op1-settings" | "backup-lab" | "orphan-pages";
@@ -45,10 +45,10 @@ type Provenance = "machine" | "local" | "profil" | "demo" | "non-verifie";
  * - `document` — presente du texte, et c'est tout.
  *
  * `document` n'est pas un reproche : `DocOP1`, `DocEP133` et `Documentation`
- * sont des pages de documentation, c'est leur metier. Le cas qui compte est
- * celui d'une page annoncee comme un outil et qui n'est que du texte —
- * `RhythmHero`, seule dans ce cas : 124 lignes, aucun composant importe, et la
- * promesse d'« exercices progressifs » qu'elle ne rend pas.
+ * sont des pages de documentation, c'est leur metier. Le cas qui comptait etait
+ * celui d'une page annoncee comme un outil et qui n'etait que du texte :
+ * `RhythmHero`, retiree le 2026-08-26 une fois le vrai jeu EP-133 atteignable
+ * par la carte « Exercices EP-133 » (voir `dc8be4b`).
  */
 type Nature = "outil" | "facade" | "document";
 
@@ -116,8 +116,6 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "studio-ep133", label: "EP-133 Studio", description: "Patterns, Songs et échanges EP-133.", target: "EP-133", source: "pages/EP133StudioPage.tsx", provenance: "machine", nature: "facade" }
 ,
-  { id: "rhythm-hero", label: "Rhythm Hero", description: "Présentation du jeu d’entraînement EP-133 ; la partie jouable vit dans le Studio EP-133.", target: "EP-133", source: "pages/RhythmHero.tsx", provenance: "demo", nature: "document" }
-,
   { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Écrans OP-1 320 × 160.", target: "OP-1", source: "pages/ImageEditorOP1.tsx", provenance: "local", nature: "outil" }
 ,
   { id: "firmware-lab", label: "Firmware Lab", description: "Préparation locale des mods OP-1.", target: "OP-1", source: "pages/FirmwareLab.tsx", provenance: "non-verifie", nature: "outil" }
@@ -156,7 +154,6 @@ const PAGE_LINKS: Record<string, string[]> = {
   // Sorti du groupe « Apprendre » le 2026-08-25 : la carte EP-133 ouvre
   // desormais le studio directement. Ce registre est le seul chemin qui
   // reste vers cette page.
-  "rhythm-hero": ["Page manager"],
   "image-editor-op1": ["Hub · Éditeur d’image"],
   "firmware-lab": ["Hub · Firmware Lab"],
   "advanced-image": ["Page manager"],
