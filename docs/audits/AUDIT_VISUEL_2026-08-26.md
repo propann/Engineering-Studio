@@ -39,6 +39,15 @@ Deux thèmes, un seul design system :
 La spécification complète est dans
 [`docs/design/DESIGN_SYSTEM.md`](../design/DESIGN_SYSTEM.md).
 
+L'étude est transformée en plan exécutable dans :
+
+- [`UI_ROADMAP.md`](../design/UI_ROADMAP.md) : phases, tickets, dépendances et
+  critères de fin ;
+- [`UI_DEVELOPMENT_PLAYBOOK.md`](../design/UI_DEVELOPMENT_PLAYBOOK.md) : règles
+  obligatoires pour développeurs et agents IA ;
+- [`UI_PAGE_SPEC_TEMPLATE.md`](../design/UI_PAGE_SPEC_TEMPLATE.md) : trame de
+  spécification pour chaque écran.
+
 ## Première passe livrée
 
 - tokens Atelier / Studio centralisés ;
@@ -65,9 +74,13 @@ La spécification complète est dans
 8. Simplifier le profil en trois étapes obligatoires et réglages avancés.
 9. Structurer l'éditeur d'image comme un éditeur traditionnel 320 × 160.
 
+Les identifiants de tickets, fichiers concernés, dépendances et critères de fin
+sont maintenus dans `UI_ROADMAP.md`. Cette roadmap est la source d'exécution ;
+la liste ci-dessus reste le résumé de lecture.
+
 ## Contrôle qualité
 
 - TypeScript : réussi.
-- Tests : 52 fichiers, 1 045 tests réussis.
+- Tests : 52 fichiers, 1 047 tests réussis après intégration du dernier `main`.
 - Build Vite de production : réussi.
 - Inspection Figma : en attente d'un lien de nœud précis contenant `node-id`.

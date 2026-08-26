@@ -15,6 +15,7 @@
 1. **[docs/guides/STARTUP_GUIDE.md](docs/guides/STARTUP_GUIDE.md)** - Complete setup
 2. **[docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)** - System design
 3. **[docs/ROADMAP.md](docs/ROADMAP.md)** - What to work on next
+4. **[docs/design/UI_DEVELOPMENT_PLAYBOOK.md](docs/design/UI_DEVELOPMENT_PLAYBOOK.md)** - Mandatory UI rules
 
 ### 📊 Project Manager?
 1. **[docs/ROADMAP.md](docs/ROADMAP.md)** - Project timeline & phases
@@ -36,6 +37,10 @@
 | [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) | System design, layers, communication | Architects, developers |
 | [docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md](docs/architecture/RACK_SERVICE_ORCHESTRA_ARCHITECTURE.md) | Musical metaphor, health monitoring | All team members |
 | [docs/architecture/DOSSIER_ARCHITECTURE_RACK_CENTRAL.md](docs/architecture/DOSSIER_ARCHITECTURE_RACK_CENTRAL.md) | Detailed system architecture | Technical leads |
+| [docs/design/DESIGN_SYSTEM.md](docs/design/DESIGN_SYSTEM.md) | Two themes, tokens and UI geometry | Designers, frontend |
+| [docs/design/UI_ROADMAP.md](docs/design/UI_ROADMAP.md) | Executable UI phases and acceptance criteria | PMs, developers, agents |
+| [docs/design/UI_DEVELOPMENT_PLAYBOOK.md](docs/design/UI_DEVELOPMENT_PLAYBOOK.md) | Mandatory implementation rules | Developers, agents |
+| [docs/design/UI_PAGE_SPEC_TEMPLATE.md](docs/design/UI_PAGE_SPEC_TEMPLATE.md) | Template for new or redesigned screens | Designers, frontend |
 
 ### 🛠️ Getting Started & Guides
 | Document | Purpose | Audience |

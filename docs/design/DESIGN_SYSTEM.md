@@ -2,6 +2,13 @@
 
 Date de référence : 26 août 2026
 
+Documents associés :
+
+- [feuille de route UI](UI_ROADMAP.md) ;
+- [manuel de développement UI](UI_DEVELOPMENT_PLAYBOOK.md) ;
+- [modèle de spécification d'écran](UI_PAGE_SPEC_TEMPLATE.md) ;
+- [audit visuel](../audits/AUDIT_VISUEL_2026-08-26.md).
+
 ## Principe
 
 Engineering Studio utilise une seule structure visuelle et deux thèmes. Les
@@ -85,3 +92,7 @@ La migration doit converger vers ces rôles :
 Une page migrée ne crée pas sa propre palette. Elle consomme les tokens du
 shell, conserve uniquement un accent machine et supprime ses anciennes
 surcharges après validation desktop et mobile.
+
+La définition précise de chaque phase et de chaque critère de fin est dans
+[`UI_ROADMAP.md`](UI_ROADMAP.md). Toute contribution UI doit suivre
+[`UI_DEVELOPMENT_PLAYBOOK.md`](UI_DEVELOPMENT_PLAYBOOK.md).

@@ -20,6 +20,12 @@ Dernière synchronisation documentaire : **2026-08-26**, sur `main`. Les derniè
 9. [**Analyse du rack principal**](ANALYSE_RACK_PRINCIPAL.md) — les vingt-neuf
    entrées de la porte d'entrée, outil par outil : ce qu'elles promettent, ce
    qu'elles ouvrent, et ce qui ne s'ouvre plus
+10. [**Feuille de route UI**](design/UI_ROADMAP.md) — ordre d'exécution,
+    dépendances, critères d'acceptation et Definition of Done
+11. [**Manuel de développement UI**](design/UI_DEVELOPMENT_PLAYBOOK.md) —
+    règles obligatoires pour les développeurs et agents IA
+12. [**Gabarit de spécification d'écran**](design/UI_PAGE_SPEC_TEMPLATE.md) —
+    contrat à remplir avant toute refonte ou nouvel écran
 
 ## Travaux en cours — août 2026
 
@@ -40,6 +46,8 @@ ce qui les rendait introuvables autrement qu'en fouillant `docs/`.
 | Dossier | Contenu |
 |---|---|
 | architecture/ | Structure technique et flux entre modules |
+| audits/ | Constats datés, preuves et priorités de correction |
+| design/ | Design system, feuille de route et règles d'implémentation UI |
 | guides/ | Installation, déploiement et méthodes de travail |
 | specs/ | Spécifications fonctionnelles ciblées |
 | archived/ | Documents historiques, non contractuels |
@@ -50,4 +58,3 @@ Le code présent dans apps/, packages/ et les scripts racine fait foi.
 Les anciens rapports dans docs/archived/ servent de mémoire et ne doivent
 pas être utilisés pour déclarer une fonction terminée sans vérification du
 code et d’un parcours utilisateur.
-
