@@ -96,7 +96,7 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé", source: "pages/SoundLibrary.tsx", provenance: "local" }
 ,
-  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Page encore présente dans le dépôt mais absente de la navigation active.", target: "Hub partagé", source: "pages/SoundEditorHub.tsx", provenance: "demo" }
+  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Onglet « Éditeur » de la Bibliothèque sonore, où il est déjà accessible. Sa route directe s'ouvre SANS barre de navigation : voir le rapport des doublons.", target: "Hub partagé", source: "pages/SoundEditorHub.tsx", provenance: "demo" }
 ,
   { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI commune.", target: "Hub partagé", source: "pages/MidiSettings.tsx", provenance: "machine" }
 ,

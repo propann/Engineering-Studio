@@ -4,7 +4,7 @@ Ce dossier décrit l’état réel du dépôt propann/Engineering-Studio.
 
 ## État synchronisé
 
-Dernière synchronisation documentaire : **2026-08-22**, sur `main`. Les dernières fonctions OP‑1 livrées sont décrites dans [STATUS.md](STATUS.md) et [OP1_MANUAL_REFERENCE.md](OP1_MANUAL_REFERENCE.md) : quatre pistes, écran tactile, bibliothèque de samples sauvegardés et persistance locale après actualisation.
+Dernière synchronisation documentaire : **2026-08-26**, sur `main`. Les dernières fonctions OP‑1 livrées sont décrites dans [STATUS.md](STATUS.md) et [OP1_MANUAL_REFERENCE.md](OP1_MANUAL_REFERENCE.md) : quatre pistes, écran tactile, bibliothèque de samples sauvegardés et persistance locale après actualisation.
 
 ## À lire en premier
 
@@ -20,6 +20,20 @@ Dernière synchronisation documentaire : **2026-08-22**, sur `main`. Les derniè
 9. [**Analyse du rack principal**](ANALYSE_RACK_PRINCIPAL.md) — les vingt-neuf
    entrées de la porte d'entrée, outil par outil : ce qu'elles promettent, ce
    qu'elles ouvrent, et ce qui ne s'ouvre plus
+
+## Travaux en cours — août 2026
+
+Ces documents gouvernent le chantier actuel. Ils étaient absents de cet index,
+ce qui les rendait introuvables autrement qu'en fouillant `docs/`.
+
+- [**Audit sectoriel**](AUDIT_SECTORIEL_2026-08-26.md) — l'état secteur par
+  secteur, la règle de provenance MACHINE/LOCAL/PROFIL/DÉMO/NON VÉRIFIÉ, et
+  les six points P0 avant de déclarer le produit stable
+- [Ordre de mission — Claude](ORDRE_MISSION_CLAUDE.md) — registre des pages
+- [Ordre de mission — Codex](ORDRE_MISSION_CODEX.md)
+- [**Rapport des doublons — pages prioritaires**](RAPPORT_DOUBLONS_PAGES_2026-08-26.md)
+  — les quatre pages à trancher, et pourquoi **aucune** ne justifie une
+  suppression de code
 
 ## Organisation
 
