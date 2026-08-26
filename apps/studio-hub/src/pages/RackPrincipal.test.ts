@@ -212,6 +212,51 @@ describe("ce que la fusion ne devait pas casser", () => {
     }
   });
 
+  it("deux cartes ne menent jamais au meme ecran du studio EP-133", () => {
+    /**
+     * Trois entrees ouvrent `studio-ep133`, et c'est normal : le studio a
+     * plusieurs vues. Ce qui ne l'est pas, c'est que deux d'entre elles
+     * atterrissent au meme endroit.
+     *
+     * C'est ce qui s'est produit : « Exercices EP-133 » a remplace le jeu
+     * Rhythm Hero sans rien passer au studio, lequel retombe alors sur son
+     * comportement encastre — l'editeur. Elle doublonnait donc « EP-133
+     * Studio », et le jeu devenait introuvable depuis le Hub.
+     */
+    const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
+    // Decoupe PAR ENTREE avant de filtrer. Une expression qui part d'un `id:`
+    // et saute jusqu'au `studio-ep133` suivant traverse les entrees et apparie
+    // l'identifiant du VOISIN : le message accusait « studio-op1 » et
+    // « vault » d'un defaut qui n'etait pas le leur.
+    const entrees = bloc.split(/\n\s*\{\s*\n?\s*id: "/).slice(1)
+      .map((morceau) => ({ id: morceau.slice(0, morceau.indexOf('"')), texte: morceau }))
+      .filter(({ texte }) => /action: \{ type: "page", page: "studio-ep133" \}/.test(texte));
+    expect(entrees.length, "aucune entree vers le studio EP-133").toBeGreaterThan(1);
+
+    // Ce qui distingue chaque porte : le hubTool passe, ou rien.
+    // L'identifiant vient du GROUPE de capture, pas d'une relecture du texte :
+    // la tranche capturee deborde sur l'entree precedente, et un `exec` y
+    // trouvait le mauvais nom. Un message d'erreur qui nomme la mauvaise carte
+    // envoie chercher le defaut au mauvais endroit.
+    const destinations = entrees.map(({ id, texte }) => {
+      const explicite = /hubTool: "([a-z0-9-]+)"/.exec(texte);
+      if (explicite) return `${id} → ${explicite[1]}`;
+      if (/passeHubTool: true/.test(texte)) return `${id} → ${id}`;
+      return `${id} → (defaut)`;
+    });
+    const ecrans = destinations.map((d) => d.split(" → ")[1]);
+    expect(new Set(ecrans).size,
+      `deux cartes menent au meme ecran : ${destinations.join(" | ")}`).toBe(ecrans.length);
+  });
+
+  it("les exercices EP-133 visent le jeu, pas l'editeur", () => {
+    // Le studio ne reconnait que `sounds`, `machine-test`, `studio` et `game`.
+    // Lui envoyer l'identifiant de la carte — `rhythm` — le ferait retomber sur
+    // son defaut, c'est-a-dire l'editeur, et le jeu resterait cache dessous.
+    const bloc = RACK.slice(RACK.indexOf('id: "rhythm"'), RACK.indexOf('id: "rhythm"') + 600);
+    expect(bloc).toContain('hubTool: "game"');
+  });
+
   it("le test machine EP-133 passe toujours son hubTool", () => {
     // Le studio lit `?hubTool=machine-test` pour ouvrir le bon panneau.
     expect(RACK).toContain("passeHubTool: true");

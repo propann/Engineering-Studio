@@ -62,6 +62,16 @@ type Tool = {
   nettoieUrl?: boolean;
   /** Ecrit `?hubTool=<id>` avant de naviguer. */
   passeHubTool?: boolean;
+  /**
+   * Ecrit `?hubTool=<valeur>` — quand la vue visee ne porte pas le nom de la
+   * carte.
+   *
+   * `passeHubTool` envoie l'identifiant de l'outil, ce qui marche tant que les
+   * deux coincident. « Exercices EP-133 » vise la vue `game` du studio : sans
+   * ce champ, elle enverrait `?hubTool=rhythm`, que le studio ne reconnait pas
+   * — et retomberait sur son comportement par defaut, c'est-a-dire l'editeur.
+   */
+  hubTool?: string;
 };
 
 type Section = "hub" | "op1" | "ep133" | "all";
@@ -174,7 +184,10 @@ const tools: Tool[] = [
     id: "rhythm", code: "PAD-12", category: "TRAINING LAB", title: "Exercices EP-133",
     text: "12 pads · patterns animés · entraînement Rhythm Hero.",
     accent: "orange", visual: "grid", status: "S’ENTRAÎNER →",
-    action: { type: "page", page: "studio-ep133" }, section: "ep133", groupe: "formation",
+    // Vise la vue JEU du studio, pas son editeur. Sans `hubTool`, cette carte
+    // et « EP-133 Studio » atterrissaient au meme endroit : deux portes, une
+    // seule destination, et le jeu invisible sous l'editeur.
+    action: { type: "page", page: "studio-ep133" }, section: "ep133", groupe: "formation", hubTool: "game",
     image: { src: "/media/ep133.jpeg", alt: "Teenage Engineering EP-133 K.O. II", tag: "EP-133 K.O. II", bouton: "S’ENTRAÎNER →", boutonClasse: "ep133-btn" },
   },
 
@@ -231,7 +244,8 @@ export default function ToolsHub(){
   */
  function ouvrir(tool: Tool){
   const naviguer = (page: string) => {
-   if (tool.passeHubTool) window.history.replaceState(null, "", `?hubTool=${tool.id}`);
+   if (tool.hubTool) window.history.replaceState(null, "", `?hubTool=${tool.hubTool}`);
+   else if (tool.passeHubTool) window.history.replaceState(null, "", `?hubTool=${tool.id}`);
    else if (tool.nettoieUrl) window.history.replaceState(null, "", window.location.pathname);
    (window as any).navigateMaquette(page);
   };

@@ -186,12 +186,25 @@ export default function App({ embeddedMode = false }: { embeddedMode?: boolean }
     window.addEventListener('hub:machineLoaded', onHubMachine);
     return () => window.removeEventListener('hub:machineLoaded', onHubMachine);
   }, []);
-  const [editorOpen, setEditorOpen] = useState(embeddedMode || new URLSearchParams(window.location.search).get('hubTool') === 'studio');
+  /**
+   * L'editeur s'ouvre-t-il d'emblee ?
+   *
+   * `embeddedMode` le forcait, donc le studio ouvert depuis le Hub montrait
+   * TOUJOURS l'editeur — et le jeu, qui est pourtant la vue par defaut,
+   * restait invisible dessous. Les deux cartes du Hub (« EP-133 Studio » et
+   * « Exercices EP-133 ») atterrissaient ainsi sur le meme ecran.
+   *
+   * `?hubTool=game` dit explicitement « le jeu, pas l'editeur » et l'emporte
+   * sur l'encastrement. C'est le P0 n2 de l'audit du 26 aout : ouvrir
+   * l'entrainement EP-133 directement sur le jeu, sans editeur superpose.
+   */
+  const outilDemande = new URLSearchParams(window.location.search).get('hubTool');
+  const [editorOpen, setEditorOpen] = useState(outilDemande === 'game' ? false : (embeddedMode || outilDemande === 'studio'));
   const [editorName, setEditorName] = useState('MON GROOVE');
   const [editorBars, setEditorBars] = useState(1);
   const [editorTargets, setEditorTargets] = useState<SequencerNote[]>([]);
   const [editorPlaying, setEditorPlaying] = useState(false);
-  const [editorMode, setEditorMode] = useState<'game' | 'complete'>(embeddedMode ? 'complete' : 'game');
+  const [editorMode, setEditorMode] = useState<'game' | 'complete'>(embeddedMode && outilDemande !== 'game' ? 'complete' : 'game');
   const [editorGroup, setEditorGroup] = useState<EditorGroup>('A');
   const [editorPatternBank, setEditorPatternBank] = useState<PatternBank>(emptyPatternBank);
   const [editorPatternLengths, setEditorPatternLengths] = useState<Record<string, number>>({ 'A:1':1, 'B:1':1, 'C:1':1, 'D:1':1 });
