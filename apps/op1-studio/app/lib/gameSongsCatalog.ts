@@ -22625,10 +22625,12 @@ const FOUNDATION_EXERCISES: GameSongTheme[] = [
 /** Tous les exercices livrés sont jouables sur les 24 touches visibles. */
 export const GAME_SONG_THEMES: GameSongTheme[] = [...RAW_GAME_SONG_THEMES, ...FOUNDATION_EXERCISES].map((theme) => ({
   ...theme,
-  notes: theme.notes.map((note) => ({
-    ...note,
-    note: foldNoteToPlayableKeyboard(note.note),
-  })),
+  notes: theme.notes
+    .map((note) => ({
+      ...note,
+      note: foldNoteToPlayableKeyboard(note.note),
+    }))
+    .sort((a, b) => a.startSeconds - b.startSeconds || a.note - b.note),
 }));
 
 
