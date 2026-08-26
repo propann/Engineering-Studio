@@ -116,7 +116,7 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "studio-ep133", label: "EP-133 Studio", description: "Patterns, Songs et échanges EP-133.", target: "EP-133", source: "pages/EP133StudioPage.tsx", provenance: "machine", nature: "facade" }
 ,
-  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement EP-133.", target: "EP-133", source: "pages/RhythmHero.tsx", provenance: "demo", nature: "document" }
+  { id: "rhythm-hero", label: "Rhythm Hero", description: "Présentation du jeu d’entraînement EP-133 ; la partie jouable vit dans le Studio EP-133.", target: "EP-133", source: "pages/RhythmHero.tsx", provenance: "demo", nature: "document" }
 ,
   { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Écrans OP-1 320 × 160.", target: "OP-1", source: "pages/ImageEditorOP1.tsx", provenance: "local", nature: "outil" }
 ,

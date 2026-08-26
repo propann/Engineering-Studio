@@ -299,7 +299,7 @@ describe("rack embarquable dans un studio", () => {
   it("masque sa TopBar en tiroir", () => {
     // Elle appelle window.navigateMaquette : un clic dedans demonterait le
     // studio. Et on aurait deux barres empilees, dont une proposant de partir.
-    expect(SOURCE).toMatch(/\{!enTiroir && <TopBar/);
+    expect(SOURCE).toContain("hideTopBar={enTiroir}");
   });
 
   it("branche onClose, qui ne servait a rien", () => {

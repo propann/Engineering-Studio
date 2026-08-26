@@ -3,8 +3,8 @@ const log = createLogger("ImageEditor");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TopBar } from "../components/TopBar";
 import { readProfileName } from "../core/profile";
+import { AppShell, PageHeader, StatusBadge } from "../ui";
 
 // OP-1 Native Screen Specs: 320 x 160 Pixels
 const OP1_WIDTH = 320;
@@ -896,8 +896,14 @@ export default function ImageEditorOP1() {
   };
 
   return (
-    <main className="pro-pixel-studio-page">
-      <TopBar activePage="image-editor-op1" profileName={profileName} />
+    <AppShell activePage="image-editor-op1" profileName={profileName} className="pro-pixel-studio-page">
+      <PageHeader
+        eyebrow="OP-1 · ÉCRAN 320 × 160"
+        title="Éditeur d’image"
+        description="Dessine, anime et vérifie le rendu à l’échelle de l’écran OP-1. La zone de travail garde la priorité."
+        onBack={() => (window as any).navigateMaquette("outils")}
+        status={<StatusBadge tone="ready">320 × 160</StatusBadge>}
+      />
 
       {/* MIDDLE-RIGHT SLIDE-OUT DRAWER TRIGGER BUTTON */}
       <button
@@ -1305,6 +1311,6 @@ export default function ImageEditorOP1() {
           </div>
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { TopBar } from "../components/TopBar";
 import { readProfileName } from "../core/profile";
+import { AppShell, Card, PageHeader, StatusBadge } from "../ui";
 import "./outils.css";
 
 const Link = ({href, className, ...props}: {href: string; className: string; [key: string]: any}) => {
@@ -259,8 +259,13 @@ export default function ToolsHub(){
 
  const visibles = cartes("all");
 
- return <main className="hub-page">
-  <TopBar activePage="outils" profileName={profileName} onDocClick={scrollToDocumentation}/>
+ return <AppShell activePage="outils" profileName={profileName} onDocClick={scrollToDocumentation} className="hub-page">
+  <PageHeader
+   eyebrow="ENGINEERING STUDIO · HUB"
+   title={<>Choisir.<br/><em>Créer.</em></>}
+   description="Deux machines en tête, les outils de production ensuite, les utilitaires à la fin. Chaque carte mène à une fonction réelle."
+   status={<StatusBadge tone="test">Atelier expérimental</StatusBadge>}
+  />
 
   {/* Les onglets de section : declares depuis le debut, jamais rendus, et
       inutilisables tant que les vrais outils vivaient dans des cartes ecrites
@@ -278,7 +283,7 @@ export default function ToolsHub(){
     {selected&&<Modal tool={selected} onClose={()=>setSelected(null)}/>}
   {groupeOuvert==="formation"&&<TrainingModal training={membres("formation")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
   {groupeOuvert==="reglages"&&<SettingsModal settings={membres("reglages")} onClose={()=>setGroupeOuvert(null)} onSelectTool={(t)=>{setGroupeOuvert(null);ouvrir(t);}}/>}
- </main>
+ </AppShell>
 }
 
 /**
@@ -292,10 +297,12 @@ function CarteOutil({tool,onOuvrir}:{tool:Tool;onOuvrir:()=>void}){
  const statut = tool.compteurDe ? `${membres(tool.compteurDe).length} ${tool.status}` : tool.status;
 
  if (tool.image) {
-  return <div
+  return <Card
+   variant="machine"
    className={`utility-card machine-image-card ${tool.accent}`}
-   onClick={onOuvrir}
-   title={`Ouvrir ${tool.title}`}
+   onActivate={onOuvrir}
+   accessibleName={`Ouvrir ${tool.title}`}
+   footer={<span>{tool.image.bouton}</span>}
   >
    <div className="machine-header-tag">
     <span>{tool.image.tag}</span>
@@ -306,31 +313,22 @@ function CarteOutil({tool,onOuvrir}:{tool:Tool;onOuvrir:()=>void}){
    </div>
    <h3>{tool.title}</h3>
    <p>{tool.text}</p>
-   <div className="machine-card-actions">
-    <button
-     className={`machine-btn ${tool.image.boutonClasse}`}
-     onClick={(e)=>{e.stopPropagation();onOuvrir();}}
-    >
-     {tool.image.bouton}
-    </button>
-   </div>
-  </div>;
+  </Card>;
  }
 
- return <button
-  type="button"
+ return <Card
+  variant="tool"
   className={`utility-card ${tool.accent}`}
-  onClick={onOuvrir}
-  title={`Ouvrir ${tool.title}`}
-  style={tool.couleur ? { borderTop: `4px solid ${tool.couleur}` } : undefined}
+  onActivate={onOuvrir}
+  accessibleName={`Ouvrir ${tool.title}`}
+  footer={<span className="tool-status">{statut}</span>}
  >
   <span>{tool.code}</span>
   <ToolGraphic type={tool.visual}/>
   <small>{tool.category}</small>
   <h3>{tool.title}</h3>
   <p>{tool.text}</p>
-  <div className="tool-status">{statut}</div>
- </button>;
+ </Card>;
 }
 
 function SettingsModal({settings,onClose,onSelectTool}:{settings:Tool[];onClose:()=>void;onSelectTool:(t:Tool)=>void}){

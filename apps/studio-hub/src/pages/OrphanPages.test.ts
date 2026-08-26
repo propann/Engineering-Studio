@@ -236,6 +236,7 @@ describe("la nature declaree correspond au fichier", () => {
       .map((m) => m[1])
       .filter((cible) => !/^react$/.test(cible)
         && !/components\/TopBar/.test(cible)
+        && cible !== "../ui"
         && !/core\/profile/.test(cible)
         && !/\.css$/.test(cible));
   }
@@ -280,10 +281,7 @@ describe("la nature declaree correspond au fichier", () => {
     }
   });
 
-  it("rhythm-hero reste le seul document annonce comme un entrainement", () => {
-    // Verrouille le FAIT constate, pas seulement le mecanisme. Le jour ou la
-    // page devient un vrai jeu — ou ou une autre tombe dans le meme cas — ce
-    // test rappelle de reclasser.
+  it("rhythm-hero reste identifié comme présentation, pas comme jeu jouable", () => {
     const documents = [...naturesParId()].filter(([, n]) => n === "document").map(([id]) => id).sort();
     expect(documents).toEqual(["doc-ep133", "doc-op1", "documentation", "rhythm-hero"]);
   });

@@ -22,6 +22,18 @@
   --ui-blue: #4aa7ff;
   --ui-cyan: #28d6d0;
   --ui-danger: #c81e3a;
+  --ui-success: #18794e;
+  --ui-warning: #946200;
+  --ui-on-accent: #111311;
+  --ui-on-danger: #ffffff;
+  --ui-overlay: #080a08cc;
+  --ui-radius-sm: 5px;
+  --ui-radius-md: 8px;
+  --ui-space-1: 8px;
+  --ui-space-2: 16px;
+  --ui-space-3: 24px;
+  --ui-space-4: 32px;
+  --ui-font-mono: "Courier New", monospace;
   --paper: var(--ui-bg);
   --ink: var(--ui-text);
   --muted: var(--ui-muted);
@@ -47,6 +59,11 @@
   --ui-blue: #68b8ff;
   --ui-cyan: #45ded8;
   --ui-danger: #ff7188;
+  --ui-success: #6ee7a8;
+  --ui-warning: #ffd166;
+  --ui-on-accent: #111311;
+  --ui-on-danger: #111311;
+  --ui-overlay: #050605e6;
   --paper: var(--ui-bg);
   --ink: var(--ui-text);
   --muted: var(--ui-muted);
@@ -182,6 +199,40 @@ textarea {
   font: 900 13px "Courier New", monospace;
   letter-spacing: .12em;
 }
+
+/* Accueil compact de référence ---------------------------------------- */
+.landing-v2 { padding-bottom: 40px; }
+.landing-v2 .ui-page-header em { color: var(--ui-orange); font-style: normal; }
+.landing-test-alert { width: min(1440px, calc(100% - 32px)); margin: 16px auto 0; color: var(--ui-text); background: var(--ui-panel); border: 2px solid var(--ui-danger); border-radius: var(--ui-radius-sm); }
+.landing-test-alert summary { min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 8px 12px; cursor: pointer; font: 800 12px var(--ui-font-mono); }
+.landing-test-alert p { margin: 0; padding: 0 16px 14px; color: var(--ui-muted); line-height: 1.5; }
+.landing-machine-grid { width: min(1440px, calc(100% - 32px)); margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.landing-machine--op1 { --machine-accent: var(--ui-blue); }
+.landing-machine--ep133 { --machine-accent: var(--ui-orange); }
+.landing-machine .ui-card__body { position: relative; }
+.landing-machine .ui-status { position: absolute; top: 12px; right: 12px; }
+.landing-machine__visual { height: clamp(180px, 28vh, 300px); display: grid; place-items: center; margin-top: 14px; overflow: hidden; background: var(--ui-panel-soft); border: 1px solid var(--ui-border-soft); border-radius: var(--ui-radius-sm); }
+.landing-machine__visual img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+:root[data-theme="studio"] .landing-machine__visual img { mix-blend-mode: normal; }
+.landing-proof-strip { width: min(1440px, calc(100% - 32px)); margin: 24px auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; overflow: hidden; color: var(--ui-text); background: var(--ui-border); border: 2px solid var(--ui-border); border-radius: var(--ui-radius-sm); }
+.landing-proof-strip span { display: grid; gap: 4px; padding: 12px 16px; background: var(--ui-panel); color: var(--ui-muted); font: 11px var(--ui-font-mono); }
+.landing-proof-strip b { color: var(--ui-text); letter-spacing: .1em; }
+.landing-shortcuts { width: min(1440px, calc(100% - 32px)); margin: 16px auto 0; display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 767px) {
+  .landing-machine-grid, .landing-proof-strip { grid-template-columns: 1fr; }
+  .landing-machine__visual { height: 180px; }
+  .landing-shortcuts { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .landing-shortcuts .ui-button { width: 100%; }
+}
+
+/* Training Lab : aucun style statique en ligne. */
+.exercises-hub-app { min-height: 100vh; display: flex; flex-direction: column; color: var(--ui-text); background: var(--ui-bg); }
+.exercise-notice { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 16px; padding: 8px 12px; background: var(--ui-panel); border: 1px solid var(--ui-blue); border-radius: var(--ui-radius-sm); }
+.exercise-game-stage { flex: 1; min-height: 0; padding: 6px 8px; }
+.creator-page .ui-page-header em { color: var(--ui-orange); font-style: normal; }
+.pro-pixel-studio-page > .ui-page-header { position: relative; z-index: 2; }
+.rhythm-hero-page { width: 100%; min-height: 100vh; }
+.rhythm-hero-page > :not(.universal-topbar):not(.ui-page-header) { width: min(1000px, calc(100% - 32px)); margin-inline: auto; }
 
 /* Accueil, Hub et cartes ------------------------------------------------ */
 .landing-rich-page,

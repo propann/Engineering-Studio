@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { TopBar } from "../components/TopBar";
 import { readProfile, DEFAULT_PROFILE_NAME, machinesDeclarees, type StudioProfile } from "../core/profile";
 import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { VaultPanel, type MachineId } from "../VaultPanel";
+import { AppShell, EmptyState, PageHeader, StatusBadge } from "../ui";
 import "./backup-lab.css";
 
 type MachineRecord = { id?: number; kind: MachineId; name?: string; memory?: 64 | 128; active?: boolean };
@@ -58,21 +58,14 @@ export default function BackupLab() {
   }, []);
 
   return (
-    <main className="backup-lab-page">
-      <TopBar activePage="backup-lab" profileName={profile?.name || DEFAULT_PROFILE_NAME} />
-      <header className="backup-lab-hero">
-        <div>
-          <button className="backup-back-button" type="button" onClick={() => (window as any).navigateMaquette("outils")}>← RETOUR AU HUB</button>
-          <span className="backup-eyebrow">ENGINEERING STUDIO · BACKUP LAB</span>
-          <h1>Sauvegarder<br /><em>l’atelier.</em></h1>
-          <p>Une page unique pour protéger les deux machines. Choisis les dossiers, lance le scan, puis écris un snapshot vérifié dans ton espace local.</p>
-        </div>
-        <div className="backup-profile-card">
-          <div className="backup-profile-avatar">{profile?.avatar ? <img src={`/media/avatars/pixel-avatar-${profile.avatar}.webp`} alt="" /> : "◆"}</div>
-          <div><small>FICHE PERSONNAGE</small><strong>{profile?.name || DEFAULT_PROFILE_NAME}</strong><span>{profile?.bio || "Aucune présentation configurée."}</span></div>
-          <button type="button" onClick={() => (window as any).navigateMaquette("profil")}>MODIFIER →</button>
-        </div>
-      </header>
+    <AppShell activePage="backup-lab" profileName={profile?.name || DEFAULT_PROFILE_NAME} className="backup-lab-page">
+      <PageHeader
+        eyebrow="ENGINEERING STUDIO · BACKUP LAB"
+        title={<>Sauvegarder<br /><em>l’atelier.</em></>}
+        description="Choisis le dossier, scanne la machine, sélectionne le contenu puis crée un snapshot vérifié. Aucune restauration implicite."
+        onBack={() => (window as any).navigateMaquette("outils")}
+        status={<StatusBadge tone={workspaceHandle ? "ready" : "offline"}>{workspaceHandle ? "Dossier connecté" : "Dossier requis"}</StatusBadge>}
+      />
 
       <section className="backup-workspace-summary" aria-label="Gestion du dossier de sauvegarde">
         <div><span>ESPACE DE SAUVEGARDE CENTRAL</span><strong>{workspaceName || "Aucun dossier connecté"}</strong><small>{workspaceHandle ? "Dossier prêt pour les deux machines" : "Connecte le dossier depuis la colonne OP‑1 : il sera partagé avec EP‑133"}</small></div>
@@ -85,10 +78,14 @@ export default function BackupLab() {
           {declarees.includes("op1") && <BackupMachineColumn kind="op1" profileMachines={profileMachines(profile, "op1")} enabled={Boolean(machineSummary?.op1?.enabled)} workspaceHandle={workspaceHandle} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setWorkspaceName(name); }} onBackupRecorded={setLastBackup} showWorkspace />}
           {declarees.includes("ep133") && <BackupMachineColumn kind="ep133" profileMachines={profileMachines(profile, "ep133")} enabled={Boolean(machineSummary?.ep133?.enabled)} workspaceHandle={workspaceHandle} onWorkspaceSelected={(handle, name) => { setWorkspaceHandle(handle); setWorkspaceName(name); }} onBackupRecorded={setLastBackup} />}
             {!declarees.length && (
-              <p className="backup-aucune-machine">
-                Aucune machine déclarée dans ta fiche. Ajoute-la depuis la fiche
-                de personnage pour voir apparaître son coffre ici.
-              </p>
+              <EmptyState
+                icon="◇"
+                title="Aucune machine déclarée"
+                cause="La fiche personnage ne contient ni OP-1 ni EP-133."
+                consequence="Aucun coffre ne peut être préparé tant que la machine cible est inconnue."
+                actionLabel="Configurer le profil"
+                onAction={() => (window as any).navigateMaquette("profil")}
+              />
             )}
         </div>
         {lastBackup && <div className="backup-lab-confirmation">✓ Dernier snapshot enregistré : {lastBackup.toUpperCase()} · les deux colonnes restent disponibles.</div>}
@@ -99,7 +96,7 @@ export default function BackupLab() {
         <div className="backup-facts"><Fact label="IDENTITÉ" value={profile?.name || DEFAULT_PROFILE_NAME} note={profile?.bio || "Aucune présentation"} /><Fact label="WORKSPACE" value={workspaceName || "Non connecté"} note={workspaceHandle ? "Handle actif" : "À connecter"} /><Fact label="MACHINES" value={`${profileMachines(profile, "op1").length + profileMachines(profile, "ep133").length}`} note="Unités déclarées" /><Fact label="DRIVES" value={`${drives.length}`} note="Supports déclarés" /></div>
         <div className="backup-drive-strip"><span>DRIVES DÉCLARÉS</span>{drives.length ? drives.map((drive, index) => <span className="backup-drive" key={`${drive.name}-${index}`}><b>{drive.name || `DRIVE ${index + 1}`}</b> · {formatDriveType(drive.type)} · {drive.capacityGb || "?"} Go · {drive.status || "offline"}</span>) : <em>Aucun drive déclaré dans la fiche.</em>}</div>
       </section>
-    </main>
+    </AppShell>
   );
 }
 

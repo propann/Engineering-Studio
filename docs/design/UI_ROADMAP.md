@@ -27,14 +27,14 @@ responsive et son accessibilité sont validés.
 
 | Phase | Lots | Priorité | Dépend de | État |
 | --- | --- | --- | --- | --- |
-| UI-00 | Socle thèmes et shell | P0 | — | Première passe livrée |
-| UI-01 | Composants fondamentaux | P0 | UI-00 | À faire |
-| UI-02 | Accueil et Hub | P0 | UI-01 | À faire |
-| UI-03 | Sauvegardes et états sûrs | P0 | UI-01 | À faire |
-| UI-04 | Bibliothèque sonore | P1 | UI-01 | À faire |
-| UI-05 | MIDI et Rack audio | P1 | UI-01 | À faire |
-| UI-06 | Training Lab | P1 | UI-01 | À faire |
-| UI-07 | Profil et Éditeur d'image | P2 | UI-01 | À faire |
+| UI-00 | Socle thèmes et shell | P0 | — | Livré |
+| UI-01 | Composants fondamentaux | P0 | UI-00 | Livré |
+| UI-02 | Accueil et Hub | P0 | UI-01 | Première migration livrée |
+| UI-03 | Sauvegardes et états sûrs | P0 | UI-01 | Migration engagée |
+| UI-04 | Bibliothèque sonore | P1 | UI-01 | Navigation commune livrée |
+| UI-05 | MIDI et Rack audio | P1 | UI-01 | Shell commun livré |
+| UI-06 | Training Lab | P1 | UI-01 | Shell commun livré |
+| UI-07 | Profil et Éditeur d'image | P2 | UI-01 | Migration engagée |
 | UI-08 | Nettoyage et validation finale | P0 | UI-02 à UI-07 | À faire |
 
 ## UI-00 — Socle thèmes et shell
@@ -105,6 +105,13 @@ doit plus être recâblée différemment dans chaque écran.
 
 Chaque composant possède une démo isolée, ses deux thèmes, ses états, ses tests
 clavier et une API documentée dans le code.
+
+### Livraison du 26 août 2026
+
+`Button`, `StatusBadge`, `Card`, `Tabs`, `EmptyState`, `ConfirmDialog`,
+`PageHeader` et `AppShell` sont disponibles dans `apps/studio-hub/src/ui/`.
+Leurs contrats de rendu, d'état et de navigation clavier sont couverts par les
+tests. L'accueil sert de démonstration intégrée dans les deux thèmes.
 
 ## UI-02 — Accueil et Hub
 

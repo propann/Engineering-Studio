@@ -1,5 +1,5 @@
-import { TopBar } from "../components/TopBar";
 import { MidiSyncPanel } from "../MidiSyncPanel";
+import { AppShell, PageHeader, StatusBadge } from "../ui";
 
 /**
  * Page « Synchronisation MIDI » du menu Réglages.
@@ -11,18 +11,15 @@ import { MidiSyncPanel } from "../MidiSyncPanel";
  */
 export default function MidiSettings() {
   return (
-    <div className="studio-app-wrapper">
-      <TopBar activePage="midi-settings" />
-      <main className="midi-settings-page">
-        <header className="midi-settings-head">
-          <h1>Synchronisation MIDI</h1>
-          <p>
-            Horloge de transport, notes de test et arrêt d'urgence, envoyés aux
-            machines connectées. Aucune écriture de projet ni de SysEx.
-          </p>
-        </header>
+    <AppShell activePage="midi-settings" className="midi-settings-page">
+        <PageHeader
+          eyebrow="ENGINEERING STUDIO · MIDI"
+          title="Synchronisation MIDI"
+          description="Horloge, transport, notes de test et arrêt d’urgence. Aucune écriture de projet ni de SysEx."
+          onBack={() => (window as any).navigateMaquette("outils")}
+          status={<StatusBadge tone="readonly">Contrôle uniquement</StatusBadge>}
+        />
         <MidiSyncPanel />
-      </main>
-    </div>
+    </AppShell>
   );
 }

@@ -7,6 +7,7 @@ Documents associés :
 - [feuille de route UI](UI_ROADMAP.md) ;
 - [manuel de développement UI](UI_DEVELOPMENT_PLAYBOOK.md) ;
 - [modèle de spécification d'écran](UI_PAGE_SPEC_TEMPLATE.md) ;
+- [journal de la migration UI](UI_CHANGELOG_2026-08-26.md) ;
 - [audit visuel](../audits/AUDIT_VISUEL_2026-08-26.md).
 
 ## Principe

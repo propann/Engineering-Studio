@@ -1,13 +1,19 @@
 "use client";
 import { useState } from "react";
-import { TopBar } from "../components/TopBar";
+import { AppShell, PageHeader, StatusBadge } from "../ui";
 
 export default function RhythmHero() {
   const [profileName] = useState("NOUVEAU MEMBRE");
 
   return (
-    <main className="game-page" style={{ padding: "20px", maxWidth: "1000px", margin: "0 auto" }}>
-      <TopBar profileName={profileName} onDocClick={() => {}} />
+    <AppShell activePage="exercises" profileName={profileName} className="game-page rhythm-hero-page">
+      <PageHeader
+        eyebrow="TRAINING LAB · EP-133"
+        title="Rhythm Hero"
+        description="Prépare ton tempo, attends le décompte, puis frappe les pads quand la cascade atteint la ligne."
+        onBack={() => (window as any).navigateMaquette("outils")}
+        status={<StatusBadge tone="test">Entraînement</StatusBadge>}
+      />
 
       <section style={{ marginTop: "40px" }}>
         <div style={{ marginBottom: "30px" }}>
@@ -119,6 +125,6 @@ export default function RhythmHero() {
           </button>
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { TopBar } from "../components/TopBar";
 import { DEFAULT_PROFILE_NAME, readProfileName } from "../core/profile";
 import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import { SoundLibraryPanel } from "../SoundLibraryPanel";
 import SoundEditorHub from "./SoundEditorHub";
+import { AppShell, PageHeader, StatusBadge, Tabs } from "../ui";
 
 /**
  * Page « Bibliothèque sonore ».
@@ -42,20 +42,15 @@ export default function SoundLibrary() {
   }, []);
 
   return (
-    <div className="studio-app-wrapper">
-      <TopBar activePage="sound-library" profileName={profileName} />
-      <main className="sound-library-page">
-        <header className="sound-library-head">
-          <h1>Bibliothèque sonore</h1>
-          <p>
-            Un point d’entrée unique pour cataloguer, préparer et ouvrir les sons
-            OP‑1 et EP‑133. Les formats et transferts restent propres à chaque machine.
-          </p>
-          <nav className="sound-library-view-tabs" aria-label="Vues de la bibliothèque sonore">
-            <button type="button" className={activeView === "library" ? "is-active" : ""} onClick={() => setActiveView("library")}>Catalogue & stockage</button>
-            <button type="button" className={activeView === "editor" ? "is-active" : ""} onClick={() => setActiveView("editor")}>Éditeur & préparation</button>
-          </nav>
-        </header>
+    <AppShell activePage="sound-library" profileName={profileName} className="sound-library-page">
+        <PageHeader
+          eyebrow="ENGINEERING STUDIO · SOUND LAB"
+          title="Bibliothèque sonore"
+          description="Catalogue, préparation et écoute pour OP‑1 et EP‑133. Les formats et transferts restent propres à chaque machine."
+          onBack={() => (window as any).navigateMaquette("outils")}
+          status={<StatusBadge tone={workspaceHandle ? "ready" : "offline"}>{workspaceHandle ? `Dossier ${workspaceHandle.name}` : "Dossier non connecté"}</StatusBadge>}
+          action={<Tabs label="Vue de la bibliothèque" items={[{ id: "library", label: "Catalogue" }, { id: "editor", label: "Éditeur" }]} selected={activeView} onChange={setActiveView} />}
+        />
         {activeView === "library" ? (
           <SoundLibraryPanel
             workspaceHandle={workspaceHandle}
@@ -68,7 +63,6 @@ export default function SoundLibrary() {
              refuse tout <TopBar dans ce fichier. */
           <SoundEditorHub />
         )}
-      </main>
-    </div>
+    </AppShell>
   );
 }

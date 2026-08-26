@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useRef, useState } from "react";
-import { TopBar } from "../components/TopBar";
 import { useNotesMidi } from "../core/midi/useNotesMidi";
 import { GameGuitarHeroPanel } from "../../../op1-studio/app/components/GameGuitarHeroPanel";
+import { AppShell, Button, StatusBadge } from "../ui";
 
 export default function Exercises() {
   const [notice, setNotice] = useState<string | null>(null);
@@ -44,57 +44,22 @@ export default function Exercises() {
   );
 
   return (
-    <main
-      className="exercises-hub-app"
-      style={{
-        minHeight: "100vh",
-        background: "#0e1314",
-        color: "#eef3ea",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <TopBar activePage="exercises" onDocClick={() => (window as any).navigateMaquette?.("doc-op1")} />
+    <AppShell activePage="exercises" onDocClick={() => (window as any).navigateMaquette?.("doc-op1")} className="exercises-hub-app">
 
       {notice && (
-        <div
-          role="status"
-          style={{
-            margin: "8px 16px",
-            padding: "8px 12px",
-            background: "#1e293b",
-            border: "1px solid #38bdf8",
-            borderRadius: "6px",
-            color: "#38bdf8",
-            fontSize: "13px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <span>{notice}</span>
-          <button
-            onClick={() => setNotice(null)}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "16px",
-            }}
-          >
-            ✕
-          </button>
+        <div role="status" className="exercise-notice">
+          <StatusBadge tone="test">{notice}</StatusBadge>
+          <Button variant="icon" aria-label="Fermer le message" onClick={() => setNotice(null)} icon={<span aria-hidden="true">✕</span>} />
         </div>
       )}
 
-      <div style={{ flex: 1, padding: "6px 8px" }}>
+      <div className="exercise-game-stage">
         <GameGuitarHeroPanel
           onClose={handleClose}
           pressedNotes={pressedMidiNotes}
           onNotice={handleNotice}
         />
       </div>
-    </main>
+    </AppShell>
   );
 }

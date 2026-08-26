@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { TopBar } from "../components/TopBar";
 import { createLogger } from "@studio-hub/audio-bridge";
+import { AppShell, PageHeader, StatusBadge } from "../ui";
 import {
   clearProfile,
   lireProfilDepuisTexte,
@@ -34,7 +34,7 @@ const Link = ({ href, className = "", ...props }: any) => {
 
 type Machine = { id: number; kind: "op1" | "ep133"; name: string; memory?: 64 | 128; active: boolean };
 
-export type DriveType = "google_drive" | "usb_drive" | "sd_card" | "local_ssd" | "dropbox" | "op1_disk";
+export type DriveType = "usb_drive" | "sd_card" | "local_ssd" | "op1_disk";
 
 export interface DriveModule {
   id: number;
@@ -55,6 +55,7 @@ const avatarNames = [
 ] as const;
 
 const avatarLabel = (value: string) => value.replace(/-/g, " ").toUpperCase();
+const localDriveTypes = new Set<DriveType>(["usb_drive", "sd_card", "local_ssd", "op1_disk"]);
 
 // avatarNames est un tuple `as const` : son .includes() n'accepte pas un
 // string generique, et ne narrow donc pas le type au passage. Ce garde fait
@@ -302,7 +303,9 @@ export default function CharacterPage() {
       if (profileData.bio) setBio(profileData.bio);
       if (profileData.avatar && isAvatarName(profileData.avatar)) setAvatar(profileData.avatar);
       if (profileData.workspace?.name) setWorkspace(profileData.workspace.name);
-      if (Array.isArray(profileData.drives) && profileData.drives.length) setDrives(profileData.drives as DriveModule[]);
+      if (Array.isArray(profileData.drives) && profileData.drives.length) {
+        setDrives((profileData.drives as DriveModule[]).filter((drive) => localDriveTypes.has(drive.type)));
+      }
       if (Array.isArray(profileData.machineInventory) && profileData.machineInventory.length) setMachines(profileData.machineInventory as Machine[]);
       log.info("✅ Profile loaded", { name: profileData.name });
     } catch (error) {
@@ -377,19 +380,17 @@ export default function CharacterPage() {
   // Drive Helpers
   function addDrive(type: DriveType) {
     const typeNames: Record<DriveType, string> = {
-      google_drive: "GOOGLE DRIVE",
       usb_drive: "DISQUE USB EXTERNE",
       sd_card: "CARTE SD",
       local_ssd: "DISQUE SSD LOCAL",
-      dropbox: "DROPBOX CLOUD",
       op1_disk: "DISQUE VIRTUAL OP-1",
     };
     const newDrive: DriveModule = {
       id: Date.now(),
       name: `${typeNames[type]} #${drives.length + 1}`,
       type,
-      capacityGb: type === "google_drive" ? 15 : 64,
-      mountPath: type === "google_drive" ? "Cloud/Drive" : `/Volumes/DRIVE_${drives.length + 1}`,
+      capacityGb: 64,
+      mountPath: `/Volumes/DRIVE_${drives.length + 1}`,
       status: "mounted",
       active: true,
     };
@@ -469,8 +470,14 @@ export default function CharacterPage() {
   }
 
   return (
-    <main className="creator-page">
-      <TopBar activePage="profil" profileName={name} />
+    <AppShell activePage="profil" profileName={name} className="creator-page">
+      <PageHeader
+        eyebrow="ENGINEERING STUDIO · PROFIL LOCAL"
+        title={<>Configurer<br/><em>l’atelier.</em></>}
+        description="Trois informations comptent : ton identité, tes machines et le dossier local. Le reste est optionnel."
+        onBack={() => (window as any).navigateMaquette("outils")}
+        status={<StatusBadge tone={progress === 100 ? "ready" : "warning"}>{progress}% configuré</StatusBadge>}
+      />
       <div className="creator-progress">
         <span style={{ width: `${progress}%` }} />
         <b>{progress}% · ATELIER CONFIGURÉ</b>
@@ -591,13 +598,13 @@ export default function CharacterPage() {
             </div>
           </section>
 
-          {/* BLOCK 03: MODULE RACK DRIVES & CLOUD STORAGE (NEW REQUIREMENT) */}
+          {/* Stockages physiques optionnels. Aucun faux connecteur cloud. */}
           <section className="creator-block drive-rack-block">
             <div className="block-number">03</div>
             <div className="block-content">
               <div className="block-title">
                 <span>MODULE RACK : LECTEURS & DRIVES</span>
-                <small>DISQUES CLOUD, GOOGLE DRIVE ET CARTES USB CONNECTÉS</small>
+                <small>DISQUES USB, CARTES SD ET STOCKAGES LOCAUX</small>
               </div>
 
               <div className="drives-rack-list">
@@ -624,12 +631,11 @@ export default function CharacterPage() {
                       <label className="drive-field-cap">
                         CAPACITÉ
                         <select value={d.capacityGb} onChange={(e) => updateDrive(d.id, { capacityGb: Number(e.target.value) })}>
-                          <option value="15">15 Go (Drive Free)</option>
                           <option value="32">32 Go (USB/SD)</option>
                           <option value="64">64 Go (SD PRO)</option>
-                          <option value="100">100 Go (Google One)</option>
+                          <option value="100">100 Go</option>
                           <option value="500">500 Go (SSD)</option>
-                          <option value="1000">1 To (Storage Studio)</option>
+                          <option value="1000">1 To (SSD)</option>
                         </select>
                       </label>
 
@@ -641,7 +647,6 @@ export default function CharacterPage() {
 
               <div className="add-drive-actions-bar">
                 <span>➕ AJOUTER UN DRIVE AU RACK :</span>
-                <button type="button" onClick={() => addDrive("google_drive")}>+ GOOGLE DRIVE</button>
                 <button type="button" onClick={() => addDrive("usb_drive")}>+ CLÉ USB</button>
                 <button type="button" onClick={() => addDrive("sd_card")}>+ CARTE SD</button>
                 <button type="button" onClick={() => addDrive("local_ssd")}>+ SSD LOCAL</button>
@@ -715,7 +720,7 @@ export default function CharacterPage() {
           </div>
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }
 

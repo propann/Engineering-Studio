@@ -21,6 +21,12 @@
   min-height: 100vh;
 }
 
+.hub-page .ui-page-header em { color: var(--ui-orange); font-style: normal; }
+.hub-page .utility-card.ui-card { height: auto; }
+.hub-page .utility-card.ui-card .ui-card__body { display: contents; }
+.hub-page .utility-card.ui-card .ui-card__footer { width: 100%; }
+.hub-page .audio-plugin-card { --tool-accent: var(--ui-acid); }
+
 /* Hub Header Banner */
 .hub-header-banner {
   max-width: 1420px;

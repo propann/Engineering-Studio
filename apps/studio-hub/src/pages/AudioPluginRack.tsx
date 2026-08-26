@@ -3,7 +3,7 @@ const log = createLogger("AudioRack");
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TopBar } from "../components/TopBar";
+import { AppShell } from "../ui";
 import { RackDiagnostic, type DiagnosticHandle } from "../components/RackDiagnostic";
 import { RackToast, type ToastHandle } from "../components/RackToast";
 import "./audio-plugin-rack.css";
@@ -2702,11 +2702,10 @@ export default function AudioPluginRack({
   ];
 
   return (
-    <main className={`audio-plugin-rack-page ${enTiroir ? "en-tiroir" : ""}`}>
+    <AppShell activePage="outils" profileName={profileName} hideTopBar={enTiroir} className={`audio-plugin-rack-page ${enTiroir ? "en-tiroir" : ""}`}>
       {/* La TopBar appelle window.navigateMaquette : dans un studio, un clic
           dedans demonterait l'hote. Et on aurait deux barres empilees, dont
           une proposant de quitter le studio ou l'on travaille. */}
-      {!enTiroir && <TopBar activePage="outils" profileName={profileName} />}
       {enTiroir && onClose && (
         <button type="button" className="rack-fermer-tiroir" onClick={onClose}>
           ✕ Fermer le rack
@@ -4210,6 +4209,6 @@ export default function AudioPluginRack({
       )}
 
       <RackToast ref={toastRef} />
-    </main>
+    </AppShell>
   );
 }
