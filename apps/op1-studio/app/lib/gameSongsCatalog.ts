@@ -9,6 +9,7 @@
  */
 
 import { foldNoteToPlayableKeyboard } from "./keyboardLayout";
+import { assertExerciseCatalog } from "./exerciseRules";
 
 export interface GameNote {
   note: number;            // MIDI Note number (ex: 41 = Kick, 45 = Snare, 60 = C4)
@@ -22578,11 +22579,58 @@ const RAW_GAME_SONG_THEMES: GameSongTheme[] = [
   }
 ];
 
+const FOUNDATION_EXERCISES: GameSongTheme[] = [
+  {
+    id: "foundation_lvl1_four_beats", title: "Quatre temps, quatre repères", category: "melody", level: 1,
+    icon: "🟦", bpm: 80, difficulty: "Débutant",
+    description: "Quatre touches voisines, une note par temps, pour apprendre à lire la chute.",
+    durationSeconds: 12, recommendedEngine: "Pulse", recommendedPatch: "OP-1 Basic Pulse",
+    notes: [53, 55, 57, 58, 57, 55, 53, 55].map((note, index) => ({
+      note, startSeconds: index * 0.75, durationSeconds: 0.35,
+      label: ["F3", "G3", "A3", "A#3", "A3", "G3", "F3", "G3"][index],
+    })),
+  },
+  {
+    id: "foundation_lvl1_repeat_and_move", title: "Répéter puis avancer", category: "melody", level: 1,
+    icon: "🟩", bpm: 88, difficulty: "Débutant",
+    description: "Deux frappes par touche avant de passer à la suivante.",
+    durationSeconds: 12, recommendedEngine: "Digital", recommendedPatch: "Clean Digital Bell",
+    notes: [60, 60, 62, 62, 64, 64, 65, 65].map((note, index) => ({
+      note, startSeconds: index * 0.68, durationSeconds: 0.28,
+      label: ["C4", "C4", "D4", "D4", "E4", "E4", "F4", "F4"][index],
+    })),
+  },
+  {
+    id: "foundation_lvl2_two_note_chords", title: "Accords à deux doigts", category: "chord", level: 2,
+    icon: "🟨", bpm: 72, difficulty: "Débutant",
+    description: "Deux colonnes arrivent ensemble : poser les deux doigts au même instant.",
+    durationSeconds: 14, recommendedEngine: "Cluster", recommendedPatch: "Soft Poly Keys",
+    notes: [[53, 57, 0], [55, 58, 1.7], [57, 60, 3.4], [55, 58, 5.1]].flatMap(([low, high, start]) => [
+      { note: low, startSeconds: start, durationSeconds: 0.8, label: "Bas" },
+      { note: high, startSeconds: start, durationSeconds: 0.8, label: "Haut" },
+    ]),
+  },
+  {
+    id: "foundation_lvl2_kick_snare", title: "Kick, snare, respiration", category: "drum", level: 2,
+    icon: "🥁", bpm: 92, difficulty: "Débutant",
+    description: "Alternance régulière avant d'ajouter le charleston.",
+    durationSeconds: 14, recommendedEngine: "Drum", recommendedPatch: "Kit Drum OP-1 Standard",
+    notes: Array.from({ length: 12 }, (_, index) => ({
+      note: index % 2 === 0 ? 53 : 57, startSeconds: index * 0.65, durationSeconds: 0.18,
+      label: index % 2 === 0 ? "Kick" : "Snare",
+    })),
+  },
+];
+
 /** Tous les exercices livrés sont jouables sur les 24 touches visibles. */
-export const GAME_SONG_THEMES: GameSongTheme[] = RAW_GAME_SONG_THEMES.map((theme) => ({
+export const GAME_SONG_THEMES: GameSongTheme[] = [...RAW_GAME_SONG_THEMES, ...FOUNDATION_EXERCISES].map((theme) => ({
   ...theme,
   notes: theme.notes.map((note) => ({
     ...note,
     note: foldNoteToPlayableKeyboard(note.note),
   })),
 }));
+
+
+// Garde-fou exécuté aussi au build : une future partition invalide ne passe pas silencieusement.
+assertExerciseCatalog(GAME_SONG_THEMES);

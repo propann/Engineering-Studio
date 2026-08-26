@@ -25,6 +25,7 @@ const AdvancedImageEditor = lazy(() => import("./pages/AdvancedImageEditor"));
 const SoundPatchCreator = lazy(() => import("./pages/SoundPatchCreator"));
 const AudioPluginRack = lazy(() => import("./pages/AudioPluginRack"));
 const SoundLibrary = lazy(() => import("./pages/SoundLibrary"));
+const SoundEditorHub = lazy(() => import("./pages/SoundEditorHub"));
 const EP133StudioPage = lazy(() => import("./pages/EP133StudioPage"));
 const OP1StudioPage = lazy(() => import("./pages/OP1StudioPage"));
 const MidiSettings = lazy(() => import("./pages/MidiSettings"));
@@ -49,6 +50,7 @@ type Page =
   | "sound-patch-creator"
   | "audio-plugin-rack"
   | "sound-library"
+  | "sound-editor-hub"
   | "midi-settings"
   | "op1-settings"
   | "backup-lab"
@@ -119,6 +121,8 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
       return <AudioPluginRack onClose={() => setCurrentPage("outils")} />;
     case "sound-library":
       return <SoundLibrary />;
+    case "sound-editor-hub":
+      return <SoundEditorHub />;
     case "landing":
     default:
       return <Landing />;

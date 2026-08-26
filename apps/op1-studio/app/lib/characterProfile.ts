@@ -519,11 +519,21 @@ export function recordSessionScore(
 
   const rank = calculateRank(result.accuracy);
 
-  // Calcul d'XP généreux basé sur les hits et le multiplicateur de précision
-  const baseHitXp = result.perfectCount * 14 + result.greatCount * 9 + result.goodCount * 5;
-  const comboBonus = Math.floor(result.maxCombo * 3.0);
-  const accuracyMultiplier = result.accuracy >= 98 ? 1.6 : result.accuracy >= 90 ? 1.35 : result.accuracy >= 75 ? 1.1 : 0.7;
-  const xpEarned = Math.max(20, Math.floor((baseHitXp + comboBonus) * accuracyMultiplier));
+  // La progression récompense la maîtrise, pas le simple fait de relancer un niveau.
+  const previousBest = profile.stats.bestScoresBySong[result.songId];
+  const baseHitXp = result.perfectCount * 8 + result.greatCount * 5 + result.goodCount * 2;
+  const comboBonus = Math.floor(result.maxCombo * 1.4);
+  const accuracyMultiplier =
+    result.accuracy >= 98 ? 1.35 :
+    result.accuracy >= 90 ? 1.15 :
+    result.accuracy >= 75 ? 0.85 :
+    result.accuracy >= 60 ? 0.45 : 0;
+  const improvementMultiplier =
+    !previousBest ? 1 :
+    result.accuracy > previousBest.bestAccuracy || result.score > previousBest.highscore ? 0.7 : 0.3;
+  const xpEarned = accuracyMultiplier === 0
+    ? 0
+    : Math.max(3, Math.floor((baseHitXp + comboBonus) * accuracyMultiplier * improvementMultiplier));
 
   // Mise à jour des stats globales
   const stats = { ...profile.stats };

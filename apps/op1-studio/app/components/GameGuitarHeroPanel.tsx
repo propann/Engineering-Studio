@@ -4,7 +4,7 @@
  * 
  * Conception & Exigences :
  * - Écran OLED haute définition : Fond noir pur (#000000), colonnes vectorielles en pointillés blancs nets.
- * - Catalogue complet de 40 exercices classés par Niveaux (1 à 10) et 4 Catégories (Mélodies, Accords, Finger Drumming, Arcade).
+ * - Catalogue complet d’exercices validés classés par Niveaux (1 à 10) et 4 Catégories (Mélodies, Accords, Finger Drumming, Arcade).
  * - Fiche de Personnage RPG complète & unifiée regroupant toutes les informations (Identité, Atelier/Studio, 4 Disciplines, Statistiques complètes, Badges & Trophées, Historique).
  * - Sauvegarde locale persistante, import/export JSON de profil.
  */
@@ -87,7 +87,7 @@ interface HitParticle {
 }
 
 const CATEGORY_TABS: Record<string, { label: string; icon: string; color: string; desc: string }> = {
-  all: { label: "Toutes (40)", icon: "✨", color: "#DFD9FF", desc: "Catalogue complet des 40 exercices" },
+  all: { label: "Toutes (40)", icon: "✨", color: "#DFD9FF", desc: "Catalogue complet des exercices validés" },
   melody: { label: "🎹 Mélodies (10)", icon: "🎹", color: "#38bdf8", desc: "Leads modernes, Lo-Fi, Afrobeat, Drill, Neo-Soul" },
   chord: { label: "🎼 Accords (10)", icon: "🎼", color: "#fbbf24", desc: "Triades, 7èmes, Amapiano, Jazz, Gospel" },
   drum: { label: "🥁 Finger Drum (10)", icon: "🥁", color: "#FF3A5D", desc: "Mapping fidèle OP-1 : 808, Drill, Jersey, DnB" },
@@ -138,6 +138,7 @@ export function GameGuitarHeroPanel({
   const [speedPercent, setSpeedPercent] = useState<number>(100);
   const [loopMode, setLoopMode] = useState<boolean>(false);
   const [autoPlaySound, setAutoPlaySound] = useState<boolean>(true);
+  const [metronomeEnabled, setMetronomeEnabled] = useState<boolean>(true);
   const [soundEngine, setSoundEngine] = useState<string>("Drum");
   const [soundPatch, setSoundPatch] = useState<string>("Kit Drum OP-1 Standard");
 
@@ -181,6 +182,7 @@ export function GameGuitarHeroPanel({
   const playbackStartTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
   const countdownTimersRef = useRef<number[]>([]);
+  const lastMetronomeBeatRef = useRef<number>(-1);
   const judgedNotesRef = useRef<Set<string>>(new Set());
   const soundTriggeredNotesRef = useRef<Set<string>>(new Set());
   const lastPressedStateRef = useRef<Set<number>>(new Set());
@@ -426,8 +428,10 @@ export function GameGuitarHeroPanel({
     setShowDebriefModal(false);
     setRecordedEvents([]);
     recordedEventsRef.current = [];
-    currentTimeRef.current = 0;
-    setCurrentTime(0);
+    const leadInSeconds = NOTE_TRAVEL_TIME_DEFAULT / (speedPercent / 100);
+    currentTimeRef.current = -leadInSeconds;
+    setCurrentTime(-leadInSeconds);
+    lastMetronomeBeatRef.current = -1;
     scoreRef.current = 0;
     setScore(0);
     comboStreakRef.current = 0;
@@ -443,32 +447,38 @@ export function GameGuitarHeroPanel({
     judgedNotesRef.current.clear();
     soundTriggeredNotesRef.current.clear();
 
+    const beatMs = Math.max(420, Math.min(900, 60_000 / currentSongRef.current.bpm));
+
     setCountdownStage(3);
     op1AudioEngine.playCountdownBeep("3");
 
     const t1 = window.setTimeout(() => {
       setCountdownStage(2);
       op1AudioEngine.playCountdownBeep("2");
-    }, 700);
+    }, beatMs);
 
     const t2 = window.setTimeout(() => {
       setCountdownStage(1);
       op1AudioEngine.playCountdownBeep("1");
-    }, 1400);
+    }, beatMs * 2);
 
     const t3 = window.setTimeout(() => {
       setCountdownStage("GO");
       op1AudioEngine.playCountdownBeep("GO");
-    }, 2100);
+    }, beatMs * 3);
 
     const t4 = window.setTimeout(() => {
+      const leadInSeconds = NOTE_TRAVEL_TIME_DEFAULT / (speedPercent / 100);
       setCountdownStage(null);
-      setIsPlaying(true);
+      currentTimeRef.current = -leadInSeconds;
+      setCurrentTime(-leadInSeconds);
+      lastMetronomeBeatRef.current = -1;
       playbackStartTimeRef.current = performance.now();
-    }, 2600);
+      setIsPlaying(true);
+    }, beatMs * 4);
 
     countdownTimersRef.current = [t1, t2, t3, t4];
-  }, [clearCountdownTimers]);
+  }, [clearCountdownTimers, speedPercent]);
 
   // Démarrage instantané de la lecture (ou reprise)
   const startPlayback = useCallback(() => {
@@ -668,11 +678,21 @@ export function GameGuitarHeroPanel({
 
     const speedRatio = speedPercent / 100;
     const songDuration = currentSong.durationSeconds;
+    const leadInSeconds = NOTE_TRAVEL_TIME_DEFAULT / speedRatio;
+    const beatDurationSeconds = 60 / currentSong.bpm;
 
     const updateLoop = () => {
       const now = performance.now();
-      const elapsed = ((now - playbackStartTimeRef.current) / 1000) * speedRatio;
+      const elapsed = ((now - playbackStartTimeRef.current) / 1000) * speedRatio - leadInSeconds;
       currentTimeRef.current = elapsed;
+
+      if (metronomeEnabled) {
+        const beatIndex = Math.floor((elapsed + leadInSeconds) / beatDurationSeconds);
+        if (beatIndex >= 0 && beatIndex !== lastMetronomeBeatRef.current) {
+          lastMetronomeBeatRef.current = beatIndex;
+          op1AudioEngine.playMetronomeClick(beatIndex % 4 === 0);
+        }
+      }
 
       // Détection de fin de morceau automatique
       if (elapsed >= songDuration + 0.3) {
@@ -680,8 +700,9 @@ export function GameGuitarHeroPanel({
           playbackStartTimeRef.current = performance.now();
           judgedNotesRef.current.clear();
           soundTriggeredNotesRef.current.clear();
-          currentTimeRef.current = 0;
-          setCurrentTime(0);
+          currentTimeRef.current = -leadInSeconds;
+          setCurrentTime(-leadInSeconds);
+          lastMetronomeBeatRef.current = -1;
         } else {
           stopPlayback(true);
           return;
@@ -758,7 +779,7 @@ export function GameGuitarHeroPanel({
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [isPlaying, speedPercent, loopMode, currentSong, autoPlaySound, playSoundNote, stopPlayback, getNoteX]);
+  }, [isPlaying, speedPercent, loopMode, currentSong, autoPlaySound, metronomeEnabled, playSoundNote, stopPlayback, getNoteX]);
 
   // L'OP-1 peut décaler son octave : les 24 touches matérielles sont repliées
   // sur les 24 touches visibles avant le jeu et la surbrillance.
@@ -1183,6 +1204,25 @@ export function GameGuitarHeroPanel({
                 🔁 {loopMode ? "ON" : "OFF"}
               </button>
 
+              {/* Métronome */}
+              <button
+                type="button"
+                onClick={() => setMetronomeEnabled(!metronomeEnabled)}
+                aria-pressed={metronomeEnabled}
+                style={{
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  border: metronomeEnabled ? "1px solid #fbbf24" : "1px solid #334155",
+                  background: metronomeEnabled ? "rgba(251, 191, 36, 0.15)" : "#0f172a",
+                  color: metronomeEnabled ? "#fbbf24" : "#94a3b8",
+                }}
+              >
+                ♩ {metronomeEnabled ? "ON" : "OFF"}
+              </button>
+
               {/* Son Guide */}
               <button
                 type="button"
@@ -1286,7 +1326,7 @@ export function GameGuitarHeroPanel({
             style={{
               position: "relative",
               width: "100%",
-              aspectRatio: "100 / 32",
+              aspectRatio: "100 / 38",
               background: "#000000",
               borderRadius: "8px 8px 0 0",
               border: "1px solid #1e293b",

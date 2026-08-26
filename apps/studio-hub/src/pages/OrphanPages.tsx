@@ -7,7 +7,7 @@ type PageId =
   | "doc-op1" | "doc-ep133" | "studio-op1" | "studio-ep133"
   | "rhythm-hero" | "image-editor-op1" | "firmware-lab"
   | "advanced-image"
-  | "sound-patch-creator" | "audio-plugin-rack" | "sound-library"
+  | "sound-patch-creator" | "audio-plugin-rack" | "sound-library" | "sound-editor-hub"
   | "midi-settings" | "op1-settings" | "backup-lab" | "orphan-pages";
 
 type Target = "OP-1" | "EP-133" | "Hub partagé" | "Aucun projet";
@@ -51,6 +51,8 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé" }
 ,
+  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Page encore présente dans le dépôt mais absente de la navigation active.", target: "Hub partagé" }
+,
   { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI commune.", target: "Hub partagé" }
 ,
   { id: "op1-settings", label: "Réglages OP-1", description: "Configuration propre à l’OP-1.", target: "OP-1" }
@@ -82,6 +84,7 @@ const PAGE_LINKS: Record<string, string[]> = {
   "sound-patch-creator": ["Page manager"],
   "audio-plugin-rack": ["Hub · Labo création sonore"],
   "sound-library": ["TopBar · Bibliothèque sonore", "Hub · Bibliothèque sonore"],
+  "sound-editor-hub": ["Page manager"],
   "midi-settings": ["Hub · Réglages"],
   "op1-settings": ["Hub · Réglages"],
   "backup-lab": ["Hub · Sauvegarde"],

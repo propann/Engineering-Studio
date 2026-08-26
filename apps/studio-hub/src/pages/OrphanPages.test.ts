@@ -62,7 +62,7 @@ describe("le recensement suit les pages reelles", () => {
 
 describe("on ne peut pas perdre la derniere porte d'une page", () => {
   /**
-   * Trois pages ne s'ouvrent que depuis ce registre : `advanced-image`,
+   * Quatre pages ne s'ouvrent que depuis ce registre : `advanced-image`,
    * `sound-patch-creator` et `rhythm-hero`, sorti du Hub le 2026-08-25.
    *
    * « Retirer » persiste dans `localStorage` et seule la DERNIERE suppression
@@ -90,9 +90,9 @@ describe("on ne peut pas perdre la derniere porte d'une page", () => {
   });
 
   it("les pages sans autre porte sont bien reconnues comme telles", () => {
-    // Verrouille le fait, pas seulement le mecanisme : si l'une de ces trois
+    // Verrouille le fait, pas seulement le mecanisme : si l'une de ces quatre
     // retrouve un bouton ailleurs, ce test tombe et rappelle de le declarer.
-    for (const id of ["advanced-image", "sound-patch-creator", "rhythm-hero"]) {
+    for (const id of ["advanced-image", "sound-patch-creator", "rhythm-hero", "sound-editor-hub"]) {
       const m = new RegExp(`"${id}": \\[([^\\]]*)\\]`).exec(RECENSEMENT);
       expect(m, `${id} absent de PAGE_LINKS`).not.toBeNull();
       expect(m![1].trim(), `${id} n'est plus une orpheline`).toBe('"Page manager"');

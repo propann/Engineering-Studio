@@ -766,6 +766,24 @@ class Op1SynthEngine {
   }
 
   /**
+   * Clic de métronome court, calé sur le BPM de l'exercice.
+   */
+  public playMetronomeClick(accent = false) {
+    const ctx = this.initContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(accent ? 1320 : 880, now);
+    gain.gain.setValueAtTime(accent ? 0.11 : 0.065, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+    osc.connect(gain);
+    gain.connect(this.masterGain!);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  }
+
+  /**
    * Effet sonore lors de la validation d'une frappe joueur (PERFECT, GREAT, MISS)
    */
   public playHitSound(judgment: "PERFECT" | "GREAT" | "GOOD" | "MISS") {
