@@ -11,55 +11,100 @@ type PageId =
   | "midi-settings" | "op1-settings" | "backup-lab" | "orphan-pages";
 
 type Target = "OP-1" | "EP-133" | "Hub partagé" | "Aucun projet";
+/**
+ * Ce que la page touche VRAIMENT.
+ *
+ * La regle produit du 2026-08-26 : une fonction locale ou de demonstration ne
+ * doit jamais laisser croire qu'elle agit sur la machine. Cette etiquette est
+ * la pour que le registre le dise avant qu'on ouvre la page.
+ *
+ * **`machine` se merite.** Ce n'est pas « la page parle MIDI » mais « un
+ * echange avec le materiel a ete constate », consigne dans
+ * `docs/TESTS_PHYSIQUES.md`. Toute page dont l'effet materiel n'est pas
+ * verifie de facon reproductible reste `non-verifie` — le doute se declare, il
+ * ne s'arrondit pas vers le haut.
+ *
+ * Une detection automatique a ete essayee et jetee : chercher `sysex` ou
+ * `output.send` dans le source classait la DOCUMENTATION EP-133 comme
+ * agissant sur la machine, le mot etant dans son texte. La provenance est un
+ * jugement produit, pas un fait de code.
+ */
+type Provenance = "machine" | "local" | "profil" | "demo" | "non-verifie";
+
+const NOMS_PROVENANCE: Record<Provenance, string> = {
+  machine: "MACHINE",
+  local: "LOCAL",
+  profil: "PROFIL",
+  demo: "DÉMO",
+  "non-verifie": "NON VÉRIFIÉ",
+};
+
+const AIDES_PROVENANCE: Record<Provenance, string> = {
+  machine: "Échange avec le matériel constaté et consigné dans TESTS_PHYSIQUES.md.",
+  local: "Agit sur des fichiers du navigateur ou du dossier de travail. Ne touche pas la machine.",
+  profil: "Métadonnées locales du personnage et des machines.",
+  demo: "Interaction illustrative. Rien n'est écrit, ni en local ni sur la machine.",
+  "non-verifie": "Effet matériel non validé de façon reproductible. À ne pas croire sur parole.",
+};
+
 type PageRecord = {
   id: PageId;
   label: string;
   description: string;
   target: Target;
+  /**
+   * Le fichier qui porte la page, relatif a `apps/studio-hub/src/`.
+   *
+   * Affiche pour qu'on sache ou aller lire sans fouiller. Un test le confronte
+   * au `lazy(...)` de `App.tsx` : ecrit a la main, il pointerait tot ou tard
+   * vers un fichier renomme.
+   */
+  source: string;
+  provenance: Provenance;
 };
 
 const PAGE_REGISTRY: PageRecord[] = [
-  { id: "landing", label: "Accueil", description: "Point d’entrée général.", target: "Hub partagé" }
+  { id: "landing", label: "Accueil", description: "Point d’entrée général.", target: "Hub partagé", source: "pages/Landing.tsx", provenance: "local" }
 ,
-  { id: "outils", label: "Hub Outils", description: "Catalogue des outils.", target: "Hub partagé" }
+  { id: "outils", label: "Hub Outils", description: "Catalogue des outils.", target: "Hub partagé", source: "pages/ToolsHub.tsx", provenance: "local" }
 ,
-  { id: "profil", label: "Profil", description: "Identité, machines et dossiers locaux.", target: "Hub partagé" }
+  { id: "profil", label: "Profil", description: "Identité, machines et dossiers locaux.", target: "Hub partagé", source: "pages/ProfileCreator.tsx", provenance: "profil" }
 ,
-  { id: "documentation", label: "Documentation", description: "Centre documentaire général.", target: "Hub partagé" }
+  { id: "documentation", label: "Documentation", description: "Centre documentaire général.", target: "Hub partagé", source: "pages/Documentation.tsx", provenance: "local" }
 ,
-  { id: "exercises", label: "Exercices OP-1", description: "Parcours d’apprentissage.", target: "OP-1" }
+  { id: "exercises", label: "Exercices OP-1", description: "Parcours d’apprentissage.", target: "OP-1", source: "pages/Exercises.tsx", provenance: "machine" }
 ,
-  { id: "doc-op1", label: "Documentation OP-1", description: "Guides et limites OP-1.", target: "OP-1" }
+  { id: "doc-op1", label: "Documentation OP-1", description: "Guides et limites OP-1.", target: "OP-1", source: "pages/DocOP1.tsx", provenance: "local" }
 ,
-  { id: "doc-ep133", label: "Documentation EP-133", description: "Guides et limites EP-133.", target: "EP-133" }
+  { id: "doc-ep133", label: "Documentation EP-133", description: "Guides et limites EP-133.", target: "EP-133", source: "pages/DocEP133.tsx", provenance: "local" }
 ,
-  { id: "studio-op1", label: "OP-1 Studio", description: "Studio, patches, Tape et volume OP-1.", target: "OP-1" }
+  { id: "studio-op1", label: "OP-1 Studio", description: "Studio, patches, Tape et volume OP-1.", target: "OP-1", source: "pages/OP1StudioPage.tsx", provenance: "machine" }
 ,
-  { id: "studio-ep133", label: "EP-133 Studio", description: "Patterns, Songs et échanges EP-133.", target: "EP-133" }
+  { id: "studio-ep133", label: "EP-133 Studio", description: "Patterns, Songs et échanges EP-133.", target: "EP-133", source: "pages/EP133StudioPage.tsx", provenance: "machine" }
 ,
-  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement EP-133.", target: "EP-133" }
+  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement EP-133.", target: "EP-133", source: "pages/RhythmHero.tsx", provenance: "demo" }
 ,
-  { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Écrans OP-1 320 × 160.", target: "OP-1" }
+  { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Écrans OP-1 320 × 160.", target: "OP-1", source: "pages/ImageEditorOP1.tsx", provenance: "local" }
 ,
-  { id: "firmware-lab", label: "Firmware Lab", description: "Préparation locale des mods OP-1.", target: "OP-1" }
+  { id: "firmware-lab", label: "Firmware Lab", description: "Préparation locale des mods OP-1.", target: "OP-1", source: "pages/FirmwareLab.tsx", provenance: "non-verifie" }
 ,
-  { id: "advanced-image", label: "Éditeur image avancé", description: "Édition avancée des visuels.", target: "Hub partagé" }
+  { id: "advanced-image", label: "Éditeur image avancé", description: "Édition avancée des visuels.", target: "Hub partagé", source: "pages/AdvancedImageEditor.tsx", provenance: "demo" }
 ,
-  { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1" }
+  { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1", source: "pages/SoundPatchCreator.tsx", provenance: "demo" }
 ,
-  { id: "audio-plugin-rack", label: "Audio Plugin Rack", description: "Rack audio applicatif partagé.", target: "Hub partagé" }
+  { id: "audio-plugin-rack", label: "Audio Plugin Rack", description: "Rack audio applicatif partagé.", target: "Hub partagé", source: "pages/AudioPluginRack.tsx", provenance: "local" }
 ,
-  { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé" }
+  { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé", source: "pages/SoundLibrary.tsx", provenance: "local" }
 ,
-  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Page encore présente dans le dépôt mais absente de la navigation active.", target: "Hub partagé" }
+  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Page encore présente dans le dépôt mais absente de la navigation active.", target: "Hub partagé", source: "pages/SoundEditorHub.tsx", provenance: "demo" }
 ,
-  { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI commune.", target: "Hub partagé" }
+  { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI commune.", target: "Hub partagé", source: "pages/MidiSettings.tsx", provenance: "machine" }
 ,
-  { id: "op1-settings", label: "Réglages OP-1", description: "Configuration propre à l’OP-1.", target: "OP-1" }
+  { id: "op1-settings", label: "Réglages OP-1", description: "Configuration propre à l’OP-1.", target: "OP-1", source: "pages/OP1Settings.tsx", provenance: "machine" }
 ,
-  { id: "backup-lab", label: "Backup Lab", description: "Sauvegardes contrôlées des machines.", target: "Hub partagé" }
+  { id: "backup-lab", label: "Backup Lab", description: "Sauvegardes contrôlées des machines.", target: "Hub partagé", source: "pages/BackupLab.tsx", provenance: "non-verifie" }
 ,
-  { id: "orphan-pages", label: "Pages", description: "Registre et rangement des pages.", target: "Hub partagé" }
+  { id: "orphan-pages", label: "Pages", description: "Registre et rangement des pages.", target: "Hub partagé", source: "pages/OrphanPages.tsx", provenance: "local" }
 ,
 ];
 
@@ -97,6 +142,8 @@ const REMOVED_KEY = "engineering-studio.page-registry.removed";
 export default function OrphanPages() {
   const [filter, setFilter] = useState<"all" | "orphan" | "archived">("all");
   const [target, setTarget] = useState<"all" | Target>("all");
+  const [recherche, setRecherche] = useState("");
+  const [provenance, setProvenance] = useState<"all" | Provenance>("all");
   const [archived, setArchived] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
 
@@ -114,9 +161,16 @@ export default function OrphanPages() {
   const visiblePages = useMemo(() => activePages.filter((page) => {
     const isArchived = archived.includes(page.id);
     const isOrphan = (PAGE_LINKS[page.id] || []).length === 1 && (PAGE_LINKS[page.id] || [])[0] === "Page manager";
+    // La recherche porte sur ce qu'on a sous les yeux ET sur le chemin source :
+    // on cherche parfois une page dont on ne se rappelle que le nom de fichier.
+    const q = recherche.trim().toLowerCase();
+    const correspond = !q || [page.label, page.description, page.id, page.source]
+      .some((champ) => champ.toLowerCase().includes(q));
     return (filter === "all" || (filter === "archived" ? isArchived : !isArchived && isOrphan)) &&
-      (target === "all" || page.target === target);
-  }), [activePages, archived, filter, target]);
+      (target === "all" || page.target === target) &&
+      (provenance === "all" || page.provenance === provenance) &&
+      correspond;
+  }), [activePages, archived, filter, target, provenance, recherche]);
 
   const persist = (key: string, values: string[]) => localStorage.setItem(key, JSON.stringify(values));
   const openPage = (page: PageRecord) => (window as any).navigateMaquette(page.id);
@@ -153,11 +207,44 @@ export default function OrphanPages() {
     setRemoved(next);
     persist(REMOVED_KEY, next);
   };
+  /**
+   * Propose le rattachement d'une page au Hub.
+   *
+   * Elle ne connecte rien — voir le commentaire du bouton. Elle nomme le
+   * groupe qui convient d'apres la cible declaree, et rend la ligne exacte a
+   * poser dans `ToolsHub.tsx`.
+   */
+  const proposerRattachement = (page: PageRecord) => {
+    const groupe = page.target === "OP-1" ? "OP-1 Studio"
+      : page.target === "EP-133" ? "EP-133 Studio"
+      : page.target === "Hub partagé" ? "Outils partagés"
+      : "Aucun groupe évident — à trancher";
+    const ligne = `{ id: "${page.id}", page: "${page.id}", label: "${page.label}", groupe: "${groupe}" }`;
+    window.alert(
+      `« ${page.label} » n'a aucune porte hors de ce registre.\n\n` +
+      `Groupe proposé : ${groupe}\n` +
+      `Source : ${page.source}\n\n` +
+      "Rattacher une page est un changement de code : ajoute son entrée dans\n" +
+      "apps/studio-hub/src/pages/ToolsHub.tsx, par exemple\n\n" +
+      `  ${ligne}\n\n` +
+      "Cette fenêtre ne peut pas l'écrire à ta place, et ne fait donc rien de plus."
+    );
+  };
+
   const restoreEntry = (id: string) => {
     const next = removed.filter((item) => item !== id);
     setRemoved(next);
     persist(REMOVED_KEY, next);
   };
+
+  /**
+   * Les portes d'une page, le registre exclu.
+   *
+   * « Page manager » n'est pas une porte : c'est cette fenetre. La compter
+   * ferait passer une page sans acces pour une page qui en a un, et c'est
+   * exactement l'erreur qui rend une orpheline supprimable.
+   */
+  const portesDe = (page: PageRecord) => (PAGE_LINKS[page.id] || []).filter((l) => l !== "Page manager");
 
   const orphanCount = activePages.filter((page) => (PAGE_LINKS[page.id] || []).length === 1 && (PAGE_LINKS[page.id] || [])[0] === "Page manager").length;
   const archivedCount = activePages.filter((page) => archived.includes(page.id)).length;
@@ -194,6 +281,32 @@ export default function OrphanPages() {
           <button type="button" onClick={() => setTarget("all")}>Tous les rattachements</button>
         </nav>
 
+        <div className="orphan-pages-chercher">
+          <input
+            type="search"
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Chercher un nom, une description ou un fichier…"
+            aria-label="Chercher une page"
+          />
+          {/* Filtrer par ce que la page touche vraiment : c'est la question
+              qu'on se pose avant d'ouvrir une page qu'on ne connait pas. */}
+          <div className="orphan-pages-prov-filtres">
+            <button type="button" className={provenance === "all" ? "actif" : ""} onClick={() => setProvenance("all")}>Toutes provenances</button>
+            {(Object.keys(NOMS_PROVENANCE) as Provenance[]).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`prov-${value} ${provenance === value ? "actif" : ""}`}
+                onClick={() => setProvenance(value)}
+                title={AIDES_PROVENANCE[value]}
+              >
+                {NOMS_PROVENANCE[value]} ({activePages.filter((page) => page.provenance === value).length})
+              </button>
+            ))}
+          </div>
+        </div>
+
         <section className="orphan-pages-list" aria-labelledby="orphan-pages-title">
           <div className="orphan-pages-section-heading">
             <div><span>REGISTRE DES PAGES</span><h2 id="orphan-pages-title">{visiblePages.length} page{visiblePages.length > 1 ? "s" : ""}</h2></div>
@@ -207,9 +320,33 @@ export default function OrphanPages() {
                   <div className="orphan-page-card-top"><span className="orphan-page-id">{page.id}</span><span className="orphan-pages-badge">{page.target}</span></div>
                   <h3>{page.label}</h3>
                   <p>{page.description}</p>
-                  <small>{(PAGE_LINKS[page.id] || []).length ? `Boutons : ${(PAGE_LINKS[page.id] || []).join(" · ")}` : "Aucun bouton déclaré"}</small>
+                  {/* Ce que la page touche, avant qu'on l'ouvre. */}
+                  <span className={`orphan-page-prov prov-${page.provenance}`} title={AIDES_PROVENANCE[page.provenance]}>
+                    {NOMS_PROVENANCE[page.provenance]}
+                  </span>
+                  {/* Le nombre de PORTES, pas la liste seule : « 0 porte » se
+                      lit d'un coup d'oeil la ou il fallait compter les libelles. */}
+                  <small>
+                    {portesDe(page).length
+                      ? `${portesDe(page).length} porte${portesDe(page).length > 1 ? "s" : ""} : ${portesDe(page).join(" · ")}`
+                      : "Aucune porte — ce registre est le seul accès"}
+                  </small>
+                  <code className="orphan-page-source">{page.source}</code>
                   <div className="orphan-page-actions">
                     <button type="button" onClick={() => openPage(page)}>Voir la page →</button>
+                    {/* Rattacher une page au Hub, c'est ajouter une entree dans
+                        `ToolsHub.tsx` — un changement de CODE, que rien a
+                        l'execution ne peut faire. Un bouton « Connecter » qui
+                        se contenterait de cocher une case ici serait une fausse
+                        connexion : la page resterait tout aussi inatteignable,
+                        et le registre affirmerait le contraire.
+
+                        Il propose donc le rattachement et donne de quoi
+                        l'ecrire, ce qui est la seule chose honnete a cet
+                        endroit. */}
+                    {!portesDe(page).length && (
+                      <button type="button" onClick={() => proposerRattachement(page)}>Connecter au Hub…</button>
+                    )}
                     <button type="button" onClick={() => toggleArchived(page.id)}>{isArchived ? "Restaurer" : "Archiver"}</button>
                     <button
                       type="button"

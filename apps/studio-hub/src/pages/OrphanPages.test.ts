@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -20,7 +20,23 @@ const DIR = path.dirname(fileURLToPath(import.meta.url));
 const RECENSEMENT = readFileSync(path.join(DIR, "OrphanPages.tsx"), "utf-8");
 const APP = readFileSync(path.join(DIR, "..", "App.tsx"), "utf-8");
 
-const recensees = () => new Set([...RECENSEMENT.matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1]));
+/**
+ * Le bloc `PAGE_REGISTRY`, et lui seul.
+ *
+ * La premiere version cherchait `{ id: "…"` dans TOUT le fichier. Elle a fini
+ * par recenser un exemple de code affiche dans un message a l'utilisateur —
+ * une entree fantome nommee `${page.id}`. Un test qui lit un fichier entier
+ * finit toujours par lire autre chose que ce qu'il croit.
+ */
+const blocRegistre = () => {
+  const debut = RECENSEMENT.indexOf("const PAGE_REGISTRY");
+  expect(debut, "PAGE_REGISTRY introuvable").toBeGreaterThan(-1);
+  const fin = RECENSEMENT.indexOf("\n];", debut);
+  expect(fin, "fin de PAGE_REGISTRY introuvable").toBeGreaterThan(debut);
+  return RECENSEMENT.slice(debut, fin);
+};
+
+const recensees = () => new Set([...blocRegistre().matchAll(/\{ id: "([^"]+)"/g)].map((m) => m[1]));
 
 /** Les pages que l'application sait afficher : le type `Page` et le switch. */
 const atteignables = () => {
@@ -49,13 +65,37 @@ describe("le recensement suit les pages reelles", () => {
     expect(fantomes, `pages recensees mais inatteignables : ${fantomes.join(", ")}`).toEqual([]);
   });
 
-  it("chaque entree porte une cible de projet", () => {
-    // C'est ce qui rend la liste utile : savoir si une page appartient a
-    // l'OP-1, a l'EP-133, ou au hub.
-    const entrees = [...RECENSEMENT.matchAll(/\{ id: "[^"]+", label: "[^"]*", description: "[^"]*", target: "([^"]+)" \}/g)];
-    expect(entrees.length).toBe(recensees().size);
-    for (const [, cible] of entrees) {
+  it("chaque entree porte une cible, une source et une provenance", () => {
+    // La cible dit a quelle machine la page appartient ; la source, ou aller
+    // lire ; la provenance, ce que la page touche vraiment. Une entree qui en
+    // manque une est une entree qu'on ne peut pas juger sans l'ouvrir.
+    const entrees = [...blocRegistre().matchAll(
+      /\{ id: "([^"]+)", label: "[^"]*", description: "[^"]*", target: "([^"]+)", source: "([^"]+)", provenance: "([^"]+)" \}/g,
+    )];
+    expect(entrees.length, "une entree n'a pas la forme attendue").toBe(recensees().size);
+    for (const [, , cible, source, provenance] of entrees) {
       expect(["OP-1", "EP-133", "Hub partagé", "Aucun projet"]).toContain(cible);
+      expect(source, `source « ${source} » hors de pages/`).toMatch(/^pages\/\w[\w.-]*\.tsx$/);
+      expect(["machine", "local", "profil", "demo", "non-verifie"]).toContain(provenance);
+    }
+  });
+
+  it("la source declaree est le fichier que le routeur charge vraiment", () => {
+    // Ecrite a la main, elle pointerait tot ou tard vers un fichier renomme —
+    // et c'est un chemin qu'on affiche pour aller lire le code.
+    const differes = new Map([...APP.matchAll(/const (\w+) = lazy\(\(\) => import\("\.\/pages\/([\w.-]+)"\)/g)]
+      .map((m) => [m[1], m[2]]));
+    const rendus = new Map([...APP.matchAll(/case "([a-z0-9-]+)":\s*\n\s*return <(\w+)/g)]
+      .map((m) => [m[1], m[2]]));
+    expect(differes.size, "aucun import differe lu dans App.tsx").toBeGreaterThan(10);
+
+    for (const m of blocRegistre().matchAll(/\{ id: "([^"]+)"[^}]*source: "pages\/([\w.-]+)\.tsx"/g)) {
+      const [, id, fichier] = m;
+      const composant = rendus.get(id);
+      // `landing` est le repli du switch, il n'a pas de `case` : on ne peut pas
+      // le verifier ainsi, et l'exiger ferait echouer sur du correct.
+      if (!composant) continue;
+      expect(differes.get(composant), `${id} : source declaree « ${fichier} »`).toBe(fichier);
     }
   });
 });
@@ -97,5 +137,78 @@ describe("on ne peut pas perdre la derniere porte d'une page", () => {
       expect(m, `${id} absent de PAGE_LINKS`).not.toBeNull();
       expect(m![1].trim(), `${id} n'est plus une orpheline`).toBe('"Page manager"');
     }
+  });
+});
+
+describe("les portes declarees sont les portes reelles", () => {
+  /**
+   * `PAGE_LINKS` dit par ou l'on entre dans chaque page. C'est lui qui decide
+   * si une page est orpheline, donc s'il ment, tout le registre ment avec lui.
+   *
+   * Il a deja menti : `rhythm-hero` y est reste annonce « Hub · Apprendre »
+   * apres etre sorti du Hub, et rien ne l'a signale. Une table tenue a la main
+   * prend du retard en silence — ce test la confronte au code.
+   *
+   * Il ne compare pas les LIBELLES, qui sont de la prose destinee a l'humain
+   * (« Hub · Apprendre »), mais le FAIT : cette page est-elle ouverte depuis
+   * ailleurs, oui ou non. C'est la seule chose dont depend le classement.
+   */
+  const SRC = path.join(DIR, "..");
+
+  /** Tous les sources du hub, sauf les tests et le registre lui-meme. */
+  function sourcesDuHub(dossier = SRC, vus: string[] = []): string[] {
+    for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+      const chemin = path.join(dossier, entree.name);
+      if (entree.isDirectory()) sourcesDuHub(chemin, vus);
+      else if (/\.tsx?$/.test(entree.name) && !entree.name.includes(".test.")
+               && !entree.name.startsWith("OrphanPages")) vus.push(chemin);
+    }
+    return vus;
+  }
+
+  /** Les pages qu'un fichier autre que le registre sait ouvrir. */
+  function ouvertesAilleurs(): Set<string> {
+    const trouvees = new Set<string>();
+    for (const f of sourcesDuHub()) {
+      const texte = readFileSync(f, "utf-8");
+      // Les trois formes utilisees dans le depot : la table du Hub, la
+      // navigation directe, et les entrees de la TopBar.
+      for (const r of [/page: "([a-z0-9-]+)"/g, /navigateMaquette\("([a-z0-9-]+)"\)/g, /\{ id: "([a-z0-9-]+)", label:/g]) {
+        for (const m of texte.matchAll(r)) trouvees.add(m[1]);
+      }
+    }
+    return trouvees;
+  }
+
+  it("lit bien les sources du hub", () => {
+    // Sans ce garde, une erreur de chemin rendrait un ensemble vide et
+    // declarerait toutes les pages orphelines.
+    expect(sourcesDuHub().length).toBeGreaterThan(20);
+    expect(ouvertesAilleurs().size).toBeGreaterThan(10);
+  });
+
+  it("aucune page annoncee orpheline n'est en fait ouverte ailleurs", () => {
+    // Le sens qui protege le CLASSEMENT : une page declaree orpheline alors
+    // qu'un bouton l'ouvre encourage a la « rattacher » pour rien.
+    const ailleurs = ouvertesAilleurs();
+    const menteuses = [...recensees()].filter((id) => {
+      const m = new RegExp(`"${id}": \\[([^\\]]*)\\]`).exec(RECENSEMENT);
+      const seulRegistre = m && m[1].trim() === '"Page manager"';
+      return seulRegistre && ailleurs.has(id);
+    });
+    expect(menteuses, `annoncees orphelines mais ouvertes ailleurs : ${menteuses.join(", ")}`).toEqual([]);
+  });
+
+  it("aucune page annoncee reliee n'est en fait sans porte", () => {
+    // Le sens qui protege l'ACCES, et celui qui a deja echoue : `rhythm-hero`
+    // annoncait « Hub · Apprendre » alors que plus rien ne l'ouvrait. Une page
+    // ainsi mal classee redevient supprimable depuis l'interface.
+    const ailleurs = ouvertesAilleurs();
+    const menteuses = [...recensees()].filter((id) => {
+      const m = new RegExp(`"${id}": \\[([^\\]]*)\\]`).exec(RECENSEMENT);
+      const seulRegistre = !m || m[1].trim() === '"Page manager"';
+      return !seulRegistre && !ailleurs.has(id);
+    });
+    expect(menteuses, `annoncees reliees mais sans aucune porte : ${menteuses.join(", ")}`).toEqual([]);
   });
 });

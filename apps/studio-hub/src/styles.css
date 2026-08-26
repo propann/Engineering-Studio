@@ -4146,6 +4146,53 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
 .orphan-page-card h3 { margin: 18px 0 6px; font-size: 17px; }
 .orphan-page-card p { min-height: 38px; margin: 0; color: #aeb5bd; font-size: 13px; line-height: 1.45; }
 .orphan-page-card button { margin-top: 15px; border: 0; background: transparent; color: #ffb36b; cursor: pointer; font: 700 11px "Courier New", monospace; padding: 0; }
+
+/* ── Registre des pages : recherche, provenance, chemin source ──────────── */
+.orphan-pages-chercher { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0 6px; }
+.orphan-pages-chercher input[type="search"] {
+  flex: 1 1 260px; min-height: 36px; padding: 0 12px; border-radius: 6px;
+  color: #e7edf5; background: #141a22; border: 1px solid #2a3442;
+  font: 500 13px system-ui, sans-serif;
+}
+.orphan-pages-chercher input[type="search"]::placeholder { color: #6b7787; }
+.orphan-pages-prov-filtres { display: flex; flex-wrap: wrap; gap: 6px; }
+.orphan-pages-prov-filtres button {
+  padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  color: #aeb5bd; background: #141a22; border: 1px solid #2a3442;
+  font: 700 10px "Courier New", monospace; letter-spacing: .04em;
+}
+.orphan-pages-prov-filtres button.actif { color: #0d1117; background: #ffb36b; border-color: #ffb36b; }
+
+/* La provenance porte sa couleur : on la lit sans lire le mot. Le rouge est
+   reserve a « non verifie » — c'est le seul cas ou se tromper coute. */
+.orphan-page-prov {
+  display: inline-block; margin-top: 10px; padding: 3px 9px; border-radius: 999px;
+  font: 800 9px "Courier New", monospace; letter-spacing: .08em;
+}
+.orphan-page-prov.prov-machine     { color: #0d1a14; background: #6fe3b0; }
+.orphan-page-prov.prov-local       { color: #0d1117; background: #8fb8ff; }
+.orphan-page-prov.prov-profil      { color: #0d1117; background: #d0b3ff; }
+.orphan-page-prov.prov-demo        { color: #1a1408; background: #ffb36b; }
+.orphan-page-prov.prov-non-verifie { color: #2a0710; background: #ff5470; }
+.orphan-pages-prov-filtres button.prov-machine.actif     { background: #6fe3b0; border-color: #6fe3b0; color: #0d1a14; }
+.orphan-pages-prov-filtres button.prov-local.actif       { background: #8fb8ff; border-color: #8fb8ff; color: #0d1117; }
+.orphan-pages-prov-filtres button.prov-profil.actif      { background: #d0b3ff; border-color: #d0b3ff; color: #0d1117; }
+.orphan-pages-prov-filtres button.prov-demo.actif        { background: #ffb36b; border-color: #ffb36b; color: #1a1408; }
+.orphan-pages-prov-filtres button.prov-non-verifie.actif { background: #ff5470; border-color: #ff5470; color: #2a0710; }
+
+.orphan-page-source {
+  display: block; margin-top: 8px; color: #6b7787; word-break: break-all;
+  font: 500 10px "Courier New", monospace;
+}
+
+/* Les actions se touchaient : « Voir la page →ArchiverRetirer » se lisait
+   comme un seul mot. Un bouton qu'on ne distingue pas est un bouton sur
+   lequel on clique par erreur. */
+.orphan-page-actions { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+.orphan-page-card .orphan-page-actions button { margin-top: 12px; }
+.orphan-page-card .orphan-page-actions button:disabled { color: #5a6472; cursor: not-allowed; }
+/* La pastille de provenance collait au decompte de portes. */
+.orphan-page-prov { margin-right: 8px; }
 @media (max-width: 850px) { .orphan-pages-hero, .orphan-pages-section-heading { align-items: start; flex-direction: column; } .orphan-pages-summary { grid-template-columns: repeat(2, 1fr); } .orphan-pages-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .orphan-pages-shell { padding: 24px 16px 48px; } .orphan-pages-summary, .orphan-pages-grid { grid-template-columns: 1fr; } }
 
