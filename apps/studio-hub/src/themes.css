@@ -1,0 +1,445 @@
+/*
+ * Deux thèmes, une seule machine visuelle.
+ *
+ * Cette couche est importée en dernier. Elle ne duplique pas chaque page :
+ * elle fixe les tokens, le shell commun et les corrections de contraste dont
+ * les anciens modules ont besoin pendant leur migration progressive.
+ */
+:root,
+:root[data-theme="atelier"] {
+  --ui-bg: #ebece6;
+  --ui-bg-grid: #1113110d;
+  --ui-panel: #ffffff;
+  --ui-panel-soft: #dfe1da;
+  --ui-panel-strong: #c9cdc4;
+  --ui-text: #111311;
+  --ui-muted: #5c635a;
+  --ui-border: #111311;
+  --ui-border-soft: #92998f;
+  --ui-shadow: #111311;
+  --ui-orange: #ff5a1f;
+  --ui-acid: #d9ff43;
+  --ui-blue: #4aa7ff;
+  --ui-cyan: #28d6d0;
+  --ui-danger: #c81e3a;
+  --paper: var(--ui-bg);
+  --ink: var(--ui-text);
+  --muted: var(--ui-muted);
+  --line: #11131124;
+  --orange: var(--ui-orange);
+  --acid: var(--ui-acid);
+  color-scheme: light;
+}
+
+:root[data-theme="studio"] {
+  --ui-bg: #0f120f;
+  --ui-bg-grid: #ffffff0a;
+  --ui-panel: #1b1f1b;
+  --ui-panel-soft: #242924;
+  --ui-panel-strong: #303630;
+  --ui-text: #f4f5ef;
+  --ui-muted: #b2baaf;
+  --ui-border: #747d72;
+  --ui-border-soft: #4b524a;
+  --ui-shadow: #050605;
+  --ui-orange: #ff704c;
+  --ui-acid: #d9ff43;
+  --ui-blue: #68b8ff;
+  --ui-cyan: #45ded8;
+  --ui-danger: #ff7188;
+  --paper: var(--ui-bg);
+  --ink: var(--ui-text);
+  --muted: var(--ui-muted);
+  --line: #ffffff24;
+  --orange: var(--ui-orange);
+  --acid: var(--ui-acid);
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--ui-bg);
+  color: var(--ui-text);
+}
+
+body {
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--ui-blue) !important;
+  outline-offset: 3px;
+}
+
+/* Shell commun --------------------------------------------------------- */
+.universal-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  width: 100%;
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-bg) 94%, transparent);
+  border-bottom: 3px solid var(--ui-border);
+  backdrop-filter: blur(12px);
+}
+
+.topbar-inner {
+  height: 68px;
+}
+
+.brand-title,
+.brand-title strong,
+.topbar-brand {
+  color: var(--ui-text);
+}
+
+.brand-title b,
+.profile-text small {
+  color: var(--ui-muted);
+}
+
+.topbar-studio-btn,
+.topbar-btn-secondary,
+.topbar-profile-badge,
+.topbar-theme-toggle,
+.mobile-nav-item {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 2px solid var(--ui-border);
+  border-radius: 5px;
+  box-shadow: 2px 2px 0 var(--ui-shadow);
+}
+
+.topbar-theme-toggle {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font: 900 9px/1 "Courier New", monospace;
+  letter-spacing: .08em;
+}
+
+.topbar-theme-toggle span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  color: #111311;
+  background: var(--ui-acid);
+  border: 2px solid var(--ui-border);
+}
+
+.topbar-profile-badge .profile-text strong {
+  color: var(--ui-text);
+}
+
+.topbar-mobile-toggle {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 2px solid var(--ui-border);
+}
+
+.topbar-mobile-menu {
+  display: none;
+  padding: 12px clamp(14px, 4vw, 28px) 16px;
+  background: var(--ui-bg);
+  border-top: 1px solid var(--ui-border-soft);
+}
+
+.mobile-nav-item {
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mobile-nav-item small {
+  margin-left: auto;
+  color: var(--ui-orange);
+  font-weight: 900;
+}
+
+.page-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--ui-acid);
+  background: var(--ui-bg);
+  font: 900 13px "Courier New", monospace;
+  letter-spacing: .12em;
+}
+
+/* Accueil, Hub et cartes ------------------------------------------------ */
+.landing-rich-page,
+.rich-tools-hub-preview,
+.tools-section-organized,
+.hub-page,
+.sound-library-page,
+.machine-settings-page,
+.midi-settings-page {
+  color: var(--ui-text);
+  background-color: var(--ui-bg);
+  background-image:
+    linear-gradient(var(--ui-bg-grid) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--ui-bg-grid) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+.hero-badge-strip,
+.machine-card-frame,
+.preview-card,
+.hub-header-banner,
+.nav-tabs,
+.tool-dialog,
+.sound-library-head {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border-color: var(--ui-border);
+}
+
+.hero-lead,
+.preview-card p,
+.hub-header-banner p,
+.sound-library-head p {
+  color: var(--ui-muted);
+}
+
+.hero-text-block h1 b,
+.preview-card h3,
+.card-status-bar,
+.card-footer-info {
+  color: var(--ui-text);
+}
+
+.btn-ep133-hero,
+.hero-features-chips span {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border-color: var(--ui-border);
+}
+
+.img-multiply-blend {
+  background: var(--ui-panel-soft);
+}
+
+:root[data-theme="studio"] .op1-clean-img {
+  mix-blend-mode: normal;
+}
+
+:root[data-theme="studio"] .ep-crop-container {
+  background: #080a08;
+}
+
+:root[data-theme="studio"] .tools-section-organized,
+:root[data-theme="studio"] .hub-page,
+:root[data-theme="studio"] .midi-settings-page,
+:root[data-theme="studio"] .sound-library-page {
+  color: var(--ui-text);
+  background-color: var(--ui-bg);
+}
+
+:root[data-theme="studio"] .hub-header-banner,
+:root[data-theme="studio"] .nav-tabs,
+:root[data-theme="studio"] .utility-card,
+:root[data-theme="studio"] .hub-documentation-card,
+:root[data-theme="studio"] .settings-modal,
+:root[data-theme="studio"] .training-modal,
+:root[data-theme="studio"] .hub-modal {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border-color: var(--ui-border-soft);
+}
+
+:root[data-theme="studio"] .utility-card p,
+:root[data-theme="studio"] .hub-documentation-card p,
+:root[data-theme="studio"] .hub-documentation-heading p,
+:root[data-theme="studio"] .midi-settings-head p {
+  color: var(--ui-muted);
+}
+
+:root[data-theme="studio"] .utility-card .hub-graphic,
+:root[data-theme="studio"] .machine-image-wrapper {
+  background: var(--ui-panel-soft);
+  border-color: var(--ui-border-soft);
+}
+
+/* Ancien bleu SaaS : rendu lisible et rapproché du rack commun. */
+.sound-library-panel,
+.midi-sync-panel,
+.vault-panel {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border: 2px solid var(--ui-border-soft);
+  border-radius: 6px;
+  box-shadow: 5px 5px 0 var(--ui-shadow);
+}
+
+.sound-library-asset,
+.midi-sync-card,
+.midi-sync-help,
+.vault-card,
+.vault-workspace,
+.sync-outputs {
+  color: var(--ui-text);
+  background: var(--ui-panel-soft);
+  border-color: var(--ui-border-soft);
+}
+
+.sound-library-header h2,
+.midi-sync-header h2,
+.midi-sync-help strong,
+.vault-header h2 {
+  color: var(--ui-text);
+}
+
+.sound-library-summary,
+.sound-library-asset-meta,
+.sound-library-asset-actions,
+.midi-sync-help,
+.sync-status-text,
+.muted {
+  color: var(--ui-muted);
+}
+
+/* Sauvegarde et profil suivent désormais les deux thèmes. */
+:root[data-theme="studio"] .backup-lab-page,
+:root[data-theme="studio"] .backup-lab-hero,
+:root[data-theme="studio"] .backup-profile-data,
+:root[data-theme="studio"] .backup-machine-info,
+:root[data-theme="studio"] .backup-engine-section,
+:root[data-theme="studio"] .creator-page {
+  color: var(--ui-text);
+  background-color: var(--ui-bg);
+}
+
+:root[data-theme="studio"] .backup-profile-card,
+:root[data-theme="studio"] .backup-machine-column,
+:root[data-theme="studio"] .backup-facts > div,
+:root[data-theme="studio"] .backup-engine-section .vault-panel,
+:root[data-theme="studio"] .creator-block {
+  color: var(--ui-text);
+  background: var(--ui-panel);
+  border-color: var(--ui-border);
+}
+
+:root[data-theme="studio"] .backup-column-head p,
+:root[data-theme="studio"] .backup-column-meta span,
+:root[data-theme="studio"] .backup-profile-card span,
+:root[data-theme="studio"] .backup-facts small,
+:root[data-theme="studio"] .backup-facts span,
+:root[data-theme="studio"] .block-title small,
+:root[data-theme="studio"] .field-grid label,
+:root[data-theme="studio"] .loadout label {
+  color: var(--ui-muted);
+}
+
+:root[data-theme="studio"] .field-grid input,
+:root[data-theme="studio"] .field-grid textarea,
+:root[data-theme="studio"] .loadout input,
+:root[data-theme="studio"] .loadout select,
+:root[data-theme="studio"] .avatar-current,
+:root[data-theme="studio"] .workspace-slot {
+  color: var(--ui-text);
+  background: var(--ui-panel-soft);
+  border-color: var(--ui-border);
+}
+
+/* Les consoles restent sombres dans les deux thèmes, mais gagnent un texte
+   minimum lisible et la même géométrie de focus. */
+:root[data-theme] .audio-plugin-rack-page,
+:root[data-theme] .sound-editor-hub-page,
+:root[data-theme] .pro-pixel-studio-page {
+  --console-bg: #090b0a;
+  --console-panel: #141814;
+  --console-panel-soft: #1d221d;
+  --console-text: #f4f5ef;
+  --console-muted: #a9b3a6;
+  color: var(--console-text);
+  background-color: var(--console-bg);
+}
+
+:root[data-theme] .audio-plugin-rack-page .rack-left-sidebar,
+:root[data-theme] .audio-plugin-rack-page .sidebar-header,
+:root[data-theme] .audio-plugin-rack-page .rack-right-workspace {
+  color: var(--console-text);
+  background-color: var(--console-panel);
+  border-color: #465046;
+}
+
+:root[data-theme] .audio-plugin-rack-page :where(small, label, .sidebar-category-title) {
+  color: var(--console-muted);
+}
+
+:root[data-theme] .audio-plugin-rack-page :where(button, input, select) {
+  min-height: 34px;
+}
+
+/* Responsive ----------------------------------------------------------- */
+@media (max-width: 1180px) {
+  .topbar-studios-nav {
+    display: none;
+  }
+
+  .topbar-mobile-toggle {
+    display: grid;
+    place-items: center;
+  }
+
+  .topbar-mobile-menu {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar-inner {
+    height: 62px;
+    padding-inline: 12px;
+  }
+
+  .topbar-btn-secondary,
+  .topbar-profile-badge {
+    display: none;
+  }
+
+  .topbar-theme-toggle b,
+  .brand-title b {
+    display: none;
+  }
+
+  .topbar-theme-toggle {
+    padding: 4px;
+  }
+
+  .topbar-mobile-menu {
+    grid-template-columns: 1fr;
+  }
+
+  .sound-library-view-tabs,
+  .editor-machine-tabs,
+  .nav-tabs {
+    display: flex !important;
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}

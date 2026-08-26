@@ -43,7 +43,7 @@ export default function SoundLibrary() {
 
   return (
     <div className="studio-app-wrapper">
-      <TopBar activePage="outils" profileName={profileName} />
+      <TopBar activePage="sound-library" profileName={profileName} />
       <main className="sound-library-page">
         <header className="sound-library-head">
           <h1>Bibliothèque sonore</h1>

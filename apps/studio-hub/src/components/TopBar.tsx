@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { clearProfile, readProfileName } from "../core/profile";
+import { readStudioTheme, saveStudioTheme, type StudioTheme } from "../core/theme";
 
 export interface TopBarProps {
   activePage?: string;
@@ -16,6 +17,8 @@ export function TopBar({
   customAction,
 }: TopBarProps) {
   const [currentName, setCurrentName] = useState(profileName);
+  const [theme, setTheme] = useState<StudioTheme>(() => readStudioTheme());
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -26,7 +29,12 @@ export function TopBar({
     }
   }, [profileName]);
 
+  useEffect(() => {
+    saveStudioTheme(theme);
+  }, [theme]);
+
   const nav = (page: string) => {
+    setMobileMenuOpen(false);
     if ((window as any).navigateMaquette) {
       (window as any).navigateMaquette(page);
     }
@@ -98,6 +106,18 @@ export function TopBar({
 
           <button
             type="button"
+            className="topbar-theme-toggle"
+            aria-pressed={theme === "studio"}
+            aria-label={theme === "studio" ? "Activer le thème clair Atelier" : "Activer le thème sombre Studio"}
+            title={theme === "studio" ? "Thème clair Atelier" : "Thème sombre Studio"}
+            onClick={() => setTheme((current) => current === "atelier" ? "studio" : "atelier")}
+          >
+            <span aria-hidden="true">{theme === "studio" ? "☀" : "◐"}</span>
+            <b>{theme === "studio" ? "ATELIER" : "STUDIO"}</b>
+          </button>
+
+          <button
+            type="button"
             className="topbar-profile-badge"
             onClick={() => nav("profil")}
             title="Consulter votre profil et configuration d'atelier"
@@ -111,8 +131,40 @@ export function TopBar({
             </div>
             <span className="profile-arrow">↗</span>
           </button>
+
+          <button
+            type="button"
+            className="topbar-mobile-toggle"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="studio-mobile-menu"
+            aria-label={mobileMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            onClick={() => setMobileMenuOpen((open) => !open)}
+          >
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <nav id="studio-mobile-menu" className="topbar-mobile-menu" aria-label="Navigation mobile">
+          {studioLinks.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`mobile-nav-item ${activePage === item.id ? "is-active" : ""}`}
+              onClick={() => nav(item.id)}
+            >
+              <span aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
+              {item.badge && <small>{item.badge}</small>}
+            </button>
+          ))}
+          <button type="button" className="mobile-nav-item" onClick={() => nav("profil")}>
+            <span aria-hidden="true">●</span>
+            <span>Profil · {currentName || "NOUVEAU MEMBRE"}</span>
+          </button>
+        </nav>
+      )}
     </header>
   );
 }
