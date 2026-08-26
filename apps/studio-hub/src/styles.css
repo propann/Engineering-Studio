@@ -4193,6 +4193,19 @@ input:focus, textarea:focus { border-color: #8fb8ff; }
 .orphan-page-card .orphan-page-actions button:disabled { color: #5a6472; cursor: not-allowed; }
 /* La pastille de provenance collait au decompte de portes. */
 .orphan-page-prov { margin-right: 8px; }
+
+/* La nature : outil, facade ou document. Volontairement discrete face a la
+   provenance — celle-ci previent d'un risque, celle-la range. */
+.orphan-page-nature {
+  display: inline-block; margin-right: 8px; padding: 3px 9px; border-radius: 999px;
+  font: 800 9px "Courier New", monospace; letter-spacing: .08em;
+  border: 1px solid #3a4657; color: #aeb5bd; background: transparent;
+}
+.orphan-page-nature.nat-facade   { border-color: #4a5a72; color: #8fb8ff; }
+.orphan-page-nature.nat-document { border-color: #6b5330; color: #ffb36b; }
+.orphan-pages-prov-filtres button.nat-outil.actif    { background: #aeb5bd; border-color: #aeb5bd; color: #0d1117; }
+.orphan-pages-prov-filtres button.nat-facade.actif   { background: #8fb8ff; border-color: #8fb8ff; color: #0d1117; }
+.orphan-pages-prov-filtres button.nat-document.actif { background: #ffb36b; border-color: #ffb36b; color: #1a1408; }
 @media (max-width: 850px) { .orphan-pages-hero, .orphan-pages-section-heading { align-items: start; flex-direction: column; } .orphan-pages-summary { grid-template-columns: repeat(2, 1fr); } .orphan-pages-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .orphan-pages-shell { padding: 24px 16px 48px; } .orphan-pages-summary, .orphan-pages-grid { grid-template-columns: 1fr; } }
 

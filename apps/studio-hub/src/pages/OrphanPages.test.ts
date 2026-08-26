@@ -65,12 +65,13 @@ describe("le recensement suit les pages reelles", () => {
     expect(fantomes, `pages recensees mais inatteignables : ${fantomes.join(", ")}`).toEqual([]);
   });
 
-  it("chaque entree porte une cible, une source et une provenance", () => {
+  it("chaque entree porte une cible, une source, une provenance et une nature", () => {
     // La cible dit a quelle machine la page appartient ; la source, ou aller
-    // lire ; la provenance, ce que la page touche vraiment. Une entree qui en
-    // manque une est une entree qu'on ne peut pas juger sans l'ouvrir.
+    // lire ; la provenance, ce que la page touche ; la nature, ce qu'elle est.
+    // Une entree qui en manque une est une entree qu'on ne peut pas juger sans
+    // l'ouvrir — et il y en a vingt et une.
     const entrees = [...blocRegistre().matchAll(
-      /\{ id: "([^"]+)", label: "[^"]*", description: "[^"]*", target: "([^"]+)", source: "([^"]+)", provenance: "([^"]+)" \}/g,
+      /\{ id: "([^"]+)", label: "[^"]*", description: "[^"]*", target: "([^"]+)", source: "([^"]+)", provenance: "([^"]+)", nature: "[a-z]+" \}/g,
     )];
     expect(entrees.length, "une entree n'a pas la forme attendue").toBe(recensees().size);
     for (const [, , cible, source, provenance] of entrees) {
@@ -210,5 +211,80 @@ describe("les portes declarees sont les portes reelles", () => {
       return !seulRegistre && !ailleurs.has(id);
     });
     expect(menteuses, `annoncees reliees mais sans aucune porte : ${menteuses.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("la nature declaree correspond au fichier", () => {
+  /**
+   * « Il y a des pages de doc a la place des vraies pages. » Mesuree sur les
+   * 21, la reponse est : une seule, `rhythm-hero`.
+   *
+   * Le piege etait de compter les boutons. `MidiSettings` fait 28 lignes et
+   * n'en a aucun — mais elle monte tout le panneau MIDI. Compter l'aurait
+   * classee coquille vide. Ce qui distingue une facade d'un document, ce n'est
+   * pas son activite, c'est qu'elle IMPORTE un composant qui travaille.
+   *
+   * Ces tests verifient donc le fait verifiable — l'import — et laissent
+   * `outil` au jugement, faute d'un signe fiable.
+   */
+  const dossierPages = path.join(DIR);
+
+  /** Les composants qu'une page monte, hors React, TopBar et profil. */
+  function composantsMontes(fichier: string): string[] {
+    const texte = readFileSync(path.join(dossierPages, fichier), "utf-8");
+    return [...texte.matchAll(/^import\s+(?:\{[^}]*\}|\w+)\s+from\s+"([^"]+)"/gm)]
+      .map((m) => m[1])
+      .filter((cible) => !/^react$/.test(cible)
+        && !/components\/TopBar/.test(cible)
+        && !/core\/profile/.test(cible)
+        && !/\.css$/.test(cible));
+  }
+
+  /** id de page -> fichier source, lu dans le registre. */
+  function sourcesParId(): Map<string, string> {
+    return new Map([...blocRegistre().matchAll(/\{ id: "([a-z0-9-]+)"[^}]*source: "pages\/([\w.-]+)"/g)]
+      .map((m) => [m[1], m[2]]));
+  }
+
+  function naturesParId(): Map<string, string> {
+    return new Map([...blocRegistre().matchAll(/\{ id: "([a-z0-9-]+)"[^}]*nature: "([a-z]+)"/g)]
+      .map((m) => [m[1], m[2]]));
+  }
+
+  it("chaque entree declare une nature connue", () => {
+    const natures = naturesParId();
+    expect(natures.size).toBe(recensees().size);
+    for (const [id, n] of natures) {
+      expect(["outil", "facade", "document"], `« ${id} » : nature « ${n} »`).toContain(n);
+    }
+  });
+
+  it("une facade monte vraiment un composant", () => {
+    // Sinon c'est une coquille vide annoncee comme une porte vers un outil.
+    const sources = sourcesParId();
+    for (const [id, n] of naturesParId()) {
+      if (n !== "facade") continue;
+      const montes = composantsMontes(sources.get(id)!);
+      expect(montes.length, `« ${id} » est declaree facade mais ne monte rien`).toBeGreaterThan(0);
+    }
+  });
+
+  it("un document ne monte aucun composant", () => {
+    // S'il en montait un, ce serait une facade — et le classer « document »
+    // ferait croire qu'il n'y a rien derriere alors qu'un outil s'y trouve.
+    const sources = sourcesParId();
+    for (const [id, n] of naturesParId()) {
+      if (n !== "document") continue;
+      const montes = composantsMontes(sources.get(id)!);
+      expect(montes, `« ${id} » est declaree document mais monte ${montes.join(", ")}`).toEqual([]);
+    }
+  });
+
+  it("rhythm-hero reste le seul document annonce comme un entrainement", () => {
+    // Verrouille le FAIT constate, pas seulement le mecanisme. Le jour ou la
+    // page devient un vrai jeu — ou ou une autre tombe dans le meme cas — ce
+    // test rappelle de reclasser.
+    const documents = [...naturesParId()].filter(([, n]) => n === "document").map(([id]) => id).sort();
+    expect(documents).toEqual(["doc-ep133", "doc-op1", "documentation", "rhythm-hero"]);
   });
 });

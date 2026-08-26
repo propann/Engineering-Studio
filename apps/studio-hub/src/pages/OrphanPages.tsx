@@ -31,6 +31,39 @@ type Target = "OP-1" | "EP-133" | "Hub partagé" | "Aucun projet";
  */
 type Provenance = "machine" | "local" | "profil" | "demo" | "non-verifie";
 
+/**
+ * Ce que la page EST, structurellement.
+ *
+ * Question posee le 2026-08-26 : « il y a des pages de doc a la place des
+ * vraies pages ». Mesuree sur les 21, la reponse est : une seule.
+ *
+ * - `outil` — fait le travail sur place ;
+ * - `facade` — quelques lignes qui DELEGUENT a un composant reel. Une facade
+ *   n'est pas une page vide : `MidiSettings` fait 28 lignes et monte tout le
+ *   panneau MIDI. Compter ses boutons donnerait zero et la ferait passer pour
+ *   une coquille ;
+ * - `document` — presente du texte, et c'est tout.
+ *
+ * `document` n'est pas un reproche : `DocOP1`, `DocEP133` et `Documentation`
+ * sont des pages de documentation, c'est leur metier. Le cas qui compte est
+ * celui d'une page annoncee comme un outil et qui n'est que du texte —
+ * `RhythmHero`, seule dans ce cas : 124 lignes, aucun composant importe, et la
+ * promesse d'« exercices progressifs » qu'elle ne rend pas.
+ */
+type Nature = "outil" | "facade" | "document";
+
+const NOMS_NATURE: Record<Nature, string> = {
+  outil: "OUTIL",
+  facade: "FAÇADE",
+  document: "DOCUMENT",
+};
+
+const AIDES_NATURE: Record<Nature, string> = {
+  outil: "Fait le travail sur place.",
+  facade: "Quelques lignes qui montent un composant réel. Le travail est ailleurs, mais il existe.",
+  document: "Présente du texte. Légitime pour une page de documentation ; à surveiller si elle est annoncée comme un outil.",
+};
+
 const NOMS_PROVENANCE: Record<Provenance, string> = {
   machine: "MACHINE",
   local: "LOCAL",
@@ -61,50 +94,51 @@ type PageRecord = {
    */
   source: string;
   provenance: Provenance;
+  nature: Nature;
 };
 
 const PAGE_REGISTRY: PageRecord[] = [
-  { id: "landing", label: "Accueil", description: "Point d’entrée général.", target: "Hub partagé", source: "pages/Landing.tsx", provenance: "local" }
+  { id: "landing", label: "Accueil", description: "Point d’entrée général.", target: "Hub partagé", source: "pages/Landing.tsx", provenance: "local", nature: "outil" }
 ,
-  { id: "outils", label: "Hub Outils", description: "Catalogue des outils.", target: "Hub partagé", source: "pages/ToolsHub.tsx", provenance: "local" }
+  { id: "outils", label: "Hub Outils", description: "Catalogue des outils.", target: "Hub partagé", source: "pages/ToolsHub.tsx", provenance: "local", nature: "outil" }
 ,
-  { id: "profil", label: "Profil", description: "Identité, machines et dossiers locaux.", target: "Hub partagé", source: "pages/ProfileCreator.tsx", provenance: "profil" }
+  { id: "profil", label: "Profil", description: "Identité, machines et dossiers locaux.", target: "Hub partagé", source: "pages/ProfileCreator.tsx", provenance: "profil", nature: "outil" }
 ,
-  { id: "documentation", label: "Documentation", description: "Centre documentaire général.", target: "Hub partagé", source: "pages/Documentation.tsx", provenance: "local" }
+  { id: "documentation", label: "Documentation", description: "Centre documentaire général.", target: "Hub partagé", source: "pages/Documentation.tsx", provenance: "local", nature: "document" }
 ,
-  { id: "exercises", label: "Exercices OP-1", description: "Parcours d’apprentissage.", target: "OP-1", source: "pages/Exercises.tsx", provenance: "machine" }
+  { id: "exercises", label: "Exercices OP-1", description: "Parcours d’apprentissage.", target: "OP-1", source: "pages/Exercises.tsx", provenance: "machine", nature: "facade" }
 ,
-  { id: "doc-op1", label: "Documentation OP-1", description: "Guides et limites OP-1.", target: "OP-1", source: "pages/DocOP1.tsx", provenance: "local" }
+  { id: "doc-op1", label: "Documentation OP-1", description: "Guides et limites OP-1.", target: "OP-1", source: "pages/DocOP1.tsx", provenance: "local", nature: "document" }
 ,
-  { id: "doc-ep133", label: "Documentation EP-133", description: "Guides et limites EP-133.", target: "EP-133", source: "pages/DocEP133.tsx", provenance: "local" }
+  { id: "doc-ep133", label: "Documentation EP-133", description: "Guides et limites EP-133.", target: "EP-133", source: "pages/DocEP133.tsx", provenance: "local", nature: "document" }
 ,
-  { id: "studio-op1", label: "OP-1 Studio", description: "Studio, patches, Tape et volume OP-1.", target: "OP-1", source: "pages/OP1StudioPage.tsx", provenance: "machine" }
+  { id: "studio-op1", label: "OP-1 Studio", description: "Studio, patches, Tape et volume OP-1.", target: "OP-1", source: "pages/OP1StudioPage.tsx", provenance: "machine", nature: "facade" }
 ,
-  { id: "studio-ep133", label: "EP-133 Studio", description: "Patterns, Songs et échanges EP-133.", target: "EP-133", source: "pages/EP133StudioPage.tsx", provenance: "machine" }
+  { id: "studio-ep133", label: "EP-133 Studio", description: "Patterns, Songs et échanges EP-133.", target: "EP-133", source: "pages/EP133StudioPage.tsx", provenance: "machine", nature: "facade" }
 ,
-  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement EP-133.", target: "EP-133", source: "pages/RhythmHero.tsx", provenance: "demo" }
+  { id: "rhythm-hero", label: "Rhythm Hero", description: "Jeu d’entraînement EP-133.", target: "EP-133", source: "pages/RhythmHero.tsx", provenance: "demo", nature: "document" }
 ,
-  { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Écrans OP-1 320 × 160.", target: "OP-1", source: "pages/ImageEditorOP1.tsx", provenance: "local" }
+  { id: "image-editor-op1", label: "Éditeur d’images OP-1", description: "Écrans OP-1 320 × 160.", target: "OP-1", source: "pages/ImageEditorOP1.tsx", provenance: "local", nature: "outil" }
 ,
-  { id: "firmware-lab", label: "Firmware Lab", description: "Préparation locale des mods OP-1.", target: "OP-1", source: "pages/FirmwareLab.tsx", provenance: "non-verifie" }
+  { id: "firmware-lab", label: "Firmware Lab", description: "Préparation locale des mods OP-1.", target: "OP-1", source: "pages/FirmwareLab.tsx", provenance: "non-verifie", nature: "outil" }
 ,
-  { id: "advanced-image", label: "Éditeur image avancé", description: "Édition avancée des visuels.", target: "Hub partagé", source: "pages/AdvancedImageEditor.tsx", provenance: "demo" }
+  { id: "advanced-image", label: "Éditeur image avancé", description: "Édition avancée des visuels.", target: "Hub partagé", source: "pages/AdvancedImageEditor.tsx", provenance: "demo", nature: "outil" }
 ,
-  { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1", source: "pages/SoundPatchCreator.tsx", provenance: "demo" }
+  { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1", source: "pages/SoundPatchCreator.tsx", provenance: "demo", nature: "outil" }
 ,
-  { id: "audio-plugin-rack", label: "Audio Plugin Rack", description: "Rack audio applicatif partagé.", target: "Hub partagé", source: "pages/AudioPluginRack.tsx", provenance: "local" }
+  { id: "audio-plugin-rack", label: "Audio Plugin Rack", description: "Rack audio applicatif partagé.", target: "Hub partagé", source: "pages/AudioPluginRack.tsx", provenance: "local", nature: "outil" }
 ,
-  { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé", source: "pages/SoundLibrary.tsx", provenance: "local" }
+  { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé", source: "pages/SoundLibrary.tsx", provenance: "local", nature: "facade" }
 ,
-  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Onglet « Éditeur » de la Bibliothèque sonore, où il est déjà accessible. Sa route directe s'ouvre SANS barre de navigation : voir le rapport des doublons.", target: "Hub partagé", source: "pages/SoundEditorHub.tsx", provenance: "demo" }
+  { id: "sound-editor-hub", label: "Éditeur sonore historique", description: "Onglet « Éditeur » de la Bibliothèque sonore, où il est déjà accessible. Sa route directe s'ouvre SANS barre de navigation : voir le rapport des doublons.", target: "Hub partagé", source: "pages/SoundEditorHub.tsx", provenance: "demo", nature: "outil" }
 ,
-  { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI commune.", target: "Hub partagé", source: "pages/MidiSettings.tsx", provenance: "machine" }
+  { id: "midi-settings", label: "Réglages MIDI", description: "Synchronisation MIDI commune.", target: "Hub partagé", source: "pages/MidiSettings.tsx", provenance: "machine", nature: "facade" }
 ,
-  { id: "op1-settings", label: "Réglages OP-1", description: "Configuration propre à l’OP-1.", target: "OP-1", source: "pages/OP1Settings.tsx", provenance: "machine" }
+  { id: "op1-settings", label: "Réglages OP-1", description: "Configuration propre à l’OP-1.", target: "OP-1", source: "pages/OP1Settings.tsx", provenance: "machine", nature: "outil" }
 ,
-  { id: "backup-lab", label: "Backup Lab", description: "Sauvegardes contrôlées des machines.", target: "Hub partagé", source: "pages/BackupLab.tsx", provenance: "non-verifie" }
+  { id: "backup-lab", label: "Backup Lab", description: "Sauvegardes contrôlées des machines.", target: "Hub partagé", source: "pages/BackupLab.tsx", provenance: "non-verifie", nature: "facade" }
 ,
-  { id: "orphan-pages", label: "Pages", description: "Registre et rangement des pages.", target: "Hub partagé", source: "pages/OrphanPages.tsx", provenance: "local" }
+  { id: "orphan-pages", label: "Pages", description: "Registre et rangement des pages.", target: "Hub partagé", source: "pages/OrphanPages.tsx", provenance: "local", nature: "outil" }
 ,
 ];
 
@@ -144,6 +178,7 @@ export default function OrphanPages() {
   const [target, setTarget] = useState<"all" | Target>("all");
   const [recherche, setRecherche] = useState("");
   const [provenance, setProvenance] = useState<"all" | Provenance>("all");
+  const [nature, setNature] = useState<"all" | Nature>("all");
   const [archived, setArchived] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
 
@@ -169,8 +204,9 @@ export default function OrphanPages() {
     return (filter === "all" || (filter === "archived" ? isArchived : !isArchived && isOrphan)) &&
       (target === "all" || page.target === target) &&
       (provenance === "all" || page.provenance === provenance) &&
+      (nature === "all" || page.nature === nature) &&
       correspond;
-  }), [activePages, archived, filter, target, provenance, recherche]);
+  }), [activePages, archived, filter, target, provenance, nature, recherche]);
 
   const persist = (key: string, values: string[]) => localStorage.setItem(key, JSON.stringify(values));
   const openPage = (page: PageRecord) => (window as any).navigateMaquette(page.id);
@@ -305,6 +341,20 @@ export default function OrphanPages() {
               </button>
             ))}
           </div>
+          <div className="orphan-pages-prov-filtres">
+            <button type="button" className={nature === "all" ? "actif" : ""} onClick={() => setNature("all")}>Toutes natures</button>
+            {(Object.keys(NOMS_NATURE) as Nature[]).map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={`nat-${value} ${nature === value ? "actif" : ""}`}
+                onClick={() => setNature(value)}
+                title={AIDES_NATURE[value]}
+              >
+                {NOMS_NATURE[value]} ({activePages.filter((page) => page.nature === value).length})
+              </button>
+            ))}
+          </div>
         </div>
 
         <section className="orphan-pages-list" aria-labelledby="orphan-pages-title">
@@ -323,6 +373,12 @@ export default function OrphanPages() {
                   {/* Ce que la page touche, avant qu'on l'ouvre. */}
                   <span className={`orphan-page-prov prov-${page.provenance}`} title={AIDES_PROVENANCE[page.provenance]}>
                     {NOMS_PROVENANCE[page.provenance]}
+                  </span>
+                  {/* Ce que la page EST : un outil, une facade qui delegue, ou
+                      du texte. C'est ce qui permet de decider quoi garder sans
+                      ouvrir les 21. */}
+                  <span className={`orphan-page-nature nat-${page.nature}`} title={AIDES_NATURE[page.nature]}>
+                    {NOMS_NATURE[page.nature]}
                   </span>
                   {/* Le nombre de PORTES, pas la liste seule : « 0 porte » se
                       lit d'un coup d'oeil la ou il fallait compter les libelles. */}
