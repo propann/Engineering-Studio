@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { readProfile, type StudioProfile } from "./core/profile";
+import { useNotesMidi } from "./core/midi/useNotesMidi";
 
 export type SoundSourceType = "all" | "labo" | "p2p" | "personal" | "machines";
 export type SoundTarget = "op1" | "ep133";
@@ -545,6 +546,12 @@ export function SoundLibraryPanel({
       setPlayingId(null);
     }
   }
+
+  useNotesMidi((_note) => {
+    if (visible.length > 0 && !playingId) {
+      void preview(visible[0]);
+    }
+  });
 
   async function toggleFavorite(asset: SoundLibraryAsset) {
     try {

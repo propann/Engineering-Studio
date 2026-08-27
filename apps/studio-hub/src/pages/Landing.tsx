@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { readProfileName } from "../core/profile";
 import { AppShell, Button, Card, PageHeader, StatusBadge } from "../ui";
+import { ServerTelemetryRack } from "../components/ServerTelemetryRack";
 
 export default function Home() {
   const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
@@ -14,14 +15,12 @@ export default function Home() {
     if (toolId === "op1") (window as any).navigateMaquette("studio-op1");
     else if (toolId === "ep133") (window as any).navigateMaquette("studio-ep133");
     else if (toolId === "sounds") (window as any).navigateMaquette("sound-library");
-    else if (toolId === "strudel") (window as any).navigateMaquette("strudel-studio");
-    else if (toolId === "collab") (window as any).navigateMaquette("collab");
-    else if (toolId === "labo") (window as any).navigateMaquette("labo");
+    else if (toolId === "strudel") (window as any).navigateMaquette("strudel-rack");
+    else if (toolId === "labo") (window as any).navigateMaquette("audio-plugin-rack");
     else if (toolId === "visual") (window as any).navigateMaquette("image-editor-op1");
     else if (toolId === "profil") (window as any).navigateMaquette("profil");
     else if (toolId === "backup") (window as any).navigateMaquette("backup-lab");
     else if (toolId === "training") (window as any).navigateMaquette("exercises");
-    else if (toolId === "rhythm-hero") (window as any).navigateMaquette("rhythm-hero");
     else if (toolId === "settings") (window as any).navigateMaquette("midi-settings");
     else (window as any).navigateMaquette("outils");
   };
@@ -54,6 +53,9 @@ export default function Home() {
         <MachineCard machine="op1" onOpen={() => openTool("op1")} />
         <MachineCard machine="ep133" onOpen={() => openTool("ep133")} />
       </section>
+
+      {/* RACK DE SURVEILLANCE SERVEUR & COMPTEUR DE VISITES */}
+      <ServerTelemetryRack />
 
       {/* SECTION 2: LES NOUVEAUX PILIERS DU STUDIO UNIFIÉ */}
       <section style={{ margin: "28px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
@@ -158,7 +160,7 @@ export default function Home() {
       </section>
 
       <nav className="landing-shortcuts" aria-label="Outils principaux">
-        <Button variant="secondary" onClick={() => openTool("collab")} icon={<span aria-hidden="true">🤝</span>}>P2P Collab & Chat</Button>
+        <Button variant="secondary" onClick={() => openTool("labo")} icon={<span aria-hidden="true">🧪</span>}>Labo Sonore</Button>
         <Button variant="secondary" onClick={() => openTool("strudel")} icon={<span aria-hidden="true">⚡</span>}>Strudel Live</Button>
         <Button variant="secondary" onClick={() => openTool("sounds")} icon={<span aria-hidden="true">♫</span>}>Bibliothèque Sonore</Button>
         <Button variant="secondary" onClick={() => openTool("backup")} icon={<span aria-hidden="true">▣</span>}>Sauvegardes</Button>

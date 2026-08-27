@@ -97,18 +97,6 @@ const tools: Tool[] = [
 
   // ── Cartes principales ────────────────────────────────────────────────
   {
-    id: "collab", code: "P2P-GIT", category: "COLLABORATION", title: "🤝 Collab Studio & Music-Git",
-    text: "Jam temps réel P2P sans serveur, chat multi-canaux (#stems, #mix), gestion des clés client .studio-key et versioning musical.",
-    accent: "collab-card", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "collab-studio" }, section: "hub", couleur: "#00ed95",
-  },
-  {
-    id: "strudel", code: "STRUDEL", category: "LIVE-CODING", title: "💻 Strudel Live-Coding",
-    text: "Composition algorithmique, mini-notation TidalCycles, synchro d'horloge 16 pas et routage MIDI matériel.",
-    accent: "strudel-card", visual: "chip", status: "OUVRIR →",
-    action: { type: "page", page: "strudel-live" }, section: "hub", couleur: "#ff5a1f",
-  },
-  {
     id: "vault", code: "SAVE-ALL", category: "COFFRE", title: "💾 Sauvegarde",
     text: "Snapshots OP-1 et EP-133, vérification SHA-256 et restauration contrôlée.",
     accent: "save-card", visual: "grid", status: "OUVRIR →",

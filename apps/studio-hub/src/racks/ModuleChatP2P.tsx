@@ -45,31 +45,39 @@ export function ModuleChatP2P({
 
   // Initialisation de l'identité et de la session P2P WebRTC
   useEffect(() => {
-    const operatorName = readProfileName();
-    const id = getOrCreateCryptoIdentity(operatorName);
-    setIdentity(id);
-
-    const session = new P2PCollabSession(roomId, id);
+    const unsubs: (() => void)[] = [];
+    const session = new P2PCollabSession(roomId);
     sessionRef.current = session;
 
-    session.onChatMessage = (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      if (msg.attachment?.type === "strudel_code" && onSnippetReceived && typeof msg.attachment.payload === "string") {
-        onSnippetReceived(msg.attachment.payload);
-      }
-    };
+    void (async () => {
+      const operatorName = readProfileName();
+      const id = await getOrCreateCryptoIdentity(operatorName);
+      setIdentity(id);
 
-    session.onPeerJoined = (peer) => {
-      setPeers((prev) => [...prev.filter((p) => p.id !== peer.id), peer]);
-      setNotice(`🤝 Nouveau pair connecté : ${peer.identity.name} (${peer.identity.shortId})`);
-      setTimeout(() => setNotice(null), 3000);
-    };
+      await session.join();
 
-    session.onPeerLeft = (peerId) => {
-      setPeers((prev) => prev.filter((p) => p.id !== peerId));
-    };
+      const unsubChat = session.on<ChatMessage>("CHAT_MESSAGE", (packet) => {
+        const msg = packet.payload;
+        if (msg) {
+          setMessages((prev) => [...prev, msg]);
+          if (msg.attachment?.type === "strudel_code" && onSnippetReceived && typeof msg.attachment.payload === "string") {
+            onSnippetReceived(msg.attachment.payload);
+          }
+        }
+      });
 
-    session.start();
+      const unsubJoin = session.on("PEER_JOIN", (packet) => {
+        setPeers(session.getConnectedPeers());
+        setNotice(`🤝 Nouveau pair connecté : ${packet.sender.name} (${packet.sender.shortId})`);
+        setTimeout(() => setNotice(null), 3000);
+      });
+
+      const unsubLeave = session.on("PEER_LEAVE", () => {
+        setPeers(session.getConnectedPeers());
+      });
+
+      unsubs.push(unsubChat, unsubJoin, unsubLeave);
+    })();
 
     // Message d'accueil initial local
     const welcomeMsg: ChatMessage = {
@@ -87,7 +95,8 @@ export function ModuleChatP2P({
     setMessages([welcomeMsg]);
 
     return () => {
-      session.stop();
+      unsubs.forEach((u) => u());
+      session.leave();
     };
   }, [roomId, onSnippetReceived]);
 
@@ -124,7 +133,7 @@ export function ModuleChatP2P({
       attachment,
     };
 
-    sessionRef.current.sendChatMessage(newMsg);
+    sessionRef.current.send("CHAT_MESSAGE", newMsg);
     setMessages((prev) => [...prev, newMsg]);
     setInputText("");
     setAttachmentType("none");

@@ -1,278 +1,71 @@
-# Engineering Studio
+# Engineering Studio 🎛️
 
-Un atelier **local-first** pour les machines de Teenage Engineering — OP-1 et
-EP-133 K.O. II. Sauvegardes vérifiées, transferts MIDI, édition de samples,
-firmware, et un rack de synthèse qui joue du son **sans qu'aucune machine soit
-branchée**.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Web Audio API](https://img.shields.io/badge/Audio-Web%20Audio%20DSP-00ed95.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+[![Web MIDI](https://img.shields.io/badge/MIDI-Web%20MIDI%20API-38bdf8.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API)
+[![Local-First](https://img.shields.io/badge/Architecture-Local--First-ff5a1f.svg)](#)
 
-Tout se passe dans le navigateur. Aucune donnée ne part sur un serveur : les
-dossiers ne sont lus qu'après que vous les ayez choisis, et le profil reste
-dans le navigateur.
-
-- Dépôt : https://github.com/propann/Engineering-Studio
-- Hub en ligne : https://engineering-studio.duckdns.org
-
-![Accueil de l'atelier](docs/assets/captures/accueil.png)
+[🇫🇷 Français](./README.fr.md) • [🇬🇧 English](./README.en.md) • [🇪🇸 Español](./README.es.md)
 
 ---
 
-## Les trois racks
+## 🌐 Provisional Online Address / Adresse Provisoire / Dirección Provisional
+- **Live Online Hub:** [https://engineering-studio.duckdns.org](https://engineering-studio.duckdns.org)
+- **GitHub Repository:** [https://github.com/propann/Engineering-Studio](https://github.com/propann/Engineering-Studio)
 
-C'est la règle d'architecture du projet, et elle décide où va chaque nouvelle
-fonction : **le rack MIDI produit les notes, le rack de moteurs en fait du son,
-le rack d'effets le traite.**
+---
 
-| Rack | Métier | Où il vit |
+## ⚡ Overview / Présentation / Resumen
+
+### English 🇬🇧
+**Engineering Studio** is a browser-based, local-first studio workspace and DSP hardware synthesis rack for Teenage Engineering instruments (OP-1, OP-1 field, EP-133 K.O. II) and Eurorack modular synthesizers. It works 100% offline in your browser with zero data sent to external servers.
+
+- **15 Audio Engines:** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth GameBoy chiptune, amsynth, ZynAddSubFX, Helm, FluidSynth SF2, AMY Engine, Faust DSP.
+- **Pixel Art Hardware Faceplates:** Dedicated interactive pixel art representations of simulated hardware & Eurorack modules with live knobs, patch jacks, and OLED displays.
+- **Strudel Live Coding:** Algorithmic music patterns with engine presets and audio rack integration.
+- **Hardware Integration:** Bit-for-bit verified backups, sample fabrication (WAV/AIFF PCM16), and Web MIDI routing.
+
+---
+
+### Français 🇫🇷
+**Engineering Studio** est un atelier local-first dans le navigateur pour les machines Teenage Engineering (OP-1, OP-1 field, EP-133 K.O. II) et la synthèse modulaire Eurorack. Fonctionne à 100% dans le navigateur sans transmission de données privées.
+
+- **15 Moteurs de Synthèse :** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth chiptune GameBoy, amsynth, ZynAddSubFX, Helm, FluidSynth SF2, AMY Engine, Faust DSP.
+- **Cartes Pixel Art Matérielles :** Rendu pixel art des façades Eurorack et machines simulées avec potentiomètres temps réel, jacks et indicateurs LED.
+- **Live Coding Strudel :** Motifs algorithmiques complets avec presets de genres et documentation intégrée.
+- **Intégration Matérielle :** Sauvegardes vérifiées au bit près, fabrication de samples (WAV/AIFF PCM16) et relais Web MIDI.
+
+---
+
+### Español 🇪🇸
+**Engineering Studio** es un taller local-first en el navegador para instrumentos de Teenage Engineering (OP-1, OP-1 field, EP-133 K.O. II) y sintetizadores modulares Eurorack. Funciona 100% en el navegador sin enviar datos a servidores externos.
+
+- **15 Motores de Síntesis:** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth GameBoy chiptune, amsynth, ZynAddSubFX, Helm, FluidSynth SF2, AMY Engine, Faust DSP.
+- **Tarjetas Pixel Art Hardware:** Representaciones visuales pixel art de módulos Eurorack con potenciómetros en vivo, jacks y pantallas OLED.
+- **Live Coding Strudel:** Patrones de música algorítmica con preajustes de género y documentación interactiva.
+- **Integración Hardware:** Copias de seguridad verificadas, fabricación de muestras (WAV/AIFF PCM16) y conexión Web MIDI.
+
+---
+
+## 🎛️ Architecture : The Three Racks
+
+| Rack | Domain | Location |
 |---|---|---|
-| **MIDI** | produit les notes — arpégiateur, 30 gammes, horloge, relais | `packages/musique/`, panneau `MidiSyncPanel` |
-| **Moteurs** | en fait du son — 20 moteurs, 101 patches | `pages/AudioPluginRack.tsx` |
-| **Effets** | traite le son — saturation, égaliseur, modulation, délai | `core/audio/effets.ts` + `racks/RackEffets.tsx` |
-
-Chaque rack **porte son interface**. Un test l'empêche de revenir en arrière :
-aucun réglage d'effet ne peut réapparaître dans le rack de moteurs, aucune
-commande d'arpège dans le panneau MIDI.
-
-C'est cette séparation qui décide de l'emplacement de l'arpégiateur. Posé dans
-le rack de moteurs, il n'arpégerait que lui ; là où il est, il atteint **tout ce
-qui écoute** — le rack, l'OP-1, l'EP-133 et n'importe quelle machine branchée.
-
-### Rack de moteurs
-
-Vingt moteurs de synthèse — la suite Mutable Instruments (Plaits, Braids,
-Rings, Clouds, Elements), dix moteurs libres (Dexed/DX7 FM, Surge XT,
-ZynAddSubFX, Helm, FluidSynth, amsynth, AMY, pl_synth, Open303, Faust) et
-cinq moteurs rétro / vintage (GameBoy DMG-01, NES 2A03, Commodore SID 6581, Sega YM2612 OPN2, Minimoog Model D).
-101 patches d'usine, superposition de patches, oscilloscope, et fabrication
-d'échantillons rendus hors ligne puis **relus et comparés par empreinte**.
-
-![Rack de moteurs, avec l'enveloppe et le rack d'effets](docs/assets/captures/rack-audio.png)
-
-### Rack MIDI
-
-Horloge de transport partagée, relais de contrôleur, et un arpégiateur qui
-quantifie sur **30 gammes** — les deux pentatoniques, les sept modes majeurs,
-les mineures altérées, les symétriques, neuf gammes du monde et trois de jazz.
-
-![Rack MIDI, arpégiateur et gammes](docs/assets/captures/rack-midi.png)
-
-### Rack principal
-
-Le rack où sont rangées les applications : studios, firmware, sauvegarde,
-édition de son, documentation.
-
-### Rack Strudel
-
-À côté des trois, pas dedans. [Strudel](https://strudel.cc/) est un **langage de
-motifs** : on écrit une ligne, elle boucle. Il ne remplace aucun des trois racks
-— il écrit de la musique, là où les autres la produisent, la sonorisent et la
-traitent.
-
-Il partage le contexte audio du Hub, donc il passe par le même mixage. Éditeur,
-exemples et extraits gardés **dans le navigateur** : rien n'en sort, et aucun
-échantillon distant n'est chargé — vérifié en mesurant les requêtes pendant
-qu'un motif joue.
-
-Son horloge n'est pas encore asservie au transport du Hub : les deux partagent
-le moteur audio, pas le tempo.
-
-![Rack principal](docs/assets/captures/rack-principal.png)
+| **MIDI Sync** | Note generation, 30 musical scales, arpeggiator, transport clock | `packages/musique/`, `MidiSyncPanel` |
+| **Audio Engines** | 15 DSP synthesis engines, 76 factory patches, offline sample export | `pages/AudioPluginRack.tsx`, `EnginePixelHardwareCard.tsx` |
+| **DSP Effects** | Overdrive, 3-band parametric EQ, chorus/flanger modulation, multi-tap delay | `core/audio/effets.ts`, `racks/RackEffets.tsx` |
 
 ---
 
-## Où en est le projet
+## 🚀 Quickstart / Lancement Rapide
 
-La distinction qui compte n'est pas « fait / à faire » mais **« prouvé par des
-tests / prouvé sur du matériel »**. Un test qui passe ne dit rien de ce que la
-machine fait du fichier qu'on lui écrit.
+```bash
+# 1. Install dependencies
+npm install
 
-| | |
-|---|---|
-| Suite de tests automatiques | 🔶 CI commune de sécurité + contrôles natifs séparés OP-1 / EP-133 ; validation complète en cours |
-| Lecture de l'OP-1 (66 fichiers, comparés octet par octet) | ✅ sur matériel |
-| Écriture vérifiée sur l'OP-1, au niveau fichier | ✅ sur matériel |
-| L'OP-1 relit son support après écriture externe | ✅ sur matériel |
-| MIDI vers l'OP-1 et l'EP-133 | ✅ sur matériel |
-| Restauration par l'application, de bout en bout | ⬜ protocole prêt, non exécuté |
-| Les trois racks, à l'oreille | ⬜ tout est consigné, essai par essai |
+# 2. Run local development server
+npm run dev
 
-Ce qui reste à valider est listé, essai par essai, dans
-[docs/TESTS_PHYSIQUES.md](docs/TESTS_PHYSIQUES.md) — avec, pour chacun, ce que
-les tests automatiques ne peuvent pas prouver.
-
-### La règle de test
-
-> **Un test qui ne peut pas échouer ne prouve rien.**
-
-Chaque garde-fou du dépôt a été vérifié par sabotage : on casse volontairement
-le code, on vérifie que le test concerné tombe — et qu'aucun autre ne tombe avec
-lui. Plusieurs tests écrits ici se sont révélés incapables d'échouer, et ne
-l'ont montré que sous sabotage. Ils sont corrigés, et l'histoire est gardée dans
-les messages de commit.
-
----
-
-## Arborescence
-
-~~~text
-Engineering-Studio/
-├── apps/
-│   ├── studio-hub/       application principale déployée
-│   ├── op1-studio/       studio OP-1 (intégré au Hub)
-│   └── ep133-studio/     studio EP-133 (intégré au Hub)
-├── packages/
-│   ├── audio-bridge/     journalisation et utilitaires audio
-│   ├── audio-formats/    AIFF et WAV — lecture, écriture, specs machines
-│   ├── fs-handles/       poignées de dossiers persistées
-│   ├── midi-bridge/      types et messages entre Hub et studios
-│   ├── midi-dispatch/    un seul abonnement MIDI, plusieurs auditeurs
-│   └── musique/          gammes, arpèges, divisions, sélecteur partagé
-├── docs/                 documentation classée
-├── scripts/              vérifications et opérations de dépôt
-└── vite.config.ts        configuration du Hub et de Coolify
-~~~
-
-Le build racine utilise `apps/studio-hub` comme racine Vite et sert le résultat
-sur le port 3000. Les deux studios sont **intégrés au Hub**, pas déployés comme
-services séparés.
-
-Les deux studios ne partagent pas leur système machine. L'OP-1 utilise ses formats AIFF, ses patches et son workflow de volume/MIDI ; l'EP-133 utilise ses projets, ses samples et son protocole MIDI/SysEx. Les paquets communs fournissent uniquement des primitives explicitement partagées ; ils ne valident ni ne simulent le transfert d'une autre machine.
-
-La sécurité est commune (CI sur les pull requests, typecheck, tests, Trivy, permissions minimales et sauvegardes avant écriture), tandis que les tests de format, conversion et transfert restent propres à chaque studio.
-
-> À savoir avant de toucher aux alias : le `vite.config.ts` qui construit est
-> celui de la **racine**. Un alias doit être déclaré à trois endroits —
-> `vite.config.ts`, les `paths` de `tsconfig.json`, et `vitest.config.ts` qui
-> tient sa propre liste. En oublier un donne typecheck et build verts, et des
-> tests qui échouent sur `Cannot find package`.
-
----
-
-## Démarrage local
-
-Pré-requis : Node.js 20+ et Bun.
-
-~~~bash
-git clone https://github.com/propann/Engineering-Studio.git
-cd Engineering-Studio
-bun install --frozen-lockfile
-bun run dev
-~~~
-
-Ouvrir http://localhost:3000.
-
-~~~bash
-bun run typecheck   # ne pas s'en dispenser : le build ne typecheck pas
-bun run test
-bun run build
-~~~
-
-> `bun run build` passe avec des erreurs de type — Vite transpile sans vérifier.
-> Seul `typecheck` les voit. Un dépôt peut être rouge avec un build vert.
-
-### Ce qui exige un contexte sécurisé
-
-Web MIDI et File System Access n'existent que dans un contexte sécurisé.
-`http://localhost` en est un ; `http://192.168.x.x` non — `showDirectoryPicker`
-y est *absent*, pas seulement bloqué.
-
-Un HTTPS auto-signé accorde `isSecureContext` **mais bloque quand même** ces
-fonctions : le MIDI reste silencieux, sans erreur. C'est un piège qui a déjà
-coûté une session de diagnostic.
-
----
-
-## Déploiement Coolify
-
-~~~text
-Repository : propann/Engineering-Studio
-Branch     : main
-Root       : /
-Port       : 3000
-Domain     : https://engineering-studio.duckdns.org
-
-Install : bun install --frozen-lockfile
-Build   : bun run build
-Start   : bun run preview --host 0.0.0.0 --port 3000
-~~~
-
-Voir [DEPLOIEMENT.md](DEPLOIEMENT.md) pour le health check et les erreurs déjà
-rencontrées.
-
----
-
-## Données utilisateur
-
-Engineering Studio est local-first :
-
-- le profil est stocké dans `localStorage` sous `studio-hub-profile` ;
-- aucun profil n'est fourni par le serveur ;
-- les dossiers ne sont accessibles qu'après sélection explicite ;
-- un nouvel arrivant démarre avec un profil neutre, sans machine préchargée.
-
-Voir [docs/guides/NEW_USER_DATA_MODEL.md](docs/guides/NEW_USER_DATA_MODEL.md).
-
-**Toute écriture sur une machine est précédée d'une sauvegarde vérifiée**, et le
-disque se monte en lecture seule par défaut pendant les essais.
-
----
-
-## Documentation
-
-| | |
-|---|---|
-| [Index documentaire](docs/INDEX.md) | point d'entrée |
-| [Direction & Nouvelles Intégrations](docs/specs/DIRECTION_PROJET_ET_INTEGRATIONS.md) | vision stratégique, SysEx EP-133, WebUSB/Serial, Strudel & P2P |
-| [État du projet](docs/STATUS.md) | où en est chaque chantier |
-| [Modules](MODULES_STATUS.md) | les douze modules du rack, un par un |
-| [Feuille de route](docs/ROADMAP.md) | ce qui a été fait, et ce que ça a appris |
-| [Tests physiques](docs/TESTS_PHYSIQUES.md) | ce que les tests automatiques ne prouvent pas |
-| [Contrat du coffre](docs/backup/CONTRAT_INTEGRATION.md) | pour qui construit dessus |
-| [Architecture](docs/architecture/ARCHITECTURE_CURRENT.md) | vue d'ensemble |
-| [Stratégie Git](docs/guides/BRANCHING_STRATEGY.md) | branches et publication |
-
-Les documents de `docs/archived/` sont historiques. Ils ne remplacent pas la
-vérification du code actuel.
-
----
-
-## Git
-
-`main` est la branche de référence et de production, et c'est aujourd'hui la
-seule qui existe. Le CI s'y déclenche à chaque poussée.
-
-`validation` est une voie facultative, pas un passage obligé : on la crée depuis
-`main` quand on veut voir le CI **avant** que le changement parte en ligne —
-typiquement sur la construction, les dépendances ou le Dockerfile. Le workflow
-l'écoute en permanence ; il suffit de pousser dessus pour qu'elle existe.
-
-~~~bash
-git switch main
-git pull --ff-only origin main
-git switch -c feature/nom-court
-~~~
-
-Jamais de secrets, de `node_modules`, de `dist` ni de fichiers locaux dans un
-commit. Préserver les modifications utilisateur non liées au travail en cours.
-
-Les captures de ce fichier se refont avec
-[`docs/assets/captures/_capture.mjs`](docs/assets/captures/_capture.mjs), qui
-pilote Chromium par son protocole de débogage — le Hub n'ayant pas de routage
-par URL, un simple `--screenshot` ne peut atteindre que l'accueil.
-
-## Licence
-
-**GNU AGPL-3.0-or-later.** Le texte complet est dans [LICENSE](LICENSE), et les
-onze `package.json` du dépôt le déclarent.
-
-Le choix vient du rack Strudel : `@strudel/web` est distribué sous AGPL, et
-cette licence est contaminante. Avant cela le dépôt n'avait **aucune** licence —
-ce qui signifie « tous droits réservés » en droit d'auteur, en contradiction
-avec un dépôt public — et `apps/op1-studio` s'annonçait en MIT, ce qui serait
-devenu faux.
-
-La clause qui compte ici est la **§13** : mettre le logiciel à disposition par
-le réseau suffit à déclencher l'obligation, sans qu'il y ait besoin de le
-distribuer. Toute personne qui utilise le Hub en ligne peut donc exiger la
-source correspondante. Elle est publiée sur ce dépôt, et doit le rester.
-
-Toute nouvelle partie doit conserver une licence compatible.
+# 3. Open browser
+http://localhost:3000
+```

@@ -32,6 +32,7 @@ import { PanneauEnveloppe } from "../racks/PanneauEnveloppe";
 import { PanneauLfo } from "../racks/PanneauLfo";
 import { EmplacementModule, SelecteurModule, type ModuleLabo } from "../racks/ModulesLabo";
 import { RackEffets } from "../racks/RackEffets";
+import { EnginePixelHardwareCard } from "../components/EnginePixelHardwareCard";
 import type { HubNoteMessage, HubTransportMessage } from "@studio-hub/midi-bridge";
 import {
   ajouterEtiquette,
@@ -201,41 +202,6 @@ const FACTORY_PATCHES: Record<EnginePluginType, PatchPreset[]> = {
     { id: "fa3", name: "Hyper Drive Wavefolder", engine: "faust_dsp", category: "Lead", params: { faustFreqMod: 90, faustFilter: 5500, faustGain: 95, faustFeedback: 75, faustDrive: 90 } },
     { id: "fa4", name: "Low-Pass DSP Sub Drive", engine: "faust_dsp", category: "Bass", params: { faustFreqMod: 20, faustFilter: 1100, faustGain: 60, faustFeedback: 20, faustDrive: 40 } },
     { id: "fa5", name: "Feedback Distortion Swarm", engine: "faust_dsp", category: "FX", params: { faustFreqMod: 85, faustFilter: 2800, faustGain: 85, faustFeedback: 95, faustDrive: 80 } },
-  ],
-  gameboy_dmg: [
-    { id: "gb1", name: "DMG-01 Tetris Pulse Lead", engine: "gameboy_dmg", category: "Retro", params: { gbDuty: 50, gbSweepTime: 0, gbSweepDir: "up", gbEnvInit: 15, gbEnvDir: "down", gbEnvStep: 3, gbWaveType: "square", gbNoiseMode: "15bit" } },
-    { id: "gb2", name: "Pallet Town Square Pluck", engine: "gameboy_dmg", category: "Pluck", params: { gbDuty: 25, gbSweepTime: 2, gbSweepDir: "down", gbEnvInit: 12, gbEnvDir: "down", gbEnvStep: 2, gbWaveType: "square", gbNoiseMode: "15bit" } },
-    { id: "gb3", name: "Custom Wavechannel Bass 4-bit", engine: "gameboy_dmg", category: "Bass", params: { gbDuty: 75, gbSweepTime: 0, gbSweepDir: "up", gbEnvInit: 15, gbEnvDir: "down", gbEnvStep: 5, gbWaveType: "custom_wav", gbNoiseMode: "15bit" } },
-    { id: "gb4", name: "7-bit Metallic Snare Noise", engine: "gameboy_dmg", category: "Perc", params: { gbDuty: 12, gbSweepTime: 4, gbSweepDir: "down", gbEnvInit: 15, gbEnvDir: "down", gbEnvStep: 1, gbWaveType: "noise", gbNoiseMode: "7bit" } },
-    { id: "gb5", name: "Fast Arp Chiptune Chords", engine: "gameboy_dmg", category: "Lead", params: { gbDuty: 50, gbSweepTime: 0, gbSweepDir: "up", gbEnvInit: 14, gbEnvDir: "down", gbEnvStep: 4, gbWaveType: "square", gbNoiseMode: "15bit" } },
-  ],
-  nes_2a03: [
-    { id: "nes1", name: "Super Mario Overworld Pulse", engine: "nes_2a03", category: "Lead", params: { nesDuty: 50, nesSweep: 0, nesDecayRate: 60, nesTriangleEnabled: true, nesDmcRate: 15 } },
-    { id: "nes2", name: "Castlevania Stepped Triangle Bass", engine: "nes_2a03", category: "Bass", params: { nesDuty: 25, nesSweep: 0, nesDecayRate: 85, nesTriangleEnabled: true, nesDmcRate: 10 } },
-    { id: "nes3", name: "Mega Man 2 Flash Lead", engine: "nes_2a03", category: "Lead", params: { nesDuty: 75, nesSweep: 3, nesDecayRate: 40, nesTriangleEnabled: false, nesDmcRate: 12 } },
-    { id: "nes4", name: "Lo-Fi 1-Bit DMC Sample Click", engine: "nes_2a03", category: "Perc", params: { nesDuty: 12, nesSweep: 0, nesDecayRate: 20, nesTriangleEnabled: false, nesDmcRate: 15 } },
-    { id: "nes5", name: "Zelda Underworld Ambient Square", engine: "nes_2a03", category: "Ambient", params: { nesDuty: 50, nesSweep: 1, nesDecayRate: 90, nesTriangleEnabled: true, nesDmcRate: 8 } },
-  ],
-  c64_sid: [
-    { id: "sid1", name: "Rob Hubbard Arp Master", engine: "c64_sid", category: "Lead", params: { sidChipModel: "6581", sidWaveform: "pulse", sidPulseWidth: 50, sidFilterCutoff: 3200, sidFilterResonance: 70, sidFilterMode: "bandpass", sidRingMod: true, sidSync: true } },
-    { id: "sid2", name: "Martin Galway Filter Sweep Bass", engine: "c64_sid", category: "Bass", params: { sidChipModel: "8580", sidWaveform: "sawtooth", sidPulseWidth: 40, sidFilterCutoff: 1800, sidFilterResonance: 85, sidFilterMode: "lowpass", sidRingMod: false, sidSync: false } },
-    { id: "sid3", name: "6581 Non-Linear Distorted Lead", engine: "c64_sid", category: "Lead", params: { sidChipModel: "6581", sidWaveform: "mixed", sidPulseWidth: 65, sidFilterCutoff: 4500, sidFilterResonance: 90, sidFilterMode: "highpass", sidRingMod: true, sidSync: true } },
-    { id: "sid4", name: "PWM Resonant Chord Bell", engine: "c64_sid", category: "Bell", params: { sidChipModel: "8580", sidWaveform: "triangle", sidPulseWidth: 30, sidFilterCutoff: 3800, sidFilterResonance: 60, sidFilterMode: "bandpass", sidRingMod: false, sidSync: true } },
-    { id: "sid5", name: "Cyberpunk SID FX Laser", engine: "c64_sid", category: "FX", params: { sidChipModel: "6581", sidWaveform: "noise", sidPulseWidth: 80, sidFilterCutoff: 5000, sidFilterResonance: 95, sidFilterMode: "bandpass", sidRingMod: true, sidSync: false } },
-  ],
-  ym2612_opn2: [
-    { id: "ym1", name: "Genesis Sonic 2 Slap Bass", engine: "ym2612_opn2", category: "Bass", params: { ymAlgorithm: 4, ymFeedback: 7, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 20, ymDetune: 3 } },
-    { id: "ym2", name: "Streets of Rage FM Club Lead", engine: "ym2612_opn2", category: "Lead", params: { ymAlgorithm: 5, ymFeedback: 6, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 15, ymDetune: 5 } },
-    { id: "ym3", name: "Shinobi Resonant Brass Chord", engine: "ym2612_opn2", category: "Brass", params: { ymAlgorithm: 2, ymFeedback: 5, ymDacLadderDistortion: false, ymOperatorCount: 4, ymTotalLevel: 30, ymDetune: 2 } },
-    { id: "ym4", name: "OPN2 Crossover Distortion Piano", engine: "ym2612_opn2", category: "Keys", params: { ymAlgorithm: 5, ymFeedback: 4, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 10, ymDetune: 1 } },
-    { id: "ym5", name: "Thunder Force Metal Sci-Fi FX", engine: "ym2612_opn2", category: "FX", params: { ymAlgorithm: 7, ymFeedback: 7, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 5, ymDetune: 7 } },
-  ],
-  minimoog_d: [
-    { id: "moog1", name: "Model D Fat 3-VCO Bass", engine: "minimoog_d", category: "Bass", params: { moogOsc1Wave: "saw", moogOsc2Wave: "saw", moogOsc3Wave: "square", moogOsc2Detune: 7, moogOsc3Detune: -12, moogCutoff: 1600, moogResonance: 45, moogEmphasis: 40, moogDrive: 35, moogNoiseType: "pink" } },
-    { id: "moog2", name: "Parliament Funk Lead Saw", engine: "minimoog_d", category: "Lead", params: { moogOsc1Wave: "saw", moogOsc2Wave: "saw", moogOsc3Wave: "triangle", moogOsc2Detune: 12, moogOsc3Detune: 0, moogCutoff: 3800, moogResonance: 70, moogEmphasis: 60, moogDrive: 20, moogNoiseType: "white" } },
-    { id: "moog3", name: "Ladder Filter Self-Oscillation Drone", engine: "minimoog_d", category: "Drone", params: { moogOsc1Wave: "triangle", moogOsc2Wave: "triangle", moogOsc3Wave: "triangle", moogOsc2Detune: 0, moogOsc3Detune: 0, moogCutoff: 2200, moogResonance: 98, moogEmphasis: 95, moogDrive: 80, moogNoiseType: "pink" } },
-    { id: "moog4", name: "Warm Analog Brass Swell", engine: "minimoog_d", category: "Brass", params: { moogOsc1Wave: "saw", moogOsc2Wave: "pulse_wide", moogOsc3Wave: "saw", moogOsc2Detune: 8, moogOsc3Detune: 4, moogCutoff: 2800, moogResonance: 30, moogEmphasis: 25, moogDrive: 10, moogNoiseType: "white" } },
-    { id: "moog5", name: "Thunderous Overdrive Sub Bomb", engine: "minimoog_d", category: "Bass", params: { moogOsc1Wave: "pulse_narrow", moogOsc2Wave: "square", moogOsc3Wave: "saw", moogOsc2Detune: -5, moogOsc3Detune: -24, moogCutoff: 900, moogResonance: 55, moogEmphasis: 50, moogDrive: 95, moogNoiseType: "pink" } },
   ],
 };
 
@@ -875,6 +841,102 @@ export default function AudioPluginRack({
     setter(val);
   };
 
+  const handleHardwareParamChange = (key: string, val: any) => {
+    (paramsRef.current as any)[key] = val;
+    const settersMap: Record<string, (v: any) => void> = {
+      plaitsEngine: setPlaitsEngine,
+      plaitsHarmonics: setPlaitsHarmonics,
+      plaitsTimbre: setPlaitsTimbre,
+      plaitsMorph: setPlaitsMorph,
+      plaitsDecay: setPlaitsDecay,
+      braidsModel: setBraidsModel,
+      braidsColor: setBraidsColor,
+      braidsTimbre: setBraidsTimbre,
+      braidsBitDepth: setBraidsBitDepth,
+      ringsResonatorMode: setRingsResonatorMode,
+      ringsDamping: setRingsDamping,
+      ringsStructure: setRingsStructure,
+      ringsBrightness: setRingsBrightness,
+      ringsPosition: setRingsPosition,
+      ringsPolyphony: setRingsPolyphony,
+      cloudsGranularDensity: setCloudsGranularDensity,
+      cloudsPitchShift: setCloudsPitchShift,
+      cloudsTexture: setCloudsTexture,
+      cloudsPosition: setCloudsPosition,
+      cloudsFeedback: setCloudsFeedback,
+      cloudsReverb: setCloudsReverb,
+      elementsGeometry: setElementsGeometry,
+      elementsBrightness: setElementsBrightness,
+      elementsDamping: setElementsDamping,
+      elementsPitch: setElementsPitch,
+      elementsExciter: setElementsExciter,
+      elementsStrike: setElementsStrike,
+      dxAlgorithm: setDxAlgorithm,
+      dxOp1Ratio: setDxOp1Ratio,
+      dxOp2Ratio: setDxOp2Ratio,
+      dxFeedback: setDxFeedback,
+      dxAttack: setDxAttack,
+      dxDecay: setDxDecay,
+      surgeWavetable: setSurgeWavetable,
+      surgeMorph: setSurgeMorph,
+      surgeCutoff: setSurgeCutoff,
+      surgeReso: setSurgeReso,
+      surgeSub: setSurgeSub,
+      surgeDrive: setSurgeDrive,
+      zynHarmonics: setZynHarmonics,
+      zynBandwidth: setZynBandwidth,
+      zynSubBoost: setZynSubBoost,
+      zynReso: setZynReso,
+      zynFilterType: setZynFilterType,
+      zynReverbSend: setZynReverbSend,
+      helmCrossmod: setHelmCrossmod,
+      helmCutoff: setHelmCutoff,
+      helmLfoSpeed: setHelmLfoSpeed,
+      helmSubOct: setHelmSubOct,
+      helmReverb: setHelmReverb,
+      fluidPreset: setFluidPreset,
+      fluidReverb: setFluidReverb,
+      fluidChorus: setFluidChorus,
+      fluidVolume: setFluidVolume,
+      fluidPan: setFluidPan,
+      amCutoff: setAmCutoff,
+      amReso: setAmReso,
+      amWave: setAmWave,
+      amSubWave: setAmSubWave,
+      amLfoDepth: setAmLfoDepth,
+      amDecay: setAmDecay,
+      amyPartialCount: setAmyPartialCount,
+      amySlope: setAmySlope,
+      amySpread: setAmySpread,
+      amyFeedback: setAmyFeedback,
+      amyNoise: setAmyNoise,
+      plBitcrush: setPlBitcrush,
+      plSampleRateDiv: setPlSampleRateDiv,
+      plArpSpeed: setPlArpSpeed,
+      plDutyCycle: setPlDutyCycle,
+      plGlitch: setPlGlitch,
+      acidCutoff: setAcidCutoff,
+      acidResonance: setAcidResonance,
+      acidAccent: setAcidAccent,
+      acidTuning: setAcidTuning,
+      acidEnvMod: setAcidEnvMod,
+      acidDecay: setAcidDecay,
+      acidWave: setAcidWave,
+      tb303Cutoff: setAcidCutoff,
+      tb303Reso: setAcidResonance,
+      tb303EnvMod: setAcidEnvMod,
+      tb303Drive: setAcidAccent,
+      tb303Waveform: setAcidWave,
+      faustFreqMod: setFaustFreqMod,
+      faustFilter: setFaustFilter,
+      faustGain: setFaustGain,
+      faustFeedback: setFaustFeedback,
+      faustDrive: setFaustDrive,
+    };
+    const s = settersMap[key];
+    if (s) s(val);
+  };
+
   // SAVE CUSTOM USER PATCH TO LOCALSTORAGE
   const saveUserPatch = () => {
     if (!newPatchName.trim()) return;
@@ -1133,6 +1195,11 @@ export default function AudioPluginRack({
     }
 
     showToast(`🎵 PATCH CHARGÉ : ${patch.name.toUpperCase()}`);
+    try {
+      playPluginNote(261.63);
+    } catch {
+      // Audio context might be suspended until first user gesture
+    }
   };
 
   // REAL-TIME DSP SYNTHESIS FOR ALL 15 ENGINES
@@ -3189,6 +3256,16 @@ export default function AudioPluginRack({
                 <strong>🎛️ CONTRÔLE ET RÉGLAGES DU SOUND ENGINE : {activeEngine.toUpperCase().replace("_", " ")}</strong>
                 <small>Modulation & Écoute Instantanée</small>
               </div>
+
+              {/* PIXEL ART HARDWARE / EURORACK CONTROL CARD */}
+              <EnginePixelHardwareCard
+                engineId={activeEngine}
+                engineName={ALL_ENGINES.find((e) => e.id === activeEngine)?.name || activeEngine}
+                engineCategory={ALL_ENGINES.find((e) => e.id === activeEngine)?.subtitle || "Synthèse"}
+                params={paramsRef.current}
+                onParamChange={handleHardwareParamChange}
+                onTriggerTestNote={() => playPluginNote(261.63)}
+              />
 
               {/* MUTABLE PLAITS */}
               {activeEngine === "mi_plaits" && (

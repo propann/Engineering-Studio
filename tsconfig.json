@@ -35,6 +35,8 @@
       "@studio-hub/audio-formats": ["./packages/audio-formats/index.ts"],
       "@studio-hub/midi-dispatch": ["./packages/midi-dispatch/index.ts"],
       "@studio-hub/musique": ["./packages/musique/index.ts"],
+      "@studio-hub/music-git": ["./packages/music-git/index.ts"],
+      "@studio-hub/p2p-collab": ["./packages/p2p-collab/index.ts"],
       "@studio-hub/rack-bus": ["./packages/rack-bus/index.ts"],
       "@studio-hub/core/*": ["./apps/studio-hub/src/core/*"]
     }

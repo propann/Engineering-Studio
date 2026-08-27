@@ -26,7 +26,7 @@ les tests automatiques ne peuvent pas prouver.
 | Coffre — restauration | 🔶 mécanisme validé sur l'OP-1, orchestration non |
 | Écriture sur l'OP-1 | ✅ vérifiée octet par octet, machine rendue intacte |
 | Web MIDI | ✅ instantané à l'usage sur l'OP-1 |
-| Rack — synthèse | ✅ 20 moteurs, 101 patches, superposition par patch |
+| Rack — synthèse | ✅ 15 moteurs, 76 patches, superposition par patch |
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | ✅ quatre familles : saturation (doux, dur, repliement), égaliseur (courbe tracée, 5 prédéfinies), modulation (chorus/flanger/phaser), delay 1 à 8 prises avec panoramique |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
