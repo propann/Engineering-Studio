@@ -203,8 +203,13 @@ textarea {
 /* Accueil compact de référence ---------------------------------------- */
 .landing-v2 { padding-bottom: 40px; }
 .landing-v2 .ui-page-header em { color: var(--ui-orange); font-style: normal; }
+/* UI-201 : les deux machines visibles sans defilement en 1440x900. Le titre
+   commun monte a 5.6rem ; sur l'accueil il coutait a lui seul 160px. */
+.landing-v2 .ui-page-header h1 { font-size: clamp(2rem, 4.4vw, 3.5rem); margin: 6px 0; }
+.landing-v2 .ui-page-header { padding: var(--ui-space-3) 0; }
 .landing-test-alert { width: min(1440px, calc(100% - 32px)); margin: 16px auto 0; color: var(--ui-text); background: var(--ui-panel); border: 2px solid var(--ui-danger); border-radius: var(--ui-radius-sm); }
-.landing-test-alert summary { min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 8px 12px; cursor: pointer; font: 800 12px var(--ui-font-mono); }
+.landing-test-alert summary { min-height: 38px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 6px 12px; cursor: pointer; text-align: center; font: 800 11px var(--ui-font-mono); }
+.landing-test-alert p { text-align: center; }
 .landing-test-alert p { margin: 0; padding: 0 16px 14px; color: var(--ui-muted); line-height: 1.5; }
 .landing-machine-grid { width: min(1440px, calc(100% - 32px)); margin: 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .landing-machine--op1 { --machine-accent: var(--ui-blue); }
@@ -215,8 +220,14 @@ textarea {
    cartes, donc `object-fit: contain` laisse du vide autour du visuel. Un
    fond `--ui-panel-soft` y dessinait un rectangle — quasi noir (#242924)
    en theme Studio. Le visuel repose desormais sur la carte elle-meme. */
-.landing-machine__visual { height: clamp(180px, 28vh, 300px); display: grid; place-items: center; margin-top: 14px; overflow: hidden; }
-.landing-machine__visual img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+/* Hauteur fixe pour aligner les deux cartes malgre des photos de proportions
+   differentes. Pas de fond ni de bordure : `object-fit: contain` laisse du vide
+   autour du visuel, et un fond y dessinerait un rectangle. */
+.landing-machine__visual { position: relative; height: clamp(132px, 18vh, 200px); margin-top: 10px; }
+/* Positionne, pas centre en grille : un `max-height: 100%` ne se resout pas
+   sur un element centre, et l'image debordait sa boite — la EP-133 est
+   carree (2048x2048) et se faisait rogner. */
+.landing-machine__visual img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
 :root[data-theme="studio"] .landing-machine__visual img { mix-blend-mode: normal; }
 .landing-proof-strip { width: min(1440px, calc(100% - 32px)); margin: 24px auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; overflow: hidden; color: var(--ui-text); background: var(--ui-border); border: 2px solid var(--ui-border); border-radius: var(--ui-radius-sm); }
 .landing-proof-strip span { display: grid; gap: 4px; padding: 12px 16px; background: var(--ui-panel); color: var(--ui-muted); font: 11px var(--ui-font-mono); }
@@ -224,7 +235,7 @@ textarea {
 .landing-shortcuts { width: min(1440px, calc(100% - 32px)); margin: 16px auto 0; display: flex; flex-wrap: wrap; gap: 12px; }
 @media (max-width: 767px) {
   .landing-machine-grid, .landing-proof-strip { grid-template-columns: 1fr; }
-  .landing-machine__visual { height: 180px; }
+  .landing-machine__visual { height: 150px; }
   .landing-shortcuts { display: grid; grid-template-columns: repeat(2, 1fr); }
   .landing-shortcuts .ui-button { width: 100%; }
 }
