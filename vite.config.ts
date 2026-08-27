@@ -2,6 +2,7 @@ import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 
 /**
  * Le commit reellement construit, pose dans le HTML.
@@ -17,19 +18,50 @@ import { execSync } from "node:child_process";
  * d'environnement, et c'est elle qui fait foi quand elle existe.
  */
 function commitConstruit(): string {
-  const env =
-    process.env.SOURCE_COMMIT ??
-    process.env.COOLIFY_GIT_COMMIT_SHA ??
-    process.env.GIT_COMMIT_SHA ??
-    process.env.GITHUB_SHA;
-  if (env && env.trim()) return env.trim().slice(0, 40);
+  // 1. Les variables d'environnement. Coolify et Nixpacks en posent une ;
+  //    laquelle depend de la version, d'ou la liste.
+  for (const cle of [
+    "SOURCE_COMMIT",
+    "COOLIFY_GIT_COMMIT_SHA",
+    "COOLIFY_GIT_COMMIT",
+    "GIT_COMMIT_SHA",
+    "GIT_COMMIT",
+    "COMMIT_SHA",
+    "GITHUB_SHA",
+    "VITE_BUILD_COMMIT",
+  ]) {
+    const v = process.env[cle];
+    if (v && v.trim()) return v.trim().slice(0, 40);
+  }
+
+  // 2. La commande git, quand le binaire est la.
   try {
     return execSync("git rev-parse HEAD", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
-    // Une construction hors depot n'est pas une erreur : elle est seulement
-    // non identifiable. Mentir avec un faux SHA serait pire que l'admettre.
-    return "inconnu";
+    // Rien : on tente encore de lire le depot a la main.
   }
+
+  // 3. Le depot lu directement. Une image de construction contient souvent le
+  //    dossier `.git` sans le binaire `git` — c'est le cas le plus frequent en
+  //    construction distante, et il ne coute qu'une lecture de fichier.
+  try {
+    const tete = readFileSync(path.join(import.meta.dirname, ".git", "HEAD"), "utf-8").trim();
+    const ref = /^ref:\s*(.+)$/.exec(tete);
+    if (!ref) return tete.slice(0, 40);
+    const chemin = path.join(import.meta.dirname, ".git", ref[1]);
+    if (existsSync(chemin)) return readFileSync(chemin, "utf-8").trim().slice(0, 40);
+    // Reference empaquetee : `.git/refs/` est vide apres un `git gc`.
+    const empaquete = readFileSync(path.join(import.meta.dirname, ".git", "packed-refs"), "utf-8");
+    const trouve = new RegExp("^([0-9a-f]{40}) " + ref[1] + "$", "m").exec(empaquete);
+    if (trouve) return trouve[1];
+  } catch {
+    // Ni depot ni variable : la construction n'est pas identifiable.
+  }
+
+  // Mentir avec un faux SHA serait pire que l'admettre : un marqueur credible
+  // mais faux enverrait chercher un probleme de deploiement la ou il n'y en a
+  // pas, ou pire, ferait croire a jour une production qui ne l'est pas.
+  return "inconnu";
 }
 
 /** Ecrit le commit et la date dans <head>, lisibles sans executer de script. */

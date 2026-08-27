@@ -81,9 +81,53 @@ if (servi.commit === attendu) {
   process.exit(0);
 }
 
+// Un build qui ne sait pas se nommer n'est pas forcement en retard : il a
+// seulement ete construit sans depot ni variable d'environnement. Le dire
+// plutot que de comparer deux choses incomparables — la premiere version de ce
+// script tentait un `git rev-list inconnu..HEAD` et crachait une erreur git
+// brute a la figure de qui l'appelait.
+if (servi.commit === "inconnu") {
+  // La date reste exploitable. Un build POSTERIEUR au dernier commit le
+  // contient tres probablement — ce n'est pas une preuve (rien n'interdit de
+  // reconstruire une vieille reference), mais c'est une reponse utile, et
+  // nettement mieux que de renoncer.
+  const dateCommit = new Date(
+    execSync(`git show -s --format=%cI ${attendu}`, { encoding: "utf-8" }).trim(),
+  );
+  const dateBuild = servi.date ? new Date(servi.date) : null;
+
+  console.error("✖ Le build deploye ne sait pas quel commit il porte.");
+  console.error("  Construit sans `.git` et sans variable de commit.");
+  console.error("");
+
+  if (dateBuild && !Number.isNaN(dateBuild.getTime())) {
+    const minutes = Math.round((dateBuild.getTime() - dateCommit.getTime()) / 60000);
+    console.error(`  dernier commit  ${dateCommit.toISOString()}`);
+    console.error(`  build           ${dateBuild.toISOString()}`);
+    console.error("");
+    if (minutes >= 0) {
+      console.error(`  Le build suit le commit de ${minutes} min : il le contient`);
+      console.error("  vraisemblablement. A confirmer, pas a tenir pour acquis.");
+    } else {
+      console.error(`  Le build PRECEDE le commit de ${-minutes} min : il ne peut pas`);
+      console.error("  le contenir. Le deploiement est en retard.");
+    }
+    console.error("");
+  }
+
+  console.error("  Pour trancher au lieu de deduire, exposer le SHA a la construction");
+  console.error("  dans Coolify — une variable nommee SOURCE_COMMIT,");
+  console.error("  COOLIFY_GIT_COMMIT_SHA, GIT_COMMIT_SHA, COMMIT_SHA ou");
+  console.error("  VITE_BUILD_COMMIT suffit.");
+  process.exit(1);
+}
+
 let retard = "";
 try {
-  const n = execSync(`git rev-list --count ${servi.commit}..${attendu}`, { encoding: "utf-8" }).trim();
+  const n = execSync(`git rev-list --count ${servi.commit}..${attendu}`, {
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
   retard = ` — ${n} commit(s) de retard`;
 } catch {
   // Le commit servi peut etre inconnu du depot local : on ne chiffre pas.
