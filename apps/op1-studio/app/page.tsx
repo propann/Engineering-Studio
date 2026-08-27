@@ -46,7 +46,7 @@ import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
 import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
 import { StudioTrackList } from "./components/StudioTrackList";
-import { MasterEffectsPanel } from "./components/MasterEffectsPanel";
+import { MasterEffectsPanel, DEFAULT_MASTER_EFFECTS, type MasterEffectsState } from "./components/MasterEffectsPanel";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
 import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY } from "./lib/hubCommunication";
@@ -478,7 +478,8 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | "tools" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState(() => initialPatch("engine", "mi_plaits"));
   const [selectedPatch, setSelectedPatch] = useState(() => initialPatch("patch", "Virtual Analog Saw Lead"));
-  const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape">("synth");
+  const [masterEffects, setMasterEffects] = useState<MasterEffectsState>(DEFAULT_MASTER_EFFECTS);
+  const [machineMode, setMachineMode] = useState<"synth" | "drum" | "tape" | "mixer" | "effects" | "browser">("synth");
   const [soundMenuOpen, setSoundMenuOpen] = useState(false);
   const [rackMenuOpen, setRackMenuOpen] = useState(false);
   const [soundSlot, setSoundSlot] = useState(1);
@@ -581,11 +582,19 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
     void onConnectMidi({ silent: true });
   }, [onConnectMidi]);
 
-  function setOp1MachineMode(mode: "synth" | "drum" | "tape") {
+  function setOp1MachineMode(mode: "synth" | "drum" | "tape" | "mixer" | "effects" | "browser") {
     setMachineMode(mode);
     if (mode === "drum") setSelectedEngine("Drum");
     if (mode === "synth" && selectedEngine === "Drum") setSelectedEngine("FM");
-    onNotice(`Mode OP-1 : ${mode === "synth" ? "SYNTH" : mode === "drum" ? "DRUM" : "TAPE"}.`);
+    const labels: Record<string, string> = {
+      synth: "SYNTHÉTISEUR",
+      drum: "BATTERIE (DRUM)",
+      tape: "BANDE 4 PISTES (TAPE)",
+      mixer: "MIXEUR 4 PISTES (MIXER)",
+      effects: "EFFETS MASTER (FX)",
+      browser: "EXPLORATEUR DE PATCHS",
+    };
+    onNotice(`Mode OP-1 : ${labels[mode] || mode.toUpperCase()}.`);
   }
 
   function openOp1SoundMenu(slot: number) {
@@ -797,9 +806,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
 
     const targetTrack = selectedTrackRef.current;
     const startPos = recordStartPosRef.current;
-    const duration = recResult.duration;
+    const duration = recResult ? recResult.duration : 0;
 
-    if (duration > 0.05 && recResult.samples.length > 0) {
+    if (recResult && duration > 0.05 && recResult.samples.length > 0) {
       // Encode en WAV PCM 16 bits 44.1 kHz OP-1 standard
       const wavBytes = encodeWavPcm16(recResult.samples, 1, 44100);
       const blob = new Blob([wavBytes], { type: "audio/wav" });
@@ -1948,6 +1957,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             }}
             onSeek={seekTransport}
             onNotice={onNotice}
+            gains={gains}
+            onGainChange={(idx, g) => setGains((prev) => ({ ...prev, [idx]: g }))}
+            masterEffects={masterEffects}
+            onMasterEffectsChange={(patch) => setMasterEffects((prev) => ({ ...prev, ...patch }))}
             machineMode={machineMode}
             onMachineModeChange={setOp1MachineMode}
             soundMenuOpen={soundMenuOpen}
@@ -1977,222 +1990,54 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
         </div>
       )}
 
-      {/* ── Barre de sélection des onglets dépliants ── */}
-      <div className="op1-bottom-tabs-bar" style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "12px 0 6px 0", flexWrap: "wrap" }}>
-        <button
-          type="button"
-          className={`op1-pill-btn ${activeBottomTab === "keyboard" ? "is-active" : ""}`}
-          onClick={() => setActiveBottomTab(activeBottomTab === "keyboard" ? null : "keyboard")}
-        >
-          <span>🎹 Clavier & Encodeurs T1-T4</span>
-        </button>
-        <button
-          type="button"
-          className={`op1-pill-btn ${activeBottomTab === "effects" ? "is-active" : ""}`}
-          onClick={() => setActiveBottomTab(activeBottomTab === "effects" ? null : "effects")}
-        >
-          <span>🎛️ Effets Master (Filtre, Delay, Reverb, Saturation, EQ)</span>
-        </button>
-        <button
-          type="button"
-          className={`op1-pill-btn ${activeBottomTab === "rack" ? "is-active" : ""}`}
-          onClick={() => setActiveBottomTab(activeBottomTab === "rack" ? null : "rack")}
-        >
-          <span>🔵 Rack Synthés ({RACK_ENGINES_METAS.length} Moteurs)</span>
-        </button>
-        <button
-          type="button"
-          className={`op1-pill-btn ${activeBottomTab === "tracks" ? "is-active" : ""}`}
-          onClick={() => setActiveBottomTab(activeBottomTab === "tracks" ? null : "tracks")}
-        >
-          <span>📼 Mixeur 4 Pistes & Audio</span>
-        </button>
+      {/* ── Châssis matériel OP-1 (Clavier physique, encodeurs T1-T4, transport) ── */}
+      <div
+        className="studio-keyboard-panel"
+        style={{
+          marginTop: "8px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          maxWidth: "880px",
+          margin: "8px auto 0 auto",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
+            onClick={() => setShowMidiOptions(!showMidiOptions)}
+            style={{ fontSize: "11px", padding: "3px 8px" }}
+          >
+            <span>⚙️ Gammes & Transposition {showMidiOptions ? "▲" : "▼"}</span>
+          </button>
+        </div>
+        {showMidiOptions && (
+          <MidiKeyboardOptionsBar
+            options={midiOptions}
+            onChange={(next) => setMidiOptions((prev) => ({ ...prev, ...next }))}
+            isOpen={showMidiOptions}
+            onToggleOpen={() => setShowMidiOptions((v) => !v)}
+          />
+        )}
+        <StudioMachinePanel
+          pressedNotes={pressedMidiNotes}
+          mode={studioMode}
+          playing={transportPlaying}
+          recording={recording}
+          position={transportTime}
+          files={files}
+          onTogglePlayback={toggleGlobalPlayback}
+          onRecord={toggleTapeRecording}
+          onModeChange={setOp1MachineMode}
+          onOpenSoundMenu={openOp1SoundMenu}
+          onSaveSoundSlot={saveOp1SoundSlot}
+          onOpenRackMenu={openOp1RackMenu}
+          onSoundMenuEncoder={navigateOp1SoundMenu}
+          onSendMidi={onSendMidi}
+          lastRawMidiIn={lastRawMidiIn}
+        />
       </div>
-
-      {/* ── 1. Panneau Clavier OP-1 (Châssis matériel & encodeurs) + Options MIDI ── */}
-      {activeBottomTab === "keyboard" && (
-        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "880px", margin: "6px auto 0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button
-              type="button"
-              className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
-              onClick={() => setShowMidiOptions(!showMidiOptions)}
-              style={{ fontSize: "11px", padding: "4px 8px" }}
-            >
-              <span>⚙️ Gammes, Transpose & Arpégiateur {showMidiOptions ? "▲" : "▼"}</span>
-            </button>
-          </div>
-          {showMidiOptions && (
-            <MidiKeyboardOptionsBar
-              options={midiOptions}
-              onChange={(next) => setMidiOptions((prev) => ({ ...prev, ...next }))}
-              isOpen={showMidiOptions}
-              onToggleOpen={() => setShowMidiOptions((v) => !v)}
-            />
-          )}
-          <StudioMachinePanel
-            pressedNotes={pressedMidiNotes}
-            mode={studioMode}
-            playing={transportPlaying}
-            recording={recording}
-            position={transportTime}
-            files={files}
-            onTogglePlayback={toggleGlobalPlayback}
-            onRecord={toggleTapeRecording}
-            onModeChange={setOp1MachineMode}
-            onOpenSoundMenu={openOp1SoundMenu}
-            onSaveSoundSlot={saveOp1SoundSlot}
-            onOpenRackMenu={openOp1RackMenu}
-            onSoundMenuEncoder={navigateOp1SoundMenu}
-            onSendMidi={onSendMidi}
-            lastRawMidiIn={lastRawMidiIn}
-          />
-        </div>
-      )}
-
-      {/* ── 2. Panneau Effets Master ── */}
-      {activeBottomTab === "effects" && (
-        <div className="studio-slide-panel studio-effects-panel" style={{ marginTop: "6px", maxWidth: "880px", margin: "6px auto 0 auto" }}>
-          <MasterEffectsPanel
-            onNotice={onNotice}
-            onClose={() => setActiveBottomTab(null)}
-          />
-        </div>
-      )}
-
-      {/* ── 3. Rack audio (15 moteurs, 91 patches, effets) ── */}
-      {activeBottomTab === "rack" && (
-        <div className="studio-slide-panel studio-rack-panel" style={{ marginTop: "6px", maxWidth: "880px", margin: "6px auto 0 auto" }}>
-          <AudioPluginRack
-            enTiroir
-            clavierActif={activeBottomTab === "rack"}
-            onClose={() => setActiveBottomTab(null)}
-          />
-        </div>
-      )}
-
-      {/* ── 4. Mixeur & Pistes 4-Track ── */}
-      {activeBottomTab === "tracks" && (
-        <div className="studio-slide-panel studio-tracks-panel" style={{ marginTop: "6px", maxWidth: "880px", margin: "6px auto 0 auto", background: "#0e1318", border: "1px solid #232d38", borderRadius: "8px", padding: "12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px solid #1e293b", paddingBottom: "8px" }}>
-            <span style={{ fontWeight: 800, color: "#DFD9FF", fontSize: "13px" }}>
-              📼 BANDE 4 PISTES OP-1 · MIXEUR & CONTRÔLE DE GAIN
-            </span>
-            <div style={{ display: "flex", gap: "6px" }}>
-              <button type="button" className="op1-pill-btn" onClick={renderOffline}>
-                <span>🌊 Mix WAV</span>
-              </button>
-              <button type="button" className="op1-pill-btn" onClick={exportTapeStems}>
-                <span>📼 Stems AIFF</span>
-              </button>
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
-            {[0, 1, 2, 3].map((trackIdx) => {
-              const hasFile = Boolean(files[trackIdx]);
-              const trackColor = ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"][trackIdx];
-              const isMuted = muted[trackIdx] === true;
-              const isSolo = solo === trackIdx;
-              const gain = gains[trackIdx] ?? 1;
-              return (
-                <div
-                  key={trackIdx}
-                  style={{
-                    background: "#080c10",
-                    border: `1px solid ${selectedTrack === trackIdx ? trackColor : "#1e293b"}`,
-                    borderRadius: "6px",
-                    padding: "10px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                  onClick={() => setSelectedTrack(trackIdx)}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontWeight: 800, color: trackColor, fontSize: "12px" }}>
-                      PISTE {trackIdx + 1}
-                    </span>
-                    <span style={{ fontSize: "10px", color: hasFile ? "#00ED95" : "#64748b" }}>
-                      {hasFile ? "REC/CHARGE" : "VIDE"}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "11px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {files[trackIdx] || "Aucun enregistrement"}
-                  </div>
-                  <div style={{ display: "flex", gap: "4px" }}>
-                    <button
-                      type="button"
-                      className={`op1-pill-btn ${isMuted ? "is-active" : ""}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMuted({ ...muted, [trackIdx]: !isMuted });
-                      }}
-                      style={{ fontSize: "10px", padding: "2px 6px", flex: 1 }}
-                    >
-                      MUTE
-                    </button>
-                    <button
-                      type="button"
-                      className={`op1-pill-btn ${isSolo ? "is-active" : ""}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSolo(isSolo ? null : trackIdx);
-                      }}
-                      style={{ fontSize: "10px", padding: "2px 6px", flex: 1, color: isSolo ? "#00ED95" : undefined }}
-                    >
-                      SOLO
-                    </button>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ fontSize: "9px", color: "#64748b" }}>GAIN</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="2"
-                      step="0.05"
-                      value={gain}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        setGains({ ...gains, [trackIdx]: Number(e.target.value) });
-                      }}
-                      style={{ flex: 1, accentColor: trackColor }}
-                    />
-                    <span style={{ fontSize: "10px", color: "#fff", minWidth: "28px", textAlign: "right" }}>
-                      {Math.round(gain * 100)}%
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", gap: "4px", marginTop: "2px" }}>
-                    <button
-                      type="button"
-                      className="op1-pill-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        exportSingleTrack(trackIdx);
-                      }}
-                      disabled={!hasFile}
-                      style={{ fontSize: "9px", padding: "2px 4px", flex: 1 }}
-                    >
-                      Export AIFF
-                    </button>
-                    <button
-                      type="button"
-                      className="op1-pill-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearTrack(trackIdx);
-                      }}
-                      disabled={!hasFile}
-                      style={{ fontSize: "9px", padding: "2px 4px", flex: 1, color: "#FF3A5D" }}
-                    >
-                      Effacer
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           MODAL DRAWER : ÉDITEUR MULTI-PISTES ET FICHIERS (PISTES 1 À 4)

@@ -24,9 +24,14 @@ import {
 } from "../lib/soundEnginesData";
 import { TrackContextMenu } from "./TrackContextMenu";
 import { StudioEngineScreen } from "./StudioEngineScreen";
+import { StudioMixerScreen } from "./StudioMixerScreen";
+import { StudioEffectsScreen } from "./StudioEffectsScreen";
+import { StudioBrowserScreen } from "./StudioBrowserScreen";
+import { StudioSoundMenuOverlay } from "./StudioSoundMenuOverlay";
+import { type MasterEffectsState } from "./MasterEffectsPanel";
 
 const RACK_EFFECTS = ["ADSR", "LFO", "Delay", "EQ", "Arpeggiator", "Step Sequencer", "Chorus", "Distortion"] as const;
-const MACHINE_MODES = ["synth", "drum", "tape"] as const;
+const MACHINE_MODES = ["synth", "drum", "tape", "mixer", "effects", "browser"] as const;
 
 // ── Constantes géométrie firmware ──────────────────────────────────────────────
 const SVG_W = 320;
@@ -96,8 +101,12 @@ export interface StudioTapeEditorProps {
   onSelectTrack: (index: number) => void;
   onSeek: (time: number) => void;
   onNotice?: (msg: string) => void;
-  machineMode?: "synth" | "drum" | "tape";
-  onMachineModeChange?: (mode: "synth" | "drum" | "tape") => void;
+  gains?: Record<number, number>;
+  onGainChange?: (trackIdx: number, gain: number) => void;
+  masterEffects?: MasterEffectsState;
+  onMasterEffectsChange?: (patch: Partial<MasterEffectsState>) => void;
+  machineMode?: "synth" | "drum" | "tape" | "mixer" | "effects" | "browser";
+  onMachineModeChange?: (mode: "synth" | "drum" | "tape" | "mixer" | "effects" | "browser") => void;
   soundMenuOpen?: boolean;
   onSoundMenuOpen?: (slot: number) => void;
   onSoundMenuClose?: () => void;
@@ -116,6 +125,7 @@ export interface StudioTapeEditorProps {
 // ── Composant principal ───────────────────────────────────────────────────────
 export function StudioTapeEditor(props: StudioTapeEditorProps) {
   const {
+    tracks,
     files, sources,
     waveformPeaks, clipOffsets, clipEnds, durations,
     muted, solo, playing, selectedTrack,
@@ -133,6 +143,10 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
     onFileLoad, onSoloChange, onMuteChange,
     onDurationChange, onTrackEnd, onOffsetChange, onSelectTrack,
     onSeek, onNotice,
+    gains = { 0: 1, 1: 1, 2: 1, 3: 1 },
+    onGainChange,
+    masterEffects,
+    onMasterEffectsChange,
     machineMode = "synth", onMachineModeChange, soundMenuOpen = false, onSoundMenuOpen, onSoundMenuClose, rackMenuOpen = false, onRackMenuClose, soundSlot = 1, selectedEngine = "mi_plaits", selectedPatch = "Virtual Analog Saw Lead", onEngineChange, onPatchChange,
     onExportTrack, onClearTrack, onEditTrim,
   } = props;
@@ -637,11 +651,53 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           patchCategory={getPatchesForEngine(selectedEngine).find((p) => p.name === selectedPatch)?.category || (machineMode === "drum" ? "DRUM" : "LEAD")}
           machineMode={machineMode}
           onMachineModeChange={(m) => onMachineModeChange?.(m)}
-          onOpenSoundMenu={() => onSoundMenuOpen?.(soundSlot)}
+          soundMenuOpen={engineWindowOpen}
+          onOpenSoundMenu={() => setEngineWindowOpen(true)}
+          onCloseSoundMenu={() => setEngineWindowOpen(false)}
+          onEngineChange={(eng) => onEngineChange?.(eng)}
+          onPatchChange={(ptc) => onPatchChange?.(ptc)}
           onOpenTapeView={() => onMachineModeChange?.("tape")}
           onNotice={onNotice}
           volume={volume}
           onVolumeChange={onVolumeChange}
+        />
+      ) : machineMode === "mixer" ? (
+        <StudioMixerScreen
+          tracks={tracks}
+          files={files}
+          gains={gains}
+          muted={muted}
+          solo={solo}
+          selectedTrack={selectedTrack}
+          onGainChange={(idx, g) => onGainChange?.(idx, g)}
+          onMuteToggle={(idx) => onMuteChange(idx)}
+          onSoloToggle={(idx) => onSoloChange(idx)}
+          onSelectTrack={(idx) => onSelectTrack(idx)}
+          onMachineModeChange={(m) => onMachineModeChange?.(m)}
+          onOpenTapeView={() => onMachineModeChange?.("tape")}
+          onNotice={onNotice}
+          volume={volume}
+          onVolumeChange={onVolumeChange}
+        />
+      ) : machineMode === "effects" ? (
+        <StudioEffectsScreen
+          effects={masterEffects}
+          onChange={onMasterEffectsChange}
+          onMachineModeChange={(m) => onMachineModeChange?.(m)}
+          onOpenTapeView={() => onMachineModeChange?.("tape")}
+          onNotice={onNotice}
+          volume={volume}
+          onVolumeChange={onVolumeChange}
+        />
+      ) : machineMode === "browser" ? (
+        <StudioBrowserScreen
+          selectedEngine={selectedEngine}
+          selectedPatch={selectedPatch}
+          onEngineChange={(eng) => onEngineChange?.(eng)}
+          onPatchChange={(ptc) => onPatchChange?.(ptc)}
+          onMachineModeChange={(m) => onMachineModeChange?.(m)}
+          onOpenTapeView={() => onMachineModeChange?.("tape")}
+          onNotice={onNotice}
         />
       ) : (
         /* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */
@@ -658,6 +714,81 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         >
           {/* Fond */}
           <rect width={SVG_W} height={SVG_H} fill="#0c1011" />
+
+          {/* ── BARRE DE NAVIGATION SUPÉRIEURE DE L'ÉCRAN OP-1 ── */}
+          <rect x="3" y="3" width="314" height="17" rx="3" fill="#121820" stroke="#1f2c38" strokeWidth="0.8" />
+
+          <g transform="translate(6, 5.5)">
+            {[
+              { id: "synth", label: "SYNTH", color: "#698EFF" },
+              { id: "drum", label: "DRUM", color: "#FF3A5D" },
+              { id: "tape", label: "TAPE", color: "#DFD9FF" },
+              { id: "mixer", label: "MIXER", color: "#00ED95" },
+            ].map((item, idx) => {
+              const isActive = item.id === "tape";
+              return (
+                <g
+                  key={item.id}
+                  transform={`translate(${idx * 48}, 0)`}
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMachineModeChange?.(item.id as any);
+                  }}
+                  role="button"
+                  aria-label={`Passer au mode ${item.label}`}
+                >
+                  <rect
+                    x="0"
+                    y="0"
+                    width="44"
+                    height="12"
+                    rx="2"
+                    fill={isActive ? item.color : "#17202a"}
+                    stroke={isActive ? "#ffffff" : "#243342"}
+                    strokeWidth={isActive ? "0.8" : "0.4"}
+                  />
+                  <text
+                    x="22"
+                    y="8.5"
+                    textAnchor="middle"
+                    fill={isActive ? "#090d10" : item.color}
+                    fontSize="4.2"
+                    fontFamily="monospace"
+                    fontWeight="900"
+                  >
+                    {item.label}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+
+          {/* Bouton direct "🔵 MOTEURS & PATCHES" dans l'écran Bande */}
+          <g
+            transform="translate(204, 5.5)"
+            style={{ cursor: "pointer" }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEngineWindowOpen(!engineWindowOpen);
+            }}
+            role="button"
+            aria-label="Ouvrir les moteurs et patches"
+          >
+            <rect
+              x="0"
+              y="0"
+              width="108"
+              height="12"
+              rx="2"
+              fill={engineWindowOpen ? "#132333" : "#17202a"}
+              stroke="#698EFF"
+              strokeWidth="0.8"
+            />
+            <text x="54" y="8.5" textAnchor="middle" fill="#698EFF" fontSize="3.8" fontFamily="monospace" fontWeight="900">
+              🔵 MOTEUR · 🟢 PATCH
+            </text>
+          </g>
         {/* Le mode est sélectionné depuis le bas de l'écran, comme un contrôle tactile. */}
         {/* ── Cassette K7 & Bobines (taille proportionnelle centrée) ──────────── */}
         <g transform="translate(160, 54) scale(0.84) translate(-160, -58)">
@@ -814,323 +945,23 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           );
         })()}
 
-        {/* ── PETIT CADRE ULTRA COMPACT MOTEURS (BLEU) & PATCHES (VERT) AVEC POTENTIOMÈTRES ROTATIFS ── */}
-        {engineWindowOpen && (() => {
-          const winX = 82;
-          const winY = 6;
-          const winW = 156;
-          const winH = 68;
-
-          // Données colonnes Moteurs (4 visibles)
-          const visibleEngineCount = 4;
-          const currentEngineIndex = Math.max(0, RACK_ENGINES_METAS.findIndex((m) => m.id === selectedEngine));
-          const maxEngineOffset = Math.max(0, RACK_ENGINES_METAS.length - visibleEngineCount);
-          // Garde automatiquement le moteur sélectionné visible dans la colonne bleue
-          const safeEngineOffset = Math.max(0, Math.min(maxEngineOffset, Math.min(currentEngineIndex, Math.max(0, currentEngineIndex - 1))));
-          const visibleEngines = RACK_ENGINES_METAS.slice(safeEngineOffset, safeEngineOffset + visibleEngineCount);
-
-          // Angle potentiomètre bleu Moteur (de -135° à +135°)
-          const engineProgress = RACK_ENGINES_METAS.length > 1 ? currentEngineIndex / (RACK_ENGINES_METAS.length - 1) : 0;
-          const blueKnobAngle = engineProgress * 270 - 135;
-
-          // Données colonnes Patches (4 visibles)
-          const currentPatches = getPatchesForEngine(selectedEngine);
-          const currentPatchIndex = Math.max(0, currentPatches.findIndex((p) => p.name === selectedPatch));
-          const visiblePatchCount = 4;
-          const maxPatchOffset = Math.max(0, currentPatches.length - visiblePatchCount);
-          // Garde automatiquement le patch sélectionné visible dans la colonne verte
-          const safePatchOffset = Math.max(0, Math.min(maxPatchOffset, Math.min(currentPatchIndex, Math.max(0, currentPatchIndex - 1))));
-          const visiblePatches = currentPatches.slice(safePatchOffset, safePatchOffset + visiblePatchCount);
-
-          // Angle potentiomètre vert Patch (de -135° à +135°)
-          const patchProgress = currentPatches.length > 1 ? currentPatchIndex / (currentPatches.length - 1) : 0;
-          const greenKnobAngle = patchProgress * 270 - 135;
-
-          const colW = 75;
-
-          return (
-            <g
-              transform={`translate(${winX} ${winY})`}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
-              {/* Fond sombre & double bordure fine */}
-              <rect
-                x="0"
-                y="0"
-                width={winW}
-                height={winH}
-                rx="3"
-                fill="#070c10"
-                stroke="#1b2a36"
-                strokeWidth="1.2"
-                style={{ filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.9))" }}
-              />
-              <rect
-                x="1.2"
-                y="1.2"
-                width={winW - 2.4}
-                height={winH - 2.4}
-                rx="2"
-                fill="none"
-                stroke="#2a3f50"
-                strokeWidth="0.5"
-              />
-
-              {/* Barre de titre compacte */}
-              <rect x="1.5" y="1.5" width={winW - 3} height="8.5" rx="1.5" fill="#0d1820" />
-              <line x1="1.5" y1="10" x2={winW - 1.5} y2="10" stroke="#1b2a36" strokeWidth="0.7" />
-
-              {/* Titre MOTEURS (Bleu) & PATCHES (Vert) */}
-              <text x="5" y="7.2" fill="#698EFF" fontFamily="monospace" fontSize="3.6" fontWeight="900" letterSpacing="0.4">
-                🔵 MOTEURS
-              </text>
-              <text x="38" y="7.2" fill="#4a657c" fontFamily="monospace" fontSize="3.2" fontWeight="700">
-                &
-              </text>
-              <text x="44" y="7.2" fill="#00ED95" fontFamily="monospace" fontSize="3.6" fontWeight="900" letterSpacing="0.4">
-                🟢 PATCHES
-              </text>
-
-              {/* Bouton Réduire / Fermer (×) */}
-              <g
-                style={{ cursor: "pointer" }}
-                onClick={(e) => { e.stopPropagation(); setEngineWindowOpen(false); }}
-                role="button"
-                aria-label="Fermer la fenêtre"
-              >
-                <title>Fermer le cadre (Cliquer)</title>
-                <rect x={winW - 10} y="2.2" width="7.5" height="6" rx="1" fill="#2d171d" stroke="#5c2937" strokeWidth="0.4" />
-                <text x={winW - 6.25} y="6.6" textAnchor="middle" fill="#ff5c7a" fontSize="4.5" fontWeight="900">×</text>
-              </g>
-
-              {/* ── COLONNE 1 (GAUCHE) : MOTEURS BLEUS AVEC POTENTIOMÈTRE BLEU T1 ── */}
-              <g
-                transform="translate(2.5 11)"
-                onWheel={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  cycleRackEngine(e.deltaY > 0 ? 1 : -1);
-                }}
-              >
-                {/* En-tête Moteurs avec Potentiomètre BLEU */}
-                <rect x="0" y="0" width={colW} height="12" rx="1.5" fill="#0c1825" stroke="#1d3855" strokeWidth="0.5" />
-                <text x="3" y="5.5" fill="#698EFF" fontFamily="monospace" fontSize="3.2" fontWeight="900">
-                  MOTEUR ({RACK_ENGINES_METAS.length})
-                </text>
-                <text x="3" y="9.8" fill="#587ea0" fontFamily="monospace" fontSize="2.4" fontWeight="700">
-                  {`#${currentEngineIndex + 1}/${RACK_ENGINES_METAS.length}`}
-                </text>
-
-                {/* Potentiomètre Rotatif BLEU interactif T1 */}
-                {(() => {
-                  const kcx = 66.5;
-                  const kcy = 6;
-                  const kr = 4.2;
-                  const rad = (blueKnobAngle * Math.PI) / 180;
-                  const nx = kcx + kr * 0.7 * Math.sin(rad);
-                  const ny = kcy - kr * 0.7 * Math.cos(rad);
-
-                  return (
-                    <g
-                      style={{ cursor: "pointer" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        cycleRackEngine(1);
-                      }}
-                      onWheel={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        cycleRackEngine(e.deltaY > 0 ? 1 : -1);
-                      }}
-                    >
-                      <title>Potentiomètre BLEU : Tourner pour changer de moteur (clic ou molette)</title>
-                      {/* Anneau extérieur bleu */}
-                      <circle cx={kcx} cy={kcy} r={kr} fill="#0b1726" stroke="#698EFF" strokeWidth="0.7" />
-                      {/* Fond gradué */}
-                      <circle cx={kcx} cy={kcy} r={kr * 0.75} fill="#142840" stroke="#254a73" strokeWidth="0.4" />
-                      {/* Aiguille rotative bleue */}
-                      <line x1={kcx} y1={kcy} x2={nx} y2={ny} stroke="#698EFF" strokeWidth="1" strokeLinecap="round" />
-                      {/* Centre blanc */}
-                      <circle cx={kcx} cy={kcy} r="0.9" fill="#ffffff" />
-                      <circle cx={nx} cy={ny} r="0.6" fill="#ffffff" />
-                    </g>
-                  );
-                })()}
-
-                {/* Liste compacte des moteurs en BLEU */}
-                {visibleEngines.map((meta, idx) => {
-                  const isActive = selectedEngine === meta.id;
-                  const isHovered = hoveredEngineId === meta.id;
-                  const rowY = 13 + idx * 10.5;
-                  return (
-                    <g
-                      key={meta.id}
-                      transform={`translate(0 ${rowY})`}
-                      style={{ cursor: "pointer" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEngineChange?.(meta.id);
-                        const patches = getPatchesForEngine(meta.id);
-                        if (patches.length > 0) {
-                          onPatchChange?.(patches[0].name);
-                        }
-                        setPatchScrollOffset(0);
-                        onNotice?.(`🔵 Moteur sélectionné : ${meta.label}`);
-                      }}
-                      onMouseEnter={() => setHoveredEngineId(meta.id)}
-                      onMouseLeave={() => setHoveredEngineId(null)}
-                    >
-                      <rect
-                        x="0"
-                        y="0"
-                        width={colW}
-                        height="9.5"
-                        rx="1.2"
-                        fill={isActive ? "#11263d" : isHovered ? "#0d1d2e" : "#08131e"}
-                        stroke={isActive ? "#698EFF" : isHovered ? "#3d6490" : "#132538"}
-                        strokeWidth={isActive ? "0.9" : "0.4"}
-                      />
-                      <circle cx="3.2" cy="4.7" r={isActive ? 1.4 : 0.9} fill={isActive ? "#698EFF" : "#2a4d70"} />
-                      <text
-                        x="6.5"
-                        y="6.2"
-                        fill={isActive ? "#ffffff" : isHovered ? "#bcd6f5" : "#89aecd"}
-                        fontFamily="monospace"
-                        fontSize="3.1"
-                        fontWeight={isActive ? "900" : "600"}
-                      >
-                        {meta.label.length > 11 ? meta.label.slice(0, 10) + "…" : meta.label}
-                      </text>
-                      <text
-                        x={colW - 2.5}
-                        y="6.2"
-                        textAnchor="end"
-                        fill={isActive ? "#698EFF" : "#4a7095"}
-                        fontFamily="monospace"
-                        fontSize="2.4"
-                        fontWeight="800"
-                      >
-                        {meta.category === "Eurorack" ? "MOD" : meta.category === "Synthèse FM" ? "FM" : meta.category === "Wavetable" ? "WT" : meta.category === "Acid Bassline" ? "303" : meta.category === "Échantillonneur" ? "SF2" : meta.category === "Analogique Moog" ? "MOOG" : "VA"}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-
-              {/* Séparateur vertical médian */}
-              <line x1={winW / 2} y1="11" x2={winW / 2} y2={winH - 2} stroke="#1b2a36" strokeWidth="0.7" />
-
-              {/* ── COLONNE 2 (DROITE) : PATCHES VERTS AVEC POTENTIOMÈTRE VERT T2 ── */}
-              <g
-                transform={`translate(${winW / 2 + 1.5} 11)`}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  cyclePatch(e.deltaY > 0 ? 1 : -1);
-                }}
-              >
-                {/* En-tête Patches avec Potentiomètre VERT */}
-                <rect x="0" y="0" width={colW} height="12" rx="1.5" fill="#0b1e16" stroke="#194833" strokeWidth="0.5" />
-                <text x="3" y="5.5" fill="#00ED95" fontFamily="monospace" fontSize="3.2" fontWeight="900">
-                  PATCH ({currentPatches.length})
-                </text>
-                <text x="3" y="9.8" fill="#4d9978" fontFamily="monospace" fontSize="2.4" fontWeight="700">
-                  {`#${currentPatchIndex + 1}/${currentPatches.length}`}
-                </text>
-
-                {/* Potentiomètre Rotatif VERT interactif T2 */}
-                {(() => {
-                  const kcx = 66.5;
-                  const kcy = 6;
-                  const kr = 4.2;
-                  const rad = (greenKnobAngle * Math.PI) / 180;
-                  const nx = kcx + kr * 0.7 * Math.sin(rad);
-                  const ny = kcy - kr * 0.7 * Math.cos(rad);
-
-                  return (
-                    <g
-                      style={{ cursor: "pointer" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        cyclePatch(1);
-                      }}
-                      onWheel={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        cyclePatch(e.deltaY > 0 ? 1 : -1);
-                      }}
-                    >
-                      <title>Potentiomètre VERT : Tourner pour naviguer dans les patches (clic ou molette)</title>
-                      {/* Anneau extérieur vert */}
-                      <circle cx={kcx} cy={kcy} r={kr} fill="#091b13" stroke="#00ED95" strokeWidth="0.7" />
-                      {/* Fond gradué */}
-                      <circle cx={kcx} cy={kcy} r={kr * 0.75} fill="#103322" stroke="#1d6643" strokeWidth="0.4" />
-                      {/* Aiguille rotative verte */}
-                      <line x1={kcx} y1={kcy} x2={nx} y2={ny} stroke="#00ED95" strokeWidth="1" strokeLinecap="round" />
-                      {/* Centre blanc */}
-                      <circle cx={kcx} cy={kcy} r="0.9" fill="#ffffff" />
-                      <circle cx={nx} cy={ny} r="0.6" fill="#ffffff" />
-                    </g>
-                  );
-                })()}
-
-                {/* Liste compacte des patches en VERT */}
-                {visiblePatches.map((patch, idx) => {
-                  const isActive = selectedPatch === patch.name;
-                  const isHovered = hoveredPatchId === patch.id;
-                  const rowY = 13 + idx * 10.5;
-                  return (
-                    <g
-                      key={patch.id}
-                      transform={`translate(0 ${rowY})`}
-                      style={{ cursor: "pointer" }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPatchChange?.(patch.name);
-                        onNotice?.(`🟢 Patch actif : ${patch.name}`);
-                      }}
-                      onMouseEnter={() => setHoveredPatchId(patch.id)}
-                      onMouseLeave={() => setHoveredPatchId(null)}
-                    >
-                      <rect
-                        x="0"
-                        y="0"
-                        width={colW}
-                        height="9.5"
-                        rx="1.2"
-                        fill={isActive ? "#0d2b1f" : isHovered ? "#0a2118" : "#071711"}
-                        stroke={isActive ? "#00ED95" : isHovered ? "#267a57" : "#103324"}
-                        strokeWidth={isActive ? "0.9" : "0.4"}
-                      />
-                      <circle cx="3.2" cy="4.7" r={isActive ? 1.4 : 0.9} fill={isActive ? "#00ED95" : "#1f6044"} />
-                      <text
-                        x="6.5"
-                        y="6.2"
-                        fill={isActive ? "#ffffff" : isHovered ? "#b7f4db" : "#80c4a7"}
-                        fontFamily="monospace"
-                        fontSize="2.9"
-                        fontWeight={isActive ? "900" : "600"}
-                      >
-                        {patch.name.length > 12 ? patch.name.slice(0, 11) + "…" : patch.name}
-                      </text>
-                      <text
-                        x={colW - 2.5}
-                        y="6.2"
-                        textAnchor="end"
-                        fill={isActive ? "#00ED95" : "#448067"}
-                        fontFamily="monospace"
-                        fontSize="2.3"
-                        fontWeight="700"
-                      >
-                        {patch.category.length > 5 ? patch.category.slice(0, 4) + "." : patch.category}
-                      </text>
-                    </g>
-                  );
-                })}
-              </g>
-            </g>
-          );
-        })()}
+        {/* ── SUPERPOSITION DU MENU DE SON (MOTEURS & PATCHES) ── */}
+        {engineWindowOpen && (
+          <StudioSoundMenuOverlay
+            selectedEngine={selectedEngine}
+            selectedPatch={selectedPatch}
+            onEngineChange={(eng) => {
+              onEngineChange?.(eng);
+              const patches = getPatchesForEngine(eng);
+              if (patches.length > 0) {
+                onPatchChange?.(patches[0].name);
+              }
+            }}
+            onPatchChange={(ptc) => onPatchChange?.(ptc)}
+            onClose={() => setEngineWindowOpen(false)}
+            onNotice={onNotice}
+          />
+        )}
 
         {/* Badge REV */}
         {reversed && (
