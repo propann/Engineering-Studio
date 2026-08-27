@@ -49,7 +49,7 @@ ce qui les rendait introuvables autrement qu'en fouillant `docs/`.
 
 | Dossier | Contenu |
 |---|---|
-| architecture/ | Structure technique et flux entre modules |
+| architecture/ | Structure technique, flux entre modules, et référence du back-end |
 | audits/ | Constats datés, preuves et priorités de correction |
 | design/ | Design system, feuille de route et règles d'implémentation UI |
 | guides/ | Installation, déploiement et méthodes de travail |

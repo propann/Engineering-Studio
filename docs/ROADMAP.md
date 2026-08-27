@@ -35,7 +35,7 @@ jour et ne doit pas être recopié ici. Résumé en une ligne par axe :
 | Axe | État |
 |---|---|
 | Hub, OP-1 Studio, EP-133 Studio | en service, déployés |
-| Rack de moteurs, MIDI, effets | livrés et jouables sans machine branchée |
+| Rack de moteurs, MIDI, effets | jouables sans machine branchée ; couverture inégale, voir [`architecture/REFERENCE_BACKEND.md`](architecture/REFERENCE_BACKEND.md) |
 | Sauvegarde hors machine | validée à l'usage |
 | Restauration **par l'application** vers une machine | 🔶 protocole prêt, jamais exécuté de bout en bout |
 | Registre des pages | livré — 20 pages recensées avec provenance et portes |
@@ -163,6 +163,12 @@ rien.* Chaque garde-fou est vérifié par sabotage — on casse le code
 volontairement, on vérifie que le bon test tombe, et qu'aucun autre ne tombe
 avec lui.
 
+**Et sa jumelle :** *un test qui n'exécute rien ne prouve rien du comportement.*
+Dix-sept fichiers de test sur cinquante-sept lisent le source en texte plutôt
+que d'appeler le code. C'est utile — ce sont eux qui interdisent un sélecteur
+nu ou une carte qui ment — mais ça n'apparaît dans aucune couverture. Le détail
+est dans [`architecture/REFERENCE_BACKEND.md`](architecture/REFERENCE_BACKEND.md).
+
 ---
 
 ## 7. La carte des documents
@@ -177,6 +183,7 @@ avec lui.
 | [`../AUDIO_RACK_ROADMAP.md`](../AUDIO_RACK_ROADMAP.md) | le plan détaillé du rack audio |
 | [`../MODULES_STATUS.md`](../MODULES_STATUS.md) | l'état module par module du rack |
 | [`architecture/ARCHITECTURE.md`](architecture/ARCHITECTURE.md) | la structure technique |
+| [`architecture/REFERENCE_BACKEND.md`](architecture/REFERENCE_BACKEND.md) | ce que chaque module offre, et jusqu'où c'est prouvé |
 | [`guides/STARTUP_GUIDE.md`](guides/STARTUP_GUIDE.md) | l'installation |
 | [`WORKFLOW.md`](WORKFLOW.md) | la méthode de travail |
 | [`INDEX.md`](INDEX.md) | l'entrée de toute la documentation |

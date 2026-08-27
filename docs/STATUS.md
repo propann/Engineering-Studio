@@ -47,6 +47,14 @@ les tests automatiques ne peuvent pas prouver.
 vers une machine. Le mécanisme d'écriture l'est — écrire, démonter, relire,
 comparer les empreintes — mais pas son orchestration.
 
+**Et rien n'est achevé au sens fort.** Les ✅ ci-dessus disent « fonctionne à
+l'usage », pas « prouvé ». Mesuré le 27 août 2026, le back-end exécute 58,7 %
+de ses fonctions sous test, et quatre zones sensibles restent très peu
+couvertes : les permissions fichier (14 %), la fabrication des paquets MIDI
+(7,7 %, `PANIC` compris), un tiers du moteur d'effets, et l'analyse WAV qui
+alimente la forme d'onde. Le détail, module par module, est dans
+[la référence du back-end](architecture/REFERENCE_BACKEND.md).
+
 **Contrat machine :** la CI partage le niveau de sécurité, pas le protocole matériel. Les contrôles OP-1 couvrent ses AIFF, patches, volume et MIDI ; les contrôles EP-133 couvrent ses projets, samples et échanges MIDI/SysEx. Un test de l'un ne constitue jamais une preuve pour l'autre.
 
 ## Derniers travaux
