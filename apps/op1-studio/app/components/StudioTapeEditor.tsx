@@ -23,6 +23,7 @@ import {
   type EngineId,
 } from "../lib/soundEnginesData";
 import { TrackContextMenu } from "./TrackContextMenu";
+import { StudioEngineScreen } from "./StudioEngineScreen";
 
 const RACK_EFFECTS = ["ADSR", "LFO", "Delay", "EQ", "Arpeggiator", "Step Sequencer", "Chorus", "Distortion"] as const;
 const MACHINE_MODES = ["synth", "drum", "tape"] as const;
@@ -628,20 +629,35 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
         ))}
       </div>
 
-      <>\n      {/* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */}
-      <svg
-        ref={svgRef}
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ width: "100%", height: "auto", display: "block", cursor: "default" }}
-        onPointerDown={onSvgPointerDown}
-        onPointerMove={onSvgPointerMove}
-        onPointerUp={onSvgPointerUp}
-        onPointerCancel={onSvgPointerUp}
-        onContextMenu={onSvgContextMenu}
-      >
-        {/* Fond */}
-        <rect width={SVG_W} height={SVG_H} fill="#0c1011" />
+      {machineMode === "synth" || machineMode === "drum" ? (
+        <StudioEngineScreen
+          engineId={selectedEngine}
+          engineName={getEngineMeta(selectedEngine)?.label || selectedEngine}
+          patchName={selectedPatch}
+          patchCategory={getPatchesForEngine(selectedEngine).find((p) => p.name === selectedPatch)?.category || (machineMode === "drum" ? "DRUM" : "LEAD")}
+          machineMode={machineMode}
+          onMachineModeChange={(m) => onMachineModeChange?.(m)}
+          onOpenSoundMenu={() => onSoundMenuOpen?.(soundSlot)}
+          onOpenTapeView={() => onMachineModeChange?.("tape")}
+          onNotice={onNotice}
+          volume={volume}
+          onVolumeChange={onVolumeChange}
+        />
+      ) : (
+        /* ── SVG 320×160 — copie conforme de l'écran OP-1 ────────────────── */
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ width: "100%", height: "auto", display: "block", cursor: "default" }}
+          onPointerDown={onSvgPointerDown}
+          onPointerMove={onSvgPointerMove}
+          onPointerUp={onSvgPointerUp}
+          onPointerCancel={onSvgPointerUp}
+          onContextMenu={onSvgContextMenu}
+        >
+          {/* Fond */}
+          <rect width={SVG_W} height={SVG_H} fill="#0c1011" />
         {/* Le mode est sélectionné depuis le bas de l'écran, comme un contrôle tactile. */}
         {/* ── Cassette K7 & Bobines (taille proportionnelle centrée) ──────────── */}
         <g transform="translate(160, 54) scale(0.84) translate(-160, -58)">
@@ -1595,7 +1611,7 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
             fontWeight="800"
             letterSpacing="0.4"
           >
-            {machineMode === "synth" ? "SYNTH" : machineMode === "drum" ? "DRUM" : "TAPE"}
+            TAPE
           </text>
         </g>
 
@@ -1652,9 +1668,8 @@ export function StudioTapeEditor(props: StudioTapeEditorProps) {
           style={{ pointerEvents: "none" }}
         />
 
-      </svg>
-
-      </>
+        </svg>
+      )}
 
       {(soundMenuOpen || rackMenuOpen) && (
         <div className="op1-screen-patch-menu" role="dialog" aria-label="Menu OP-1 : moteurs et patches">

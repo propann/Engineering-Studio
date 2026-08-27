@@ -102,6 +102,15 @@ class Op1SynthEngine {
   private currentEngine: Op1EngineType = "FM";
   private currentPatch = "Virtual Analog Saw Lead";
   private sampleRate = 44100;
+  private engineParams: Record<string, number> = {};
+
+  public setEngineParam(param: string, value: number): void {
+    this.engineParams[param] = value;
+  }
+
+  public getEngineParam(param: string, fallback: number = 0.5): number {
+    return this.engineParams[param] ?? fallback;
+  }
 
   private initContext(): AudioContext {
     if (!this.ctx || this.ctx.state === "closed") {

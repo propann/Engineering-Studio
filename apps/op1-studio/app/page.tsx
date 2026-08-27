@@ -15,16 +15,6 @@ type EvenementMidiLu = { data: Uint8Array | null };
 
 const PATCH_PROFILE_KEY = "op1-studio-user-patches-v1";
 
-function initialScreenScale(): number {
-  if (typeof window === "undefined") return 1;
-  try {
-    const saved = JSON.parse(localStorage.getItem("op1-studio-view-config-v1") ?? "{}") as { screenScale?: number };
-    return typeof saved.screenScale === "number" ? Math.max(0.5, Math.min(1, saved.screenScale)) : 1;
-  } catch {
-    return 1;
-  }
-}
-
 function initialPatch(field: "engine" | "patch", fallback: string): string {
   if (typeof window === "undefined") return fallback;
   try {
@@ -56,6 +46,7 @@ import { StudioMachinePanel } from "./components/StudioMachinePanel";
 import { StudioTapeEditor } from "./components/StudioTapeEditor";
 import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
 import { StudioTrackList } from "./components/StudioTrackList";
+import { MasterEffectsPanel } from "./components/MasterEffectsPanel";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
 import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY } from "./lib/hubCommunication";
@@ -396,7 +387,7 @@ type AutosaveSnapshot = {
   loopOut: number;
   looping: boolean;
   reversed: boolean;
-  screenScale: number;
+  screenScale?: number;
   midiEvents: MidiEvent[];
 };
 
@@ -478,19 +469,11 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   const [loopOut, setLoopOut] = useState(16);
   const [reversed, setReversed] = useState(false);
   const [screenFolded, setScreenFolded] = useState(false);
-  const [screenScale, setScreenScale] = useState(initialScreenScale);
-  const [keyboardFolded, setKeyboardFolded] = useState(false);
+  const [activeBottomTab, setActiveBottomTab] = useState<"keyboard" | "effects" | "rack" | "tracks" | null>("keyboard");
   const [sampleLibraryOpen, setSampleLibraryOpen] = useState(false);
   const [autosaveReady, setAutosaveReady] = useState(false);
-  useEffect(() => {
-    try { localStorage.setItem("op1-studio-view-config-v1", JSON.stringify({ screenScale })); } catch { /* stockage local indisponible */ }
-  }, [screenScale]);
-  // Rack audio du hub. Replie par defaut, contrairement aux deux autres :
-  // il n'a rien a faire a l'ecran tant qu'on ne le demande pas, et ses
-  // ecouteurs clavier sont poses sur `window`.
-  const [rackFolded, setRackFolded] = useState(true);
   const [midiOptions, setMidiOptions] = useState<MidiKeyboardOptions>(DEFAULT_MIDI_KEYBOARD_OPTIONS);
-  const [showMidiOptions, setShowMidiOptions] = useState(true);
+  const [showMidiOptions, setShowMidiOptions] = useState(false);
   const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | "guitar_hero" | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | "tools" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState(() => initialPatch("engine", "mi_plaits"));
@@ -571,10 +554,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
     const snapshot: AutosaveSnapshot = {
       version: 1, projectName, files, sourceRefs, durations, clipEnds, clipOffsets,
       fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut,
-      looping, reversed, screenScale, midiEvents,
+      looping, reversed, midiEvents,
     };
     try { localStorage.setItem(OP1_AUTOSAVE_KEY, JSON.stringify(snapshot)); } catch { /* quota locale atteinte */ }
-  }, [autosaveReady, projectName, files, sourceRefs, durations, clipEnds, clipOffsets, fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut, looping, reversed, screenScale, midiEvents]);
+  }, [autosaveReady, projectName, files, sourceRefs, durations, clipEnds, clipOffsets, fadeIns, fadeOuts, muted, gains, solo, selectedTrack, tempo, loopIn, loopOut, looping, reversed, midiEvents]);
 
   useEffect(() => {
     if (!autosaveReady) return;
@@ -766,7 +749,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   }, [sources]);
 
   function projectData() {
-    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { mode: machineMode, engine: selectedEngine, patch: selectedPatch }, view: { screen_scale: screenScale, screen_open: !screenFolded, keyboard_open: !keyboardFolded } };
+    return { schema: "op1-studio-project", version: 1, name: projectName, updated_at: new Date().toISOString(), tempo, sample_rate: 44100, length_seconds: 360, tracks: tracks.map((name, index) => ({ id: `track-${index + 1}`, name, mute: muted[index] === true, solo: solo === index, gain: gains[index] ?? 1, clips: files[index] ? [{ source: files[index], start: 0, offset: 0, duration: clipEnds[index] ?? durations[index] ?? 0, fade_in: fadeIns[index] ?? 0, fade_out: fadeOuts[index] ?? 0 }] : [], midi_events: index === 0 ? midiEvents : [] })), sources: Object.values(files), source_refs: tracks.flatMap((name, index) => files[index] ? [{ id: `track-${index + 1}`, path: sourceRefs[index]?.path ?? files[index], status: sourceRefs[index]?.status ?? "linked" }] : []), device: { model: "OP-1 original", midi_port: studioMode === "midi" ? "OP-1" : null }, sound: { mode: machineMode, engine: selectedEngine, patch: selectedPatch }, view: { screen_open: !screenFolded, keyboard_open: activeBottomTab === "keyboard" } };
   }
 
   function saveProject() {
@@ -790,7 +773,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
       project.tracks.forEach((track, index) => { const clip = track.clips?.[0]; if (clip?.source) { nextFiles[index] = clip.source; nextSourceRefs[index] = { path: clip.source, status: "reconnect" }; } if (typeof clip?.duration === "number") { nextDurations[index] = clip.duration; nextEnds[index] = clip.duration; } if (typeof clip?.fade_in === "number") nextFadeIns[index] = clip.fade_in; if (typeof clip?.fade_out === "number") nextFadeOuts[index] = clip.fade_out; if (track.mute) nextMuted[index] = true; if (typeof track.gain === "number") nextGains[index] = Math.max(0, Math.min(1, track.gain)); if (track.solo) nextSolo = index; });
       (project.source_refs ?? project.sources)?.forEach((source, index) => { const reference = typeof source === "string" ? { path: source, status: "reconnect" } : source.path ? { path: source.path, status: "reconnect" } : null; if (reference) nextSourceRefs[index] = { path: reference.path, status: "reconnect" }; });
       const events = project.tracks[0].midi_events ?? [];
-      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); if (typeof project.view?.screen_scale === "number") setScreenScale(Math.max(0.5, Math.min(1, project.view.screen_scale))); setFiles(nextFiles); setSourceRefs(nextSourceRefs); setSources({}); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé. Les références audio sont conservées ; re-sélectionnez chaque source pour reconnecter la lecture.");
+      setProjectName(project.name ?? "Projet OP-1"); setTempo(project.tempo ?? 90); setFiles(nextFiles); setSourceRefs(nextSourceRefs); setSources({}); setDurations(nextDurations); setClipEnds(nextEnds); setFadeIns(nextFadeIns); setFadeOuts(nextFadeOuts); setMuted(nextMuted); setGains(nextGains); setSolo(nextSolo); setMidiEvents(events); setMidiNotes(events.filter((event) => event.type === "note_on").length); onNotice("Projet Studio chargé. Les références audio sont conservées ; re-sélectionnez chaque source pour reconnecter la lecture.");
     } catch { onNotice("Projet invalide : utilisez un fichier .op1studio.json créé par OP-1 Studio."); } });
   }
 
@@ -1711,14 +1694,20 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
 
               {activeDropdown === "view" && (
                 <div className="op1-pro-dropdown-panel" onClick={(e) => e.stopPropagation()}>
-                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setKeyboardFolded(!keyboardFolded); setActiveDropdown(null); }}>
-                    <span>{keyboardFolded ? "▲ Afficher Clavier Machine" : "▼ Replier Clavier Machine"}</span>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setActiveBottomTab(activeBottomTab === "keyboard" ? null : "keyboard"); setActiveDropdown(null); }}>
+                    <span>{activeBottomTab === "keyboard" ? "▼ Replier Clavier Machine" : "▲ Afficher Clavier Machine"}</span>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setActiveBottomTab(activeBottomTab === "effects" ? null : "effects"); setActiveDropdown(null); }}>
+                    <span>{activeBottomTab === "effects" ? "▼ Replier Effets Master" : "▲ Afficher Effets Master"}</span>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setActiveBottomTab(activeBottomTab === "rack" ? null : "rack"); setActiveDropdown(null); }}>
+                    <span>{activeBottomTab === "rack" ? "▼ Replier Rack Audio" : "▲ Afficher Rack Audio"}</span>
+                  </button>
+                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setActiveBottomTab(activeBottomTab === "tracks" ? null : "tracks"); setActiveDropdown(null); }}>
+                    <span>{activeBottomTab === "tracks" ? "▼ Replier Mixeur 4 Pistes" : "▲ Afficher Mixeur 4 Pistes"}</span>
                   </button>
                   <button type="button" className="op1-pro-dropdown-item" onClick={() => { setShowMidiOptions(!showMidiOptions); setActiveDropdown(null); }}>
                     <span>{showMidiOptions ? "🎹 Masquer Barre MIDI / Arp" : "🎹 Afficher Barre MIDI / Arp"}</span>
-                  </button>
-                  <button type="button" className="op1-pro-dropdown-item" onClick={() => { setRackFolded(!rackFolded); setActiveDropdown(null); }}>
-                    <span>{rackFolded ? "▲ Afficher Rack Audio" : "▼ Replier Rack Audio"}</span>
                   </button>
                   <button type="button" className="op1-pro-dropdown-item" onClick={() => { setScreenFolded(!screenFolded); setActiveDropdown(null); }}>
                     <span>{screenFolded ? "▲ Afficher Écran OLED" : "▼ Replier Écran OLED"}</span>
@@ -1867,34 +1856,45 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             >
               <span>📼 Stems</span>
             </button>
-            <label className="op1-screen-scale-control" title="Réduire ou agrandir l’écran OP-1">
-              <span>ÉCRAN</span>
-              <input type="range" min="0.5" max="1" step="0.05" value={screenScale} onChange={(event) => setScreenScale(Number(event.target.value))} aria-label="Échelle de l’écran OP-1" />
-              <output>{Math.round(screenScale * 100)}%</output>
-            </label>
             <button
               type="button"
-              className={`op1-pill-btn ${!keyboardFolded ? "is-active" : ""}`}
-              onClick={() => setKeyboardFolded(!keyboardFolded)}
-              title="Afficher ou masquer le châssis clavier OP-1"
+              className={`op1-pill-btn ${activeBottomTab === "keyboard" ? "is-active" : ""}`}
+              onClick={() => setActiveBottomTab(activeBottomTab === "keyboard" ? null : "keyboard")}
+              title="Afficher ou masquer le clavier et les encodeurs"
             >
               <span>🎹 Clavier</span>
             </button>
             <button
               type="button"
-              className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
-              onClick={() => setShowMidiOptions(!showMidiOptions)}
-              title="Afficher ou masquer les options de jeu MIDI, gammes et arpégiateur"
+              className={`op1-pill-btn ${activeBottomTab === "effects" ? "is-active" : ""}`}
+              onClick={() => setActiveBottomTab(activeBottomTab === "effects" ? null : "effects")}
+              title="Afficher ou masquer les effets audio master"
             >
-              <span>⚙️ MIDI / Arp</span>
+              <span>🎛️ Effets</span>
+            </button>
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeBottomTab === "rack" ? "is-active" : ""}`}
+              onClick={() => setActiveBottomTab(activeBottomTab === "rack" ? null : "rack")}
+              title="Afficher ou masquer le rack de 15 moteurs sonores"
+            >
+              <span>🔵 Moteurs</span>
+            </button>
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeBottomTab === "tracks" ? "is-active" : ""}`}
+              onClick={() => setActiveBottomTab(activeBottomTab === "tracks" ? null : "tracks")}
+              title="Afficher ou masquer le mixeur et les 4 pistes"
+            >
+              <span>📼 Pistes</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Panneau Écran OLED Clone (Centré & Immersif) ── */}
+      {/* ── Panneau Écran OLED Clone (Centré, Haute Résolution, Vue Synth/Paramètres/Tape) ── */}
       {!screenFolded && (
-        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "12px", transform: `scale(${screenScale})`, transformOrigin: "top left", width: `${100 / screenScale}%` }}>
+        <div className="studio-slide-panel studio-screen-panel" style={{ marginTop: "8px", maxWidth: "880px", margin: "8px auto 0 auto" }}>
           <StudioTapeEditor
             tracks={tracks}
             files={files}
@@ -1958,7 +1958,12 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
             onRackMenuClose={() => setRackMenuOpen(false)}
             selectedEngine={selectedEngine}
             selectedPatch={selectedPatch}
-            onEngineChange={setSelectedEngine}
+            onEngineChange={(eng) => {
+              setSelectedEngine(eng);
+              const patches = getPatchesForEngine(eng);
+              if (patches.length > 0) setSelectedPatch(patches[0].name);
+              setOp1MachineMode(eng === "Drum" ? "drum" : "synth");
+            }}
             onPatchChange={setSelectedPatch}
             reversed={reversed}
             onExportTrack={exportSingleTrack}
@@ -1972,15 +1977,59 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
         </div>
       )}
 
-      {/* ── Panneau Clavier OP-1 (Châssis matériel & encodeurs) + Options MIDI ── */}
-      {!keyboardFolded && (
-        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-          <MidiKeyboardOptionsBar
-            options={midiOptions}
-            onChange={(next) => setMidiOptions((prev) => ({ ...prev, ...next }))}
-            isOpen={showMidiOptions}
-            onToggleOpen={() => setShowMidiOptions((v) => !v)}
-          />
+      {/* ── Barre de sélection des onglets dépliants ── */}
+      <div className="op1-bottom-tabs-bar" style={{ display: "flex", gap: "8px", justifyContent: "center", margin: "12px 0 6px 0", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          className={`op1-pill-btn ${activeBottomTab === "keyboard" ? "is-active" : ""}`}
+          onClick={() => setActiveBottomTab(activeBottomTab === "keyboard" ? null : "keyboard")}
+        >
+          <span>🎹 Clavier & Encodeurs T1-T4</span>
+        </button>
+        <button
+          type="button"
+          className={`op1-pill-btn ${activeBottomTab === "effects" ? "is-active" : ""}`}
+          onClick={() => setActiveBottomTab(activeBottomTab === "effects" ? null : "effects")}
+        >
+          <span>🎛️ Effets Master (Filtre, Delay, Reverb, Saturation, EQ)</span>
+        </button>
+        <button
+          type="button"
+          className={`op1-pill-btn ${activeBottomTab === "rack" ? "is-active" : ""}`}
+          onClick={() => setActiveBottomTab(activeBottomTab === "rack" ? null : "rack")}
+        >
+          <span>🔵 Rack Synthés ({RACK_ENGINES_METAS.length} Moteurs)</span>
+        </button>
+        <button
+          type="button"
+          className={`op1-pill-btn ${activeBottomTab === "tracks" ? "is-active" : ""}`}
+          onClick={() => setActiveBottomTab(activeBottomTab === "tracks" ? null : "tracks")}
+        >
+          <span>📼 Mixeur 4 Pistes & Audio</span>
+        </button>
+      </div>
+
+      {/* ── 1. Panneau Clavier OP-1 (Châssis matériel & encodeurs) + Options MIDI ── */}
+      {activeBottomTab === "keyboard" && (
+        <div className="studio-slide-panel studio-keyboard-panel" style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "8px", maxWidth: "880px", margin: "6px auto 0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
+              onClick={() => setShowMidiOptions(!showMidiOptions)}
+              style={{ fontSize: "11px", padding: "4px 8px" }}
+            >
+              <span>⚙️ Gammes, Transpose & Arpégiateur {showMidiOptions ? "▲" : "▼"}</span>
+            </button>
+          </div>
+          {showMidiOptions && (
+            <MidiKeyboardOptionsBar
+              options={midiOptions}
+              onChange={(next) => setMidiOptions((prev) => ({ ...prev, ...next }))}
+              isOpen={showMidiOptions}
+              onToggleOpen={() => setShowMidiOptions((v) => !v)}
+            />
+          )}
           <StudioMachinePanel
             pressedNotes={pressedMidiNotes}
             mode={studioMode}
@@ -2001,17 +2050,147 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
         </div>
       )}
 
-      {/* ── Rack audio (15 moteurs, 91 patches, effets) ── */}
-      {!rackFolded && (
-        <div className="studio-slide-panel studio-rack-panel" style={{ marginTop: "12px" }}>
-          {/* `enTiroir` retire la TopBar : elle appelle navigateMaquette et
-              demonterait ce studio au moindre clic. `clavierActif` suit le
-              repli — un rack ferme jouerait des notes sous les doigts. */}
+      {/* ── 2. Panneau Effets Master ── */}
+      {activeBottomTab === "effects" && (
+        <div className="studio-slide-panel studio-effects-panel" style={{ marginTop: "6px", maxWidth: "880px", margin: "6px auto 0 auto" }}>
+          <MasterEffectsPanel
+            onNotice={onNotice}
+            onClose={() => setActiveBottomTab(null)}
+          />
+        </div>
+      )}
+
+      {/* ── 3. Rack audio (15 moteurs, 91 patches, effets) ── */}
+      {activeBottomTab === "rack" && (
+        <div className="studio-slide-panel studio-rack-panel" style={{ marginTop: "6px", maxWidth: "880px", margin: "6px auto 0 auto" }}>
           <AudioPluginRack
             enTiroir
-            clavierActif={!rackFolded}
-            onClose={() => setRackFolded(true)}
+            clavierActif={activeBottomTab === "rack"}
+            onClose={() => setActiveBottomTab(null)}
           />
+        </div>
+      )}
+
+      {/* ── 4. Mixeur & Pistes 4-Track ── */}
+      {activeBottomTab === "tracks" && (
+        <div className="studio-slide-panel studio-tracks-panel" style={{ marginTop: "6px", maxWidth: "880px", margin: "6px auto 0 auto", background: "#0e1318", border: "1px solid #232d38", borderRadius: "8px", padding: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", borderBottom: "1px solid #1e293b", paddingBottom: "8px" }}>
+            <span style={{ fontWeight: 800, color: "#DFD9FF", fontSize: "13px" }}>
+              📼 BANDE 4 PISTES OP-1 · MIXEUR & CONTRÔLE DE GAIN
+            </span>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button type="button" className="op1-pill-btn" onClick={renderOffline}>
+                <span>🌊 Mix WAV</span>
+              </button>
+              <button type="button" className="op1-pill-btn" onClick={exportTapeStems}>
+                <span>📼 Stems AIFF</span>
+              </button>
+            </div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
+            {[0, 1, 2, 3].map((trackIdx) => {
+              const hasFile = Boolean(files[trackIdx]);
+              const trackColor = ["#698EFF", "#00ED95", "#DFD9FF", "#FF3A5D"][trackIdx];
+              const isMuted = muted[trackIdx] === true;
+              const isSolo = solo === trackIdx;
+              const gain = gains[trackIdx] ?? 1;
+              return (
+                <div
+                  key={trackIdx}
+                  style={{
+                    background: "#080c10",
+                    border: `1px solid ${selectedTrack === trackIdx ? trackColor : "#1e293b"}`,
+                    borderRadius: "6px",
+                    padding: "10px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                  onClick={() => setSelectedTrack(trackIdx)}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontWeight: 800, color: trackColor, fontSize: "12px" }}>
+                      PISTE {trackIdx + 1}
+                    </span>
+                    <span style={{ fontSize: "10px", color: hasFile ? "#00ED95" : "#64748b" }}>
+                      {hasFile ? "REC/CHARGE" : "VIDE"}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {files[trackIdx] || "Aucun enregistrement"}
+                  </div>
+                  <div style={{ display: "flex", gap: "4px" }}>
+                    <button
+                      type="button"
+                      className={`op1-pill-btn ${isMuted ? "is-active" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMuted({ ...muted, [trackIdx]: !isMuted });
+                      }}
+                      style={{ fontSize: "10px", padding: "2px 6px", flex: 1 }}
+                    >
+                      MUTE
+                    </button>
+                    <button
+                      type="button"
+                      className={`op1-pill-btn ${isSolo ? "is-active" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSolo(isSolo ? null : trackIdx);
+                      }}
+                      style={{ fontSize: "10px", padding: "2px 6px", flex: 1, color: isSolo ? "#00ED95" : undefined }}
+                    >
+                      SOLO
+                    </button>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontSize: "9px", color: "#64748b" }}>GAIN</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.05"
+                      value={gain}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setGains({ ...gains, [trackIdx]: Number(e.target.value) });
+                      }}
+                      style={{ flex: 1, accentColor: trackColor }}
+                    />
+                    <span style={{ fontSize: "10px", color: "#fff", minWidth: "28px", textAlign: "right" }}>
+                      {Math.round(gain * 100)}%
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "4px", marginTop: "2px" }}>
+                    <button
+                      type="button"
+                      className="op1-pill-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        exportSingleTrack(trackIdx);
+                      }}
+                      disabled={!hasFile}
+                      style={{ fontSize: "9px", padding: "2px 4px", flex: 1 }}
+                    >
+                      Export AIFF
+                    </button>
+                    <button
+                      type="button"
+                      className="op1-pill-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearTrack(trackIdx);
+                      }}
+                      disabled={!hasFile}
+                      style={{ fontSize: "9px", padding: "2px 4px", flex: 1, color: "#FF3A5D" }}
+                    >
+                      Effacer
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
