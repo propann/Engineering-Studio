@@ -41,16 +41,17 @@ Global, sur les 2 438 instructions instrumentées :
 
 | | |
 |---|---|
-| Instructions | **60,3 %** |
-| Branches | **55,2 %** |
-| Fonctions | **58,7 %** |
-| Lignes | **63,2 %** |
+| Instructions | **62,5 %** |
+| Branches | **57,2 %** |
+| Fonctions | **62,3 %** |
+| Lignes | **65,5 %** |
 
 Par module, du plus sûr au plus exposé :
 
 | Module | Fonctions | Instructions | Lecture |
 |---|---|---|---|
 | `packages/rack-bus` | **100 %** | 92,8 % | le fond de panier audio est le mieux tenu du dépôt |
+| `packages/midi-bridge` | **100 %** | 96,6 % | couvert le 27 août — était à 7,7 % |
 | `packages/midi-dispatch` | 94,4 % | 98,3 % | le répartiteur MIDI, solide |
 | `core/audio/dsp.ts` | 100 % | 97,7 % | |
 | `core/audio/reponseEq.ts` | 100 % | 97,2 % | |
@@ -63,41 +64,51 @@ Par module, du plus sûr au plus exposé :
 | `packages/musique` | **41,5 %** | 80,6 % | les composants React ne sont pas montés |
 | `core/storage/directoryHandleStore.ts` | **40 %** | 57,1 % | |
 | `packages/audio-bridge` | **17,4 %** | 23,3 % | analyse WAV, formes d'onde, silence |
-| `packages/fs-handles` | **14,3 %** | 22,6 % | permissions du système de fichiers |
-| `packages/midi-bridge` | **7,7 %** | 25,9 % | construction des paquets MIDI |
+| `packages/fs-handles` | 38,1 % | 45,3 % | permissions couvertes ; le magasin IndexedDB ne l'est pas |
 | `op1-studio/app/lib/nativeStorage.ts` | **0 %** | 0 % | rien du tout |
 
 ---
 
-## 3. Les quatre zones à surveiller
+## 3. Les zones sensibles
 
-Classées par ce qu'on perd si elles se trompent, pas par leur pourcentage.
+Classées par ce qu'on perd si elles se trompent, pas par leur pourcentage. Les
+deux premières ont été traitées le 27 août ; elles restent ici avec ce qu'on en
+a appris, parce que c'est ce qui sert au suivant.
 
-### `packages/fs-handles` — 14 % des fonctions
+### ~~`packages/midi-bridge`~~ — traité le 27 août, 7,7 % → **100 %**
 
-Cinq exports : `creerMagasinHandles`, `aLaPermission`, `demanderLaPermission`.
-C'est ce qui décide si l'application a le droit de lire ou d'écrire dans un
-dossier de l'utilisateur. Les lignes 42-48 et 54-94 ne sont jamais exécutées.
+Vingt-sept tests appellent le code et comparent aux octets de la spécification
+MIDI 1.0, pas à l'implémentation. `PANIC` est vérifié canal par canal : les
+seize canaux, All Notes Off **et** Reset All Controllers.
 
-Une erreur ici ne se voit pas : elle affiche une bibliothèque vide sous un
-espace annoncé « connecté », ou pire, croit avoir le droit d'écrire.
+Chaque test a été validé par sabotage. L'un d'eux ne prouvait rien au premier
+jet — il vérifiait le masque de canal avec la valeur 16, or `0x90 | 16` vaut
+`0x90`, le bit étant déjà posé. Corrigé avec 32, qui transforme un note-on en
+Control Change quand le masque manque.
 
-### `packages/midi-bridge` — 7,7 % des fonctions
+### `packages/fs-handles` — 14,3 % → **38,1 %**, ce qui reste est hors de portée
 
-Dix-neuf exports, dont `buildMidiNotePacket`, `buildMidiPanicPackets`,
-`buildMidiRealtimePacket`, `buildMidiClockWindow`. C'est ce qui fabrique les
-octets envoyés à une machine physique. Les lignes 39-118 et 154-188 ne sont
-jamais exécutées.
+Les trois fonctions de permission sont couvertes, sabotages compris : « prompt »
+traité comme un refus, exception rattrapée, mode transmis sans substitution, et
+les deux fonctions vérifiées comme ne s'appelant pas l'une l'autre — confondre
+l'interrogation silencieuse et la demande de fenêtre a déjà coûté un « accès
+refusé » au rechargement du coffre.
 
-Le `PANIC` — l'arrêt d'urgence de toutes les notes — est dans cette zone.
+Ce qui reste non couvert est le magasin IndexedDB : lignes 42-48, 65, 71-77 et
+88-94. Elles exigent un vrai IndexedDB, absent de l'environnement de test. Les
+couvrir demanderait `fake-indexeddb` — une dépendance de plus, à décider.
 
-### `core/audio/effets.ts` — 38 % des instructions
+Les chemins de repli, eux, sont prouvés : sans IndexedDB, `charger` rend `null`
+et `oublier` ne jette pas. `sauver`, lui, laisse remonter l'erreur — asymétrie
+volontaire mais qui n'était écrite nulle part, désormais constatée par un test.
+
+### `core/audio/effets.ts` — 38 % des instructions · **à faire**
 
 Les lignes 379-542 ne sont jamais exécutées, soit un tiers du fichier. Les
 effets traversent le rendu hors ligne : un échantillon fabriqué porte ce que
 ces lignes calculent, et il finit dans un fichier écrit sur une machine.
 
-### `packages/audio-bridge` — 17 % des fonctions
+### `packages/audio-bridge` — 17 % des fonctions · **à faire**
 
 `analyzeWavBuffer`, `computeWaveformPeaks`, `detectSilenceTrim`,
 `suggestNormalizationGainDb`. C'est l'analyse qui alimente l'affichage de la
