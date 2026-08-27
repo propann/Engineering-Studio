@@ -37,14 +37,14 @@ fichiers de test.
 
 ## 2. L'état mesuré
 
-Global, sur les 2 438 instructions instrumentées :
+Global, sur les 2 477 instructions instrumentées :
 
 | | |
 |---|---|
-| Instructions | **62,5 %** |
-| Branches | **57,2 %** |
-| Fonctions | **62,3 %** |
-| Lignes | **65,5 %** |
+| Instructions | **70,4 %** |
+| Branches | **62,0 %** |
+| Fonctions | **64,2 %** |
+| Lignes | **74,0 %** |
 
 Par module, du plus sûr au plus exposé :
 
@@ -60,10 +60,10 @@ Par module, du plus sûr au plus exposé :
 | `core/midi/controlMapping.ts` | 100 % | 100 % | |
 | `core/audio/enveloppe.ts` | 91,7 % | 89,7 % | |
 | `packages/audio-formats` | 87,8 % | 77,2 % | encodage AIFF/WAV, formats machine |
-| `core/audio/effets.ts` | 87,5 % | **38,3 %** | lignes 379-542 jamais exécutées |
+| `core/audio/effets.ts` | **100 %** | 99,4 % | couvert le 27 août — était à 38,3 % |
 | `packages/musique` | **41,5 %** | 80,6 % | les composants React ne sont pas montés |
 | `core/storage/directoryHandleStore.ts` | **40 %** | 57,1 % | |
-| `packages/audio-bridge` | **17,4 %** | 23,3 % | analyse WAV, formes d'onde, silence |
+| `packages/audio-bridge` | 43,5 % | 74,6 % | analyse WAV couverte ; le `logger` ne l'est pas |
 | `packages/fs-handles` | 38,1 % | 45,3 % | permissions couvertes ; le magasin IndexedDB ne l'est pas |
 | `op1-studio/app/lib/nativeStorage.ts` | **0 %** | 0 % | rien du tout |
 
@@ -102,18 +102,37 @@ Les chemins de repli, eux, sont prouvés : sans IndexedDB, `charger` rend `null`
 et `oublier` ne jette pas. `sauver`, lui, laisse remonter l'erreur — asymétrie
 volontaire mais qui n'était écrite nulle part, désormais constatée par un test.
 
-### `core/audio/effets.ts` — 38 % des instructions · **à faire**
+### ~~`core/audio/effets.ts`~~ — traité le 27 août, 38,3 % → **100 % des lignes**
 
-Les lignes 379-542 ne sont jamais exécutées, soit un tiers du fichier. Les
-effets traversent le rendu hors ligne : un échantillon fabriqué porte ce que
-ces lignes calculent, et il finit dans un fichier écrit sur une machine.
+Les lignes 379-542 étaient `construireChaineEffets` en entier — la fonction qui
+bâtit le graphe audio. Elle exige un `AudioContext`, ce qui l'avait mise hors de
+portée ; un contexte factice suffit, et il existait déjà dans un fichier de test.
+Il est désormais partagé dans `core/audio/contexteFactice.ts` : deux copies
+divergeraient au premier nœud ajouté.
 
-### `packages/audio-bridge` — 17 % des fonctions · **à faire**
+Les invariants verrouillés sont ceux que le code documente lui-même, dont le
+plus important : **en mono, aucun `StereoPannerNode` n'est construit.** Le repli
+mono d'un panneur vaut 0,5·(G+D), donc une prise à fond à gauche ressortirait
+3 dB sous une prise centrée — l'équilibre du fichier exporté ne serait plus
+celui qu'on entend en jouant.
 
-`analyzeWavBuffer`, `computeWaveformPeaks`, `detectSilenceTrim`,
-`suggestNormalizationGainDb`. C'est l'analyse qui alimente l'affichage de la
-forme d'onde et les suggestions de découpe. Une erreur produit un affichage
-faux — donc une découpe fausse.
+Sont également tenus : la réinjection du délai qui ne boucle que sur la première
+prise, l'amortissement de cette boucle, les quatre étages du phaser, et le fait
+que l'égaliseur lise `BANDES_EQ` au lieu d'une liste recopiée.
+
+### ~~`packages/audio-bridge`~~ — traité le 27 août, 23,3 % → **74,6 %**
+
+Trente-cinq tests sur de vrais fichiers WAV, dont une partie encodés par
+`audio-formats` — l'aller-retour vérifie au passage que les deux paquets
+s'accordent sur la disposition de l'en-tête.
+
+Deux tests ne prouvaient rien au premier jet, révélés par sabotage : un autre
+garde rattrapait le cas. Un tampon de zéros est refusé même sans contrôle de
+signature, parce que la marche des blocs n'y trouve aucun `data`. Il a fallu des
+fichiers **bien formés sauf sur le point visé** pour isoler chaque règle.
+
+Ce qui reste : `logger.ts`, d'où les 43,5 % de fonctions. C'est de la
+journalisation, sans effet sur un fichier machine.
 
 ---
 
