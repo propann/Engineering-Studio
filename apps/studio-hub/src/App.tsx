@@ -22,6 +22,7 @@ const ImageEditorOP1 = lazy(() => import("./pages/ImageEditorOP1"));
 const FirmwareLab = lazy(() => import("./pages/FirmwareLab"));
 const AdvancedImageEditor = lazy(() => import("./pages/AdvancedImageEditor"));
 const SoundPatchCreator = lazy(() => import("./pages/SoundPatchCreator"));
+const StrudelRack = lazy(() => import("./pages/StrudelRack"));
 const AudioPluginRack = lazy(() => import("./pages/AudioPluginRack"));
 const SoundLibrary = lazy(() => import("./pages/SoundLibrary"));
 const SoundEditorHub = lazy(() => import("./pages/SoundEditorHub"));
@@ -52,6 +53,7 @@ type Page =
   | "midi-settings"
   | "op1-settings"
   | "backup-lab"
+  | "strudel-rack"
   | "orphan-pages";
 
 export function App() {
@@ -103,6 +105,8 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
       return <FirmwareLab />;
     case "advanced-image":
       return <AdvancedImageEditor />;
+    case "strudel-rack":
+      return <StrudelRack />;
     case "sound-patch-creator":
       return <SoundPatchCreator onClose={() => setCurrentPage("outils")} />;
     case "midi-settings":

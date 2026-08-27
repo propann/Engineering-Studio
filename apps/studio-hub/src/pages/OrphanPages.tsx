@@ -8,6 +8,7 @@ type PageId =
   | "image-editor-op1" | "firmware-lab"
   | "advanced-image"
   | "sound-patch-creator" | "audio-plugin-rack" | "sound-library" | "sound-editor-hub"
+  | "strudel-rack"
   | "midi-settings" | "op1-settings" | "backup-lab" | "orphan-pages";
 
 type Target = "OP-1" | "EP-133" | "Hub partagé" | "Aucun projet";
@@ -124,6 +125,8 @@ const PAGE_REGISTRY: PageRecord[] = [
 ,
   { id: "sound-patch-creator", label: "Créateur de patch", description: "Création de patchs OP-1.", target: "OP-1", source: "pages/SoundPatchCreator.tsx", provenance: "demo", nature: "outil" }
 ,
+  { id: "strudel-rack", label: "Rack Strudel", description: "Langage de motifs, branché sur le moteur audio du Hub.", target: "Hub partagé", source: "pages/StrudelRack.tsx", provenance: "local", nature: "outil" }
+,
   { id: "audio-plugin-rack", label: "Audio Plugin Rack", description: "Rack audio applicatif partagé.", target: "Hub partagé", source: "pages/AudioPluginRack.tsx", provenance: "local", nature: "outil" }
 ,
   { id: "sound-library", label: "Bibliothèque sonore", description: "Catalogue, hashes, étiquettes et favoris.", target: "Hub partagé", source: "pages/SoundLibrary.tsx", provenance: "local", nature: "facade" }
@@ -157,6 +160,7 @@ const PAGE_LINKS: Record<string, string[]> = {
   "image-editor-op1": ["Hub · Éditeur d’image"],
   "firmware-lab": ["Hub · Firmware Lab"],
   "advanced-image": ["Page manager"],
+  "strudel-rack": ["Hub · Création sonore"],
   "sound-patch-creator": ["Page manager"],
   "audio-plugin-rack": ["Hub · Labo création sonore"],
   "sound-library": ["TopBar · Bibliothèque sonore", "Hub · Bibliothèque sonore"],

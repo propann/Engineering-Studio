@@ -109,6 +109,12 @@ const tools: Tool[] = [
     action: { type: "page", page: "audio-plugin-rack" }, section: "hub", couleur: "#d9ff43",
   },
   {
+    id: "strudel", code: "STRUDEL", category: "CRÉATION SONORE", title: "Strudel — le code qui joue",
+    text: "Un langage de motifs : on écrit une ligne, elle boucle. Rack séparé, branché sur le moteur audio du Hub, sans aucun échantillon distant.",
+    accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
+    action: { type: "page", page: "strudel-rack" }, section: "hub", couleur: "#28d6d0",
+  },
+  {
     id: "son", code: "SOUND", category: "AUDIO", title: "🎵 Bibliothèque sonore",
     text: "Catalogue, préparation, favoris, doublons et accès aux workflows OP-1 / EP-133.",
     accent: "sound-card", visual: "wave", status: "OUVRIR →",

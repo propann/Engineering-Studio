@@ -103,6 +103,7 @@ export default defineConfig({
       "@studio-hub/audio-formats": path.resolve(import.meta.dirname, "packages/audio-formats/index.ts"),
       "@studio-hub/midi-dispatch": path.resolve(import.meta.dirname, "packages/midi-dispatch/index.ts"),
       "@studio-hub/musique": path.resolve(import.meta.dirname, "packages/musique/index.ts"),
+      "@studio-hub/rack-bus": path.resolve(import.meta.dirname, "packages/rack-bus/index.ts"),
       "@studio-hub/core": path.resolve(import.meta.dirname, "apps/studio-hub/src/core"),
     },
   },

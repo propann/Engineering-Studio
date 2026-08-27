@@ -40,7 +40,7 @@ jour et ne doit pas être recopié ici. Résumé en une ligne par axe :
 | Restauration **par l'application** vers une machine | 🔶 protocole prêt, jamais exécuté de bout en bout |
 | Registre des pages | livré — 20 pages recensées avec provenance et portes |
 | Design system deux thèmes | socle et composants communs livrés, migration des pages en cours |
-| Strudel | 🔮 idée, rien de branché — voir §5 |
+| Rack Strudel | ✅ livré le 27 août — éditeur, exemples, extraits locaux, branché sur le moteur audio du Hub |
 
 ---
 
@@ -120,24 +120,35 @@ Protocole dans
 
 ## 5. Le carnet — décidé, pas commencé
 
-### Rack Strudel
+### ~~Rack Strudel~~ — livré le 27 août 2026
 
-**Statut : idée documentée, aucun code.** Vérifié le 2026-08-26 : aucune
-dépendance, aucun composant, aucune route, et rien dans le Hub d'outils. La
-seule trace dans le code est un commentaire de `packages/rack-bus/index.ts` qui
-cite Strudel parmi les futurs clients du bus audio — le fond de panier est prêt
-à l'accueillir, c'est tout.
+Ce n'est plus une idée. `pages/StrudelRack.tsx`, route `strudel-rack`, carte
+dans le Hub, entrée au registre.
 
-À ne pas annoncer tant que ce n'est pas branché.
+Ce qui était décidé a été tenu :
 
-Ce qui est décidé quand le chantier s'ouvrira :
+- **rack séparé**, sans toucher au parcours de création OP-1 ;
+- **édition et sauvegarde locale** des extraits — la logique vit dans
+  `core/strudel/extraits.ts`, hors du composant, pour être exécutée par des
+  tests plutôt que devinée à la lecture ;
+- **branché sur le moteur audio du Hub** : `setAudioContext(contexte())` est
+  appelé AVANT `initStrudel`, sans quoi Strudel s'attacherait au sien et
+  sortirait à côté du mixage. Un test verrouille cet ordre ;
+- **exécution isolée, arrêt immédiat** : `hush()` coupe tout, le bouton n'est
+  jamais désactivé — c'est le PANIC de ce rack — et quitter la page coupe
+  aussi ;
+- **aucune écriture machine**, vérifié par test.
 
-- un rack séparé, sans toucher au parcours de création OP-1 ;
-- une fenêtre d'édition du code avec sauvegarde locale des extraits et des
-  préréglages ;
-- raccordement à l'entrée MIDI et au moteur audio du Hub, horloge maîtrisée ;
-- exécution locale isolée, arrêt immédiat, aucune écriture machine par défaut ;
-- export et compatibilité audio validés avant tout transfert matériel.
+**Aucun échantillon distant.** Strudel n'en charge pas par défaut et on ne lui
+en ajoute pas : au navigateur, jouer un motif ne déclenche **aucune requête
+sortante**, ce qui a été mesuré. Un test interdit aux exemples fournis
+d'appeler `samples()`.
+
+**Le paquet est sous AGPL-3.0**, et c'est ce qui a fait basculer la licence du
+dépôt entier — voir [`../LICENSE`](../LICENSE) et la section Licence du README.
+
+Ce qui reste ouvert : l'horloge de Strudel n'est pas encore asservie au
+transport du Hub. Les deux partagent le contexte audio, pas le tempo.
 
 ### EP-133 par SysEx
 
