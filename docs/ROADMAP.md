@@ -83,8 +83,20 @@ Tant que ce décalage existe, toute correction visuelle est invisible pour qui
 n'a pas le dépôt, et aucune communication n'est possible : on enverrait les
 visiteurs sur la version qu'on vient de corriger.
 
-- vérifier le SHA réellement servi par Coolify après chaque poussée ;
-- consigner l'écart quand il y en a un.
+Le build porte désormais son commit dans le `<head>` de la page, et une
+commande le compare à `origin/main` :
+
+```
+npm run deploiement
+```
+
+Elle sort en erreur tant que le déploiement est en retard, et se lit sans
+exécuter le moindre script côté page — c'est ce qui manquait pour que l'écart
+soit constatable autrement qu'en comparant des empreintes de feuilles CSS.
+
+- relancer le déploiement depuis Coolify quand la commande signale un retard ;
+- si l'écart revient, brancher un déclencheur : la marche à suivre est en fin
+  de `.github/workflows/deploy.yml`.
 
 ### P1 — L'accueil parle à quelqu'un qui n'a pas de machine
 
