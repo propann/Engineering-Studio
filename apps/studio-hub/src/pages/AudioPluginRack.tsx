@@ -202,6 +202,41 @@ const FACTORY_PATCHES: Record<EnginePluginType, PatchPreset[]> = {
     { id: "fa4", name: "Low-Pass DSP Sub Drive", engine: "faust_dsp", category: "Bass", params: { faustFreqMod: 20, faustFilter: 1100, faustGain: 60, faustFeedback: 20, faustDrive: 40 } },
     { id: "fa5", name: "Feedback Distortion Swarm", engine: "faust_dsp", category: "FX", params: { faustFreqMod: 85, faustFilter: 2800, faustGain: 85, faustFeedback: 95, faustDrive: 80 } },
   ],
+  gameboy_dmg: [
+    { id: "gb1", name: "DMG-01 Tetris Pulse Lead", engine: "gameboy_dmg", category: "Retro", params: { gbDuty: 50, gbSweepTime: 0, gbSweepDir: "up", gbEnvInit: 15, gbEnvDir: "down", gbEnvStep: 3, gbWaveType: "square", gbNoiseMode: "15bit" } },
+    { id: "gb2", name: "Pallet Town Square Pluck", engine: "gameboy_dmg", category: "Pluck", params: { gbDuty: 25, gbSweepTime: 2, gbSweepDir: "down", gbEnvInit: 12, gbEnvDir: "down", gbEnvStep: 2, gbWaveType: "square", gbNoiseMode: "15bit" } },
+    { id: "gb3", name: "Custom Wavechannel Bass 4-bit", engine: "gameboy_dmg", category: "Bass", params: { gbDuty: 75, gbSweepTime: 0, gbSweepDir: "up", gbEnvInit: 15, gbEnvDir: "down", gbEnvStep: 5, gbWaveType: "custom_wav", gbNoiseMode: "15bit" } },
+    { id: "gb4", name: "7-bit Metallic Snare Noise", engine: "gameboy_dmg", category: "Perc", params: { gbDuty: 12, gbSweepTime: 4, gbSweepDir: "down", gbEnvInit: 15, gbEnvDir: "down", gbEnvStep: 1, gbWaveType: "noise", gbNoiseMode: "7bit" } },
+    { id: "gb5", name: "Fast Arp Chiptune Chords", engine: "gameboy_dmg", category: "Lead", params: { gbDuty: 50, gbSweepTime: 0, gbSweepDir: "up", gbEnvInit: 14, gbEnvDir: "down", gbEnvStep: 4, gbWaveType: "square", gbNoiseMode: "15bit" } },
+  ],
+  nes_2a03: [
+    { id: "nes1", name: "Super Mario Overworld Pulse", engine: "nes_2a03", category: "Lead", params: { nesDuty: 50, nesSweep: 0, nesDecayRate: 60, nesTriangleEnabled: true, nesDmcRate: 15 } },
+    { id: "nes2", name: "Castlevania Stepped Triangle Bass", engine: "nes_2a03", category: "Bass", params: { nesDuty: 25, nesSweep: 0, nesDecayRate: 85, nesTriangleEnabled: true, nesDmcRate: 10 } },
+    { id: "nes3", name: "Mega Man 2 Flash Lead", engine: "nes_2a03", category: "Lead", params: { nesDuty: 75, nesSweep: 3, nesDecayRate: 40, nesTriangleEnabled: false, nesDmcRate: 12 } },
+    { id: "nes4", name: "Lo-Fi 1-Bit DMC Sample Click", engine: "nes_2a03", category: "Perc", params: { nesDuty: 12, nesSweep: 0, nesDecayRate: 20, nesTriangleEnabled: false, nesDmcRate: 15 } },
+    { id: "nes5", name: "Zelda Underworld Ambient Square", engine: "nes_2a03", category: "Ambient", params: { nesDuty: 50, nesSweep: 1, nesDecayRate: 90, nesTriangleEnabled: true, nesDmcRate: 8 } },
+  ],
+  c64_sid: [
+    { id: "sid1", name: "Rob Hubbard Arp Master", engine: "c64_sid", category: "Lead", params: { sidChipModel: "6581", sidWaveform: "pulse", sidPulseWidth: 50, sidFilterCutoff: 3200, sidFilterResonance: 70, sidFilterMode: "bandpass", sidRingMod: true, sidSync: true } },
+    { id: "sid2", name: "Martin Galway Filter Sweep Bass", engine: "c64_sid", category: "Bass", params: { sidChipModel: "8580", sidWaveform: "sawtooth", sidPulseWidth: 40, sidFilterCutoff: 1800, sidFilterResonance: 85, sidFilterMode: "lowpass", sidRingMod: false, sidSync: false } },
+    { id: "sid3", name: "6581 Non-Linear Distorted Lead", engine: "c64_sid", category: "Lead", params: { sidChipModel: "6581", sidWaveform: "mixed", sidPulseWidth: 65, sidFilterCutoff: 4500, sidFilterResonance: 90, sidFilterMode: "highpass", sidRingMod: true, sidSync: true } },
+    { id: "sid4", name: "PWM Resonant Chord Bell", engine: "c64_sid", category: "Bell", params: { sidChipModel: "8580", sidWaveform: "triangle", sidPulseWidth: 30, sidFilterCutoff: 3800, sidFilterResonance: 60, sidFilterMode: "bandpass", sidRingMod: false, sidSync: true } },
+    { id: "sid5", name: "Cyberpunk SID FX Laser", engine: "c64_sid", category: "FX", params: { sidChipModel: "6581", sidWaveform: "noise", sidPulseWidth: 80, sidFilterCutoff: 5000, sidFilterResonance: 95, sidFilterMode: "bandpass", sidRingMod: true, sidSync: false } },
+  ],
+  ym2612_opn2: [
+    { id: "ym1", name: "Genesis Sonic 2 Slap Bass", engine: "ym2612_opn2", category: "Bass", params: { ymAlgorithm: 4, ymFeedback: 7, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 20, ymDetune: 3 } },
+    { id: "ym2", name: "Streets of Rage FM Club Lead", engine: "ym2612_opn2", category: "Lead", params: { ymAlgorithm: 5, ymFeedback: 6, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 15, ymDetune: 5 } },
+    { id: "ym3", name: "Shinobi Resonant Brass Chord", engine: "ym2612_opn2", category: "Brass", params: { ymAlgorithm: 2, ymFeedback: 5, ymDacLadderDistortion: false, ymOperatorCount: 4, ymTotalLevel: 30, ymDetune: 2 } },
+    { id: "ym4", name: "OPN2 Crossover Distortion Piano", engine: "ym2612_opn2", category: "Keys", params: { ymAlgorithm: 5, ymFeedback: 4, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 10, ymDetune: 1 } },
+    { id: "ym5", name: "Thunder Force Metal Sci-Fi FX", engine: "ym2612_opn2", category: "FX", params: { ymAlgorithm: 7, ymFeedback: 7, ymDacLadderDistortion: true, ymOperatorCount: 4, ymTotalLevel: 5, ymDetune: 7 } },
+  ],
+  minimoog_d: [
+    { id: "moog1", name: "Model D Fat 3-VCO Bass", engine: "minimoog_d", category: "Bass", params: { moogOsc1Wave: "saw", moogOsc2Wave: "saw", moogOsc3Wave: "square", moogOsc2Detune: 7, moogOsc3Detune: -12, moogCutoff: 1600, moogResonance: 45, moogEmphasis: 40, moogDrive: 35, moogNoiseType: "pink" } },
+    { id: "moog2", name: "Parliament Funk Lead Saw", engine: "minimoog_d", category: "Lead", params: { moogOsc1Wave: "saw", moogOsc2Wave: "saw", moogOsc3Wave: "triangle", moogOsc2Detune: 12, moogOsc3Detune: 0, moogCutoff: 3800, moogResonance: 70, moogEmphasis: 60, moogDrive: 20, moogNoiseType: "white" } },
+    { id: "moog3", name: "Ladder Filter Self-Oscillation Drone", engine: "minimoog_d", category: "Drone", params: { moogOsc1Wave: "triangle", moogOsc2Wave: "triangle", moogOsc3Wave: "triangle", moogOsc2Detune: 0, moogOsc3Detune: 0, moogCutoff: 2200, moogResonance: 98, moogEmphasis: 95, moogDrive: 80, moogNoiseType: "pink" } },
+    { id: "moog4", name: "Warm Analog Brass Swell", engine: "minimoog_d", category: "Brass", params: { moogOsc1Wave: "saw", moogOsc2Wave: "pulse_wide", moogOsc3Wave: "saw", moogOsc2Detune: 8, moogOsc3Detune: 4, moogCutoff: 2800, moogResonance: 30, moogEmphasis: 25, moogDrive: 10, moogNoiseType: "white" } },
+    { id: "moog5", name: "Thunderous Overdrive Sub Bomb", engine: "minimoog_d", category: "Bass", params: { moogOsc1Wave: "pulse_narrow", moogOsc2Wave: "square", moogOsc3Wave: "saw", moogOsc2Detune: -5, moogOsc3Detune: -24, moogCutoff: 900, moogResonance: 55, moogEmphasis: 50, moogDrive: 95, moogNoiseType: "pink" } },
+  ],
 };
 
 // PIANO KEYS CONFIGURATION FOR VIRTUAL KEYBOARD
@@ -244,6 +279,7 @@ export default function AudioPluginRack({
 }) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
+  const [selectedRackTab, setSelectedRackTab] = useState<"rackA" | "rackB" | "all">("rackA");
   // Filtre de la liste de patches. 91 patches d'usine repartis sur 15 moteurs,
   // qu'on ne pouvait jusqu'ici que faire defiler.
   //
@@ -593,11 +629,29 @@ export default function AudioPluginRack({
 
   // Web Audio Context & Oscilloscope
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const dormantTimerRef = useRef<any>(null);
+  const isAudioActiveRef = useRef<boolean>(false);
   const fichierImportRef = useRef<HTMLInputElement | null>(null);
   const fichierArchiveRef = useRef<HTMLInputElement | null>(null);
   const oscCanvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number | null>(null);
   const debounceTimerRef = useRef<any>(null);
+
+  const resetDormantTimer = () => {
+    isAudioActiveRef.current = true;
+    if (dormantTimerRef.current) {
+      clearTimeout(dormantTimerRef.current);
+    }
+    // Auto-suspend after 30 seconds of inactivity to save 100% CPU
+    dormantTimerRef.current = setTimeout(() => {
+      isAudioActiveRef.current = false;
+      const ctx = audioCtxRef.current;
+      if (ctx && ctx.state === "running" && voicesRef.current.size === 0) {
+        void ctx.suspend().catch(() => {});
+        log.info("AudioContext automatically suspended (idle 0.0% CPU)");
+      }
+    }, 30000);
+  };
 
   // ---------------------------------------------------------------------
   // CHAÎNE AUDIO PERSISTANTE
@@ -665,6 +719,7 @@ export default function AudioPluginRack({
   // resume() exige un geste utilisateur : tous les appelants viennent d'un
   // clic ou d'une frappe clavier.
   const getAudioContext = (): AudioContext => {
+    resetDormantTimer();
     if (!audioCtxRef.current) {
       const Ctor = window.AudioContext || (window as any).webkitAudioContext;
       audioCtxRef.current = new Ctor();
@@ -2386,6 +2441,10 @@ export default function AudioPluginRack({
   // le developpement serait muet.
   useEffect(() => {
     return () => {
+      if (dormantTimerRef.current) {
+        clearTimeout(dormantTimerRef.current);
+        dormantTimerRef.current = null;
+      }
       const ctx = audioCtxRef.current;
       audioCtxRef.current = null;
       masterBusRef.current = null;
@@ -2681,24 +2740,24 @@ export default function AudioPluginRack({
     showToast(`📦 EXPORTÉ (${format.toUpperCase()}) : ${p.activeEngine.toUpperCase()}`);
   };
 
-  const ALL_ENGINES: { id: EnginePluginType; name: string; subtitle: string; category: string; color: string }[] = [
-    // MUTABLE SUITE
-    { id: "mi_plaits", name: "MUTABLE PLAITS", subtitle: "16-Engine Macro Oscillator", category: "MUTABLE", color: "green" },
-    { id: "mi_braids", name: "MUTABLE BRAIDS", subtitle: "33-Model Macro Synth", category: "MUTABLE", color: "yellow" },
-    { id: "mi_rings", name: "MUTABLE RINGS", subtitle: "Resonator & Physical Modeling", category: "MUTABLE", color: "purple" },
-    { id: "mi_clouds", name: "MUTABLE CLOUDS", subtitle: "Granular Texture Synthesizer", category: "MUTABLE", color: "blue" },
-    { id: "mi_elements", name: "MUTABLE ELEMENTS", subtitle: "Modal Physical Modeling", category: "MUTABLE", color: "pink" },
-    // OPEN SOURCE GIT
-    { id: "dexed_fm", name: "DEXED / DX7 FM", subtitle: "6-Op FM Synthesis Engine", category: "OPEN SOURCE", color: "green" },
-    { id: "surge_xt", name: "SURGE XT", subtitle: "Hybrid Wavetable Synth", category: "OPEN SOURCE", color: "yellow" },
-    { id: "zynaddsubfx", name: "ZYNADDSUBFX", subtitle: "Additive & Pad Engine", category: "OPEN SOURCE", color: "purple" },
-    { id: "helm", name: "HELM SYNTH", subtitle: "Polyphonic Modulation Engine", category: "OPEN SOURCE", color: "blue" },
-    { id: "fluidsynth", name: "FLUIDSYNTH SF2", subtitle: "SoundFont Sample Player", category: "OPEN SOURCE", color: "pink" },
-    { id: "amsynth", name: "AMSYNTH", subtitle: "Dual VCO Analog Synth", category: "OPEN SOURCE", color: "yellow" },
-    { id: "amy_engine", name: "AMY C/JS", subtitle: "Fixed-Point Audio Synthesizer", category: "OPEN SOURCE", color: "green" },
-    { id: "pl_synth", name: "PL_SYNTH", subtitle: "8-Bit Chiptune Tracker Engine", category: "OPEN SOURCE", color: "blue" },
-    { id: "open303", name: "OPEN303 ACID", subtitle: "Roland TB-303 Acid Emulation", category: "OPEN SOURCE", color: "pink" },
-    { id: "faust_dsp", name: "FAUST DSP NODE", subtitle: "Compiled DSP WebAudio Engine", category: "OPEN SOURCE", color: "purple" },
+  const ALL_ENGINES: { id: EnginePluginType; name: string; subtitle: string; category: string; color: string; rackSlot: "A" | "B" }[] = [
+    // RACK A : MÉLODIES, LEADS, HARMONIQUES & EURORACK (8 MOTEURS)
+    { id: "mi_plaits", name: "MUTABLE PLAITS", subtitle: "16-Engine Macro Oscillator", category: "MUTABLE", color: "green", rackSlot: "A" },
+    { id: "mi_braids", name: "MUTABLE BRAIDS", subtitle: "33-Model Macro Synth", category: "MUTABLE", color: "yellow", rackSlot: "A" },
+    { id: "mi_rings", name: "MUTABLE RINGS", subtitle: "Resonator & Physical Modeling", category: "MUTABLE", color: "purple", rackSlot: "A" },
+    { id: "mi_clouds", name: "MUTABLE CLOUDS", subtitle: "Granular Texture Synthesizer", category: "MUTABLE", color: "blue", rackSlot: "A" },
+    { id: "mi_elements", name: "MUTABLE ELEMENTS", subtitle: "Modal Physical Modeling", category: "MUTABLE", color: "pink", rackSlot: "A" },
+    { id: "dexed_fm", name: "DEXED / DX7 FM", subtitle: "6-Op FM Synthesis Engine", category: "OPEN SOURCE", color: "green", rackSlot: "A" },
+    { id: "surge_xt", name: "SURGE XT", subtitle: "Hybrid Wavetable Synth", category: "OPEN SOURCE", color: "yellow", rackSlot: "A" },
+    { id: "fluidsynth", name: "FLUIDSYNTH SF2", subtitle: "SoundFont Sample Player", category: "OPEN SOURCE", color: "pink", rackSlot: "A" },
+    // RACK B : RYTHMIQUES, BASSES, ACID 303 & EXPERIMENTAL DSP (7 MOTEURS)
+    { id: "open303", name: "OPEN303 ACID", subtitle: "Roland TB-303 Acid Emulation", category: "OPEN SOURCE", color: "pink", rackSlot: "B" },
+    { id: "amsynth", name: "AMSYNTH", subtitle: "Dual VCO Analog Synth", category: "OPEN SOURCE", color: "yellow", rackSlot: "B" },
+    { id: "zynaddsubfx", name: "ZYNADDSUBFX", subtitle: "Additive & Pad Engine", category: "OPEN SOURCE", color: "purple", rackSlot: "B" },
+    { id: "helm", name: "HELM SYNTH", subtitle: "Polyphonic Modulation Engine", category: "OPEN SOURCE", color: "blue", rackSlot: "B" },
+    { id: "amy_engine", name: "AMY C/JS", subtitle: "Fixed-Point Audio Synthesizer", category: "OPEN SOURCE", color: "green", rackSlot: "B" },
+    { id: "pl_synth", name: "PL_SYNTH", subtitle: "8-Bit Chiptune Tracker Engine", category: "OPEN SOURCE", color: "blue", rackSlot: "B" },
+    { id: "faust_dsp", name: "FAUST DSP NODE", subtitle: "Compiled DSP WebAudio Engine", category: "OPEN SOURCE", color: "purple", rackSlot: "B" },
   ];
 
   return (
@@ -2715,220 +2774,67 @@ export default function AudioPluginRack({
       {/* COMPACT SINGLE-VIEWPORT WORKSPACE FRAME */}
       <div className="plugin-rack-container">
         
-        {/* LEFT COLUMN: VERTICAL LIST OF ALL AUDIO ENGINES WITH UNFOLDING PATCH LISTS */}
+        {/* LEFT COLUMN: VERTICAL LIST OF ALL AUDIO ENGINES WITH DUAL-RACK SWITCHER */}
         <aside className="rack-left-sidebar">
           <div className="sidebar-header">
-            <h3>🎛️ MOTEURS AUDIO (15)</h3>
-            <small>Eurorack & Open Source</small>
+            <h3>🎛️ DUAL RACK SYNTHÈSE</h3>
+            <small>15 Moteurs Eurorack & Open Source</small>
+            <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
+              <button
+                type="button"
+                onClick={() => setSelectedRackTab("rackA")}
+                style={{
+                  flex: 1,
+                  padding: "4px 2px",
+                  fontSize: "10px",
+                  fontWeight: 900,
+                  background: selectedRackTab === "rackA" ? "var(--theme-accent, #00ed95)" : "var(--theme-bg-surface, #151d20)",
+                  color: selectedRackTab === "rackA" ? "#000" : "var(--theme-text-muted, #94a3b8)",
+                  border: "1px solid var(--theme-border, #2c3b40)",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                RACK A (8)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRackTab("rackB")}
+                style={{
+                  flex: 1,
+                  padding: "4px 2px",
+                  fontSize: "10px",
+                  fontWeight: 900,
+                  background: selectedRackTab === "rackB" ? "var(--theme-accent-orange, #ff5a1f)" : "var(--theme-bg-surface, #151d20)",
+                  color: selectedRackTab === "rackB" ? "#fff" : "var(--theme-text-muted, #94a3b8)",
+                  border: "1px solid var(--theme-border, #2c3b40)",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                RACK B (7)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedRackTab("all")}
+                style={{
+                  padding: "4px 6px",
+                  fontSize: "10px",
+                  fontWeight: 900,
+                  background: selectedRackTab === "all" ? "#38bdf8" : "var(--theme-bg-surface, #151d20)",
+                  color: selectedRackTab === "all" ? "#000" : "var(--theme-text-muted, #94a3b8)",
+                  border: "1px solid var(--theme-border, #2c3b40)",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                }}
+              >
+                TOUS
+              </button>
+            </div>
           </div>
 
           <div className="sidebar-engines-scroll">
-            <div className="sidebar-category-title">🎛️ MUTABLE INSTRUMENTS</div>
-            {ALL_ENGINES.filter((e) => e.category === "MUTABLE").map((e) => {
-              const isSelected = activeEngine === e.id;
-              const factory = FACTORY_PATCHES[e.id] || [];
-              const custom = userPatches.filter((p) => p.engine === e.id);
-              const allPatchesForEngine = [...factory, ...custom];
-              // Liste affichee apres filtre. Le choix automatique au depliage
-              // reste sur la liste complete : ouvrir un moteur ne doit pas
-              // dependre de ce qui est tape dans la recherche.
-              const patchesAffiches = filtrerPatches(allPatchesForEngine);
-
-              return (
-                <div key={e.id} className="engine-accordion-group">
-                  <button
-                    type="button"
-                    className={`sidebar-engine-item color-${e.color} ${isSelected ? "active" : ""}`}
-                    onClick={() => {
-                      setActiveEngine(e.id);
-                      if (allPatchesForEngine.length > 0) applyPatch(allPatchesForEngine[0]);
-                    }}
-                  >
-                    <span className="engine-dot" />
-                    <div className="engine-info">
-                      <strong>{e.name}</strong>
-                      <small>{e.subtitle}</small>
-                    </div>
-                    <span className="expand-arrow">{isSelected ? "▼" : "▶"}</span>
-                  </button>
-
-
-                  {/* EXPANDABLE PATCH LIST UNDER ACTIVE SYNTH */}
-                  {isSelected && (
-                    <div className="unfolded-patch-list">
-                      <div className="patch-list-header-row">
-                        <span className="patch-list-header">
-                          🎵 PATCHES ({patchQuery.trim()
-                            ? `${patchesAffiches.length}/${allPatchesForEngine.length}`
-                            : allPatchesForEngine.length}) :
-                        </span>
-                        <button type="button" className="add-patch-btn" onClick={() => setShowSaveModal(true)}>
-                          + CRÉER
-                        </button>
-                      </div>
-
-                      <div className="export-echantillon">
-                        {couches.length > 0 && (
-                          <div className="couches-resume">
-                            🎚️ {couches.length + 1} patches superposés
-                            <button type="button" className="couches-vider" onClick={() => setCouches([])}>
-                              vider
-                            </button>
-                          </div>
-                        )}
-                        <div className="export-ligne">
-                          <button
-                            type="button"
-                            className="export-dossier"
-                            onClick={() => void choisirEspace()}
-                            title={espaceNom || "Aucun dossier connecté"}
-                          >
-                            📁 {espaceNom || "Choisir un dossier"}
-                          </button>
-                        </div>
-                        <div className="export-ligne">
-                          <select
-                            className="export-cible"
-                            value={cibleExport}
-                            onChange={(e) => setCibleExport(e.target.value as CibleMachine)}
-                            aria-label="Machine visée"
-                          >
-                            {(Object.keys(SPECS_CIBLES) as CibleMachine[]).map((c) => (
-                              <option key={c} value={c}>{SPECS_CIBLES[c].libelle}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="number"
-                            className="export-duree"
-                            min={0.1}
-                            max={SPECS_CIBLES[cibleExport].dureeMaxSecondes}
-                            step={0.1}
-                            value={dureeExport}
-                            onChange={(e) => setDureeExport(Number(e.target.value))}
-                            aria-label="Durée en secondes"
-                          />
-                          <span className="export-unite">s</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="export-lancer"
-                          disabled={exportEnCours || !espaceNom}
-                          onClick={() => {
-                            setExportEnCours(true);
-                            // La note 60 est le Do central : c'est aussi celle
-                            // que joue le rack par defaut.
-                            void exporterEchantillon(cibleExport, 60, dureeExport)
-                              .finally(() => setExportEnCours(false));
-                          }}
-                        >
-                          {exportEnCours ? "⏳ Rendu…" : "💾 FABRIQUER UN SAMPLE"}
-                        </button>
-                        <button
-                          type="button"
-                          className="export-pack"
-                          disabled={exportEnCours || !espaceNom}
-                          title="49 notes chromatiques, pour les DAW — pas pour l'OP-1, qui attend un fichier unique"
-                          onClick={() => {
-                            setExportEnCours(true);
-                            // 48 = C3, 96 = C7. Quatre octaves : de quoi couvrir
-                            // un instrument sans transposition audible.
-                            void exporterPack(cibleExport, 48, 96, dureeExport)
-                              .finally(() => setExportEnCours(false));
-                          }}
-                        >
-                          🎹 PACK C3–C7 (49 notes)
-                        </button>
-                      </div>
-
-                      <div className="patch-recherche-ligne">
-                        <input
-                          type="search"
-                          className="patch-search-input"
-                          placeholder="Chercher — nom, catégorie, étiquette…"
-                          value={patchQuery}
-                          onChange={(e) => setPatchQuery(e.target.value)}
-                          aria-label="Chercher un patch"
-                        />
-                        <button
-                          type="button"
-                          className={`filtre-favoris ${favorisSeuls ? "favori-actif" : ""}`}
-                          title={favorisSeuls ? "Afficher tous les patches" : "N'afficher que les favoris"}
-                          onClick={() => setFavorisSeuls((v) => !v)}
-                        >
-                          ★
-                        </button>
-                      </div>
-
-                      {patchQuery.trim() && !patchesAffiches.length && (
-                        <p className="patch-search-empty">Aucun patch ne correspond.</p>
-                      )}
-
-                      {patchesAffiches.map((p) => (
-                        <div className="patch-ligne" key={p.id}>
-                          <button
-                            type="button"
-                            className={`patch-favori ${p.isFavorite ? "favori-actif" : ""}`}
-                            title={p.isFavorite ? "Retirer des favoris" : "Mettre en favori"}
-                            onClick={() => majMetas(basculerFavori(metas, p.id))}
-                          >
-                            {p.isFavorite ? "★" : "☆"}
-                          </button>
-                          <button
-                            type="button"
-                            className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
-                            onClick={() => applyPatch(p)}
-                          >
-                            <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
-                            <span className="patch-name">{p.name}</span>
-                            {p.tags?.length ? (
-                              <span className="patch-etiquettes">
-                                {p.tags.map((t) => (
-                                  <span
-                                    className="patch-etiquette"
-                                    key={t}
-                                    title="Retirer cette étiquette"
-                                    onClick={(ev) => { ev.stopPropagation(); majMetas(retirerEtiquette(metas, p.id, t)); }}
-                                  >
-                                    {t}
-                                  </span>
-                                ))}
-                              </span>
-                            ) : null}
-                          </button>
-                          {/* Superposition : empile CE patch sur le patch
-                              actif, avec ses propres reglages et son moteur.
-                              Separe du bouton du patch, sinon choisir et
-                              empiler seraient le meme geste. */}
-                          <button
-                            type="button"
-                            className={`couche-toggle ${couches.includes(p.id) ? "couche-active" : ""}`}
-                            title={couches.includes(p.id) ? `Retirer ${p.name} de la superposition` : `Superposer ${p.name}`}
-                            onClick={() => basculerCouche(p.id)}
-                            disabled={p.id === selectedPatchId}
-                          >
-                            {couches.includes(p.id) ? "◉" : "○"}
-                          </button>
-                          <button
-                            type="button"
-                            className="patch-etiqueter"
-                            title="Ajouter une étiquette"
-                            onClick={() => {
-                              const t = window.prompt(`Étiquette pour « ${p.name} »`);
-                              if (t) majMetas(ajouterEtiquette(metas, p.id, t));
-                            }}
-                          >
-                            🏷️
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            <div className="sidebar-category-title">🎹 OPEN SOURCE ENGINES</div>
-            {ALL_ENGINES.filter((e) => e.category === "OPEN SOURCE").map((e) => {
+            {ALL_ENGINES.filter((e) => selectedRackTab === "all" || (selectedRackTab === "rackA" ? e.rackSlot === "A" : e.rackSlot === "B")).map((e) => {
               const isSelected = activeEngine === e.id;
               const factory = FACTORY_PATCHES[e.id] || [];
               const custom = userPatches.filter((p) => p.engine === e.id);

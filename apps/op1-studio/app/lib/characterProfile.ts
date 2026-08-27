@@ -478,15 +478,15 @@ export function loadCharacterProfile(): CharacterProfile {
       }
     }
 
-    // Auto-sync doux avec la fiche de personnage du Studio Hub si présente
+    // Auto-sync fort avec la fiche de personnage du Studio Hub : Avatar, Nom, Thème
     try {
       const hubRaw = localStorage.getItem("studio-hub-profile");
       if (hubRaw) {
         const hubProfile = JSON.parse(hubRaw);
-        if (hubProfile.name && (result.operatorName === "Opérateur OP-1" || result.operatorName === "NOUVEAU MEMBRE")) {
+        if (hubProfile.name && typeof hubProfile.name === "string" && hubProfile.name.trim()) {
           result.operatorName = hubProfile.name.trim();
         }
-        if (hubProfile.avatar && result.operatorAvatar === "robot") {
+        if (hubProfile.avatar && typeof hubProfile.avatar === "string") {
           result.operatorAvatar = hubProfile.avatar;
         }
       }
@@ -505,6 +505,35 @@ export function saveCharacterProfile(profile: CharacterProfile): void {
   try {
     profile.lastActive = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+
+    // SYNCHRONISATION AUTOMATIQUE AVEC LA FICHE UNIQUE DU HUB :
+    // Met à jour les stats de jeu et d'apprentissage dans la fiche de personnage principale
+    const hubRaw = localStorage.getItem("studio-hub-profile");
+    const hubProfile = hubRaw ? JSON.parse(hubRaw) : { name: profile.operatorName, avatar: profile.operatorAvatar };
+    
+    hubProfile.name = profile.operatorName;
+    hubProfile.avatar = profile.operatorAvatar;
+    hubProfile.gameStats = {
+      level: profile.level,
+      currentXp: profile.currentXp,
+      xpForNextLevel: profile.xpForNextLevel,
+      title: profile.title,
+      totalScore: profile.stats.totalScore,
+      highestCombo: profile.stats.highestCombo,
+      totalNotesHit: profile.stats.totalNotesHit,
+      perfectHits: profile.stats.perfectHits,
+      greatHits: profile.stats.greatHits,
+      goodHits: profile.stats.goodHits,
+      missHits: profile.stats.missHits,
+      sessionsCount: profile.stats.sessionsCount,
+      totalPlayTimeSeconds: profile.stats.totalPlayTimeSeconds,
+      unlockedAchievementsCount: (profile.achievements || []).filter((a) => a.unlocked).length,
+      totalAchievementsCount: (profile.achievements || []).length,
+      bestScoresBySong: profile.stats.bestScoresBySong,
+    };
+
+    localStorage.setItem("studio-hub-profile", JSON.stringify(hubProfile));
+    window.dispatchEvent(new CustomEvent("profilechange", { detail: { profile: hubProfile } }));
   } catch {
     // Quota ou stockage indisponible
   }

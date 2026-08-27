@@ -127,7 +127,7 @@ recherche.
 L'OP-1 en **COM → T2 / CTRL**, branchée en USB. Le but : que la machine joue
 chaque surface du hub qui produit du son.
 
-- [ ] **Rack de moteurs** — le clavier de l'OP-1 joue les 15 moteurs
+- [ ] **Rack de moteurs** — le clavier de l'OP-1 joue les 20 moteurs
 - [ ] **Créateur de patch** (Édition & Création de Son) — le clavier joue la
       synthèse FM en direct. **Aucune notification ne doit apparaître par
       touche** : elles sont coupées pour les notes MIDI, sinon jouer une gamme
@@ -283,7 +283,7 @@ Menu **Gamme** du rack MIDI, groupé par familles.
 ### Enveloppe ADSR
 Panneau ENVELOPPE du rack de moteurs.
 
-- [ ] **les 76 patches d'usine sonnent comme avant.** Les défauts reproduisent
+- [ ] **les 101 patches d'usine sonnent comme avant.** Les défauts reproduisent
       exactement les valeurs câblées jusqu'ici ; si un patch connu sonne
       différemment, la valeur par défaut a bougé
 - [ ] attaque longue : la note monte progressivement, sans clic au départ
@@ -307,7 +307,7 @@ Bouton **📥 IMPORTER** à côté des trois exports.
       du champ, le second choix ne déclenche rien et on croit à un échec
 - [ ] un fichier qui n'est pas un patch donne un message clair, pas un rack vide
 - [ ] un patch d'un moteur inconnu est refusé en le nommant
-- [ ] le patch importé apparaît comme patch **utilisateur**, pas parmi les 76
+- [ ] le patch importé apparaît comme patch **utilisateur**, pas parmi les 101
       d'usine
 
 
@@ -315,7 +315,7 @@ Bouton **📥 IMPORTER** à côté des trois exports.
 Panneau LFO du Labo, à côté de l'enveloppe.
 
 - [ ] **CIBLE sur « — Aucun — » : le son est strictement celui d'avant.** Le
-      défaut ne module rien, sinon les 76 patches d'usine changeraient
+      défaut ne module rien, sinon les 101 patches d'usine changeraient
 - [ ] **trémolo** : le volume pulse. À profondeur maximale, il ne doit
       **jamais** se taire ni craquer — le creux reste au-dessus de zéro, sans
       quoi le gain n'atténue pas mais **inverse la phase**
@@ -328,7 +328,7 @@ Panneau LFO du Labo, à côté de l'enveloppe.
 - [ ] **SYNC** : le LFO se cale sur le tempo du studio, et la vitesse affichée
       en Hz correspond à ce qu'on entend. Une noire à 120 BPM = 2 Hz
 - [ ] SYNC actif, le curseur VITESSE est grisé
-- [ ] **le LFO s'applique aux quinze moteurs**, pas seulement à ceux qui ont
+- [ ] **le LFO s'applique aux vingt moteurs**, pas seulement à ceux qui ont
       déjà leur LFO interne — il est inséré entre le gain et l'enveloppe, là où
       tous passent
 - [ ] **un échantillon fabriqué porte la modulation**
@@ -473,8 +473,8 @@ l'état d'hier, restaurer vers une copie de l'état actuel.
 - [ ] les fichiers inchangés ne sont pas réécrits (horodatages)
 
 ### Recherche de patches
-- [ ] taper filtre bien les 76 patches d'usine et les patches perso
-- [ ] la recherche fonctionne sur les deux familles de moteurs, pas une seule
+- [ ] taper filtre bien les 101 patches d'usine et les patches perso
+- [ ] la recherche fonctionne sur tous les moteurs du rack
 
 ### EP-133
 - [ ] lister ses sons par SysEx — aucun mode disque, tout passe par là

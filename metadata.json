@@ -1,6 +1,6 @@
 {
   "name": "Studio Hub - Suite EP-133 & OP-1",
-  "description": "Suite logicielle unifiée pour Teenage Engineering EP-133 KO II et OP-1 original",
+  "description": "Suite logicielle unifiée pour Teenage Engineering EP-133 KO II et OP-1 avec Co-Création P2P et Git Musical décentralisé",
   "requestFramePermissions": [
     "microphone"
   ],

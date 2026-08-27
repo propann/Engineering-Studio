@@ -70,6 +70,7 @@
 ### 💡 Vision & Strategy
 | Document | Purpose | Audience |
 |----------|---------|----------|
+| [docs/specs/DIRECTION_PROJET_ET_INTEGRATIONS.md](docs/specs/DIRECTION_PROJET_ET_INTEGRATIONS.md) | Vision stratégique, feuille de route & intégrations futures (SysEx, WebUSB, Live-Coding, P2P) | All team members, Leads |
 | [docs/ADAPTIVE_STUDIO_VISION.md](docs/ADAPTIVE_STUDIO_VISION.md) | Product vision & future | Leadership, PMs |
 | [docs/guides/TOOLS_ORGANIZATION.md](docs/guides/TOOLS_ORGANIZATION.md) | Tools & resources available | Team |
 

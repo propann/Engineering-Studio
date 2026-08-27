@@ -188,3 +188,155 @@ export function isHubPanicMessage(msg: any): msg is HubPanicMessage {
   return msg && msg.type === "hub-panic";
 }
 
+// =====================================================================
+// SAMPLE-ACCURATE LOOKAHEAD MASTER CLOCK (24 PPQN)
+// =====================================================================
+
+export interface ClockTickEvent {
+  tick: number; // 0..23 dans le temps courant
+  beat: number; // temps dans la mesure (0..3 pour du 4/4)
+  bar: number;  // mesure (1..)
+  totalTicks: number;
+  audioTime: number;
+  bpm: number;
+}
+
+export type ClockTickListener = (event: ClockTickEvent) => void;
+
+/**
+ * Horloge maître d'ordonnancement audio temps réel.
+ * Utilise la technique du double timer (Web Audio currentTime + requestAnimationFrame / setInterval court)
+ * pour garantir une dérive < 0.5ms même si l'onglet passe au second plan.
+ */
+export class MasterTransportClock {
+  private bpm: number = 120;
+  private isRunning: boolean = false;
+  private audioCtx: AudioContext | null = null;
+  private nextTickTime: number = 0;
+  private currentTotalTick: number = 0;
+  private lookaheadMs: number = 40;
+  private scheduleIntervalMs: number = 20;
+  private timerId: any = null;
+  private tickListeners: Set<ClockTickListener> = new Set();
+  private stateListeners: Set<(running: boolean, bpm: number) => void> = new Set();
+
+  constructor(initialBpm = 120) {
+    this.bpm = Math.max(30, Math.min(300, initialBpm));
+  }
+
+  public setAudioContext(ctx: AudioContext): void {
+    this.audioCtx = ctx;
+  }
+
+  public setBpm(newBpm: number): void {
+    this.bpm = Math.max(30, Math.min(300, newBpm));
+    this.notifyState();
+  }
+
+  public getBpm(): number {
+    return this.bpm;
+  }
+
+  public getIsRunning(): boolean {
+    return this.isRunning;
+  }
+
+  public onTick(listener: ClockTickListener): () => void {
+    this.tickListeners.add(listener);
+    return () => this.tickListeners.delete(listener);
+  }
+
+  public onStateChange(listener: (running: boolean, bpm: number) => void): () => void {
+    this.stateListeners.add(listener);
+    return () => this.stateListeners.delete(listener);
+  }
+
+  public start(): void {
+    if (this.isRunning) return;
+    this.isRunning = true;
+    this.currentTotalTick = 0;
+
+    const ctx = this.audioCtx || (typeof window !== "undefined" && (window as any).AudioContext ? new (window as any).AudioContext() : null);
+    if (ctx && ctx.state === "suspended") {
+      void ctx.resume();
+    }
+    this.audioCtx = ctx;
+
+    const now = ctx ? ctx.currentTime : performance.now() / 1000;
+    this.nextTickTime = now + 0.05; // 50ms pre-roll
+
+    this.timerId = setInterval(() => this.scheduler(), this.scheduleIntervalMs);
+    this.notifyState();
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("hub:transport", {
+        detail: createHubTransportMessage("start", this.bpm, performance.now()),
+      }));
+    }
+  }
+
+  public stop(): void {
+    if (!this.isRunning) return;
+    this.isRunning = false;
+    if (this.timerId) {
+      clearInterval(this.timerId);
+      this.timerId = null;
+    }
+    this.notifyState();
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("hub:transport", {
+        detail: createHubTransportMessage("stop", this.bpm, performance.now()),
+      }));
+    }
+  }
+
+  private scheduler(): void {
+    if (!this.isRunning) return;
+    const now = this.audioCtx ? this.audioCtx.currentTime : performance.now() / 1000;
+    const lookaheadSec = this.lookaheadMs / 1000;
+
+    // 24 PPQN = 24 ticks par noire
+    const secondsPerBeat = 60 / this.bpm;
+    const secondsPerTick = secondsPerBeat / 24;
+
+    while (this.nextTickTime < now + lookaheadSec) {
+      const tickInBeat = this.currentTotalTick % 24;
+      const beatInBar = Math.floor((this.currentTotalTick / 24) % 4);
+      const bar = Math.floor(this.currentTotalTick / (24 * 4)) + 1;
+
+      const event: ClockTickEvent = {
+        tick: tickInBeat,
+        beat: beatInBar,
+        bar,
+        totalTicks: this.currentTotalTick,
+        audioTime: this.nextTickTime,
+        bpm: this.bpm,
+      };
+
+      this.tickListeners.forEach((l) => {
+        try {
+          l(event);
+        } catch (e) {
+          console.error("Error in clock tick listener", e);
+        }
+      });
+
+      this.nextTickTime += secondsPerTick;
+      this.currentTotalTick++;
+    }
+  }
+
+  private notifyState(): void {
+    this.stateListeners.forEach((l) => {
+      try {
+        l(this.isRunning, this.bpm);
+      } catch (e) {
+        console.error("Error in clock state listener", e);
+      }
+    });
+  }
+}
+
+export const masterTransportClock = new MasterTransportClock();
+

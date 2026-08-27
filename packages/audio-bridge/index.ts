@@ -241,5 +241,317 @@ export function suggestNormalizationGainDb(peak: number, targetDb = -1): number 
   return targetDb - (20 * Math.log10(Math.min(1, peak)));
 }
 
+// =====================================================================
+// INTER-STUDIO AUDIO & MEMORY BRIDGE (DUO STUDIO : OP-1 <-> EP-133)
+// =====================================================================
+
+export interface TapeToPadTransferRequest {
+  sourceTrack: 1 | 2 | 3 | 4;
+  startSample: number;
+  endSample: number;
+  targetGroup: "A" | "B" | "C" | "D";
+  targetPadIndex: number; // 0 à 11 pour les 12 pads physiques
+  sampleRate: number;
+  channels: 1 | 2;
+  channelData: Float32Array[];
+  name?: string;
+}
+
+export interface PatternToTapeTransferRequest {
+  sourceGroup: "A" | "B" | "C" | "D";
+  patternIndex: number;
+  targetTrack: 1 | 2 | 3 | 4;
+  sampleRate: number;
+  channelData: Float32Array[];
+  durationSeconds: number;
+  name?: string;
+}
+
+export interface AudioSlicePoint {
+  index: number;
+  startFrame: number;
+  endFrame: number;
+  startSeconds: number;
+  endSeconds: number;
+}
+
+export interface Ep133OptimizationResult {
+  originalBytes: number;
+  optimizedBytes: number;
+  bytesSaved: number;
+  reductionPercentage: number;
+  channels: 1 | 2;
+  sampleRate: number;
+  durationSeconds: number;
+  wavBuffer: ArrayBuffer;
+}
+
+/**
+ * Optimise un buffer audio pour l'EP-133 K.O. II :
+ * 1. Trim du silence initial et final avec garde réglable
+ * 2. Downmix stéréo vers mono si forcé ou recommandé pour économiser la RAM
+ * 3. Normalisation de dynamique pour un rendu clair
+ * 4. Encodage direct en WAV PCM 16-bit
+ */
+export function optimizeAudioBufferForEp133(
+  audioData: Float32Array[],
+  sampleRate: number,
+  options: {
+    forceMono?: boolean;
+    trimSilence?: boolean;
+    silenceThresholdDb?: number;
+    normalizePeakDb?: number;
+  } = {}
+): Ep133OptimizationResult {
+  const {
+    forceMono = true,
+    trimSilence = true,
+    silenceThresholdDb = -45,
+    normalizePeakDb = -0.5,
+  } = options;
+
+  const originalChannels = audioData.length;
+  const originalFrames = audioData[0]?.length ?? 0;
+  const originalBytes = 44 + originalFrames * originalChannels * 2;
+
+  let channelsData = audioData.map((arr) => new Float32Array(arr));
+
+  // 1. Downmix mono si demandé
+  if (forceMono && channelsData.length > 1) {
+    const mono = new Float32Array(originalFrames);
+    const left = channelsData[0];
+    const right = channelsData[1];
+    for (let i = 0; i < originalFrames; i++) {
+      mono[i] = (left[i] + right[i]) * 0.5;
+    }
+    channelsData = [mono];
+  }
+
+  const channels = channelsData.length as 1 | 2;
+  let totalFrames = channelsData[0].length;
+
+  // 2. Détection et découpe des silences
+  let startFrame = 0;
+  let endFrame = totalFrames;
+
+  if (trimSilence && totalFrames > 0) {
+    const threshold = 10 ** (silenceThresholdDb / 20);
+    let first = -1;
+    let last = -1;
+
+    for (let i = 0; i < totalFrames; i++) {
+      let loud = false;
+      for (let c = 0; c < channels; c++) {
+        if (Math.abs(channelsData[c][i]) >= threshold) {
+          loud = true;
+          break;
+        }
+      }
+      if (loud) {
+        if (first < 0) first = i;
+        last = i;
+      }
+    }
+
+    if (first >= 0) {
+      const guardFrames = Math.round((sampleRate * 10) / 1000); // 10ms guard
+      startFrame = Math.max(0, first - guardFrames);
+      endFrame = Math.min(totalFrames, last + guardFrames + 1);
+    }
+  }
+
+  const croppedFrames = Math.max(1, endFrame - startFrame);
+  const trimmedData: Float32Array[] = [];
+
+  for (let c = 0; c < channels; c++) {
+    const trimmed = new Float32Array(croppedFrames);
+    for (let i = 0; i < croppedFrames; i++) {
+      trimmed[i] = channelsData[c][startFrame + i];
+    }
+    trimmedData.push(trimmed);
+  }
+
+  // 3. Normalisation de pic
+  let maxPeak = 0;
+  for (let c = 0; c < channels; c++) {
+    for (let i = 0; i < croppedFrames; i++) {
+      const abs = Math.abs(trimmedData[c][i]);
+      if (abs > maxPeak) maxPeak = abs;
+    }
+  }
+
+  const targetPeak = 10 ** (normalizePeakDb / 20);
+  const gain = maxPeak > 0 ? Math.min( targetPeak / maxPeak, 10 ) : 1;
+
+  if (gain !== 1) {
+    for (let c = 0; c < channels; c++) {
+      for (let i = 0; i < croppedFrames; i++) {
+        trimmedData[c][i] = Math.max(-1, Math.min(1, trimmedData[c][i] * gain));
+      }
+    }
+  }
+
+  // 4. Encodage WAV PCM 16-bit
+  const wavBytes = 44 + croppedFrames * channels * 2;
+  const buffer = new ArrayBuffer(wavBytes);
+  const view = new DataView(buffer);
+
+  // RIFF Chunk
+  view.setUint32(0, 0x52494646, false); // "RIFF"
+  view.setUint32(4, 36 + croppedFrames * channels * 2, true);
+  view.setUint32(8, 0x57415645, false); // "WAVE"
+
+  // fmt Subchunk
+  view.setUint32(12, 0x666d7420, false); // "fmt "
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM format = 1
+  view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * channels * 2, true); // byte rate
+  view.setUint16(32, channels * 2, true); // block align
+  view.setUint16(34, 16, true); // 16 bits per sample
+
+  // data Subchunk
+  view.setUint32(36, 0x64617461, false); // "data"
+  view.setUint32(40, croppedFrames * channels * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < croppedFrames; i++) {
+    for (let c = 0; c < channels; c++) {
+      const sample = Math.max(-1, Math.min(1, trimmedData[c][i]));
+      const int16 = sample < 0 ? sample * 32768 : sample * 32767;
+      view.setInt16(offset, Math.round(int16), true);
+      offset += 2;
+    }
+  }
+
+  const durationSeconds = croppedFrames / sampleRate;
+  const optimizedBytes = buffer.byteLength;
+  const bytesSaved = Math.max(0, originalBytes - optimizedBytes);
+  const reductionPercentage = originalBytes > 0 ? Math.round((bytesSaved / originalBytes) * 100) : 0;
+
+  return {
+    originalBytes,
+    optimizedBytes,
+    bytesSaved,
+    reductionPercentage,
+    channels,
+    sampleRate,
+    durationSeconds,
+    wavBuffer: buffer,
+  };
+}
+
+/**
+ * Découpe intelligente d'un buffer audio en 24 tranches égales ou transitoires
+ * pour assignation immédiate aux 24 touches OP-1 ou à la grille de pads EP-133.
+ */
+export function sliceAudioInto24DrumPads(
+  totalFrames: number,
+  sampleRate: number
+): AudioSlicePoint[] {
+  const slices: AudioSlicePoint[] = [];
+  const framesPerSlice = Math.floor(totalFrames / 24);
+
+  for (let i = 0; i < 24; i++) {
+    const startFrame = i * framesPerSlice;
+    const endFrame = i === 23 ? totalFrames : (i + 1) * framesPerSlice;
+    slices.push({
+      index: i,
+      startFrame,
+      endFrame,
+      startSeconds: startFrame / sampleRate,
+      endSeconds: endFrame / sampleRate,
+    });
+  }
+
+  return slices;
+}
+
+/**
+ * Gestionnaire réactif singleton pour le pont Duo Studio (OP-1 <-> EP-133).
+ */
+export class InterStudioBridge {
+  private static instance: InterStudioBridge | null = null;
+  private listeners: Map<string, Set<(payload: any) => void>> = new Map();
+  private sharedAudioClipboard: {
+    name: string;
+    source: "op1" | "ep133" | "rack";
+    buffer: Float32Array[];
+    sampleRate: number;
+    duration: number;
+  } | null = null;
+
+  public static getInstance(): InterStudioBridge {
+    if (!InterStudioBridge.instance) {
+      InterStudioBridge.instance = new InterStudioBridge();
+    }
+    return InterStudioBridge.instance;
+  }
+
+  public on(event: string, callback: (payload: any) => void): () => void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(callback);
+    return () => this.off(event, callback);
+  }
+
+  public off(event: string, callback: (payload: any) => void): void {
+    const set = this.listeners.get(event);
+    if (set) {
+      set.delete(callback);
+    }
+  }
+
+  public emit(event: string, payload: any): void {
+    const set = this.listeners.get(event);
+    if (set) {
+      set.forEach((cb) => {
+        try {
+          cb(payload);
+        } catch (e) {
+          console.error(`Error in InterStudioBridge listener for event "${event}":`, e);
+        }
+      });
+    }
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(`studio-bridge:${event}`, { detail: payload }));
+    }
+  }
+
+  public copyAudioToClipboard(
+    name: string,
+    source: "op1" | "ep133" | "rack",
+    buffer: Float32Array[],
+    sampleRate: number
+  ): void {
+    const duration = (buffer[0]?.length ?? 0) / sampleRate;
+    this.sharedAudioClipboard = {
+      name,
+      source,
+      buffer: buffer.map((c) => new Float32Array(c)),
+      sampleRate,
+      duration,
+    };
+    this.emit("clipboard:updated", { ...this.sharedAudioClipboard });
+  }
+
+  public getAudioClipboard() {
+    return this.sharedAudioClipboard;
+  }
+
+  public transferTapeSelectionToEp133(req: TapeToPadTransferRequest): void {
+    this.emit("tape:to_ep133_pad", req);
+  }
+
+  public bouncePatternToOp1Track(req: PatternToTapeTransferRequest): void {
+    this.emit("ep133:to_op1_track", req);
+  }
+}
+
+export const interStudioBridge = InterStudioBridge.getInstance();
+
 // Logger utility for all applications
 export { createLogger, globalLogger, default as Logger } from './logger.ts';

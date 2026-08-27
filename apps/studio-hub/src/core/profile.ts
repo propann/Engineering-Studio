@@ -2,14 +2,37 @@ export const PROFILE_STORAGE_KEY = "studio-hub-profile";
 export const PROFILE_VERSION = 2;
 export const DEFAULT_PROFILE_NAME = "NOUVEAU MEMBRE";
 
+export interface GameStatsSummary {
+  level: number;
+  currentXp: number;
+  xpForNextLevel: number;
+  title: string;
+  totalScore: number;
+  highestCombo: number;
+  totalNotesHit: number;
+  perfectHits: number;
+  greatHits: number;
+  goodHits: number;
+  missHits: number;
+  sessionsCount: number;
+  totalPlayTimeSeconds: number;
+  unlockedAchievementsCount: number;
+  totalAchievementsCount: number;
+  bestScoresBySong?: Record<string, { highscore: number; bestAccuracy: number; bestRank: string; completedCount: number }>;
+}
+
 export interface StudioProfile {
   version: number;
   name: string;
   bio: string;
   avatar?: string;
+  theme?: string;
+  language?: string;
+  keyboard?: string;
   workspace?: { name: string; folders?: string[] };
   machineInventory?: unknown;
   drives?: unknown;
+  gameStats?: GameStatsSummary;
   [key: string]: unknown;
 }
 

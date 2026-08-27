@@ -77,7 +77,7 @@ export default function CharacterPage() {
   const [theme, setTheme] = useState("PIXEL");
 
   const [machines, setMachines] = useState<Machine[]>([]);
-
+  const [gameStats, setGameStats] = useState<any>(null);
 
   // Drive Modules for the Studio Rack (NEW REQUIREMENT)
   const [drives, setDrives] = useState<DriveModule[]>([]);
@@ -307,6 +307,44 @@ export default function CharacterPage() {
         setDrives((profileData.drives as DriveModule[]).filter((drive) => localDriveTypes.has(drive.type)));
       }
       if (Array.isArray(profileData.machineInventory) && profileData.machineInventory.length) setMachines(profileData.machineInventory as Machine[]);
+      
+      // Remontée garantie des scores et de la progression RPG des jeux
+      let stats = profileData.gameStats;
+      if (!stats && typeof window !== "undefined") {
+        try {
+          const rawOp1 = window.localStorage.getItem("op1_character_profile_unified_v3");
+          if (rawOp1) {
+            const parsedOp1 = JSON.parse(rawOp1);
+            if (parsedOp1?.stats) {
+              stats = {
+                level: parsedOp1.level || 1,
+                currentXp: parsedOp1.currentXp || 0,
+                xpForNextLevel: parsedOp1.xpForNextLevel || 100,
+                title: parsedOp1.title || "Apprenti Cadence",
+                totalScore: parsedOp1.stats.totalScore || 0,
+                highestCombo: parsedOp1.stats.highestCombo || 0,
+                totalNotesHit: parsedOp1.stats.totalNotesHit || 0,
+                perfectHits: parsedOp1.stats.perfectHits || 0,
+                greatHits: parsedOp1.stats.greatHits || 0,
+                goodHits: parsedOp1.stats.goodHits || 0,
+                missHits: parsedOp1.stats.missHits || 0,
+                sessionsCount: parsedOp1.stats.sessionsCount || 0,
+                totalPlayTimeSeconds: parsedOp1.stats.totalPlayTimeSeconds || 0,
+                unlockedAchievementsCount: (parsedOp1.achievements || []).filter((a: any) => a.unlocked).length,
+                totalAchievementsCount: (parsedOp1.achievements || []).length || 20,
+                bestScoresBySong: parsedOp1.stats.bestScoresBySong || {},
+              };
+            }
+          }
+        } catch {
+          // Ignorer
+        }
+      }
+      if (stats) setGameStats(stats);
+
+      if (profileData.theme) setTheme(profileData.theme);
+      if (profileData.language) setLanguage(profileData.language);
+      if (profileData.keyboard) setKeyboard(profileData.keyboard);
       log.info("✅ Profile loaded", { name: profileData.name });
     } catch (error) {
       log.error("Failed to load profile", error);
@@ -317,6 +355,14 @@ export default function CharacterPage() {
     try {
       const local = readProfile();
       void loadProfile(local);
+
+      // Écoute en direct des changements de profil (fins de parties, nouveaux scores)
+      const handleProfileChange = () => {
+        const fresh = readProfile();
+        if (fresh) void loadProfile(fresh);
+      };
+      window.addEventListener("profilechange", handleProfileChange);
+      window.addEventListener("storage", handleProfileChange);
 
       void loadDirectoryHandle(WORKSPACE_HANDLE_KEY).then(async (handle) => {
         if (!handle) return;
@@ -340,6 +386,11 @@ export default function CharacterPage() {
         await scanWorkspaceFolder(handle, { relireFiches: !local });
         log.info("✅ Workspace handle restored", { name: handle.name });
       });
+
+      return () => {
+        window.removeEventListener("profilechange", handleProfileChange);
+        window.removeEventListener("storage", handleProfileChange);
+      };
     } catch (error) {
       log.warn("Failed to load from localStorage", error);
     }
@@ -421,6 +472,10 @@ export default function CharacterPage() {
       machineInventory: machines,
       drives,
       workspace: workspace ? { name: workspace, folders: workspaceFiles } : undefined,
+      theme,
+      language,
+      keyboard,
+      gameStats: gameStats || undefined,
       savedAt: new Date().toISOString(),
     };
 
@@ -502,6 +557,49 @@ export default function CharacterPage() {
               <span><b>{drives.filter((d) => d.active).length}</b>DRIVES</span>
               <span><b>{workspace ? "ON" : "OFF"}</b>WORKSPACE</span>
             </div>
+
+            {/* UNIFIED GAME & RPG STATS */}
+            {gameStats && (
+              <div
+                style={{
+                  marginTop: "14px",
+                  padding: "10px",
+                  background: "rgba(0, 0, 0, 0.4)",
+                  border: "1.5px solid var(--theme-border, #38bdf8)",
+                  borderRadius: "8px",
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <strong style={{ fontSize: "11px", color: "#38bdf8", textTransform: "uppercase" }}>
+                    🎮 RHYTHM & GUITAR HERO
+                  </strong>
+                  <span
+                    style={{
+                      background: "#38bdf8",
+                      color: "#0b1219",
+                      padding: "1px 6px",
+                      borderRadius: "4px",
+                      fontSize: "10px",
+                      fontWeight: 900,
+                    }}
+                  >
+                    NIV. {gameStats.level || 1}
+                  </span>
+                </div>
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "#f8fafc", marginBottom: "6px" }}>
+                  {gameStats.title || "Apprenti Rythmique"}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", fontSize: "10px", color: "#cbd5e1" }}>
+                  <div>⭐ XP : <b>{gameStats.xp || 0}</b></div>
+                  <div>🎯 Précision : <b>{gameStats.averageAccuracy || 100}%</b></div>
+                  <div>🏆 High Score : <b>{gameStats.highScore?.toLocaleString() || 0}</b></div>
+                  <div>🔥 Max Combo : <b>{gameStats.highestStreak || 0}</b></div>
+                  <div>📚 Sessions : <b>{gameStats.gamesPlayed || 0}</b></div>
+                  <div>🏅 Succès : <b>{gameStats.achievementsUnlocked || 0}</b></div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="privacy-chip"><i /> PROFIL LOCAL · AUCUN COMPTE</div>
         </aside>
@@ -693,9 +791,196 @@ export default function CharacterPage() {
             </div>
           </section>
 
-          {/* BLOCK 05: PREFERENCES */}
-          <section className="creator-block">
+          {/* BLOCK 05: RPG PROGRESSION & GAME SCORES */}
+          <section className="creator-block game-progression-block" style={{ borderLeftColor: "var(--theme-accent, #00ed95)" }}>
             <div className="block-number">05</div>
+            <div className="block-content">
+              <div className="block-title">
+                <span>PROGRESSION RPG & SCORES DE JEUX</span>
+                <small>GUITAR HERO · RHYTHM HERO · EXERCICES OP-1 & EP-133</small>
+              </div>
+
+              {gameStats ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "12px" }}>
+                  {/* Niveau & Titre */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "12px 16px",
+                      background: "#182226",
+                      border: "1px solid #2c3b40",
+                      borderRadius: "6px",
+                      flexWrap: "wrap",
+                      gap: "12px",
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: 800, color: "var(--theme-accent, #00ed95)", textTransform: "uppercase" }}>
+                        NIVEAU {gameStats.level || 1} · {gameStats.title || "Apprenti Cadence"}
+                      </div>
+                      <div style={{ fontSize: "18px", fontWeight: 900, color: "#fff", marginTop: "2px" }}>
+                        {(gameStats.totalScore || 0).toLocaleString()} <span style={{ fontSize: "12px", color: "#94a3b8" }}>pts cumulés</span>
+                      </div>
+                    </div>
+
+                    <div style={{ minWidth: "200px", flex: 1, maxWidth: "320px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "4px", color: "#94a3b8" }}>
+                        <span>XP : {gameStats.currentXp || 0} / {gameStats.xpForNextLevel || 100}</span>
+                        <span>{Math.round(((gameStats.currentXp || 0) / Math.max(1, gameStats.xpForNextLevel || 100)) * 100)}%</span>
+                      </div>
+                      <div style={{ width: "100%", height: "8px", background: "#0e1314", borderRadius: "4px", overflow: "hidden", border: "1px solid #334155" }}>
+                        <div
+                          style={{
+                            width: `${Math.min(100, Math.round(((gameStats.currentXp || 0) / Math.max(1, gameStats.xpForNextLevel || 100)) * 100))}%`,
+                            height: "100%",
+                            background: "var(--theme-accent, #00ed95)",
+                            borderRadius: "4px",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Grille de stats globales */}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+                      gap: "10px",
+                    }}
+                  >
+                    <div style={{ padding: "10px", background: "#151d20", border: "1px solid #243238", borderRadius: "6px" }}>
+                      <div style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>NOTES TOUCHÉES</div>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#38bdf8", marginTop: "4px" }}>
+                        {(gameStats.totalNotesHit || 0).toLocaleString()}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "10px", background: "#151d20", border: "1px solid #243238", borderRadius: "6px" }}>
+                      <div style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>COMBO RECORD</div>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#f59e0b", marginTop: "4px" }}>
+                        🔥 {gameStats.highestCombo || 0}x
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "10px", background: "#151d20", border: "1px solid #243238", borderRadius: "6px" }}>
+                      <div style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>SESSIONS JOUÉES</div>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "#a855f7", marginTop: "4px" }}>
+                        🎮 {gameStats.sessionsCount || 0}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "10px", background: "#151d20", border: "1px solid #243238", borderRadius: "6px" }}>
+                      <div style={{ fontSize: "10px", color: "#94a3b8", fontWeight: 700 }}>SUCCÈS DÉBLOQUÉS</div>
+                      <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--theme-accent, #00ed95)", marginTop: "4px" }}>
+                        🏆 {gameStats.unlockedAchievementsCount || 0} / {gameStats.totalAchievementsCount || 20}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Meilleurs scores par morceau */}
+                  {gameStats.bestScoresBySong && Object.keys(gameStats.bestScoresBySong).length > 0 && (
+                    <div style={{ marginTop: "4px" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 800, color: "#94a3b8", marginBottom: "8px" }}>
+                        MEILLEURS SCORES PAR MORCEAU ({Object.keys(gameStats.bestScoresBySong).length})
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "180px", overflowY: "auto" }}>
+                        {Object.entries(gameStats.bestScoresBySong).map(([songId, data]: [string, any]) => (
+                          <div
+                            key={songId}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              padding: "6px 12px",
+                              background: "#0e1314",
+                              border: "1px solid #243238",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          >
+                            <span style={{ fontWeight: 700, color: "#edf2f7" }}>
+                              {songId.replace(/_/g, " ").toUpperCase()}
+                            </span>
+                            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                              <span style={{ color: "#38bdf8", fontWeight: 800 }}>{data.highscore?.toLocaleString()} pts</span>
+                              <span style={{ color: "#00ed95", fontWeight: 800 }}>{data.bestAccuracy}%</span>
+                              <span style={{ padding: "1px 6px", background: "#f59e0b", color: "#000", fontWeight: 900, borderRadius: "3px", fontSize: "10px" }}>
+                                {data.bestRank || "A"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                    <button
+                      type="button"
+                      onClick={() => (window as any).navigateMaquette("exercises")}
+                      style={{
+                        padding: "8px 14px",
+                        background: "var(--theme-accent, #00ed95)",
+                        color: "#000",
+                        fontWeight: 900,
+                        fontSize: "11px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      🚀 JOUER À GUITAR HERO / ENTRAÎNEMENT OP-1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => (window as any).navigateMaquette("rhythm-hero")}
+                      style={{
+                        padding: "8px 14px",
+                        background: "#38bdf8",
+                        color: "#000",
+                        fontWeight: 900,
+                        fontSize: "11px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      🥁 JOUER À RHYTHM HERO EP-133
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: "16px", background: "#182226", borderRadius: "6px", textAlign: "center", color: "#94a3b8" }}>
+                  <p style={{ margin: "0 0 10px 0", fontSize: "12px" }}>
+                    Aucune partie enregistrée pour le moment. Lancez un exercice ou une partie arcade pour débloquer votre premier score et gagner de l'XP !
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => (window as any).navigateMaquette("exercises")}
+                    style={{
+                      padding: "8px 16px",
+                      background: "var(--theme-accent, #00ed95)",
+                      color: "#000",
+                      fontWeight: 900,
+                      fontSize: "11px",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    🎮 DÉMARRER UNE SESSION D'ENTRAÎNEMENT
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* BLOCK 06: PREFERENCES */}
+          <section className="creator-block">
+            <div className="block-number">06</div>
             <div className="block-content">
               <div className="block-title">
                 <span>RÉGLAGES JOUEUR</span>

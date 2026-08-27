@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  calculateEp133MemoryBudget,
   dureeAdmise,
   EP133_TARGET_SAMPLE_RATES,
   estimateEp133ConversionBytes,
@@ -141,3 +142,40 @@ describe("estimateEp133MemoryFit", () => {
     expect(estimateEp133MemoryFit(1e6, -5e6, 64).remainingBytes).toBe(64e6);
   });
 });
+
+describe("calculateEp133MemoryBudget", () => {
+  it("calcule le budget pour une machine vide (64 Mo, 999 slots)", () => {
+    const b = calculateEp133MemoryBudget(0, 0, 64);
+    expect(b.capacityBytes).toBe(64e6);
+    expect(b.usedBytes).toBe(0);
+    expect(b.remainingBytes).toBe(64e6);
+    expect(b.usagePercentage).toBe(0);
+    expect(b.isFull).toBe(false);
+    expect(b.isCritical).toBe(false);
+    expect(b.totalSlots).toBe(999);
+    expect(b.usedSlots).toBe(0);
+    expect(b.availableSlots).toBe(999);
+    expect(b.maxRecordingTimeRemainingSec.lo).toBeGreaterThan(1000);
+    expect(b.maxRecordingTimeRemainingSec.mid).toBeGreaterThan(900);
+    expect(b.maxRecordingTimeRemainingSec.hi).toBeGreaterThan(600);
+  });
+
+  it("signale l'état critique dès 90% d'utilisation ou <= 10 slots restants", () => {
+    const b1 = calculateEp133MemoryBudget(58e6, 100, 64);
+    expect(b1.usagePercentage).toBe(91);
+    expect(b1.isCritical).toBe(true);
+    expect(b1.isFull).toBe(false);
+
+    const b2 = calculateEp133MemoryBudget(10e6, 990, 64);
+    expect(b2.availableSlots).toBe(9);
+    expect(b2.isCritical).toBe(true);
+  });
+
+  it("signale une machine pleine quand les octets ou slots sont épuisés", () => {
+    const b = calculateEp133MemoryBudget(64e6, 999, 64);
+    expect(b.isFull).toBe(true);
+    expect(b.remainingBytes).toBe(0);
+    expect(b.availableSlots).toBe(0);
+  });
+});
+

@@ -2,15 +2,15 @@
 
 **Professional audio synthesis and effects workstation built with React + Web Audio API**
 
-> A complete music production studio with 15 synthesis engines, 12 advanced audio modules, and sample export capabilities.
+> A complete music production studio with 20 synthesis engines, 12 advanced audio modules, and sample export capabilities.
 
 ---
 
 ## 🌟 Features
 
 ### ✨ Current Features
-- **15 Synthesis Engines** (Mutable Instruments Eurorack + 10 open-source synths)
-- **75+ Factory Presets** organized by category
+- **20 Synthesis Engines** (Mutable Instruments Eurorack + 10 open-source synths + 5 retro/vintage APUs)
+- **101 Factory Presets** organized by category
 - **Real-time Web Audio API** synthesis
 - **Custom Patch Manager** with localStorage persistence
 - **Virtual 12-Key Piano** for live performance

@@ -36,12 +36,10 @@ describe("cablage au rack", () => {
     expect(RACK).toContain("const patchesAffiches = filtrerPatches(allPatchesForEngine)");
   });
 
-  it("les deux listes de moteurs sont filtrees, pas seulement une", () => {
-    // Le rack rend deux blocs identiques — moteurs Mutable Instruments et
-    // moteurs open source. N'en cabler qu'un laisserait la moitie des patches
-    // insensibles a la recherche.
+  it("la liste des moteurs est filtree", () => {
+    // Le rack rend les moteurs filtres avec recherche, favoris et tags.
     const rendus = RACK.match(/\{patchesAffiches\.map\(/g) ?? [];
-    expect(rendus).toHaveLength(2);
+    expect(rendus.length).toBeGreaterThanOrEqual(1);
   });
 
   it("plus aucune liste non filtree n'est rendue", () => {

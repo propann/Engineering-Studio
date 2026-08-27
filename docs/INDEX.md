@@ -19,9 +19,12 @@ feuilles de route en dépendent.
 5. [Données d’un nouvel utilisateur](guides/NEW_USER_DATA_MODEL.md)
 6. [État et prochaines étapes](STATUS.md)
 7. [Recherche moteurs audio et intégration du Rack](architecture/AUDIO_ENGINE_RESEARCH_AND_RACK_INTEGRATION_2026-08-20.md)
-8. [**Tests physiques**](TESTS_PHYSIQUES.md) — ce que les tests automatiques
+8. [**Spécifications Matérielles OP-1 & EP-133**](specs/HARDWARE_REFERENCE_OP1_EP133.md) — limites mémoire (64 Mo EP-133), moteurs synthé, pistes bande, formats AIFF APPL & PPAK
+9. [**Architecture Rack DSP & Feuille de Route Multi-IA**](specs/RACK_DSP_ARCHITECTURE_AND_ROADMAP.md) — modulation CPU à la demande, mode Duo Studio et missions pour Gemini, Claude et Codex
+10. [**Direction du Projet & Nouvelles Intégrations**](specs/DIRECTION_PROJET_ET_INTEGRATIONS.md) — vision stratégique, intégrations matérielles (SysEx EP-133, WebUSB/Serial, CNC E-Stop), live coding Strudel, DSP WASM et Music-Git P2P
+11. [**Tests physiques**](TESTS_PHYSIQUES.md) — ce que les tests automatiques
    ne peuvent pas prouver : matériel branché, oreilles, ou les deux
-9. [**Analyse du rack principal**](ANALYSE_RACK_PRINCIPAL.md) — les vingt-neuf
+12. [**Analyse du rack principal**](ANALYSE_RACK_PRINCIPAL.md) — les vingt-neuf
    entrées de la porte d'entrée, outil par outil : ce qu'elles promettent, ce
    qu'elles ouvrent, et ce qui ne s'ouvre plus
 10. [**Feuille de route UI**](design/UI_ROADMAP.md) — ordre d'exécution,

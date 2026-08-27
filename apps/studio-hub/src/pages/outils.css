@@ -1,6 +1,24 @@
-/* outils.css - ToolsHub Design suivant la vraie maquette */
+/* outils.css - ToolsHub Design avec support Thème Sombre & Clair */
 
 :root {
+  --ink: var(--theme-text-main, #111311);
+  --paper: var(--theme-bg-base, #ebece6);
+  --muted: var(--theme-text-muted, #747970);
+  --line: var(--theme-border-subtle, #11131124);
+  --orange: #ff5a1f;
+  --acid: #d9ff43;
+}
+
+html[data-theme="dark"] {
+  --ink: #edf2f7;
+  --paper: #0e1314;
+  --muted: #94a3b8;
+  --line: #2c3b40;
+  --orange: #ff5a1f;
+  --acid: #00ed95;
+}
+
+html[data-theme="light"] {
   --ink: #111311;
   --paper: #ebece6;
   --muted: #747970;
@@ -12,12 +30,12 @@
 /* ========== TOOLS SECTION ========== */
 .tools-section-organized {
   padding: 40px 5vw 80px;
-  background-color: #ebece6;
+  background-color: var(--paper);
   background-image:
-    linear-gradient(rgba(17, 19, 17, 0.06) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, rgba(17, 19, 17, 0.06) 1.5px, transparent 1.5px);
+    linear-gradient(var(--line) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, var(--line) 1.5px, transparent 1.5px);
   background-size: 24px 24px;
-  color: #111311;
+  color: var(--ink);
   min-height: 100vh;
 }
 

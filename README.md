@@ -25,7 +25,7 @@ le rack d'effets le traite.**
 | Rack | Métier | Où il vit |
 |---|---|---|
 | **MIDI** | produit les notes — arpégiateur, 30 gammes, horloge, relais | `packages/musique/`, panneau `MidiSyncPanel` |
-| **Moteurs** | en fait du son — 15 moteurs, 76 patches | `pages/AudioPluginRack.tsx` |
+| **Moteurs** | en fait du son — 20 moteurs, 101 patches | `pages/AudioPluginRack.tsx` |
 | **Effets** | traite le son — saturation, égaliseur, modulation, délai | `core/audio/effets.ts` + `racks/RackEffets.tsx` |
 
 Chaque rack **porte son interface**. Un test l'empêche de revenir en arrière :
@@ -38,10 +38,11 @@ qui écoute** — le rack, l'OP-1, l'EP-133 et n'importe quelle machine branché
 
 ### Rack de moteurs
 
-Quinze moteurs de synthèse — la suite Mutable Instruments (Plaits, Braids,
-Rings, Clouds, Elements) et dix moteurs libres (Dexed/DX7 FM, Surge XT,
-ZynAddSubFX, Helm, FluidSynth, amsynth, AMY, pl_synth, Open303, Faust).
-76 patches d'usine, superposition de patches, oscilloscope, et fabrication
+Vingt moteurs de synthèse — la suite Mutable Instruments (Plaits, Braids,
+Rings, Clouds, Elements), dix moteurs libres (Dexed/DX7 FM, Surge XT,
+ZynAddSubFX, Helm, FluidSynth, amsynth, AMY, pl_synth, Open303, Faust) et
+cinq moteurs rétro / vintage (GameBoy DMG-01, NES 2A03, Commodore SID 6581, Sega YM2612 OPN2, Minimoog Model D).
+101 patches d'usine, superposition de patches, oscilloscope, et fabrication
 d'échantillons rendus hors ligne puis **relus et comparés par empreinte**.
 
 ![Rack de moteurs, avec l'enveloppe et le rack d'effets](docs/assets/captures/rack-audio.png)
@@ -220,6 +221,7 @@ disque se monte en lecture seule par défaut pendant les essais.
 | | |
 |---|---|
 | [Index documentaire](docs/INDEX.md) | point d'entrée |
+| [Direction & Nouvelles Intégrations](docs/specs/DIRECTION_PROJET_ET_INTEGRATIONS.md) | vision stratégique, SysEx EP-133, WebUSB/Serial, Strudel & P2P |
 | [État du projet](docs/STATUS.md) | où en est chaque chantier |
 | [Modules](MODULES_STATUS.md) | les douze modules du rack, un par un |
 | [Feuille de route](docs/ROADMAP.md) | ce qui a été fait, et ce que ça a appris |

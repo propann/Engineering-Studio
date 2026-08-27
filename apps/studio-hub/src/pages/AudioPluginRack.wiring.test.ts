@@ -108,6 +108,7 @@ function parametres(): string[] {
     // trouve les patches qui, eux, le decident.
     "metas",
     "favorisSeuls",
+    "selectedRackTab",
   ]);
   return [...SOURCE.matchAll(/const \[(\w+), set\w+\] = useState/g)]
     .map((m) => m[1])

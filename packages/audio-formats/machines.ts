@@ -49,6 +49,60 @@ export interface Ep133MemoryFit {
   remainingBytes: number;
 }
 
+export interface Ep133MemoryBudget {
+  capacityBytes: number;
+  usedBytes: number;
+  remainingBytes: number;
+  usagePercentage: number;
+  isFull: boolean;
+  isCritical: boolean; // > 90%
+  totalSlots: number;  // 999 max
+  usedSlots: number;
+  availableSlots: number;
+  maxRecordingTimeRemainingSec: {
+    lo: number;  // à 26.250 kHz mono
+    mid: number; // à 32.000 kHz mono
+    hi: number;  // à 46.875 kHz mono
+  };
+}
+
+/**
+ * Calcule le budget détaillé de la mémoire RAM de l'EP-133 K.O. II (64 Mo / 999 slots).
+ */
+export function calculateEp133MemoryBudget(
+  usedBytes: number,
+  usedSlots: number,
+  capacityMb: 64 | 128 = 64
+): Ep133MemoryBudget {
+  const capacityBytes = capacityMb * 1e6;
+  const safeUsedBytes = Math.max(0, Math.min(capacityBytes, Number.isFinite(usedBytes) ? usedBytes : 0));
+  const remainingBytes = Math.max(0, capacityBytes - safeUsedBytes);
+  const usagePercentage = Math.round((safeUsedBytes / capacityBytes) * 100);
+  const totalSlots = 999;
+  const safeUsedSlots = Math.max(0, Math.min(totalSlots, Number.isFinite(usedSlots) ? usedSlots : 0));
+  const availableSlots = Math.max(0, totalSlots - safeUsedSlots);
+
+  // PCM 16-bit Mono : 2 octets par sample
+  const maxRecordingTimeRemainingSec = {
+    lo: remainingBytes / (EP133_TARGET_SAMPLE_RATES.LO * 2),
+    mid: remainingBytes / (EP133_TARGET_SAMPLE_RATES.MID * 2),
+    hi: remainingBytes / (EP133_TARGET_SAMPLE_RATES.HI * 2),
+  };
+
+  return {
+    capacityBytes,
+    usedBytes: safeUsedBytes,
+    remainingBytes,
+    usagePercentage,
+    isFull: remainingBytes <= 44 || availableSlots === 0,
+    isCritical: usagePercentage >= 90 || availableSlots <= 10,
+    totalSlots,
+    usedSlots: safeUsedSlots,
+    availableSlots,
+    maxRecordingTimeRemainingSec,
+  };
+}
+
 /**
  * Compare un poids estimé à l'espace restant sur la machine. Mo décimaux
  * (1 Mo = 1 000 000 octets), cohérent avec le reste du projet.

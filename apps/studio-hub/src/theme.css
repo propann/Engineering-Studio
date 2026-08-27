@@ -1,0 +1,269 @@
+/* theme.css — Thème Sombre & Thème Clair Global pour tout le site Engineering Studio */
+
+:root {
+  --theme-bg-base: #0e1314;
+  --theme-bg-surface: #151d20;
+  --theme-bg-surface-elevated: #1a2428;
+  --theme-border: #2c3b40;
+  --theme-border-subtle: #202b2f;
+  --theme-text-main: #edf2f7;
+  --theme-text-muted: #94a3b8;
+  --theme-accent: #00ed95;
+  --theme-accent-orange: #ff5a1f;
+  --theme-topbar-bg: rgba(14, 19, 20, 0.92);
+  --theme-card-bg: #151d20;
+  --theme-card-border: #2c3b40;
+}
+
+/* THÈME CLAIR */
+html[data-theme="light"],
+html.theme-light {
+  --theme-bg-base: #ebece6;
+  --theme-bg-surface: #ffffff;
+  --theme-bg-surface-elevated: #f4f5ef;
+  --theme-border: #111311;
+  --theme-border-subtle: #d0d4cb;
+  --theme-text-main: #111311;
+  --theme-text-muted: #555b53;
+  --theme-accent: #00875a;
+  --theme-accent-orange: #ff5a1f;
+  --theme-topbar-bg: rgba(235, 236, 230, 0.94);
+  --theme-card-bg: #ffffff;
+  --theme-card-border: #111311;
+}
+
+/* THÈME SOMBRE */
+html[data-theme="dark"],
+html.theme-dark {
+  --theme-bg-base: #0e1314;
+  --theme-bg-surface: #151d20;
+  --theme-bg-surface-elevated: #1a2428;
+  --theme-border: #2c3b40;
+  --theme-border-subtle: #202b2f;
+  --theme-text-main: #edf2f7;
+  --theme-text-muted: #94a3b8;
+  --theme-accent: #00ed95;
+  --theme-accent-orange: #ff5a1f;
+  --theme-topbar-bg: rgba(14, 19, 20, 0.92);
+  --theme-card-bg: #151d20;
+  --theme-card-border: #2c3b40;
+}
+
+/* Application des variables aux structures globales */
+body {
+  background-color: var(--theme-bg-base);
+  color: var(--theme-text-main);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.universal-topbar {
+  background: var(--theme-topbar-bg) !important;
+  border-bottom: 2px solid var(--theme-border) !important;
+}
+
+.topbar-studio-btn {
+  color: var(--theme-text-main) !important;
+}
+
+.topbar-studio-btn:hover {
+  background: var(--theme-bg-surface-elevated) !important;
+}
+
+.topbar-studio-btn.is-active {
+  background: var(--theme-bg-surface) !important;
+  border-color: var(--theme-accent-orange) !important;
+}
+
+.topbar-profile-badge {
+  background: var(--theme-bg-surface) !important;
+  border: 1.5px solid var(--theme-border) !important;
+  color: var(--theme-text-main) !important;
+}
+
+.topbar-profile-badge:hover {
+  border-color: var(--theme-accent-orange) !important;
+}
+
+/* Bouton de bascule de thème */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: "Courier New", monospace;
+  cursor: pointer;
+  background: var(--theme-bg-surface);
+  border: 1.5px solid var(--theme-border);
+  color: var(--theme-text-main);
+  transition: all 0.2s ease;
+  box-shadow: 2px 2px 0 var(--theme-border);
+}
+
+.theme-toggle-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--theme-accent-orange);
+  border-color: var(--theme-accent-orange);
+}
+
+/* Adaptation du mode clair aux pages d'exercices et Rhythm Hero */
+html[data-theme="light"] .game-page,
+html[data-theme="light"] .tools-section-organized,
+html[data-theme="light"] .landing-rich-page,
+html[data-theme="light"] .creator-page {
+  background-color: var(--theme-bg-base);
+  color: var(--theme-text-main);
+}
+
+html[data-theme="dark"] .tools-section-organized {
+  background-color: #0e1314;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1.5px, transparent 1.5px);
+  color: #edf2f7;
+}
+
+html[data-theme="dark"] .hub-header-banner,
+html[data-theme="dark"] .nav-tabs,
+html[data-theme="dark"] .utility-card,
+html[data-theme="dark"] .hub-category-card,
+html[data-theme="dark"] .doc-card,
+html[data-theme="dark"] .training-card-item,
+html[data-theme="dark"] .settings-card-item,
+html[data-theme="dark"] .sound-card-item,
+html[data-theme="dark"] .studio-card-item,
+html[data-theme="dark"] .save-card-item {
+  background: #141b22;
+  border-color: #303e48;
+  color: #edf2f7;
+  box-shadow: 4px 4px 0 #000000;
+}
+
+html[data-theme="dark"] .hub-header-banner h1,
+html[data-theme="dark"] .hub-category-card h3,
+html[data-theme="dark"] .doc-card h3,
+html[data-theme="dark"] .training-card-item h3 {
+  color: #f1f5f9;
+}
+
+html[data-theme="dark"] .hub-header-banner p,
+html[data-theme="dark"] .hub-category-card p,
+html[data-theme="dark"] .doc-card p,
+html[data-theme="dark"] .training-card-item p {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .nav-tab {
+  background: #19232c;
+  border-color: #303e48;
+  color: #e2e8f0;
+  box-shadow: 2px 2px 0 #000000;
+}
+
+html[data-theme="dark"] .nav-tab:hover {
+  background: #212e3a;
+  box-shadow: 3px 3px 0 #ff5a1f;
+}
+
+html[data-theme="dark"] .nav-tab.active {
+  background: #00ed95;
+  color: #05160e;
+  border-color: #00ed95;
+  box-shadow: 3px 3px 0 #00ed95;
+}
+
+/* ==========================================================================
+   STYLE UNIFIÉ SOMBRE / CLAIR POUR TOUS LES COMPOSANTS DU MONOREPO
+   ========================================================================== */
+
+/* Cartes, Racks & Tiroirs */
+.studio-card,
+.rack-module,
+.plugin-slot,
+.settings-panel,
+.vault-panel-container,
+.collab-panel-card {
+  background: var(--theme-card-bg);
+  border: 1.5px solid var(--theme-card-border);
+  color: var(--theme-text-main);
+  transition: all 0.2s ease;
+}
+
+/* Formulaires & Champs de saisie */
+input[type="text"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  background: var(--theme-bg-surface-elevated);
+  border: 1.5px solid var(--theme-border);
+  color: var(--theme-text-main);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--theme-accent-orange);
+  box-shadow: 0 0 0 2px rgba(255, 90, 31, 0.25);
+}
+
+/* Badges & Tags */
+.theme-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: "Courier New", monospace;
+  background: var(--theme-bg-surface-elevated);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-main);
+}
+
+.theme-badge-accent {
+  background: rgba(0, 237, 149, 0.15);
+  border-color: var(--theme-accent);
+  color: var(--theme-accent);
+}
+
+.theme-badge-orange {
+  background: rgba(255, 90, 31, 0.15);
+  border-color: var(--theme-accent-orange);
+  color: var(--theme-accent-orange);
+}
+
+/* Sliders et Contrôles Audio */
+input[type="range"] {
+  accent-color: var(--theme-accent-orange);
+}
+
+/* Scrollbar Stylée */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-accent-orange);
+}
