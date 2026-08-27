@@ -47,6 +47,9 @@ import { StudioTapeEditor } from "./components/StudioTapeEditor";
 import { SoundLibraryIndex } from "./components/SoundLibraryIndex";
 import { StudioTrackList } from "./components/StudioTrackList";
 import { MasterEffectsPanel, DEFAULT_MASTER_EFFECTS, type MasterEffectsState } from "./components/MasterEffectsPanel";
+import { StudioEngineControlMatrix } from "./components/StudioEngineControlMatrix";
+import { StudioGitWorkspace, type SharedProject } from "./components/StudioGitWorkspace";
+import { StudioCollabChat } from "./components/StudioCollabChat";
 import { useHubInitialization } from "./hooks/useHubInitialization";
 import { sanitizeSvg } from "./lib/sanitizeSvg";
 import { hubCommunication, incrementHubCounter, OP1_PROJECTS_SAVED_KEY } from "./lib/hubCommunication";
@@ -474,7 +477,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
   const [autosaveReady, setAutosaveReady] = useState(false);
   const [midiOptions, setMidiOptions] = useState<MidiKeyboardOptions>(DEFAULT_MIDI_KEYBOARD_OPTIONS);
   const [showMidiOptions, setShowMidiOptions] = useState(false);
-  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "project" | "midi" | "guitar_hero" | null>(null);
+  const [activeModal, setActiveModal] = useState<"tracks" | "engines" | "matrix" | "git" | "chat" | "project" | "midi" | "guitar_hero" | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<"project" | "view" | "midi" | "tools" | null>(null);
   const [selectedEngine, setSelectedEngine] = useState(() => initialPatch("engine", "mi_plaits"));
   const [selectedPatch, setSelectedPatch] = useState(() => initialPatch("patch", "Virtual Analog Saw Lead"));
@@ -1452,9 +1455,9 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
 
       {/* ── CONSOLE DE CONTRÔLE COMPACTE OP-1 STUDIO (Hauteur optimisée) ── */}
       <div className="op1-compact-console">
-        {/* Ligne 1 : Navigation, Modals & Menus déroulants */}
-        <div className="op1-compact-row op1-console-band op1-console-band-machine">
-          <div className="op1-compact-group">
+        {/* Ligne 1 : Navigation, Modals & Menus déroulants en ligne propre et compacte */}
+        <div className="op1-compact-row op1-console-band op1-console-band-machine" style={{ flexWrap: "wrap", gap: "6px" }}>
+          <div className="op1-compact-group" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
             <div className="op1-compact-brand">
               <strong>OP-1 STUDIO</strong>
               <span>PRO</span>
@@ -1472,26 +1475,32 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               title="Basculer entre Clone local OP-1 et Contrôleur MIDI physique"
             >
               <Icon name={studioMode === "clone" ? "chip" : "plug"} size={12} />
-              <span>{studioMode === "clone" ? "Mode Clone" : "Mode MIDI"}</span>
+              <span>{studioMode === "clone" ? "Clone" : "MIDI"}</span>
             </button>
 
-            {/* Menu 1 : Tiroir Multi-Pistes */}
+            {/* Carte de Contrôle Globale (20 Moteurs) */}
             <button
               type="button"
-              className={`op1-pill-btn ${activeModal === "tracks" ? "is-active" : ""}`}
+              className={`op1-pill-btn ${activeModal === "matrix" ? "is-active" : ""}`}
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveModal(activeModal === "tracks" ? null : "tracks");
+                setActiveModal(activeModal === "matrix" ? null : "matrix");
                 setActiveDropdown(null);
               }}
-              title="Ouvrir le mixeur et l'éditeur multi-pistes 1 à 4"
+              title="Ouvrir la Carte de Contrôle globale des 20 moteurs audio et modulation"
+              style={{
+                borderColor: "rgba(0, 237, 149, 0.4)",
+                color: activeModal === "matrix" ? "#00ED95" : "#6ee7b7",
+                background: activeModal === "matrix" ? "rgba(0, 237, 149, 0.25)" : "rgba(0, 237, 149, 0.1)",
+                fontWeight: 700,
+              }}
             >
-              <Icon name="tape" size={12} />
-              <span>Mixer (1-4)</span>
-              <span className="badge">{loadedTracksCount}/4</span>
+              <span>🎛️</span>
+              <span>Carte Contrôle</span>
+              <span className="badge" style={{ background: "#00ED95", color: "#090d16" }}>20 Moteurs</span>
             </button>
 
-            {/* Menu 2 : Moteurs Sonores & Presets */}
+            {/* Menu Moteur Sonore & Presets */}
             <button
               type="button"
               className={`op1-pill-btn ${activeModal === "engines" ? "is-active" : ""}`}
@@ -1507,7 +1516,65 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               <span className="badge">{selectedEngine}</span>
             </button>
 
-            {/* Menu Hub Outils (Dropdown) contenant le bouton Apprendre */}
+            {/* Menu Tiroir Multi-Pistes */}
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeModal === "tracks" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModal(activeModal === "tracks" ? null : "tracks");
+                setActiveDropdown(null);
+              }}
+              title="Ouvrir le mixeur et l'éditeur multi-pistes 1 à 4"
+            >
+              <Icon name="tape" size={12} />
+              <span>Mixer (1-4)</span>
+              <span className="badge">{loadedTracksCount}/4</span>
+            </button>
+
+            {/* Espace Git & Créations Partagées */}
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeModal === "git" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModal(activeModal === "git" ? null : "git");
+                setActiveDropdown(null);
+              }}
+              title="Ouvrir l'Espace Git, les révisions de projets et les créations partagées"
+              style={{
+                borderColor: "rgba(249, 115, 22, 0.4)",
+                color: activeModal === "git" ? "#f97316" : "#fdba74",
+                background: activeModal === "git" ? "rgba(249, 115, 22, 0.25)" : "rgba(249, 115, 22, 0.1)",
+                fontWeight: 700,
+              }}
+            >
+              <span>🐙</span>
+              <span>Git & Partages</span>
+            </button>
+
+            {/* Salon de Chat Collaboratif */}
+            <button
+              type="button"
+              className={`op1-pill-btn ${activeModal === "chat" ? "is-active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveModal(activeModal === "chat" ? null : "chat");
+                setActiveDropdown(null);
+              }}
+              title="Ouvrir le chat collaboratif et partager des patchs & stems"
+              style={{
+                borderColor: "rgba(56, 189, 248, 0.4)",
+                color: activeModal === "chat" ? "#38bdf8" : "#93c5fd",
+                background: activeModal === "chat" ? "rgba(56, 189, 248, 0.25)" : "rgba(56, 189, 248, 0.1)",
+                fontWeight: 700,
+              }}
+            >
+              <span>💬</span>
+              <span>Chat Collab</span>
+            </button>
+
+            {/* Menu Hub Outils (Dropdown) */}
             <div className="op1-pro-menu-group">
               <button
                 type="button"
@@ -1516,12 +1583,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
                   e.stopPropagation();
                   setActiveDropdown(activeDropdown === "tools" ? null : "tools");
                 }}
-                title="Accéder au Hub Outils : Apprentissage, Exercices, Finger Drumming et Fiche de Personnage"
-                style={{
-                  borderColor: "rgba(56, 189, 248, 0.4)",
-                  color: "#38bdf8",
-                  background: activeDropdown === "tools" ? "rgba(56, 189, 248, 0.2)" : "rgba(56, 189, 248, 0.08)",
-                }}
+                title="Accéder au Hub Outils : Arcade, Samples, Mixeur"
               >
                 <span>🛠️</span>
                 <span>Hub Outils</span>
@@ -1568,22 +1630,33 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
                     type="button"
                     className="op1-pro-dropdown-item"
                     onClick={() => {
-                      setActiveModal("engines");
+                      setActiveModal("matrix");
                       setActiveDropdown(null);
                     }}
                   >
-                    <span>🎹 Moteurs & Patchs Son</span>
+                    <span>🎛️ Carte Contrôle 20 Moteurs</span>
                   </button>
 
                   <button
                     type="button"
                     className="op1-pro-dropdown-item"
                     onClick={() => {
-                      setActiveModal("tracks");
+                      setActiveModal("git");
                       setActiveDropdown(null);
                     }}
                   >
-                    <span>🎚️ Console de Mixage 4 Pistes</span>
+                    <span>🐙 Dossier Git & Projets Partagés</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="op1-pro-dropdown-item"
+                    onClick={() => {
+                      setActiveModal("chat");
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>💬 Salon Chat & Partage Presets</span>
                   </button>
                 </div>
               )}
@@ -1600,10 +1673,10 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               title="Préécouter et charger un sample sauvegardé sur la piste active"
             >
               <Icon name="wave" size={12} />
-              <span>Samples sauvegardés</span>
+              <span>Samples</span>
             </button>
 
-            {/* Menu 3 : Projet & Exports (Dropdown) */}
+            {/* Menu Projet & Exports (Dropdown) */}
             <div className="op1-pro-menu-group">
               <button
                 type="button"
@@ -1653,7 +1726,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               )}
             </div>
 
-            {/* Menu 4 : MIDI & Sync (Dropdown) */}
+            {/* Menu MIDI & Sync (Dropdown) */}
             <div className="op1-pro-menu-group">
               <button
                 type="button"
@@ -1686,7 +1759,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               )}
             </div>
 
-            {/* Menu 5 : Disposition / Vue (Dropdown) */}
+            {/* Menu Disposition / Vue (Dropdown) */}
             <div className="op1-pro-menu-group">
               <button
                 type="button"
@@ -2348,6 +2421,153 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
               onClose={() => setActiveModal(null)}
               onNotice={onNotice}
               onSendMidi={onSendMidi}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modal Carte de Contrôle Globale (20 Moteurs) */}
+      {activeModal === "matrix" && (
+        <div
+          className="op1-pro-modal-backdrop"
+          onClick={() => setActiveModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(5, 7, 10, 0.88)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            className="op1-matrix-modal-window"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "1080px",
+              maxHeight: "94vh",
+              overflowY: "auto",
+              backgroundColor: "#0d1117",
+              border: "1px solid #1e293b",
+              borderRadius: "14px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 237, 149, 0.15)",
+              padding: "16px",
+            }}
+          >
+            <StudioEngineControlMatrix
+              currentEngine={selectedEngine}
+              currentPatch={selectedPatch}
+              onSelectEngine={(engId) => {
+                setSelectedEngine(engId);
+                onNotice(`Moteur ${engId} sélectionné.`);
+              }}
+              onSelectPatch={(patchName) => {
+                setSelectedPatch(patchName);
+                onNotice(`Patch "${patchName}" sélectionné.`);
+              }}
+              onClose={() => setActiveModal(null)}
+              onNotice={onNotice}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modal Espace Git & Créations Partagées */}
+      {activeModal === "git" && (
+        <div
+          className="op1-pro-modal-backdrop"
+          onClick={() => setActiveModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(5, 7, 10, 0.88)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            className="op1-git-modal-window"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "1020px",
+              maxHeight: "94vh",
+              overflowY: "auto",
+              backgroundColor: "#0d1117",
+              border: "1px solid #1e293b",
+              borderRadius: "14px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(249, 115, 22, 0.15)",
+              padding: "16px",
+            }}
+          >
+            <StudioGitWorkspace
+              currentEngine={selectedEngine}
+              currentPatch={selectedPatch}
+              bpm={tempo}
+              tracksInfo={files}
+              onLoadSharedProject={(proj) => {
+                setSelectedEngine(proj.engine);
+                setSelectedPatch(proj.patch);
+                setTempo(proj.bpm);
+                setActiveModal(null);
+                onNotice(`Projet partagé "${proj.title}" chargé avec succès !`);
+              }}
+              onNotice={onNotice}
+              onClose={() => setActiveModal(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modal Salon de Chat Collaboratif */}
+      {activeModal === "chat" && (
+        <div
+          className="op1-pro-modal-backdrop"
+          onClick={() => setActiveModal(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(5, 7, 10, 0.88)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            className="op1-chat-modal-window"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "880px",
+              maxHeight: "92vh",
+              backgroundColor: "#0d1117",
+              border: "1px solid #1e293b",
+              borderRadius: "14px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(56, 189, 248, 0.15)",
+              padding: "16px",
+            }}
+          >
+            <StudioCollabChat
+              currentEngine={selectedEngine}
+              currentPatch={selectedPatch}
+              onApplyPatch={(eng, patch) => {
+                setSelectedEngine(eng);
+                setSelectedPatch(patch);
+                onNotice(`Patch "${patch}" appliqué depuis le chat !`);
+              }}
+              onNotice={onNotice}
+              onClose={() => setActiveModal(null)}
             />
           </div>
         </div>

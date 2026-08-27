@@ -1085,12 +1085,30 @@ export function StudioMachinePanel({
           >
             <defs>
               <pattern id="op1KeyboardStatusGrid" width="2" height="2" patternUnits="userSpaceOnUse">
-                <rect width="2" height="2" fill="#050505" />
-                <path d="M 2 0 L 0 0 0 2" fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#FF9436"} strokeWidth=".12" opacity=".78" />
+                <rect width="2" height="2" fill="#080c10" />
+                <path d="M 2 0 L 0 0 0 2" fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#3b82f6"} strokeWidth=".08" opacity=".35" />
               </pattern>
+              <linearGradient id="op1KeyWhiteNorm" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="70%" stopColor="#f3f4f6" />
+                <stop offset="100%" stopColor="#e5e7eb" />
+              </linearGradient>
+              <linearGradient id="op1KeyWhiteDown" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#d1d5db" />
+                <stop offset="100%" stopColor="#9ca3af" />
+              </linearGradient>
+              <linearGradient id="op1KeyBlackNorm" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2c3038" />
+                <stop offset="40%" stopColor="#1a1d24" />
+                <stop offset="100%" stopColor="#0c0e12" />
+              </linearGradient>
+              <linearGradient id="op1KeyBlackDown" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FF7A30" />
+                <stop offset="100%" stopColor="#9a3412" />
+              </linearGradient>
             </defs>
             <rect x={0} y={0} width={COLS} height={ROWS} fill="url(#op1KeyboardStatusGrid)" />
-            <rect x={0.2} y={0.2} width={COLS - 0.4} height={ROWS - 0.4} fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#FF9436"} strokeWidth=".35" opacity=".9" />
+            <rect x={0.2} y={0.2} width={COLS - 0.4} height={ROWS - 0.4} fill="none" stroke={recording ? "#FF3A5D" : playing ? "#00ED95" : "#334155"} strokeWidth=".25" opacity=".8" />
 
             {whiteBlocks.map((b, i) => {
               const note = WHITE_NOTES[i] ?? (60 + i);
@@ -1105,36 +1123,39 @@ export function StudioMachinePanel({
                   onPointerLeave={() => { if (!configOpen && pressed.has(note)) noteOff(note); }}
                   style={{ cursor: "pointer" }}
                 >
-                  <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
-                    rx={.35}
-                    fill={isDown ? "#d4d8d5" : "#f1f2ef"}
-                    stroke="#8f89aa" strokeWidth={.06}
+                  {/* Base de la touche blanche avec chanfrein et ombre */}
+                  <rect x={b.col+.06} y={b.row+.06} width={b.w-.12} height={b.h-.12}
+                    rx={.4}
+                    fill={isDown ? "url(#op1KeyWhiteDown)" : "url(#op1KeyWhiteNorm)"}
+                    stroke={isDown ? "#00ED95" : "#94a3b8"} strokeWidth={isDown ? .1 : .05}
                   />
+                  {/* Capsule centrale style OP-1 ergonomique */}
                   <rect
-                    x={b.col + b.w*.22} y={b.row + b.h*.25}
-                    width={b.w*.56} height={b.h*.45}
-                    rx={b.w*.28}
-                    fill={isDown?"#c5cbc7":"#fbfcfa"}
-                    stroke="#aaa2c5" strokeWidth={.04}
+                    x={b.col + b.w*.18} y={b.row + b.h*.22}
+                    width={b.w*.64} height={b.h*.5}
+                    rx={b.w*.32}
+                    fill={isDown ? "#00ED95" : "#ffffff"}
+                    fillOpacity={isDown ? 0.35 : 0.9}
+                    stroke={isDown ? "#00ED95" : "#cbd5e1"} strokeWidth={.04}
                   />
-                  <text x={b.col+b.w/2} y={b.row+b.h*.16}
+                  <text x={b.col+b.w/2} y={b.row+b.h*.15}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.55} fill="#5a5e5a" fontFamily="monospace" fontWeight="700">
+                    fontSize={.52} fill={isDown ? "#047857" : "#334155"} fontFamily="monospace" fontWeight="800">
                     {name}
                   </text>
-                  {/* Touche du clavier ordinateur correspondante. */}
-                  <text x={b.col+b.w/2} y={b.row+b.h-.42}
+                  {/* Touche du clavier ordinateur correspondante */}
+                  <text x={b.col+b.w/2} y={b.row+b.h-.4}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.42} fill="#68706c" fontFamily="monospace" fontWeight="700">
+                    fontSize={.44} fill={isDown ? "#0f172a" : "#64748b"} fontFamily="monospace" fontWeight="700">
                     {labelForCode(WHITE_KEY_CODES[i])}
                   </text>
                 </g>
               );
             })}
 
-            {/* Séparateurs orange du clavier OP-1 : bandes visibles entre les touches blanches. */}
+            {/* Séparateurs fins entre touches blanches */}
             {whiteBlocks.slice(0, -1).map((b, i) => (
-              <rect key={`white-separator-${i}`} x={b.col + b.w - .08} y={b.row + .2} width={.16} height={Math.max(0, b.h - .4)} fill="#FF7A30" opacity=".82" />
+              <rect key={`white-separator-${i}`} x={b.col + b.w - .05} y={b.row + .15} width={.1} height={Math.max(0, b.h - .3)} fill="#FF7A30" opacity=".65" />
             ))}
 
             {blackBlocks.map((b, i) => {
@@ -1148,19 +1169,22 @@ export function StudioMachinePanel({
                   onPointerLeave={() => { if (!configOpen && pressed.has(note)) noteOff(note); }}
                   style={{ cursor: "pointer" }}
                 >
-                  <rect x={b.col+.08} y={b.row+.08} width={b.w-.16} height={b.h-.16}
-                    rx={.3}
-                    fill={isDown ? "#ffffff" : "#f1f2ef"}
-                    stroke={isDown ? "#FF7A30" : "#9da39f"} strokeWidth={.08}
+                  <rect x={b.col+.06} y={b.row+.06} width={b.w-.12} height={b.h-.12}
+                    rx={.35}
+                    fill={isDown ? "#f97316" : "#1e293b"}
+                    stroke={isDown ? "#FF7A30" : "#475569"} strokeWidth={.07}
                   />
+                  {/* Pastille noire matte incurvée */}
                   <circle cx={b.col+b.w/2} cy={b.row+b.h/2}
-                    r={Math.min(b.w, b.h)*.32}
-                    fill={isDown?"#777":"#000000"}
+                    r={Math.min(b.w, b.h)*.34}
+                    fill={isDown ? "url(#op1KeyBlackDown)" : "url(#op1KeyBlackNorm)"}
+                    stroke={isDown ? "#ffedd5" : "#334155"}
+                    strokeWidth={.05}
                   />
-                  {/* Touche du clavier ordinateur correspondante. */}
-                  <text x={b.col+b.w/2} y={b.row+b.h-.38}
+                  {/* Touche du clavier ordinateur correspondante */}
+                  <text x={b.col+b.w/2} y={b.row+b.h-.36}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={.4} fill="#68706c" fontFamily="monospace" fontWeight="700">
+                    fontSize={.42} fill={isDown ? "#ffffff" : "#94a3b8"} fontFamily="monospace" fontWeight="700">
                     {labelForCode(BLACK_KEY_CODES[i])}
                   </text>
                 </g>
