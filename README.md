@@ -244,5 +244,18 @@ par URL, un simple `--screenshot` ne peut atteindre que l'accueil.
 
 ## Licence
 
-Voir les licences des modules et paquets concernés. Toute nouvelle partie doit
-conserver une licence compatible avec les fichiers qu'elle modifie.
+**GNU AGPL-3.0-or-later.** Le texte complet est dans [LICENSE](LICENSE), et les
+onze `package.json` du dépôt le déclarent.
+
+Le choix vient du rack Strudel : `@strudel/web` est distribué sous AGPL, et
+cette licence est contaminante. Avant cela le dépôt n'avait **aucune** licence —
+ce qui signifie « tous droits réservés » en droit d'auteur, en contradiction
+avec un dépôt public — et `apps/op1-studio` s'annonçait en MIT, ce qui serait
+devenu faux.
+
+La clause qui compte ici est la **§13** : mettre le logiciel à disposition par
+le réseau suffit à déclencher l'obligation, sans qu'il y ait besoin de le
+distribuer. Toute personne qui utilise le Hub en ligne peut donc exiger la
+source correspondante. Elle est publiée sur ce dépôt, et doit le rester.
+
+Toute nouvelle partie doit conserver une licence compatible.
