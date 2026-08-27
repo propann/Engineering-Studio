@@ -59,6 +59,21 @@ les mineures altérées, les symétriques, neuf gammes du monde et trois de jazz
 Le rack où sont rangées les applications : studios, firmware, sauvegarde,
 édition de son, documentation.
 
+### Rack Strudel
+
+À côté des trois, pas dedans. [Strudel](https://strudel.cc/) est un **langage de
+motifs** : on écrit une ligne, elle boucle. Il ne remplace aucun des trois racks
+— il écrit de la musique, là où les autres la produisent, la sonorisent et la
+traitent.
+
+Il partage le contexte audio du Hub, donc il passe par le même mixage. Éditeur,
+exemples et extraits gardés **dans le navigateur** : rien n'en sort, et aucun
+échantillon distant n'est chargé — vérifié en mesurant les requêtes pendant
+qu'un motif joue.
+
+Son horloge n'est pas encore asservie au transport du Hub : les deux partagent
+le moteur audio, pas le tempo.
+
 ![Rack principal](docs/assets/captures/rack-principal.png)
 
 ---

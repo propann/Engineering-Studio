@@ -30,6 +30,7 @@ les tests automatiques ne peuvent pas prouver.
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | ✅ quatre familles : saturation (doux, dur, repliement), égaliseur (courbe tracée, 5 prédéfinies), modulation (chorus/flanger/phaser), delay 1 à 8 prises avec panoramique |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
+| Rack Strudel | ✅ langage de motifs, éditeur et extraits locaux, branché sur le moteur audio du Hub ; horloge non asservie au transport |
 | Rack MIDI (arpégiateur, 30 gammes, séquenceur pas à pas) | ✅ longueur de note réglable et enregistrement pas à pas |
 | Enveloppe ADSR et LFO global | ✅ courbe tracée, 5 enveloppes prédéfinies, rampes exponentielles ou droites ; LFO avec déphasage à l'origine, appliqué aux quinze moteurs |
 | Chaque rack porte son interface | ✅ verrouillé par test |
@@ -39,7 +40,7 @@ les tests automatiques ne peuvent pas prouver.
 | OP-1 Studio — clone tactile | ✅ quatre pistes, transport, REC piste active, écran/racks, clavier MIDI et couleurs machine | 
 | OP-1 Studio — samples sauvegardés | ✅ préécoute et chargement sur la piste active depuis la bibliothèque locale | 
 | OP-1 Studio — persistance après actualisation | ✅ métadonnées `localStorage` + blobs audio `IndexedDB` | 
-| Registre des pages | ✅ les 20 routes recensées avec leur provenance, leur source et leurs portes ; filtres visibles à toutes les largeurs |
+| Registre des pages | ✅ les 21 routes recensées avec leur provenance, leur source et leurs portes ; filtres visibles à toutes les largeurs |
 | Sauvegarde des patches | ✅ archive ZIP de tout le travail personnel, relue fichier par fichier |
 | Thème clair / sombre | 🔶 socle, jetons et sept composants communs livrés ; la migration des pages reste à faire — `styles.css` compte encore 306 couleurs distinctes en dur |
 
@@ -98,6 +99,18 @@ alimente la forme d'onde. Le détail, module par module, est dans
   1 042 px auparavant. Alerte compacte et centrée, texte inchangé.
 - Visuels machine : l'image débordait sa boîte et l'EP-133 se faisait rogner.
   Photo recadrée sur la machine, fond mort retiré.
+- Rack Strudel livré : langage de motifs, éditeur avec exemples et extraits
+  gardés localement. Il partage le contexte audio du Hub — `setAudioContext`
+  avant `initStrudel`, sans quoi Strudel s'attacherait au sien et sortirait à
+  côté du mixage. Aucun échantillon distant : mesuré au navigateur, jouer un
+  motif ne déclenche aucune requête sortante. Son horloge n'est pas encore
+  asservie au transport.
+- Licence : le dépôt passe sous AGPL-3.0, `@strudel/web` étant contaminant.
+  Il n'en avait aucune jusque-là, ce qui signifiait « tous droits réservés »
+  sur un dépôt public.
+- Couverture du back-end : 60,3 % → 70,4 % des instructions. Les quatre zones
+  sensibles — paquets MIDI, permissions fichier, moteur d'effets, analyse WAV
+  — sont traitées. Détail dans [la référence](architecture/REFERENCE_BACKEND.md).
 - Déploiement : le build porte son commit et sa date dans le `<head>`, et
   `npm run deploiement` compare la production à `origin/main`. Le décalage
   n'était jusque-là constatable qu'en comparant des empreintes de feuilles CSS.

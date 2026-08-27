@@ -186,6 +186,21 @@ fichier machine.
 (17 % des fonctions). À utiliser en sachant qu'une régression ici ne fera
 tomber aucun test.
 
+### Extraits Strudel — `core/strudel/extraits.ts`
+
+```ts
+lireExtraits(stockage?)                    // ne lève jamais ; [] si illisible
+ecrireExtraits(extraits, stockage?)        // false si le stockage refuse
+enregistrerExtrait(nom, code, liste, ...)  // remplace celui du même NOM
+supprimerExtrait(id, liste)
+trierExtraits(liste)                       // le plus récent d'abord
+EXEMPLES                                   // aucun ne charge d'échantillon distant
+```
+
+Aucune fonction ne mute la liste reçue — muter l'état de React en place
+empêcherait le rendu de se déclencher, et un test le vérifie. **Couvert par
+vingt-trois tests exécutés.**
+
 ### Permissions et poignées — `@studio-hub/fs-handles`
 
 `creerMagasinHandles`, `aLaPermission`, `demanderLaPermission`. Le motif à

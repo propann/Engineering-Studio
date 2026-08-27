@@ -38,7 +38,7 @@ jour et ne doit pas être recopié ici. Résumé en une ligne par axe :
 | Rack de moteurs, MIDI, effets | jouables sans machine branchée ; couverture inégale, voir [`architecture/REFERENCE_BACKEND.md`](architecture/REFERENCE_BACKEND.md) |
 | Sauvegarde hors machine | validée à l'usage |
 | Restauration **par l'application** vers une machine | 🔶 protocole prêt, jamais exécuté de bout en bout |
-| Registre des pages | livré — 20 pages recensées avec provenance et portes |
+| Registre des pages | livré — 21 pages recensées avec provenance et portes |
 | Design system deux thèmes | socle et composants communs livrés, migration des pages en cours |
 | Rack Strudel | ✅ livré le 27 août — éditeur, exemples, extraits locaux, branché sur le moteur audio du Hub |
 
