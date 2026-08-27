@@ -295,37 +295,46 @@ describe("la nature declaree correspond au fichier", () => {
 });
 
 /**
- * La barre de filtres du registre est un `<nav>`, et `styles.css` porte encore
- * une regle generique `nav { display: none }` sous 900px. Trois barres avaient
- * ete rattrapees dans `themes.css` ; `.orphan-pages-filters` avait ete oubliee,
- * et le registre perdait donc « Toutes / A connecter / Archivees » sur mobile.
+ * La barre de filtres du registre est un `<nav>`, et elle a deja disparu une
+ * fois : `styles.css` portait un selecteur nu `nav { display: none }` sous
+ * 900px, herite de la maquette, et cette barre etait la seule a n'avoir aucune
+ * regle `display` a elle. Le champ de recherche, lui, est un <div> : il
+ * survivait. Le defaut etait donc invisible a la lecture — la page repondait,
+ * amputee.
  *
- * Le champ de recherche, lui, est un <div> : il survivait. Le defaut etait donc
- * invisible a la lecture — la page repondait, amputee.
+ * Le rattrapage pose le 2026-08-26 etait pire que le defaut : la regle nue
+ * masquait a 900px, le rattrapage ne repondait qu'a 760px. Entre 761 et 900px
+ * la barre restait invisible. Deux points de rupture a tenir synchronises a la
+ * main ne le restent pas.
  *
- * Ce test tombe si la barre redevient orpheline. Il tombera aussi le jour ou
- * `nav { display: none }` disparaitra (ticket UI-002) : le rattrapage n'aura
- * alors plus lieu d'etre, et c'est le bon moment pour le retirer.
+ * UI-002 a supprime la cause le 2026-08-27. Ces tests verrouillent l'etat qui
+ * en resulte : la barre porte sa mise en forme, et plus rien de global ne peut
+ * la lui reprendre. `styles.selecteurs.test.ts` garde l'autre moitie, en
+ * interdisant le retour d'un selecteur d'element nu.
  */
-describe("les barres <nav> restent visibles sous 900px", () => {
-  // Sans retirer les commentaires, `toContain` matcherait le commentaire qui
-  // documente le rattrapage au lieu du selecteur — la garde passerait au vert
-  // meme correctif annule. Elle l'a fait avant cette ligne.
+describe("la barre de filtres du registre ne depend de rien de global", () => {
   const sansCommentaires = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
   const THEMES = sansCommentaires(readFileSync(path.join(DIR, "..", "themes.css"), "utf-8"));
-  const GLOBAL = readFileSync(path.join(DIR, "..", "styles.css"), "utf-8");
-
-  it("la regle generique qui les masque existe toujours", () => {
-    expect(GLOBAL).toContain("@media(max-width:900px){nav{display:none}");
-  });
-
-  it("les filtres du registre sont dans la liste de rattrapage", () => {
-    const bloc = /\.sound-library-view-tabs,[\s\S]*?display: flex !important/.exec(THEMES);
-    expect(bloc, "liste de rattrapage introuvable dans themes.css").not.toBeNull();
-    expect(bloc![0]).toContain(".orphan-pages-filters,");
-  });
+  const GLOBAL = sansCommentaires(readFileSync(path.join(DIR, "..", "styles.css"), "utf-8"));
 
   it("le registre construit bien ses filtres avec un <nav>", () => {
     expect(RECENSEMENT).toContain('<nav className="orphan-pages-filters"');
+  });
+
+  it("la barre declare son propre display", () => {
+    const regle = /\.orphan-pages-filters\s*\{[^}]*\}/.exec(THEMES);
+    expect(regle, "`.orphan-pages-filters` n'a plus de regle a elle").not.toBeNull();
+    expect(regle![0], "sans `display`, un selecteur global peut la masquer").toContain("display: flex");
+  });
+
+  it("plus aucun selecteur nu ne masque les <nav>", () => {
+    // La regle de maquette est devenue `.maquette-nav` : elle ne frappe plus
+    // que ce qui porte la classe, c'est-a-dire plus rien aujourd'hui.
+    expect(GLOBAL).not.toMatch(/[};]\s*nav\s*\{/);
+    expect(GLOBAL).toContain(".maquette-nav");
+  });
+
+  it("le rattrapage a !important a disparu avec sa cause", () => {
+    expect(THEMES).not.toContain("display: flex !important");
   });
 });

@@ -38,7 +38,9 @@ const nettoyer = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
  * apres avoir ete payee ailleurs.
  */
 const RESTES: Record<string, string> = {
-  "styles.css|nav": "UI-002 — remplacer chaque cas par une classe ciblee",
+  // `nav` a ete paye le 2026-08-27 : le selecteur nu est devenu `.maquette-nav`
+  // et le registre des pages porte sa propre mise en forme. Retire d'ici comme
+  // ce commentaire le demandait.
   "styles-maquette-map.css|main": "UI-801 — demantelement de styles-maquette-map.css",
 };
 

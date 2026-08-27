@@ -482,7 +482,7 @@ export default function FirmwareLab() {
         )}
 
         {/* Navigation par Onglets */}
-        <nav className="lab-tabs" style={{ display: "flex", gap: "8px", marginBottom: "20px", borderBottom: "1px solid #1e293b", paddingBottom: "10px" }}>
+        <nav className="lab-tabs">
           <button
             type="button"
             onClick={() => setActiveTab("repack")}

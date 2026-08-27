@@ -455,6 +455,39 @@ textarea {
 }
 
 /* Responsive ----------------------------------------------------------- */
+/* UI-002 — le registre des pages construit sa barre de filtres avec un <nav>,
+   et en tirait toute sa mise en forme du selecteur nu `nav { ... }` de
+   styles.css. Il la porte maintenant en propre.
+
+   Les autres <nav> du depot n'en dependaient pas : `.topbar-studios-nav`,
+   `.topbar-mobile-menu` et `.landing-shortcuts` declarent leur propre
+   `display`, qui l'emporte par specificite sur un selecteur d'element.
+   
+   La rustine precedente etait pire que le defaut qu'elle corrigeait : la regle
+   nue masquait a 900px, le rattrapage ne repondait qu'a 760px. Entre 761 et
+   900px, toutes ces barres disparaissaient sans filet — le registre des pages
+   y perdait ses filtres. Deux points de rupture a tenir synchronises a la main
+   ne le restent pas. */
+.orphan-pages-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 34px;
+  text-transform: uppercase;
+  font: 700 11px var(--ui-font-mono);
+  letter-spacing: .13em;
+}
+
+/* Firmware Lab : reprend a l'identique le style qui etait ecrit en ligne dans
+   le JSX — seule chose qui le sauvait du masquage global, par accident. */
+.lab-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ui-border-soft);
+}
+
 @media (max-width: 1180px) {
   .topbar-studios-nav {
     display: none;
@@ -496,17 +529,6 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  /* Rattrape `nav { display: none }` de styles.css:89. Tant que cette regle
-     generique existe, toute barre construite avec <nav> disparait sous 900px :
-     `.orphan-pages-filters` y a ete oubliee et le registre des pages perdait
-     ses filtres sur mobile. `.lab-tabs` ne survit que par un style inline. */
-  .sound-library-view-tabs,
-  .editor-machine-tabs,
-  .orphan-pages-filters,
-  .nav-tabs {
-    display: flex !important;
-    overflow-x: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
