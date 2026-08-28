@@ -26,20 +26,23 @@ les tests automatiques ne peuvent pas prouver.
 | Coffre — restauration | 🔶 mécanisme validé sur l'OP-1, orchestration non |
 | Écriture sur l'OP-1 | ✅ vérifiée octet par octet, machine rendue intacte |
 | Web MIDI | ✅ instantané à l'usage sur l'OP-1 |
-| Rack — synthèse | ✅ 15 moteurs, 76 patches, superposition par patch |
+| Rack — synthèse | ✅ 20 moteurs (2 Racks de 10), patches, superposition par patch |
+| Carte de Contrôle globale | ✅ pilotage 4 encodeurs couleur, modulations SHIFT, ADSR dynamique, filtre 24dB et LFO |
+| Espace Git & Versions Studio | ✅ gestion de branches (main, collab, remix), commits horodatés, rollback et galerie partagée |
+| Salon de Chat Collaboratif | ✅ messagerie studio temps réel, repères audio horodatés et partage direct de presets |
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | ✅ quatre familles : saturation (doux, dur, repliement), égaliseur (courbe tracée, 5 prédéfinies), modulation (chorus/flanger/phaser), delay 1 à 8 prises avec panoramique |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
 | Rack Strudel | ✅ langage de motifs, éditeur et extraits locaux, branché sur le moteur audio du Hub ; horloge non asservie au transport |
 | Rack MIDI (arpégiateur, 30 gammes, séquenceur pas à pas) | ✅ longueur de note réglable et enregistrement pas à pas |
-| Enveloppe ADSR et LFO global | ✅ courbe tracée, 5 enveloppes prédéfinies, rampes exponentielles ou droites ; LFO avec déphasage à l'origine, appliqué aux quinze moteurs |
+| Enveloppe ADSR et LFO global | ✅ courbe tracée, 5 enveloppes prédéfinies, rampes exponentielles ou droites ; LFO avec déphasage à l'origine, appliqué aux vingt moteurs |
 | Chaque rack porte son interface | ✅ verrouillé par test |
 | Rack principal : une source unique | ✅ un seul tableau d'outils, plus de cartes écrites à la main |
 | MIDI partagé entre composants | ✅ répartiteur, cinq consommateurs migrés |
 | EP-133 par SysEx | ⬜ aucun mode disque, tout passe par là |
-| OP-1 Studio — clone tactile | ✅ quatre pistes, transport, REC piste active, écran/racks, clavier MIDI et couleurs machine | 
+| OP-1 Studio — clone tactile | ✅ quatre pistes, transport, REC piste active, écran/racks, clavier MIDI haute fidélité et barre supérieure fluide | 
 | OP-1 Studio — samples sauvegardés | ✅ préécoute et chargement sur la piste active depuis la bibliothèque locale | 
-| OP-1 Studio — persistance après actualisation | ✅ métadonnées `localStorage` + blobs audio `IndexedDB` | 
+| OP-1 Studio — persistance après actualisation | ✅ métadonnées `localStorage` + blobs audio `IndexedDB` + format unifié `.op1proj` | 
 | Registre des pages | ✅ les 21 routes recensées avec leur provenance, leur source et leurs portes ; filtres visibles à toutes les largeurs |
 | Sauvegarde des patches | ✅ archive ZIP de tout le travail personnel, relue fichier par fichier |
 | Thème clair / sombre | 🔶 socle, jetons et sept composants communs livrés ; la migration des pages reste à faire — `styles.css` compte encore 306 couleurs distinctes en dur |
@@ -59,6 +62,22 @@ alimente la forme d'onde. Le détail, module par module, est dans
 **Contrat machine :** la CI partage le niveau de sécurité, pas le protocole matériel. Les contrôles OP-1 couvrent ses AIFF, patches, volume et MIDI ; les contrôles EP-133 couvrent ses projets, samples et échanges MIDI/SysEx. Un test de l'un ne constitue jamais une preuve pour l'autre.
 
 ## Derniers travaux
+
+### 28 août 2026
+
+- **20 Moteurs Audio (2 Racks de 10) & Carte de Contrôle** :
+  - Intégration du Rack 1 (Plaits, Braids, Rings, Clouds, Elements, Dexed DX7, Surge XT, Open303, pl_synth, amsynth) et du Rack 2 (FluidSynth SF2, ZynAddSubFX, Helm, AMY Engine, Faust DSP, DrumSampler 909/808, Wavetable Morph, Granular Cloud, Karplus-Strong, Phase Distortion CZ).
+  - Composant `StudioEngineControlMatrix` pour le pilotage universel des 4 encodeurs couleur (Bleu, Vert, Blanc, Orange), modulations SHIFT, enveloppe ADSR, filtre résonant 24dB et LFO global avec préécoute dynamique.
+- **Espace Git Studio & Versioning Local-First (`StudioGitWorkspace`)** :
+  - Gestion des branches de travail (`main`, `collab`, `remix`).
+  - Commits horodatés avec messages, métadonnées d'auteur et retours en arrière (rollbacks) instantanés.
+  - Format de sauvegarde unifié `.op1proj` et galerie de projets/templates communautaires prêts au chargement.
+- **Salon de Chat Collaboratif (`StudioCollabChat`)** :
+  - Messagerie temps réel avec insertion de repères audio temporels.
+  - Partage de presets et stems en un clic directement injectés dans le synthétiseur.
+- **Clavier Tactile Machine & Ergonomie de Navigation OP-1** :
+  - Touches blanches et noires revues avec gradients haute fidélité, pastilles centrales et retours néon dynamiques.
+  - Barre d'outils supérieure compactée en une seule ligne fluide évitant l'empilement vertical.
 
 ### 25 et 26 août 2026
 

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useNotesMidi } from "../core/midi/useNotesMidi";
 
 interface TelemetryMetrics {
   visitsCount: number;
@@ -34,6 +35,13 @@ export function ServerTelemetryRack() {
   });
 
   const startTimeRef = useRef<number>(Date.now());
+
+  useNotesMidi(
+    useCallback(() => {
+      setMetrics((prev) => ({ ...prev, midiConnected: true }));
+    }, []),
+    useCallback(() => {}, [])
+  );
 
   useEffect(() => {
     // 1. Visiteur / Sessions tracking anonyme en localStorage

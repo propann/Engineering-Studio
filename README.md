@@ -20,9 +20,13 @@
 ### English 🇬🇧
 **Engineering Studio** is a browser-based, local-first studio workspace and DSP hardware synthesis rack for Teenage Engineering instruments (OP-1, OP-1 field, EP-133 K.O. II) and Eurorack modular synthesizers. It works 100% offline in your browser with zero data sent to external servers.
 
-- **15 Audio Engines:** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth GameBoy chiptune, amsynth, ZynAddSubFX, Helm, FluidSynth SF2, AMY Engine, Faust DSP.
-- **Pixel Art Hardware Faceplates:** Dedicated interactive pixel art representations of simulated hardware & Eurorack modules with live knobs, patch jacks, and OLED displays.
-- **Strudel Live Coding:** Algorithmic music patterns with engine presets and audio rack integration.
+- **20 Audio Engines (Dual 10-Engine Racks):**
+  - **Rack 1 (Modular, FM & Physical):** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth GameBoy chiptune, amsynth VA.
+  - **Rack 2 (Drums, SoundFonts & DSP Faust):** FluidSynth SF2, ZynAddSubFX, Helm Poly, AMY Engine, Faust DSP, 909/808 Drum Sampler, Wavetable Morph, Granular Cloud, Karplus-Strong, Phase Distortion CZ.
+- **Global Engine Control Matrix:** Universal 4-knob color controls, SHIFT modulations, ADSR envelope, 24dB resonant filter & LFO.
+- **Studio Git Workspace & Versioning:** Local Git-style branch management (`main`, `collab`, `remix`), instant commits, rollbacks, unified `.op1proj` format and shared project gallery.
+- **Real-Time Collab Chat:** In-studio communication with timestamped audio markers and one-click patch sharing.
+- **High-Fidelity OP-1 Machine Interface:** Pro compact single-row top bar, authentic tactile keyboard with dynamic neon feedback.
 - **Hardware Integration:** Bit-for-bit verified backups, sample fabrication (WAV/AIFF PCM16), and Web MIDI routing.
 
 ---
@@ -30,9 +34,13 @@
 ### Français 🇫🇷
 **Engineering Studio** est un atelier local-first dans le navigateur pour les machines Teenage Engineering (OP-1, OP-1 field, EP-133 K.O. II) et la synthèse modulaire Eurorack. Fonctionne à 100% dans le navigateur sans transmission de données privées.
 
-- **15 Moteurs de Synthèse :** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth chiptune GameBoy, amsynth, ZynAddSubFX, Helm, FluidSynth SF2, AMY Engine, Faust DSP.
-- **Cartes Pixel Art Matérielles :** Rendu pixel art des façades Eurorack et machines simulées avec potentiomètres temps réel, jacks et indicateurs LED.
-- **Live Coding Strudel :** Motifs algorithmiques complets avec presets de genres et documentation intégrée.
+- **20 Moteurs de Synthèse (2 Racks de 10 Moteurs) :**
+  - **Rack 1 (Modulaire, FM & Acoustique) :** Mutable Instruments (Plaits, Braids, Rings, Clouds, Elements), Dexed DX7 FM, Surge XT, Open303 Acid Bass, pl_synth chiptune GameBoy, amsynth.
+  - **Rack 2 (Rythmiques, SoundFonts & DSP Faust) :** FluidSynth SF2, ZynAddSubFX, Helm, AMY Engine, Faust DSP, Sampleur Batteries 909/808, Synthé Tables d'ondes, Nuage Granulaire, Karplus-Strong, Distorsion de Phase CZ.
+- **Carte de Contrôle Globale des Moteurs :** 4 potentiomètres couleur, modulations SHIFT, enveloppe ADSR, filtre résonant 24dB et LFO universel.
+- **Espace Git & Versioning Studio :** Gestion de branches locales (`main`, `collab`, `remix`), commits instantanés, retours en arrière, format unifié `.op1proj` et bibliothèque de créations partagées.
+- **Salon de Chat Collaboratif :** Échanges en direct avec repères audio horodatés et partage de presets en un clic.
+- **Interface Machine OP-1 Haute Précision :** Barre d'outils compacte en ligne, clavier tactile ergonomique avec retours néon dynamiques.
 - **Intégration Matérielle :** Sauvegardes vérifiées au bit près, fabrication de samples (WAV/AIFF PCM16) et relais Web MIDI.
 
 ---

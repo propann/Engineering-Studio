@@ -3,7 +3,7 @@
 **C'est la feuille de route principale.** Toutes les autres sont des lots
 spécialisés qui en dépendent, et chacune porte un en-tête qui pointe ici.
 
-Date de révision : **2026-08-26** · branche de livraison : `main`
+Date de révision : **2026-08-28** · branche de livraison : `main`
 
 ---
 
@@ -35,8 +35,10 @@ jour et ne doit pas être recopié ici. Résumé en une ligne par axe :
 | Axe | État |
 |---|---|
 | Hub, OP-1 Studio, EP-133 Studio | en service, déployés |
+| 20 Moteurs Audio & Carte de Contrôle | ✅ 2 Racks de 10 moteurs, 4 encodeurs couleur universels, ADSR, 24dB filtre, LFO |
+| Espace Git Studio & Chat Collaboratif | ✅ branches (main, collab, remix), commits horodatés, salon temps réel & partage patchs |
 | Rack de moteurs, MIDI, effets | jouables sans machine branchée ; couverture inégale, voir [`architecture/REFERENCE_BACKEND.md`](architecture/REFERENCE_BACKEND.md) |
-| Sauvegarde hors machine | validée à l'usage |
+| Sauvegarde hors machine | validée à l'usage (format unifié `.op1proj` & archives ZIP) |
 | Restauration **par l'application** vers une machine | 🔶 protocole prêt, jamais exécuté de bout en bout |
 | Registre des pages | livré — 21 pages recensées avec provenance et portes |
 | Design system deux thèmes | socle et composants communs livrés, migration des pages en cours |

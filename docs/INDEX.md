@@ -4,7 +4,7 @@ Ce dossier décrit l’état réel du dépôt propann/Engineering-Studio.
 
 ## État synchronisé
 
-Dernière synchronisation documentaire : **2026-08-26**, sur `main`. Les dernières fonctions OP‑1 livrées sont décrites dans [STATUS.md](STATUS.md) et [OP1_MANUAL_REFERENCE.md](OP1_MANUAL_REFERENCE.md) : quatre pistes, écran tactile, bibliothèque de samples sauvegardés et persistance locale après actualisation.
+Dernière synchronisation documentaire : **2026-08-28**, sur `main`. Les dernières fonctions livrées sont décrites dans [STATUS.md](STATUS.md), [AUDIO_RACK_ROADMAP.md](../AUDIO_RACK_ROADMAP.md) et [ROADMAP.md](ROADMAP.md) : 20 moteurs audio (2 Racks de 10), Carte de Contrôle globale (`StudioEngineControlMatrix`), Espace Git & Versions (`StudioGitWorkspace`), Salon de Chat Collaboratif (`StudioCollabChat`) et refonte haute fidélité du clavier tactile OP-1.
 
 ## À lire en premier
 

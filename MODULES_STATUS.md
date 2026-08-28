@@ -1,10 +1,10 @@
 # 🎛️ Audio Rack Modules - Development Status
 
-**Last Updated**: 2026-08-25  
-**Total Modules**: 12  
+**Last Updated**: 2026-08-28  
+**Total Modules**: 14  
 **Status**: Setup Complete ✅ | Development Ready
 
-## Où en sont les douze modules
+## Où en sont les quatorze modules
 
 | | Module | État |
 |---|---|---|
@@ -20,6 +20,8 @@
 | 10 | Audio Export | ✅ livré, au-delà du plan (AIFF + vérification) |
 | 11 | Sample Pack Creator | ✅ livré — pack chromatique C3–C7 |
 | 12 | Patch Import/Export | ✅ livré — import validé, trois formats, et archive ZIP de tout le travail |
+| 13 | Dual 10-Engine Racks & Carte Contrôle | ✅ livré — 20 moteurs audio, matrice universelle 4 encodeurs, ADSR dynamique, filtre 24dB |
+| 14 | Espace Git Studio & Chat Collaboratif | ✅ livré — gestion branches, commits horodatés, salon temps réel, partage instantané |
 
 **Quatre acquis qui ne figuraient dans aucun module** et qui conditionnaient
 tout le reste :

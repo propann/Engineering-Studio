@@ -2628,3 +2628,10 @@ button:focus-visible { outline: 3px solid rgba(76, 172, 225, .42); outline-offse
   .virtual-keyboard-transport { align-items: flex-start; flex-direction: column; }
   .machine-config-lock-row { align-items: flex-start; flex-direction: column; }
 }
+
+.studio-rack-panel {
+  height: 680px;
+  min-height: 520px;
+  width: 100%;
+  margin-top: 14px;
+}

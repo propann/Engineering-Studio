@@ -499,6 +499,7 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
       localStorage.setItem(PATCH_PROFILE_KEY, JSON.stringify(saved));
     } catch { /* stockage local indisponible */ }
   }, [selectedEngine, selectedPatch, soundSlot]);
+  const [rackFolded, setRackFolded] = useState(true);
   const [transportTime, setTransportTime] = useState(0);
   const [transportPlaying, setTransportPlaying] = useState(false);
   const [studioMode, setStudioMode] = useState<"clone" | "midi">("clone");
@@ -2075,7 +2076,15 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
           margin: "8px auto 0 auto",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+          <button
+            type="button"
+            className={`op1-pill-btn ${!rackFolded ? "is-active" : ""}`}
+            onClick={() => setRackFolded(!rackFolded)}
+            style={{ fontSize: "11px", padding: "3px 8px" }}
+          >
+            <span>🎛️ Plugin Rack {!rackFolded ? "▲" : "▼"}</span>
+          </button>
           <button
             type="button"
             className={`op1-pill-btn ${showMidiOptions ? "is-active" : ""}`}
@@ -2110,6 +2119,16 @@ function TapeEditor({ onNotice, onConnectMidi, onSendMidi, libraryHandle }: { on
           onSendMidi={onSendMidi}
           lastRawMidiIn={lastRawMidiIn}
         />
+
+        {!rackFolded && (
+          <div className="studio-slide-panel studio-rack-panel">
+            <AudioPluginRack
+              enTiroir
+              clavierActif={!rackFolded}
+              onClose={() => setRackFolded(true)}
+            />
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

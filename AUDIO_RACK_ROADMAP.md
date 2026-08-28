@@ -3,25 +3,28 @@
 > **Lot spécialisé.** La feuille de route principale est [`docs/ROADMAP.md`](docs/ROADMAP.md) ;
 > ce document en détaille le plan du rack audio. En cas de contradiction, la principale gagne.
 
-**Status**: Completed & Delivered ✅ (12/12 Modules branchés & testés)  
-**Architecture**: 3 Racks Découplés (Rack Moteurs DSP, Rack Effets Audio, Rack MIDI/Séquenceur)  
-**Goal**: Complete music production studio with sample export and physical machine bridges
+**Status**: Completed & Delivered ✅ (14/14 Modules & Extensions branchés & testés)  
+**Architecture**: 2 Racks de 10 Moteurs Audio (20 moteurs au total) + Matrice de Contrôle + Racks Effets & MIDI + Espace Git & Collab  
+**Goal**: Complete music production studio with sample export, physical machine bridges, Git versioning & real-time collaboration
 
 ---
 
 ## 🎯 PROJECT VISION
 
 Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where users can:
-- ✅ Synthesize sounds from 15+ engines
+- ✅ Synthesize sounds from 20 dedicated engines (Dual 10-Engine Racks)
+- ✅ Universal 4-knob control via Global Control Matrix (`StudioEngineControlMatrix`)
 - ✅ Apply professional audio effects (delay, EQ, distortion, modulation)
 - ✅ Create sequences and patterns (arpeggiator, step sequencer, 30 scales)
-- ✅ Modulate parameters (ADSR, LFO, pan, filters)
+- ✅ Modulate parameters (ADSR, LFO, pan, resonant filters, SHIFT modulations)
 - ✅ Save/manage unlimited custom patches and layers
+- ✅ Version sessions with local Git workspace & rollbacks (`StudioGitWorkspace`)
+- ✅ Collaborate in real-time with timestamped audio markers (`StudioCollabChat`)
 - ✅ **Export audio to WAV & AIFF** for use in other DAWs or OP-1 / EP-133
 - ✅ **Create sample packs** for instruments (chromatic C3–C7)
 - ✅ Document and test everything with automated test suites
 
-> ## 📌 Synthèse de validation (12/12 modules livrés)
+> ## 📌 Synthèse de validation (14/14 modules & extensions livrés)
 >
 > Tous les modules sont intégrés, branchés et validés par les suites de tests unitaires et structurels :
 > - **Module 1 : Preset Search & Tagging** — ✅ Branché (`AudioPluginRack.tsx`), tags, favoris, recherche
@@ -35,7 +38,9 @@ Transform Studio Hub into a **complete DAW** (Digital Audio Workstation) where u
 > - **Module 9 : Chorus / Flanger / Phaser** — ✅ Livré (`effets.ts`), 3 modes modulation
 > - **Module 10 : Audio Export** — ✅ Livré (`packages/audio-formats`), encodage WAV / AIFF
 > - **Module 11 : Sample Pack Creator** — ✅ Livré (`packages/audio-formats`), packs chromatiques C3–C7
-> - **Module 12 : Patch Import/Export** — ✅ Livré, formats JSON, OP-1 snapshot et archives ZIP
+> - **Module 12 : Patch Import/Export & ZIP Archive** — ✅ Livré, formats JSON, OP-1 snapshot et archives ZIP
+> - **Module 13 : Dual 10-Engine Racks & Carte de Contrôle** — ✅ Livré (`StudioEngineControlMatrix.tsx`), 20 moteurs audio
+> - **Module 14 : Espace Git Studio & Chat Collaboratif** — ✅ Livré (`StudioGitWorkspace.tsx`, `StudioCollabChat.tsx`)
 
 ---
 
