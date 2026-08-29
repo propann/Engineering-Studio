@@ -282,11 +282,14 @@ export default function AudioPluginRack({
   onClose,
   enTiroir = false,
   clavierActif = true,
+  onPatchSelected,
 }: {
   profileName?: string;
   onClose?: () => void;
   enTiroir?: boolean;
   clavierActif?: boolean;
+  /** Relie une sélection explicite à la pile sonore de l'Atelier hôte. */
+  onPatchSelected?: (patch: PatchPreset) => void;
 }) {
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
@@ -1288,7 +1291,7 @@ export default function AudioPluginRack({
     }
   };
 
-  const applyPatch = (patch: PatchPreset) => {
+  const applyPatch = (patch: PatchPreset, synchroniserAtelier = false) => {
     setSelectedPatchId(patch.id);
     setActiveEngine(patch.engine);
     paramsRef.current.activeEngine = patch.engine;
@@ -1398,6 +1401,11 @@ export default function AudioPluginRack({
       if (p.elementsExciter !== undefined) setElementsExciter(p.elementsExciter);
       if (p.elementsStrike !== undefined) setElementsStrike(p.elementsStrike);
     }
+
+    // Le rack reste la surface de réglage, mais l'Atelier hôte doit jouer et
+    // rendre le même patch. La synchronisation est réservée aux sélections
+    // explicites : changer d'onglet ne doit pas créer une couche surprise.
+    if (synchroniserAtelier) onPatchSelected?.(patch);
 
     showToast(`🎵 PATCH CHARGÉ : ${patch.name.toUpperCase()}`);
     try {
@@ -1888,6 +1896,10 @@ export default function AudioPluginRack({
 
   // WEB MIDI & PC KEYBOARD EVENT LISTENERS
   useEffect(() => {
+      // Le rack peut être affiché dans l'Atelier sans devenir un second
+      // auditeur MIDI : l'Atelier pilote alors sa propre pile de couches.
+      if (!clavierActif) return;
+
       // 1. Web MIDI, par le repartiteur partage.
       //
       // Le rack ouvrait son propre acces et ecrivait `input.onmidimessage`
@@ -2236,6 +2248,7 @@ export default function AudioPluginRack({
         return;
       }
       applyPatch(resultat.patch);
+      onPatchSelected?.(resultat.patch);
       showToast(
         resultat.ignores.length
           ? `📥 ${resultat.patch.name} — ${resultat.ignores.length} réglage(s) inconnu(s) ignoré(s)`
@@ -2418,6 +2431,19 @@ export default function AudioPluginRack({
    */
   const effectifA = ALL_ENGINES.filter((e) => e.rackSlot === "A").length;
   const effectifB = ALL_ENGINES.filter((e) => e.rackSlot === "B").length;
+  const patchesTousMoteurs = fusionnerMetas(
+    ALL_ENGINES.flatMap((e) => [
+      ...(FACTORY_PATCHES[e.id] ?? []),
+      ...userPatches.filter((p) => p.engine === e.id),
+    ]),
+    metas,
+  );
+  const resultatsGlobaux = patchQuery.trim() || favorisSeuls
+    ? new PatchSearchEngine(patchesTousMoteurs).search(
+        patchQuery,
+        favorisSeuls ? { favorites: true } : undefined,
+      )
+    : [];
 
   return (
     <AppShell activePage="outils" profileName={profileName} hideTopBar={enTiroir} className={`audio-plugin-rack-page ${enTiroir ? "en-tiroir" : ""}`}>
@@ -2490,6 +2516,47 @@ export default function AudioPluginRack({
                 TOUS
               </button>
             </div>
+            <div className="patch-recherche-ligne patch-recherche-ligne--globale">
+              <input
+                type="search"
+                className="patch-search-input"
+                placeholder="Rechercher un patch dans les 20 moteurs…"
+                value={patchQuery}
+                onChange={(e) => setPatchQuery(e.target.value)}
+                aria-label="Rechercher un patch dans tous les moteurs"
+              />
+              <button
+                type="button"
+                className={`filtre-favoris ${favorisSeuls ? "favori-actif" : ""}`}
+                title={favorisSeuls ? "Afficher tous les patches" : "N'afficher que les favoris"}
+                aria-pressed={favorisSeuls}
+                onClick={() => setFavorisSeuls((v) => !v)}
+              >
+                ★
+              </button>
+            </div>
+            {(patchQuery.trim() || favorisSeuls) && (
+              <div className="patch-resultats-globaux" aria-live="polite">
+                <div className="patch-resultats-titre">
+                  {resultatsGlobaux.length} résultat{resultatsGlobaux.length > 1 ? "s" : ""} · clique pour charger
+                </div>
+                {resultatsGlobaux.slice(0, 8).map((p) => (
+                  <button
+                    type="button"
+                    className={`patch-resultat-global ${selectedPatchId === p.id ? "patch-selected" : ""}`}
+                    key={p.id}
+                    onClick={() => applyPatch(p, true)}
+                  >
+                    <span>{p.isUserPatch ? "PERSO" : p.category}</span>
+                    <strong>{p.name}</strong>
+                    <small>{ALL_ENGINES.find((e) => e.id === p.engine)?.name ?? p.engine}</small>
+                  </button>
+                ))}
+                {resultatsGlobaux.length > 8 && (
+                  <span className="patch-resultats-plus">+ {resultatsGlobaux.length - 8} autres résultats</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="sidebar-engines-scroll">
@@ -2609,25 +2676,6 @@ export default function AudioPluginRack({
                         </button>
                       </div>
 
-                      <div className="patch-recherche-ligne">
-                        <input
-                          type="search"
-                          className="patch-search-input"
-                          placeholder="Chercher — nom, catégorie, étiquette…"
-                          value={patchQuery}
-                          onChange={(e) => setPatchQuery(e.target.value)}
-                          aria-label="Chercher un patch"
-                        />
-                        <button
-                          type="button"
-                          className={`filtre-favoris ${favorisSeuls ? "favori-actif" : ""}`}
-                          title={favorisSeuls ? "Afficher tous les patches" : "N'afficher que les favoris"}
-                          onClick={() => setFavorisSeuls((v) => !v)}
-                        >
-                          ★
-                        </button>
-                      </div>
-
                       {patchQuery.trim() && !patchesAffiches.length && (
                         <p className="patch-search-empty">Aucun patch ne correspond.</p>
                       )}
@@ -2645,7 +2693,7 @@ export default function AudioPluginRack({
                           <button
                             type="button"
                             className={`unfolded-patch-btn ${selectedPatchId === p.id ? "patch-selected" : ""} ${p.isUserPatch ? "user-patch-highlight" : ""}`}
-                            onClick={() => applyPatch(p)}
+                            onClick={() => applyPatch(p, true)}
                           >
                             <span className="patch-cat">{p.isUserPatch ? "[PERSO]" : `[${p.category}]`}</span>
                             <span className="patch-name">{p.name}</span>

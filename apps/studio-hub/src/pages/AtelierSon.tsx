@@ -1,11 +1,14 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
 import { readProfileName } from "../core/profile";
 import { AppShell } from "../ui";
+import { TemoinMidi } from "../components/TemoinMidi";
 import { CarteMoteur } from "../components/CarteMoteur";
+import { useNotesMidi } from "../core/midi/useNotesMidi";
 import { CATALOGUE, nomDe } from "../core/audio/catalogueParams";
 import { construireMoteur } from "../core/audio/moteurs";
+import type { PatchPreset } from "../core/types/audio";
 import {
   ajouterCouche,
   ajouterEchantillon,
@@ -53,6 +56,12 @@ import {
   type Historique,
 } from "../core/audio/historique";
 import "./atelier-son.css";
+
+/**
+ * Les commandes avancées du rack vivent dans le flux de l'Atelier. Elles sont
+ * chargées comme un composant de travail, pas comme une page concurrente.
+ */
+const CommandesSonores = lazy(() => import("./AudioPluginRack"));
 
 /**
  * L'atelier de création de son.
@@ -217,7 +226,7 @@ export default function AtelierSon() {
 
   /* --- L'écoute ---------------------------------------------------------- */
 
-  const ecouter = useCallback(() => {
+  const jouerNote = useCallback((note: number) => {
     try {
       const ctx = contexte();
       if (ctx.state === "suspended") void ctx.resume();
@@ -225,7 +234,7 @@ export default function AtelierSon() {
       reappliquerEffetsMaitre();
 
       const now = ctx.currentTime;
-      const freq = frequenceDeNoteMidi(sonVif.current.note);
+      const freq = frequenceDeNoteMidi(note);
       for (const couche of couchesAudibles(sonVif.current)) {
         const sortie = ctx.createGain();
         // Enveloppe minimale : sans elle, chaque écoute commence et finit par
@@ -268,6 +277,15 @@ export default function AtelierSon() {
     }
   }, []);
 
+  const ecouter = useCallback(() => jouerNote(sonVif.current.note), [jouerNote]);
+
+  /**
+   * Une seule surface active répond au clavier MIDI : quand le rack intégré
+   * est ouvert, il prend la main ; sinon c'est l'Atelier qui joue la pile.
+   * Sans ce garde, une note branchée serait doublée par les deux voies.
+   */
+  useNotesMidi(({ note }) => jouerNote(note));
+
   /* --- Les couches -------------------------------------------------------- */
 
   const ajouter = useCallback(
@@ -280,6 +298,24 @@ export default function AtelierSon() {
       setMessage(null);
     },
     [],
+  );
+
+  /**
+   * Un patch choisi dans les commandes intégrées devient une vraie couche de
+   * l'Atelier : il participe donc à l'onde, à l'écoute MIDI et aux exports.
+   * Le nom du patch est conservé pour que la pile reste lisible.
+   */
+  const ajouterPatch = useCallback(
+    (patch: PatchPreset) => {
+      modifier(`patch:${patch.id}`, (s) => {
+        const suivant = ajouterCouche(s, patch.engine, patch.params);
+        const couche = suivant.couches[suivant.couches.length - 1];
+        setSelection(couche.id);
+        return modifierCouche(suivant, couche.id, { nom: patch.name });
+      });
+      setMessage(`Patch « ${patch.name} » ajouté à la pile de l'Atelier.`);
+    },
+    [modifier],
   );
 
   const retirer = useCallback((id: string) => {
@@ -605,15 +641,16 @@ export default function AtelierSon() {
 
   return (
     <AppShell activePage="atelier-son" profileName={profileName} className="atelier-son">
-      <div
-        className={`as-plan${survol ? " as-plan--survol" : ""}`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setSurvol(true);
-        }}
-        onDragLeave={() => setSurvol(false)}
-        onDrop={(e) => void surDepot(e)}
-      >
+      <div className="as-fusion">
+        <div
+          className={`as-plan${survol ? " as-plan--survol" : ""}`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setSurvol(true);
+          }}
+          onDragLeave={() => setSurvol(false)}
+          onDrop={(e) => void surDepot(e)}
+        >
         {/* ── L'onde, en haut ── */}
         <section className="as-onde" aria-label="Onde du son">
           <Onde
@@ -636,6 +673,7 @@ export default function AtelierSon() {
             <button type="button" className="as-bouton as-bouton--jouer" onClick={ecouter}>
               ▶ ÉCOUTER
             </button>
+            <TemoinMidi compact />
             <button
               type="button"
               className="as-bouton"
@@ -913,7 +951,7 @@ export default function AtelierSon() {
           </section>
         </div>
 
-        <footer className="as-pied">
+          <footer className="as-pied">
           {erreur ? (
             <p className="as-erreur" role="alert">{erreur}</p>
           ) : (
@@ -928,7 +966,31 @@ export default function AtelierSon() {
               en place.
             </p>
           )}
-        </footer>
+          </footer>
+        </div>
+
+        <section className="as-console-fusion" aria-labelledby="as-console-titre">
+          <header className="as-console-entete">
+            <div>
+              <p className="as-console-kicker">COMMANDES INTÉGRÉES · MÊME CONSOLE AUDIO</p>
+              <h2 id="as-console-titre">🎛️ Moteurs, patches et effets</h2>
+              <p className="as-console-description">
+                Recherche de patches, superpositions, effets, enveloppe, LFO, export machine et modules sample sont maintenant dans l’Atelier.
+              </p>
+            </div>
+            <span className="as-console-status"><span aria-hidden="true">●</span> {Object.keys(CATALOGUE).length} moteurs</span>
+          </header>
+          <div className="as-console-rack">
+            <Suspense fallback={<p className="as-console-chargement">Chargement des commandes audio…</p>}>
+              <CommandesSonores
+                enTiroir
+                profileName={profileName}
+                clavierActif={false}
+                onPatchSelected={ajouterPatch}
+              />
+            </Suspense>
+          </div>
+        </section>
       </div>
     </AppShell>
   );

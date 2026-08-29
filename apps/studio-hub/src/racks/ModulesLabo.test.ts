@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { MODULES } from "./ModulesLabo";
 
 /**
- * Le Labo — la fusion des deux outils de creation de son.
+ * L'Atelier du son — la fusion des deux outils de creation de son.
  *
  * Le hub proposait « Rack Plugins & Moteurs Audio » et « Edition & Creation de
  * Son » comme deux outils distincts. Ils ne faisaient pourtant pas la meme
@@ -26,9 +26,9 @@ const MODULES_SRC = lire("racks/ModulesLabo.tsx");
 const HUB = lire("pages/ToolsHub.tsx");
 
 describe("le hub ne propose plus qu'un outil de creation de son", () => {
-  it("la carte s'appelle le Labo", () => {
-    expect(HUB).toContain("🧪 Labo — création de son");
-    expect(HUB).toContain('code: "LABO-SON"');
+  it("la carte s'appelle l'Atelier du son", () => {
+    expect(HUB).toContain("🎚️ Atelier du son");
+    expect(HUB).toContain('code: "ATELIER"');
   });
 
   it("la carte « Edition & Creation de Son » a disparu", () => {
@@ -38,14 +38,14 @@ describe("le hub ne propose plus qu'un outil de creation de son", () => {
     expect(HUB).not.toContain("Édition & Création de Son");
   });
 
-  it("la carte ne promet que ce que le Labo fait", () => {
+  it("la carte ne promet que ce que l'Atelier fait", () => {
     // Depuis la fusion des deux systemes du rack principal, la carte n'est
     // plus du JSX ecrit a la main : c'est une entree du tableau. On lit donc
     // l'entree, pas le balisage.
-    const i = HUB.indexOf('id: "labo"');
-    expect(i, "l'outil « labo » a disparu du tableau").toBeGreaterThan(-1);
+    const i = HUB.indexOf('id: "atelier-son"');
+    expect(i, "l'outil « atelier-son » a disparu du tableau").toBeGreaterThan(-1);
     const entree = HUB.slice(i, HUB.indexOf("\n  },", i));
-    expect(entree).toContain('page: "audio-plugin-rack"');
+    expect(entree).toContain('page: "atelier-son"');
     for (const promesse of ["moteurs", "effets", "OP-1", "EP-133"]) {
       expect(entree, `la carte ne mentionne pas « ${promesse} »`).toContain(promesse);
     }

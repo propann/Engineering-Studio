@@ -61,7 +61,7 @@ const TARGET_LABELS: Record<SoundTarget, string> = { op1: "OP‑1", ep133: "EP�
 
 const SOURCE_TABS: { id: SoundSourceType; label: string; icon: string; desc: string }[] = [
   { id: "all", label: "Toutes les sources", icon: "✨", desc: "Catalogue unifié de tous les sons disponibles" },
-  { id: "labo", label: "Créés ici (Labo & 20 Moteurs)", icon: "🧪", desc: "Patches synthés, exports DSP et modules du Rack" },
+  { id: "labo", label: "Créés ici (Atelier du son)", icon: "🎚️", desc: "Patches synthés, exports DSP et modules du studio" },
   { id: "p2p", label: "Partagés en P2P & Collaboratifs", icon: "🤝", desc: "Stems et samples reçus via le réseau P2P et Music-Git" },
   { id: "personal", label: "Bibliothèque personnelle", icon: "📁", desc: "Fichiers locaux de ton dossier de travail (shared/sounds)" },
   { id: "machines", label: "Sons des machines (OP-1 & EP-133)", icon: "🎛️", desc: "Slots mémoire 001-999, drumkits AIF et patches d'usine" },
@@ -1047,7 +1047,7 @@ export function SoundLibraryPanel({
 
                 <button
                   type="button"
-                  onClick={() => (window as any).navigateMaquette("labo")}
+                  onClick={() => (window as any).navigateMaquette("atelier-son")}
                   style={{
                     padding: "3px 6px",
                     background: "#1e293b",
@@ -1059,7 +1059,7 @@ export function SoundLibraryPanel({
                     cursor: "pointer",
                   }}
                 >
-                  🧪 LABO
+                  🎚️ ATELIER
                 </button>
               </div>
 

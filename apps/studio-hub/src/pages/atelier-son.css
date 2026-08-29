@@ -27,6 +27,94 @@
   font-family: ui-monospace, "Courier New", monospace;
 }
 
+/* --- Fusion avec les commandes avancées ---------------------------------
+   Les fonctions supplémentaires sont visibles dans le même flux de travail,
+   sans bouton qui ouvre une seconde surface. */
+.atelier-son .as-fusion {
+  min-height: 100vh;
+  background: var(--as-fond);
+}
+
+.atelier-son .as-console-fusion {
+  padding: 18px 16px 28px;
+  background: #0e1510;
+  border-top: 3px solid var(--as-trait);
+}
+
+.atelier-son .as-console-entete {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.atelier-son .as-console-kicker {
+  margin: 0 0 7px;
+  color: var(--as-vert);
+  font: 700 10px/1 ui-monospace, monospace;
+  letter-spacing: .14em;
+}
+
+.atelier-son .as-console-fusion h2 {
+  margin: 0;
+  color: var(--as-texte);
+  font: 700 18px/1.2 ui-monospace, monospace;
+}
+
+.atelier-son .as-console-description {
+  max-width: 760px;
+  margin: 7px 0 0;
+  color: var(--as-doux);
+  font: 12px/1.5 ui-monospace, monospace;
+}
+
+.atelier-son .as-console-status {
+  color: var(--as-doux);
+  font: 700 11px ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+.atelier-son .as-console-status span {
+  color: var(--as-vert);
+}
+
+.atelier-son .as-console-rack {
+  height: min(860px, calc(100vh - 92px));
+  min-height: 620px;
+  max-width: 1480px;
+  margin: 16px auto 0;
+  overflow: hidden;
+  border: 1px solid var(--as-trait);
+  background: #06080e;
+}
+
+.atelier-son .as-console-rack .audio-plugin-rack-page.en-tiroir {
+  min-height: 0;
+}
+
+.atelier-son .as-console-chargement {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  color: var(--as-vert);
+  font: 700 12px ui-monospace, monospace;
+}
+
+@media (max-width: 760px) {
+  .atelier-son .as-console-entete {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .atelier-son .as-console-rack {
+    height: 720px;
+    min-height: 0;
+  }
+}
+
 .atelier-son .as-plan {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;

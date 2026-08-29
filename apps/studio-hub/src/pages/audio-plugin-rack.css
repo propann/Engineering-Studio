@@ -359,6 +359,71 @@
   border-color: #00ed95;
 }
 
+.patch-recherche-ligne--globale {
+  margin-top: 10px;
+}
+
+.patch-resultats-globaux {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 240px;
+  margin-top: 5px;
+  padding: 5px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, .25);
+  border: 1px solid rgba(0, 237, 149, .18);
+  border-radius: 4px;
+}
+
+.patch-resultats-titre,
+.patch-resultats-plus {
+  padding: 2px 4px;
+  color: #64748b;
+  font-size: .62rem;
+}
+
+.patch-resultat-global {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 2px 6px;
+  padding: 5px 6px;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.patch-resultat-global:hover,
+.patch-resultat-global.patch-selected {
+  border-color: #00ed95;
+  background: rgba(0, 237, 149, .1);
+}
+
+.patch-resultat-global span,
+.patch-resultat-global small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: .58rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patch-resultat-global strong {
+  overflow: hidden;
+  font-size: .68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.patch-resultat-global small {
+  grid-column: 2;
+  color: #00ed95;
+}
+
 .patch-search-empty {
   margin: 2px 0 4px;
   color: #64748b;

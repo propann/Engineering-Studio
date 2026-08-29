@@ -204,7 +204,7 @@ describe("ce que la fusion ne devait pas casser", () => {
     const bloc = RACK.slice(RACK.indexOf("const tools: Tool[] = ["));
     for (const page of [
       "studio-op1", "studio-ep133", "firmware-lab", "backup-lab",
-      "audio-plugin-rack", "sound-library", "image-editor-op1",
+      "sound-library", "image-editor-op1",
       "midi-settings", "op1-settings", "exercises",
       "doc-op1", "doc-ep133", "documentation",
     ]) {
@@ -263,7 +263,7 @@ describe("ce que la fusion ne devait pas casser", () => {
     expect(RACK).toMatch(/window\.history\.replaceState\(null, "", `\?hubTool=\$\{tool\.id\}`\)/);
   });
 
-  it("la carte du Labo ne promet pas de moteur absent du rack", () => {
+  it("la carte de l'Atelier ne promet pas de moteur absent du rack", () => {
     // Elle annoncait « Moog 24dB Ladder » et « Karplus-Strong » — mot pour mot
     // le catalogue d'un composant supprime en aout.
     const moteurs = [...TYPES.slice(TYPES.indexOf("EnginePluginType ="), TYPES.indexOf(";", TYPES.indexOf("EnginePluginType ="))).matchAll(/"(\w+)"/g)].map((m) => m[1]);
@@ -281,7 +281,7 @@ describe("ce que la fusion ne devait pas casser", () => {
      * l'ecart entre les deux catalogues.
      */
     expect(moteurs).toHaveLength(20);
-    const i = RACK.indexOf('id: "labo"');
+    const i = RACK.indexOf('id: "atelier-son"');
     const carte = RACK.slice(i, RACK.indexOf("\n  },", i));
     for (const disparu of ["Moog", "Ladder", "Karplus"]) {
       expect(carte, `la carte du Labo nomme encore « ${disparu} »`).not.toContain(disparu);

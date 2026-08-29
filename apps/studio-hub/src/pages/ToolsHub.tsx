@@ -103,14 +103,8 @@ const tools: Tool[] = [
     action: { type: "page", page: "backup-lab" }, section: "hub",
   },
   {
-    id: "labo", code: "LABO-SON", category: "CRÉATION SONORE", title: "🧪 Labo — création de son",
-    text: "Tout pour fabriquer un son : quinze moteurs superposables, effets, enveloppe, patches OP-1 et EP-133, bibliothèque et fabrication d’échantillons.",
-    accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
-    action: { type: "page", page: "audio-plugin-rack" }, section: "hub", couleur: "#d9ff43",
-  },
-  {
-    id: "atelier-son", code: "ATELIER", category: "CRÉATION SONORE", title: "Atelier de son",
-    text: "Empile des moteurs, règle chacun, vois l'onde de chaque couche dans sa couleur. Enregistrement et rangement automatique par famille.",
+    id: "atelier-son", code: "ATELIER", category: "CRÉATION SONORE", title: "🎚️ Atelier du son",
+    text: "Le studio unifié : empile les moteurs, choisis tes patches, façonne les effets et exporte des sons pour l’OP-1 ou l’EP-133.",
     accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
     action: { type: "page", page: "atelier-son" }, section: "hub", couleur: "#7cf07c",
   },
