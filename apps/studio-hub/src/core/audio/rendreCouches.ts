@@ -23,6 +23,7 @@
 
 import { construireMoteur } from "./moteurs";
 import {
+  bornesSaines,
   couchesAudibles,
   decoderEchantillons,
   paramsDeCouche,
@@ -241,8 +242,21 @@ export function poserEchantillon(
   const donnees = decoderEchantillons(ech.donnees);
   if (donnees.length === 0) return null;
 
-  const tampon = ctx.createBuffer(1, donnees.length, ech.taux || 44100);
-  tampon.getChannelData(0).set(donnees);
+  /**
+   * La découpe est appliquée AU TAMPON, pas en décalant la lecture.
+   *
+   * `start(quand, decalage, duree)` marcherait aussi, mais les trois arguments
+   * sont dans les secondes de la SOURCE : avec un `playbackRate` de 2, la
+   * durée demandée n'est plus celle qu'on entend. Couper le tampon rend la
+   * découpe indépendante de l'accord, ce qu'on attend d'elle.
+   */
+  const { debut, fin } = bornesSaines(ech.debut, ech.fin);
+  const i = Math.floor(debut * donnees.length);
+  const j = Math.max(i + 1, Math.floor(fin * donnees.length));
+  const coupe = debut === 0 && fin === 1 ? donnees : donnees.subarray(i, j);
+
+  const tampon = ctx.createBuffer(1, coupe.length, ech.taux || 44100);
+  tampon.getChannelData(0).set(coupe);
 
   const source = ctx.createBufferSource();
   source.buffer = tampon;

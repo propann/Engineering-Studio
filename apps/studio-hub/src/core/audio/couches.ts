@@ -69,6 +69,16 @@ export type Echantillon = {
   taux: number;
   /** Transposition en demi-tons, pour accorder l'échantillon aux moteurs. */
   accord: number;
+  /**
+   * La découpe, en fractions de 0 à 1.
+   *
+   * En fractions et non en échantillons : un son importé est rééchantillonné
+   * au taux du contexte, qui change d'une machine à l'autre. Des bornes en
+   * échantillons désigneraient un autre endroit du son sur un ordinateur en
+   * 48 kHz que sur un en 44,1 — la découpe se déplacerait toute seule.
+   */
+  debut?: number;
+  fin?: number;
 };
 
 export type Couche = {
@@ -425,6 +435,7 @@ export function analyserSon(contenu: string): { son: SonFabrique } | { erreur: s
               typeof ech!.accord === "number" && Number.isFinite(ech!.accord)
                 ? Math.min(24, Math.max(-24, ech!.accord))
                 : 0,
+            ...bornesSaines(ech!.debut, ech!.fin),
           }
         : undefined,
       nom:
@@ -468,6 +479,22 @@ export function analyserSon(contenu: string): { son: SonFabrique } | { erreur: s
       modifieLe: typeof s.modifieLe === "string" ? s.modifieLe : t,
     },
   };
+}
+
+/**
+ * Valide une découpe.
+ *
+ * Une fin avant le début donnerait une durée négative : `createBufferSource`
+ * l'accepte sans broncher et ne joue rien, ce qu'on prendrait pour un
+ * échantillon muet. On les remet donc dans l'ordre plutôt que de refuser.
+ */
+export function bornesSaines(
+  debut: unknown,
+  fin: unknown,
+): { debut: number; fin: number } {
+  const d = typeof debut === "number" && Number.isFinite(debut) ? Math.min(1, Math.max(0, debut)) : 0;
+  const f = typeof fin === "number" && Number.isFinite(fin) ? Math.min(1, Math.max(0, fin)) : 1;
+  return d <= f ? { debut: d, fin: f } : { debut: f, fin: d };
 }
 
 /* ======================================================================== *

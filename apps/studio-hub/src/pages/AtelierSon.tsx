@@ -10,6 +10,7 @@ import {
   ajouterCouche,
   ajouterEchantillon,
   analyserSon,
+  bornesSaines,
   cheminDe,
   couchesAudibles,
   deplacerCouche,
@@ -468,6 +469,26 @@ export default function AtelierSon() {
     [],
   );
 
+  /**
+   * Modifie l'echantillon d'une couche.
+   *
+   * Les bornes passent par `bornesSaines` a l'ecriture ET a la relecture : une
+   * fin avant le debut donnerait une duree negative, que
+   * `createBufferSource` accepte sans broncher en ne jouant rien — ce qu'on
+   * prendrait pour un echantillon muet.
+   */
+  const majEchantillon = useCallback(
+    (couche: Couche, changements: Partial<NonNullable<Couche["echantillon"]>>) => {
+      const base = { ...couche.echantillon!, ...changements };
+      setSon((s) =>
+        modifierCouche(s, couche.id, {
+          echantillon: { ...base, ...bornesSaines(base.debut, base.fin) },
+        }),
+      );
+    },
+    [],
+  );
+
   const moyen = useMemo(() => moyenDisponible(), []);
 
   return (
@@ -690,29 +711,34 @@ export default function AtelierSon() {
                 {/* L'accord est le seul reglage d'un echantillon : il n'a pas de
                     moteur a piloter. Transposer change AUSSI la duree, comme sur
                     tout echantillonneur — monter d'une octave raccourcit le son. */}
-                <label className="as-accord">
-                  <span>
-                    ACCORD
-                    <b>{couchesSelectionnee.echantillon?.accord ?? 0} demi-tons</b>
-                  </span>
-                  <input
-                    type="range"
-                    min={-24}
-                    max={24}
-                    value={couchesSelectionnee.echantillon?.accord ?? 0}
-                    onChange={(e) =>
-                      setSon((s) =>
-                        modifierCouche(s, couchesSelectionnee.id, {
-                          echantillon: {
-                            ...couchesSelectionnee.echantillon!,
-                            accord: Number(e.target.value),
-                          },
-                        }),
-                      )
-                    }
-                    aria-label="Accord de l'échantillon"
-                  />
-                </label>
+                <ReglageEchantillon
+                  libelle="ACCORD"
+                  valeur={couchesSelectionnee.echantillon?.accord ?? 0}
+                  min={-24}
+                  max={24}
+                  unite="demi-tons"
+                  sur={(v) => majEchantillon(couchesSelectionnee, { accord: v })}
+                />
+                {/* La decoupe en POURCENTAGE : le son est reechantillonne au taux
+                    du contexte a l'import, qui change d'une machine a l'autre.
+                    Des bornes en millisecondes designeraient un autre endroit du
+                    son sur un ordinateur en 48 kHz que sur un en 44,1. */}
+                <ReglageEchantillon
+                  libelle="DÉBUT"
+                  valeur={Math.round((couchesSelectionnee.echantillon?.debut ?? 0) * 100)}
+                  min={0}
+                  max={100}
+                  unite="%"
+                  sur={(v) => majEchantillon(couchesSelectionnee, { debut: v / 100 })}
+                />
+                <ReglageEchantillon
+                  libelle="FIN"
+                  valeur={Math.round((couchesSelectionnee.echantillon?.fin ?? 1) * 100)}
+                  min={0}
+                  max={100}
+                  unite="%"
+                  sur={(v) => majEchantillon(couchesSelectionnee, { fin: v / 100 })}
+                />
               </div>
             ) : couchesSelectionnee ? (
               <CarteMoteur
@@ -916,5 +942,41 @@ function LigneCouche({
         ✕
       </button>
     </li>
+  );
+}
+
+/** Un curseur de la carte d'echantillon. Meme forme que ceux des moteurs. */
+function ReglageEchantillon({
+  libelle,
+  valeur,
+  min,
+  max,
+  unite,
+  sur,
+}: {
+  libelle: string;
+  valeur: number;
+  min: number;
+  max: number;
+  unite: string;
+  sur: (valeur: number) => void;
+}) {
+  return (
+    <label className="as-accord">
+      <span>
+        {libelle}
+        <b>
+          {valeur} {unite}
+        </b>
+      </span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        value={valeur}
+        onChange={(e) => sur(Number(e.target.value))}
+        aria-label={libelle}
+      />
+    </label>
   );
 }

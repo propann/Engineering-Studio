@@ -5,6 +5,7 @@ import {
   VERSION_SON,
   ajouterCouche,
   ajouterEchantillon,
+  bornesSaines,
   decoderEchantillons,
   encoderEchantillons,
   analyserSon,
@@ -408,5 +409,55 @@ describe("les balises", () => {
     expect("erreur" in r).toBe(false);
     if ("erreur" in r) return;
     expect(r.son.etiquettes).toEqual([]);
+  });
+});
+
+describe("la decoupe d'un echantillon", () => {
+  it("des bornes absentes couvrent tout", () => {
+    expect(bornesSaines(undefined, undefined)).toEqual({ debut: 0, fin: 1 });
+  });
+
+  it("une fin avant le debut est remise dans l'ordre", () => {
+    /**
+     * Une duree negative : `createBufferSource` l'accepte sans broncher et ne
+     * joue RIEN, ce qu'on prendrait pour un echantillon muet. On remet dans
+     * l'ordre plutot que de refuser — le geste etait clair, seul le sens
+     * etait inverse.
+     */
+    expect(bornesSaines(0.8, 0.2)).toEqual({ debut: 0.2, fin: 0.8 });
+  });
+
+  it("les bornes hors de [0,1] sont ramenees dedans", () => {
+    expect(bornesSaines(-3, 42)).toEqual({ debut: 0, fin: 1 });
+  });
+
+  it("NaN retombe sur les valeurs neutres", () => {
+    expect(bornesSaines(NaN, NaN)).toEqual({ debut: 0, fin: 1 });
+    expect(bornesSaines("moitie", null)).toEqual({ debut: 0, fin: 1 });
+  });
+
+  it("des bornes egales restent egales", () => {
+    // Le rendu garde alors au moins un echantillon : une couche muette se
+    // remarque, une exception non.
+    expect(bornesSaines(0.5, 0.5)).toEqual({ debut: 0.5, fin: 0.5 });
+  });
+
+  it("la decoupe survit a l'aller-retour", () => {
+    const donnees = encoderEchantillons(Float32Array.from([0.5, -0.5, 0.25, 0.1]));
+    let son = nouveauSon("coupe", fige);
+    son = ajouterEchantillon(son, { fichier: "a.wav", donnees, taux: 44100, accord: 0, debut: 0.25, fin: 0.75 }, fige);
+    const lu = analyserSon(serialiserSon(son));
+    expect("erreur" in lu).toBe(false);
+    if ("erreur" in lu) return;
+    expect(lu.son.couches[0].echantillon?.debut).toBe(0.25);
+    expect(lu.son.couches[0].echantillon?.fin).toBe(0.75);
+  });
+
+  it("une decoupe inversee dans un fichier est corrigee a la relecture", () => {
+    const r = analyserSon('{"version":1,"couches":[{"type":"echantillon","echantillon":{"donnees":"AAA=","debut":0.9,"fin":0.1}}]}');
+    expect("erreur" in r).toBe(false);
+    if ("erreur" in r) return;
+    expect(r.son.couches[0].echantillon?.debut).toBe(0.1);
+    expect(r.son.couches[0].echantillon?.fin).toBe(0.9);
   });
 });
