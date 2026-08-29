@@ -3,7 +3,7 @@
 Ce que les tests automatiques **ne peuvent pas** prouver : ce qui demande du
 matériel branché, des oreilles, ou les deux.
 
-La suite complète de tests logiciels (68 suites, 1254 tests) tourne et réussit en continu. Aucun test unitaire ne dit si un sample sonne juste à l'oreille humaine, si l'OP-1 accepte un fichier sans erreur de format, si un patch FM Dexed ou Faust DSP sonne musicalement, ou si la latence USB/MIDI est imperceptible au jeu en direct. C'est le rôle de ce protocole.
+La suite complète de tests logiciels automatisés tourne et réussit en continu. Aucun test unitaire ne dit si un sample sonne juste à l'oreille humaine, si l'OP-1 accepte un fichier sans erreur de format, si un patch FM Dexed ou Faust DSP sonne musicalement, ou si la latence USB/MIDI est imperceptible au jeu en direct. C'est le rôle de ce protocole.
 
 **URL de Test Déployée (Production / Préproduction)** :  
 `https://ais-pre-gnlve6vdz4rnduw2h73sna-625700864610.europe-west1.run.app`

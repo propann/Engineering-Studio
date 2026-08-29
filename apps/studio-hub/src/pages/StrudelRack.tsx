@@ -1,6 +1,13 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { contexte } from "@studio-hub/rack-bus";
+import {
+  BPM_MAX,
+  BPM_MIN,
+  contexte,
+  reglerBpm,
+  sAbonnerTransport,
+  transport,
+} from "@studio-hub/rack-bus";
 import { readProfileName } from "../core/profile";
 import {
   EXEMPLES,
@@ -54,6 +61,9 @@ type ApiStrudel = {
   evaluate: (code: string) => Promise<unknown>;
   hush: () => void;
   setAudioContext?: (ctx: AudioContext) => unknown;
+  setBpm?: (bpm: number) => unknown;
+  setTempo?: (bpm: number) => unknown;
+  scheduler?: { setBpm?: (bpm: number) => unknown; setTempo?: (bpm: number) => unknown };
 };
 
 export default function StrudelRack() {
@@ -64,11 +74,29 @@ export default function StrudelRack() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [extraits, setExtraits] = useState<Extrait[]>([]);
   const [nom, setNom] = useState("");
+  const [bpm, setBpm] = useState(transport().bpm);
   const api = useRef<ApiStrudel | null>(null);
 
   useEffect(() => {
     setProfileName(readProfileName());
     setExtraits(trierExtraits(lireExtraits()));
+  }, []);
+
+  // Asservir l'horloge de Strudel au transport partagé du Hub.
+  useEffect(() => {
+    return sAbonnerTransport((t) => {
+      setBpm(t.bpm);
+      if (api.current) {
+        // Mettre à jour l'horloge interne de Strudel si disponible
+        if (typeof api.current.setBpm === "function") {
+          api.current.setBpm(t.bpm);
+        } else if (typeof api.current.setTempo === "function") {
+          api.current.setTempo(t.bpm);
+        } else if (typeof api.current.scheduler?.setBpm === "function") {
+          api.current.scheduler.setBpm(t.bpm);
+        }
+      }
+    });
   }, []);
 
   /**
@@ -179,6 +207,23 @@ export default function StrudelRack() {
             {/* Toujours atteignable, y compris pendant le chargement : c'est
                 l'arrêt d'urgence de ce rack. */}
             <Button variant="danger" onClick={arreter}>Arrêter</Button>
+            <label className="strudel-tempo-controle" title="Tempo asservi au transport partagé du Hub">
+              <span>TEMPO</span>
+              <input
+                type="number"
+                min={BPM_MIN}
+                max={BPM_MAX}
+                value={bpm}
+                onChange={(e) => {
+                  const v = Number.parseInt(e.target.value, 10);
+                  if (!Number.isNaN(v)) {
+                    reglerBpm(v);
+                  }
+                }}
+                aria-label="Tempo BPM asservi au Hub"
+              />
+              <span className="strudel-bpm-unite">BPM</span>
+            </label>
             <span className="strudel-raccourcis">Ctrl+Entrée pour jouer · Échap pour arrêter</span>
           </div>
 

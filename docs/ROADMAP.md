@@ -149,8 +149,7 @@ d'appeler `samples()`.
 **Le paquet est sous AGPL-3.0**, et c'est ce qui a fait basculer la licence du
 dépôt entier — voir [`../LICENSE`](../LICENSE) et la section Licence du README.
 
-Ce qui reste ouvert : l'horloge de Strudel n'est pas encore asservie au
-transport du Hub. Les deux partagent le contexte audio, pas le tempo.
+L'horloge et le tempo de Strudel sont désormais asservis au transport du Hub via `@studio-hub/rack-bus`. Les deux partagent le contexte audio et le transport unifié (`bpm` et `enMarche`).
 
 ### EP-133 par SysEx
 

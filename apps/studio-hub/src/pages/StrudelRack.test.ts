@@ -149,3 +149,16 @@ describe("le rack est atteignable", () => {
     expect(entree, "la carte promet une écriture machine").not.toMatch(/machine|OP-1|EP-133/);
   });
 });
+
+describe("l'horloge est asservie au transport du Hub", () => {
+  it("le rack s'abonne au transport partagé", () => {
+    expect(RACK).toContain("sAbonnerTransport");
+    expect(RACK).toContain("reglerBpm");
+  });
+
+  it("le contrôle de tempo est borné par les limites du rack-bus", () => {
+    expect(RACK).toContain("min={BPM_MIN}");
+    expect(RACK).toContain("max={BPM_MAX}");
+  });
+});
+

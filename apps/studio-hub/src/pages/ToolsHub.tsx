@@ -119,7 +119,14 @@ const tools: Tool[] = [
     text: "Catalogue, préparation, favoris, doublons et accès aux workflows OP-1 / EP-133.",
     accent: "sound-card", visual: "wave", status: "OUVRIR →",
     action: { type: "page", page: "sound-library" }, section: "hub",
-  },  {
+  },
+  {
+    id: "collab", code: "P2P-GIT", category: "COLLABORATION", title: "🤝 P2P Git & Chat Studio",
+    text: "Jam multi-utilisateurs temps réel, salon de chat multi-canaux, partage de stems et versioning musical immuable.",
+    accent: "collab-card", visual: "sync", status: "OUVRIR →",
+    action: { type: "page", page: "collab-studio" }, section: "hub", couleur: "#38bdf8",
+  },
+  {
     id: "reglages", code: "CONFIG", category: "CONFIGURATION", title: "⚙️ Réglages",
     text: "Synchronisation MIDI et arpégiateur, tests de machine, diagnostic système.",
     accent: "settings-card", visual: "sync", status: "OPTIONS",
