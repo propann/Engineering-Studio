@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { creerContexteFactice } from "../audio/contexteFactice";
 import { MOTEURS_RACK } from "./sons";
@@ -10,6 +13,8 @@ import {
   type ValeurMotif,
 } from "./moteursStrudel";
 
+const DIR = path.dirname(fileURLToPath(import.meta.url));
+
 /**
  * Les vingt moteurs du rack, joues depuis un motif.
  *
@@ -18,10 +23,6 @@ import {
  * `StrudelLiveStudio.tsx` promettait sans le faire — quatorze appels moteur
  * qui n'auraient rien produit.
  */
-
-function aideDeTest() {
-  return { sources: [] as unknown[] };
-}
 
 const VALEUR: ValeurMotif = { note: 60, duration: 0.25 };
 
@@ -39,6 +40,28 @@ describe("les vingt moteurs sont enregistres", () => {
      * ou l'inverse.
      */
     expect([...MOTEURS_JOUABLES].sort()).toEqual([...MOTEURS_RACK].sort());
+  });
+
+  it("le clavier de l'OP-1 connait exactement les memes", () => {
+    /**
+     * `op1SynthEngine.ts` porte sa propre copie de la liste : c'est une autre
+     * application, avec sa propre compilation, et lui faire importer une
+     * constante du Hub pour vingt chaines serait un couplage sans contrepartie.
+     *
+     * Mais deux listes qui divergent, c'est un moteur qui tombe dans le repli
+     * generique de l'OP-1 sans que personne ne le remarque — precisement le
+     * defaut corrige le 2026-08-29, ou treize moteurs sonnaient pareil.
+     * Le commentaire de ce fichier-la promet cette verification : la voici.
+     */
+    const source = readFileSync(
+      path.join(DIR, "..", "..", "..", "..", "op1-studio", "app", "lib", "op1SynthEngine.ts"),
+      "utf-8",
+    );
+    const i = source.indexOf("const MOTEURS_RACK = new Set([");
+    expect(i, "la liste du clavier OP-1 a disparu").toBeGreaterThan(-1);
+    const bloc = source.slice(i, source.indexOf("]);", i));
+    const chezOp1 = [...bloc.matchAll(/"([a-z0-9_]+)"/g)].map((m) => m[1]).sort();
+    expect(chezOp1).toEqual([...MOTEURS_JOUABLES].sort());
   });
 
   it("`enregistrerMoteurs` les declare tous", () => {

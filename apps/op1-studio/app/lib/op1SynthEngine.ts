@@ -1,7 +1,19 @@
 /**
  * op1SynthEngine.ts — Moteur audio de synthèse et d'échantillonnage OP-1 & Bus d'enregistrement Tape
  *
- * Implémente fidèlement les 15 moteurs sonores et les synthétiseurs emblématiques de l'OP-1 :
+ * Les VINGT moteurs du rack sont jouables au clavier depuis le 2026-08-29.
+ *
+ * Sept d'entre eux — FM, String, Pulse, Cluster, Drum et les moteurs natifs —
+ * gardent une voix propre a l'OP-1, reglee pour ses quatre potentiometres et
+ * modifiable EN DIRECT sur une note tenue.
+ *
+ * Les treize autres passent par `construireMoteur`, la bibliotheque partagee
+ * avec le rack du Hub et Strudel. Ils tombaient jusqu'ici dans un repli
+ * generique — deux oscillateurs et un filtre — et sonnaient donc tous pareil :
+ * seul le nom changeait dans l'ecran. Un `mi_clouds` joue ici est desormais le
+ * meme granulateur que dans le rack.
+ *
+ * Synthetiseurs emblematiques couverts :
  * - Mutable Instruments : Plaits, Braids, Rings, Clouds, Elements
  * - Synthèse Légendaire : Dexed FM (DX7 2-6 op), Surge XT (Wavetable & Drive), ZynAddSubFX (Harmoniques additives), Helm, FluidSynth (SoundFonts / Rhodes / Piano), amSynth (Analog subtractive), AMY (Additive multi-partielle), Picoloop (8-bit Chiptune), Open303 (Acid bassline TB-303), Faust DSP (Wavefolder & physical modeling)
  * - Moteurs OP-1 Natifs : FM, Cluster, Digital, Pulse, String, Voltage, Phase, DNA, Iter, Drum (24 tranches)
@@ -9,6 +21,60 @@
  * Tous les potentiomètres (T1 Bleu, T2 Vert, T3 Blanc, T4 Rouge) ainsi que la page SHIFT
  * modifient le son en temps réel (sur les notes tenues et les notes suivantes).
  */
+
+import { PARAMS_DEFAUT, construireMoteur, type ParamsMoteurs } from "@studio-hub/core/audio/moteurs";
+
+/**
+ * Les vingt moteurs du rack DSP, par leur identifiant.
+ *
+ * La liste vit ici plutot que d'etre importee : `soundEnginesData.ts` la porte
+ * deja pour l'interface, et le rack du Hub aussi. Une quatrieme copie serait
+ * de trop — mais celle-ci est verifiee par
+ * `apps/studio-hub/src/core/strudel/moteursStrudel.test.ts`, qui compare les
+ * listes entre elles.
+ */
+const MOTEURS_RACK = new Set([
+  "mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements",
+  "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "open303",
+  "amsynth", "amy_engine", "pl_synth", "fluidsynth", "faust_dsp",
+  "drum_machine", "vocoder_dsp", "string_machine", "organ_drawbars",
+  "phase_distortion",
+]);
+
+/** Ce moteur a-t-il une synthese dans la bibliotheque partagee ? */
+function moteurDuRack(id: string): boolean {
+  return MOTEURS_RACK.has(id);
+}
+
+/**
+ * Traduit les potentiometres de l'OP-1 en parametres du moteur.
+ *
+ * Volontairement etroit. Il n'existe pas de coupure universelle : chaque
+ * moteur nomme la sienne, et beaucoup n'en ont pas. Router T2 vers un seul
+ * d'entre eux donnerait un potentiometre qui agit sur un moteur et pas sur les
+ * autres — le defaut que le rack du Hub a mis des mois a purger.
+ *
+ * Ce qui n'est pas mappe ne fait rien, et c'est dit plutot que masque.
+ */
+function reglagesDepuisPotentiometres(
+  moteur: string,
+  t2: number,
+  t3: number,
+): Partial<ParamsMoteurs> {
+  const coupure = Math.min(16000, Math.max(200, (t2 / 100) * 12000 + 400));
+  const resonance = Math.max(0, Math.min(100, t3));
+  switch (moteur) {
+    case "open303": return { acidCutoff: coupure, acidResonance: resonance };
+    case "helm": return { helmCutoff: coupure };
+    case "surge_xt": return { surgeCutoff: coupure, surgeReso: resonance };
+    case "amsynth": return { amCutoff: coupure, amReso: resonance };
+    case "zynaddsubfx": return { zynReso: resonance };
+    case "faust_dsp": return { faustFilter: coupure };
+    case "string_machine": return { strTone: coupure };
+    default: return {};
+  }
+}
+
 
 export type Op1EngineType =
   | "FM"
@@ -442,8 +508,58 @@ class Op1SynthEngine {
           try { o.stop(ctx.currentTime + 0.2); } catch {}
         });
       };
+    } else if (moteurDuRack(rawEngine)) {
+      /**
+       * ── Les moteurs du rack DSP, joues par leur vraie synthese ──
+       *
+       * Jusqu'au 2026-08-29, cette branche etait un repli generique : deux
+       * oscillateurs et un filtre, pilotes par les potentiometres. TREIZE
+       * moteurs y tombaient — Plaits, Braids, Clouds, Elements, Surge, Zyn,
+       * amSynth, AMY, FluidSynth, Faust et les cinq derniers — et sonnaient
+       * donc tous PAREIL. Le nom change dans l'ecran, pas le son.
+       *
+       * Ils utilisent maintenant `construireMoteur`, la meme bibliotheque que
+       * le rack du Hub et que Strudel. Un `mi_clouds` joue au clavier de
+       * l'OP-1 est desormais le meme granulateur que dans le rack.
+       *
+       * Les sept moteurs traites plus haut gardent leur voix propre a l'OP-1 :
+       * eux repondent aux potentiometres EN DIRECT, sur une note tenue, ce que
+       * la bibliotheque ne sait pas faire — elle construit une voix par note.
+       */
+      const sources: AudioScheduledSourceNode[] = [];
+      const params = {
+        ...PARAMS_DEFAUT,
+        activeEngine: rawEngine as (typeof PARAMS_DEFAUT)["activeEngine"],
+        ...reglagesDepuisPotentiometres(rawEngine, t2, t3),
+      };
+      construireMoteur(
+        ctx,
+        params,
+        freq,
+        now,
+        {
+          trk: (n) => { sources.push(n); return n; },
+          noteStop: (n, quand) => { try { n.stop(quand); } catch { /* deja arretee */ } },
+          holdUntil: () => {},
+          // Pas de reverberation partagee ici : le studio OP-1 a son propre
+          // bus, et lui en imposer une changerait son espace sonore.
+          reverb: null,
+        },
+        voiceGain,
+      );
+
+      const atkSec = Math.max(0.005, (shiftT1 / 100) * 0.3);
+      voiceGain.gain.setValueAtTime(0, now);
+      voiceGain.gain.linearRampToValueAtTime(0.45 * velFactor, now + atkSec);
+
+      cleanupNodes = () => {
+        for (const s of sources) {
+          try { s.stop(ctx.currentTime + 0.2); } catch { /* deja arretee */ }
+        }
+      };
     } else {
-      // ── Moteur Multi-formes d'ondes (Plaits, Braids, Surge XT, Elements, Faust, etc.) ──
+      // ── Moteurs natifs de l'OP-1 sans equivalent dans le rack ──
+      // Digital, Iter, Voltage, Phase, DNA : ils n'existent que sur la machine.
       osc1 = ctx.createOscillator();
       osc2 = ctx.createOscillator();
       filter = ctx.createBiquadFilter();
