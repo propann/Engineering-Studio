@@ -40,6 +40,15 @@ import {
 import { LIMITE_DOC, RACCOURCIS, SECTIONS_DOC } from "../core/strudel/reference";
 import { bpmVersCps } from "../core/strudel/tempo";
 import {
+  effetsMaitre,
+  reappliquerEffetsMaitre,
+  reglerEffetsMaitre,
+  sAbonnerEffets,
+} from "../core/audio/effetsMaitre";
+import type { ParamsEffets } from "../core/audio/effets";
+import { RackEffets } from "../racks/RackEffets";
+import type { Division } from "@studio-hub/musique";
+import {
   enregistrerProjet,
   lireFichier,
   modifie,
@@ -104,7 +113,7 @@ import "./strudel-rack.css";
  */
 
 type Etat = "eteint" | "chargement" | "pret" | "joue";
-type Onglet = "exemples" | "sons" | "aide" | "machines" | "mixage";
+type Onglet = "exemples" | "sons" | "aide" | "machines" | "mixage" | "effets";
 
 /** Ce que `@strudel/web` expose, réduit à ce que le rack utilise. */
 type ApiStrudel = {
@@ -128,6 +137,7 @@ const ONGLETS: ReadonlyArray<{ id: Onglet; label: string }> = [
   { id: "aide", label: "AIDE" },
   { id: "machines", label: "MACHINES" },
   { id: "mixage", label: "MIXAGE" },
+  { id: "effets", label: "EFFETS" },
 ];
 
 export default function StrudelRack() {
@@ -152,6 +162,16 @@ export default function StrudelRack() {
   const [canal, setCanal] = useState(1);
 
   const [voieId, setVoieId] = useState<string | null>(null);
+  /**
+   * Les effets du bus maitre.
+   *
+   * Ils ne sont pas a cette page : ils vivent dans `effetsMaitre.ts` et
+   * s'appliquent a TOUT ce qui joue dans l'atelier. Ce panneau les pilote,
+   * il ne les possede pas — regler un delai ici le garde en passant au rack DSP.
+   */
+  const [effets, setEffets] = useState<ParamsEffets>(effetsMaitre);
+  const [delaiSync, setDelaiSync] = useState(false);
+  const [delaiDivision, setDelaiDivision] = useState<Division>("1/8");
   const [gain, setGain] = useState(1);
   const [pano, setPano] = useState(0);
   const [reverb, setReverb] = useState(0);
@@ -168,6 +188,8 @@ export default function StrudelRack() {
   /** Le code le plus récent, lisible depuis un rappel sans le recréer. */
   const codeVif = useRef(code);
   codeVif.current = code;
+
+  useEffect(() => sAbonnerEffets(setEffets), []);
 
   useEffect(() => {
     setProfileName(readProfileName());
@@ -247,6 +269,9 @@ export default function StrudelRack() {
       repl.current?.setCps?.(bpmVersCps(transport().bpm));
 
       brancherSurLaConsole(mod);
+      // Les reglages relus du stockage n'ont encore rien insere, faute de
+      // graphe ou le faire : le contexte vient d'ouvrir.
+      reappliquerEffetsMaitre();
       await preparerSurlignage();
 
       setEtat("pret");
@@ -630,6 +655,25 @@ export default function StrudelRack() {
                 onDebrancher={debrancherMachines}
                 onRafraichir={() => void machinesDisponibles().then(setMachines)}
               />
+            )}
+            {onglet === "effets" && (
+              <>
+                <h2 className="sr-titre">Effets du studio</h2>
+                <p className="sr-aide">
+                  Sur le bus maître : tout ce qui joue dans l'atelier les traverse,
+                  Strudel comme les vingt moteurs. Les réglages suivent d'une page
+                  à l'autre et survivent au rechargement.
+                </p>
+                <RackEffets
+                  params={effets}
+                  onParam={(nom, valeur) => reglerEffetsMaitre({ [nom]: valeur })}
+                  delaySync={delaiSync}
+                  onDelaySync={setDelaiSync}
+                  delayDivision={delaiDivision}
+                  onDelayDivision={setDelaiDivision}
+                  bpmHote={bpm}
+                />
+              </>
             )}
             {onglet === "mixage" && (
               <PanneauMixage

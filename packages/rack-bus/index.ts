@@ -86,6 +86,15 @@ type VoieInterne = Voie & {
 
 type Etat = {
   ctx: AudioContext | null;
+  /**
+   * Le point d'insertion du rack d'effets, entre le bus et l'analyseur.
+   *
+   * Toujours present, meme sans effet branche : c'est un simple gain a 1. Le
+   * garder en permanence evite de recabler le graphe a chaque changement, et
+   * garantit que l'analyseur voit ce qu'on entend REELLEMENT — pas le signal
+   * d'avant les effets.
+   */
+  insertion: GainNode | null;
   /** Bus maître : tout y aboutit, il est seul relié à la sortie. */
   bus: GainNode | null;
   analyseur: AnalyserNode | null;
@@ -94,10 +103,13 @@ type Etat = {
   voies: Map<string, VoieInterne>;
   auditeurs: Set<AuditeurMixage>;
   compteur: number;
+  /** Comment defaire l'insertion courante. `null` quand il n'y en a pas. */
+  retirerInsertion: (() => void) | null;
 };
 
 const etat: Etat = {
   ctx: null,
+  insertion: null,
   bus: null,
   analyseur: null,
   reverb: null,
@@ -105,6 +117,7 @@ const etat: Etat = {
   voies: new Map(),
   auditeurs: new Set(),
   compteur: 0,
+  retirerInsertion: null,
 };
 
 /**
@@ -159,11 +172,22 @@ export function contexte(): AudioContext {
   reverb.connect(retour);
   retour.connect(bus);
 
-  bus.connect(analyseur);
-  bus.connect(ctx.destination);
+  /**
+   * bus -> insertion -> analyseur -> destination.
+   *
+   * L'analyseur etait branche directement sur le bus et le bus sur la sortie.
+   * Il voyait donc le signal AVANT le rack d'effets, et l'oscilloscope
+   * dessinait autre chose que ce qu'on entend. Le mettre apres l'insertion
+   * corrige les deux d'un coup.
+   */
+  const insertion = ctx.createGain();
+  bus.connect(insertion);
+  insertion.connect(analyseur);
+  analyseur.connect(ctx.destination);
 
   etat.ctx = ctx;
   etat.bus = bus;
+  etat.insertion = insertion;
   etat.analyseur = analyseur;
   etat.reverb = reverb;
   etat.retour = retour;
@@ -198,6 +222,49 @@ export function busMaitre(): GainNode {
 export function analyseur(): AnalyserNode {
   contexte();
   return etat.analyseur!;
+}
+
+/**
+ * Insère un traitement entre le bus maître et la sortie.
+ *
+ * C'est la place du **rack d'effets** : tout ce qui joue dans l'atelier y
+ * passe, quel que soit l'outil qui l'a produit. Un motif Strudel, une note du
+ * rack DSP et une pré-écoute de la bibliothèque traversent le même délai et le
+ * même égaliseur — c'est ce qui fait un studio plutôt qu'une collection
+ * d'outils.
+ *
+ * `entree` et `sortie` sont les deux bouts du traitement ; rendre une fonction
+ * de retrait plutôt qu'un booléen permet de reconstruire la chaîne à chaque
+ * changement de réglage sans que l'appelant tienne l'état du graphe.
+ *
+ * Un seul traitement à la fois : insérer remplace le précédent. Deux racks
+ * d'effets empilés sans qu'on l'ait demandé seraient impossibles à diagnostiquer.
+ */
+export function insererSurMaitre(entree: AudioNode, sortie: AudioNode): () => void {
+  contexte();
+  const insertion = etat.insertion!;
+  const analyseur = etat.analyseur!;
+  retirerInsertion();
+
+  insertion.disconnect();
+  insertion.connect(entree);
+  sortie.connect(analyseur);
+  etat.retirerInsertion = () => {
+    try {
+      insertion.disconnect();
+      sortie.disconnect(analyseur);
+    } catch {
+      /* un nœud déjà débranché n'a rien à réparer */
+    }
+    insertion.connect(analyseur);
+    etat.retirerInsertion = null;
+  };
+  return retirerInsertion;
+}
+
+/** Retire le traitement inséré, s'il y en a un. Idempotent. */
+export function retirerInsertion(): void {
+  etat.retirerInsertion?.();
 }
 
 /**
@@ -399,6 +466,8 @@ export function voies(): Voie[] {
  * inutilisables — mais il est oublié, pour que le suivant en fabrique un neuf.
  */
 export function reinitialiserPourTests(): void {
+  etat.insertion = null;
+  etat.retirerInsertion = null;
   etat.ctx = null;
   etat.bus = null;
   etat.analyseur = null;

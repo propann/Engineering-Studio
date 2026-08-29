@@ -21,6 +21,11 @@ import { planifierRendu, nomEchantillon, nomDeNote, frequenceDeNote } from "@stu
 import { sAbonner, sAbonnerEtat } from "@studio-hub/midi-dispatch";
 import { ORDRE_DIVISIONS, dureeDivisionMs, type Division } from "../core/audio/tempo";
 import { construireChaineEffets, type ParamsEffets } from "../core/audio/effets";
+import {
+  reappliquerEffetsMaitre,
+  reglerEffetsMaitre,
+  sAbonnerEffets,
+} from "../core/audio/effetsMaitre";
 import { ENVELOPPE_DEFAUT, formeRampe, rampeVers, resoudreEnveloppe, type ParamsEnveloppe } from "../core/audio/enveloppe";
 import { lirePatchImporte } from "../core/audio/importPatch";
 import { construireArchivePatches, lireArchivePatches } from "../core/audio/archivePatches";
@@ -848,6 +853,9 @@ export default function AudioPluginRack({
       // modules, dans le meme espace.
       reverbRef.current = reverbePartagee();
       scopeDataRef.current = new Uint8Array(new ArrayBuffer(analyser.fftSize));
+      // Les reglages relus du stockage n'ont encore rien insere, faute de
+      // graphe ou le faire : le contexte vient d'ouvrir.
+      reappliquerEffetsMaitre();
       log.info("Rack branche sur le fond de panier", { sampleRate: ctx.sampleRate });
     }
 
@@ -971,8 +979,41 @@ export default function AudioPluginRack({
     fxDelayPan: setFxDelayPan,
   };
 
+  /**
+   * Un reglage d'effet part au bus MAITRE, pas a ce rack.
+   *
+   * Depuis le 2026-08-29, la chaine d'effets est inseree une fois pour toutes
+   * sur le bus du fond de panier : tout ce qui joue dans l'atelier la traverse.
+   * Regler un delai ici le regle donc aussi pour Strudel et les outils
+   * d'echantillon, et il survit au changement de page comme au rechargement.
+   *
+   * L'etat local reste tenu a jour : il alimente l'affichage du rack et le
+   * RENDU HORS LIGNE, qui applique la chaine lui-meme faute de bus maitre.
+   */
+  /**
+   * Adopte les reglages d'effets partages a l'ouverture, et suit leurs
+   * changements venus d'ailleurs.
+   *
+   * Sans cela, le panneau afficherait les valeurs par defaut du rack pendant
+   * que le bus maitre en applique d'autres, reglees depuis Strudel. Deux
+   * verites concurrentes, dont une visible et fausse.
+   */
+  useEffect(() => {
+    return sAbonnerEffets((partages) => {
+      for (const cle of Object.keys(partages) as (keyof ParamsEffets)[]) {
+        const poser = SETTERS_EFFETS[cle] as (v: unknown) => void;
+        poser(partages[cle]);
+        (paramsRef.current as Record<string, unknown>)[cle] = partages[cle];
+      }
+    });
+    // SETTERS_EFFETS est reconstruit a chaque rendu mais ses fonctions sont
+    // les setters de useState, stables : l'abonnement n'a pas a se rejouer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const appliquerParamEffet = <N extends keyof ParamsEffets>(nom: N, valeur: ParamsEffets[N]) => {
     updateParam(nom, valeur, SETTERS_EFFETS[nom]);
+    reglerEffetsMaitre({ [nom]: valeur } as Partial<ParamsEffets>);
   };
   const SETTERS_ENVELOPPE: { [N in keyof ParamsEnveloppe]: (v: ParamsEnveloppe[N]) => void } = {
     envAttack: setEnvAttack,
@@ -1803,9 +1844,20 @@ export default function AudioPluginRack({
         construireCouches(ctx, p, freq, now, couchesEmpilees(p, couchesRef.current), analyseursPourCouches(ctx, couchesRef.current.length + 1));
 
       // Sortie vers le bus persistant, en passant par les effets globaux.
-      const effets = construireEffets(ctx, p, now);
-      env.connect(effets.entree);
-      effets.sortie.connect(masterBusRef.current!);
+      /**
+       * En direct, la voix va DROIT au bus du rack.
+       *
+       * Les effets ne sont plus appliques par voix : depuis le 2026-08-29 ils
+       * vivent sur le bus maitre du fond de panier, ou tout ce qui joue dans
+       * l'atelier les traverse — Strudel, les outils d'echantillon et les
+       * vingt moteurs. Les appliquer ICI en plus les ferait passer deux fois :
+       * deux delais empiles, une saturation au carre.
+       *
+       * Le rendu hors ligne, lui, les applique toujours (voir plus bas). Il
+       * n'a pas de bus maitre a traverser, et le fichier doit porter ce qu'on
+       * entend — c'est la promesse du rendu.
+       */
+      env.connect(masterBusRef.current!);
 
       if (voiceId) {
         // Note tenue : la voix reste au niveau de sustain jusqu'au

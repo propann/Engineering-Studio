@@ -383,18 +383,44 @@ describe("effets globaux", () => {
    * autrement que ce qu'on entend — et rien ne le signalerait, puisque les deux
    * chemins fonctionneraient parfaitement chacun de leur cote.
    */
-  it("s'applique au jeu", () => {
-    expect(SOURCE).toMatch(/construireEffets\(ctx, p, now\)/);
+  it("s'applique au jeu par le bus maitre, pas par voix", () => {
+    /**
+     * Les effets etaient appliques VOIX PAR VOIX dans ce composant. Depuis le
+     * 2026-08-29 ils vivent sur le bus maitre du fond de panier, ou tout ce
+     * qui joue dans l'atelier les traverse — Strudel et les outils compris.
+     *
+     * Les appliquer aussi ici les ferait passer DEUX fois : deux delais
+     * empiles, une saturation au carre. On verifie donc l'inverse de ce que ce
+     * test exigeait : la voix va droit au bus.
+     */
+    const MAITRE = readFileSync(
+      path.join(DIR, "..", "core", "audio", "effetsMaitre.ts"),
+      "utf-8",
+    );
+    expect(MAITRE, "le rack d'effets n'est plus insere sur le maitre").toContain(
+      "insererSurMaitre(entree, sortie)",
+    );
+    expect(SOURCE, "les effets sont encore appliques par voix").not.toMatch(
+      /construireEffets\(ctx, p, now\)/,
+    );
+    expect(SOURCE).toContain("env.connect(masterBusRef.current!)");
   });
 
   it("s'applique AUSSI au rendu hors ligne", () => {
+    /**
+     * Le rendu n'a pas de bus maitre a traverser : sans cette application, le
+     * fichier sonnerait sec la ou l'on entend un delai, et rien ne le dirait.
+     * Les deux chemins fonctionneraient parfaitement chacun de leur cote.
+     */
     expect(SOURCE).toMatch(/construireEffets\(offline, p, 0\)/);
   });
 
-  it("s'intercale entre la voix et la destination", () => {
+  it("s'intercale entre la voix et la destination, au rendu", () => {
     // Branche en derivation plutot qu'en serie, la chaine ne recevrait rien.
-    expect(SOURCE).toContain("env.connect(effets.entree)");
-    expect(SOURCE).toContain("effets.sortie.connect(masterBusRef.current!)");
+    expect(SOURCE).toContain("voix.env.connect(effets.entree)");
+    // Au rendu, la sortie de la chaine rejoint la destination du contexte
+    // jetable — il n'y a ni bus ni console dans un OfflineAudioContext.
+    expect(SOURCE).toContain("effets.sortie.connect(offline.destination)");
     expect(SOURCE).toContain("effets.sortie.connect(offline.destination)");
   });
 
