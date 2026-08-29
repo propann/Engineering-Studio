@@ -29,6 +29,7 @@ import {
   crete,
   cretes,
   frequenceDeNoteMidi,
+  normaliser,
   poserEchantillon,
   rendreSon,
   type RenduSon,
@@ -251,10 +252,13 @@ export default function AtelierSon() {
         setErreur("Le rendu hors ligne n'est pas disponible dans ce navigateur.");
         return;
       }
+      // La somme des couches peut depasser la butee : on divise plutot que de
+      // laisser l'encodage ecreter, ce qui deformerait l'onde.
+      const { signal, gain } = normaliser(r.somme);
       const octets =
         spec.format === "aiff"
-          ? encodeAiffPcm16(r.somme, spec.canaux, spec.frequence)
-          : encodeWavPcm16(r.somme, spec.canaux, spec.frequence);
+          ? encodeAiffPcm16(signal, spec.canaux, spec.frequence)
+          : encodeWavPcm16(signal, spec.canaux, spec.frequence);
       const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
         spec.format === "aiff" ? "aif" : "wav"
       }`;
@@ -266,6 +270,7 @@ export default function AtelierSon() {
       setErreur(null);
       setMessage(
         `${ecrit.nomFichier} — ${(octets.byteLength / 1024).toFixed(0)} ko, ${spec.libelle}` +
+          (gain < 1 ? ` · niveau réduit de ${(20 * Math.log10(gain)).toFixed(1)} dB pour éviter l'écrêtage` : "") +
           (spec.dossier ? ` · à poser dans ${spec.dossier}` : ""),
       );
     } catch (e) {
@@ -370,10 +375,11 @@ export default function AtelierSon() {
         try {
           const r = await rendreSon(s, duree, spec.frequence);
           if (!r) break;
+          const { signal } = normaliser(r.somme);
           const octets =
             spec.format === "aiff"
-              ? encodeAiffPcm16(r.somme, spec.canaux, spec.frequence)
-              : encodeWavPcm16(r.somme, spec.canaux, spec.frequence);
+              ? encodeAiffPcm16(signal, spec.canaux, spec.frequence)
+              : encodeWavPcm16(signal, spec.canaux, spec.frequence);
           const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
             spec.format === "aiff" ? "aif" : "wav"
           }`;

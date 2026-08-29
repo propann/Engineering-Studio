@@ -251,3 +251,41 @@ export function poserEchantillon(
   source.start(quand);
   return source;
 }
+
+/**
+ * Normalise un signal avant encodage.
+ *
+ * ## Pourquoi c'est nécessaire
+ *
+ * Le rendu additionne les couches sans réserve : rien ne garantit que la somme
+ * tienne entre −1 et 1. Constaté sur un export réel — un seul `mi_plaits` à
+ * gain 1 produisait 233 échantillons sur 88 200 collés à la butée négative,
+ * pour une crête positive à 30 921. Un écrêtage à 0,26 %, asymétrique, qui
+ * s'entend sur les transitoires.
+ *
+ * ## Pourquoi normaliser plutôt qu'écrêter
+ *
+ * L'encodage écrête déjà, c'est son travail : il ne peut pas écrire au-delà de
+ * la butée. Mais écrêter DÉFORME — l'onde perd sa forme là où elle dépassait.
+ * Diviser garde la forme et ne perd que du niveau, que la machine rattrape.
+ *
+ * ## La réserve
+ *
+ * On vise 0,99 et non 1. Un signal calé exactement à la butée sature au
+ * moindre rééchantillonnage — et l'EP-133 rééchantillonne, ses emplacements
+ * n'étant pas tous à la même fréquence.
+ */
+export function normaliser(
+  echantillons: Float32Array,
+  cible = 0.99,
+): { signal: Float32Array; gain: number } {
+  const pic = crete(echantillons);
+  // Un signal déjà sous la cible n'est PAS remonté : normaliser vers le haut
+  // amplifierait le souffle d'une couche volontairement discrète, et
+  // changerait l'équilibre qu'on vient de régler à l'oreille.
+  if (pic <= cible || pic === 0) return { signal: echantillons, gain: 1 };
+  const gain = cible / pic;
+  const signal = new Float32Array(echantillons.length);
+  for (let i = 0; i < echantillons.length; i += 1) signal[i] = echantillons[i] * gain;
+  return { signal, gain };
+}

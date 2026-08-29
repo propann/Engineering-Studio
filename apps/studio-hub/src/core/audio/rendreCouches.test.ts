@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crete, cretes, frequenceDeNoteMidi, rendreSon } from "./rendreCouches";
+import { crete, cretes, frequenceDeNoteMidi, normaliser, rendreSon } from "./rendreCouches";
 import { ajouterCouche, nouveauSon } from "./couches";
 
 /**
@@ -79,5 +79,54 @@ describe("sans contexte hors ligne", () => {
      */
     const son = ajouterCouche(nouveauSon("x"), "mi_plaits");
     return expect(rendreSon(son, 1, 44100, null)).resolves.toBeNull();
+  });
+});
+
+describe("normaliser avant l'encodage", () => {
+  it("ramene un signal qui deborde sous la butee", () => {
+    /**
+     * Constate sur un export reel : un seul mi_plaits produisait 233
+     * echantillons sur 88 200 colles a la butee negative. L'encodage ecrete
+     * — c'est son travail — mais ecreter DEFORME l'onde.
+     */
+    const s = Float32Array.from([1.4, -1.8, 0.3]);
+    const { signal, gain } = normaliser(s);
+    expect(gain).toBeLessThan(1);
+    for (const v of signal) expect(Math.abs(v)).toBeLessThanOrEqual(0.99 + 1e-6);
+  });
+
+  it("garde la FORME, ne fait que baisser le niveau", () => {
+    // Ecreter aplatirait les cretes ; diviser preserve les rapports.
+    const s = Float32Array.from([1.5, 0.75, -0.375]);
+    const { signal } = normaliser(s);
+    expect(signal[1] / signal[0]).toBeCloseTo(0.5, 6);
+    expect(signal[2] / signal[0]).toBeCloseTo(-0.25, 6);
+  });
+
+  it("laisse intact un signal deja sous la cible", () => {
+    /**
+     * On ne remonte PAS : amplifier vers la butee ferait ressortir le souffle
+     * d'une couche volontairement discrete, et changerait l'equilibre qu'on
+     * vient de regler a l'oreille.
+     */
+    const s = Float32Array.from([0.2, -0.4]);
+    const { signal, gain } = normaliser(s);
+    expect(gain).toBe(1);
+    expect(signal).toBe(s);
+  });
+
+  it("laisse une reserve : la cible n'est pas 1", () => {
+    // Un signal cale exactement a la butee sature au moindre
+    // reechantillonnage — et l'EP-133 reechantillonne.
+    const { signal } = normaliser(Float32Array.from([2]));
+    expect(signal[0]).toBeCloseTo(0.99, 6);
+    expect(signal[0]).toBeLessThan(1);
+  });
+
+  it("un signal silencieux ne provoque pas de division par zero", () => {
+    const s = new Float32Array(10);
+    const { signal, gain } = normaliser(s);
+    expect(gain).toBe(1);
+    expect([...signal].every((v) => v === 0)).toBe(true);
   });
 });
