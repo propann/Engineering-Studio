@@ -37,6 +37,8 @@ import {
 } from "../core/audio/rendreCouches";
 import { ecrireFichier, moyenDisponible } from "../core/strudel/projets";
 import { encodeAiffPcm16, encodeWavPcm16 } from "@studio-hub/audio-formats";
+import { encodeOp1PatchAiff } from "@studio-hub/audio-formats";
+import { metadonneesOp1 } from "../core/audio/patchOp1";
 import { dureeAdmise, SPECS_CIBLES, type CibleMachine } from "@studio-hub/audio-formats";
 import { reappliquerEffetsMaitre } from "../core/audio/effetsMaitre";
 import { espaceDeTravail, rangerEchantillon, rangerSon } from "../core/audio/rangerSon";
@@ -361,10 +363,39 @@ export default function AtelierSon() {
       // La somme des couches peut depasser la butee : on divise plutot que de
       // laisser l'encodage ecreter, ce qui deformerait l'onde.
       const { signal, gain } = normaliser(r.somme);
-      const octets =
+      let octets =
         spec.format === "aiff"
           ? encodeAiffPcm16(signal, spec.canaux, spec.frequence)
           : encodeWavPcm16(signal, spec.canaux, spec.frequence);
+
+      /**
+       * L'OP-1 attend ses metadonnees DANS l'AIFF.
+       *
+       * La reference materielle du depot le dit : « Patches `.aif` avec
+       * metadonnees JSON encodees dans le chunk standard AIFF `APPL` tag
+       * `OP-1` ». Un fichier JSON pose a cote — ce que faisait le createur de
+       * patch — n'est lu par personne : la machine n'ouvre que l'AIFF.
+       *
+       * Sans ce chunk, l'OP-1 charge quand meme le son, mais comme un
+       * echantillon anonyme : pas de nom de patch, pas de frequence de
+       * reference, donc une transposition calee sur un do arbitraire.
+       */
+      if (cible === "op1_synth" || cible === "op1_drum") {
+        try {
+          octets = encodeOp1PatchAiff(
+            octets,
+            cible === "op1_drum" ? "drum" : "synth",
+            metadonneesOp1(s, cible === "op1_drum" ? "drum" : "synth"),
+          );
+        } catch (e) {
+          // Le chunk est un PLUS : un refus de validation ne doit pas priver
+          // du son. On exporte l'AIFF nu et on le dit.
+          setMessage(
+            `Métadonnées OP-1 non écrites (${e instanceof Error ? e.message : String(e)}) — le son reste exportable.`,
+          );
+        }
+      }
+
       const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
         spec.format === "aiff" ? "aif" : "wav"
       }`;
