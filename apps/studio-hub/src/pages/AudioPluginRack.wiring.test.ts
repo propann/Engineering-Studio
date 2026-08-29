@@ -23,6 +23,15 @@ const SOURCE = readFileSync(path.join(DIR, "AudioPluginRack.tsx"), "utf-8");
 const EFFETS = readFileSync(path.join(DIR, "..", "core", "audio", "effets.ts"), "utf-8");
 const ENVELOPPE = readFileSync(path.join(DIR, "..", "core", "audio", "enveloppe.ts"), "utf-8");
 const LFO = readFileSync(path.join(DIR, "..", "core", "audio", "lfo.ts"), "utf-8");
+/**
+ * Les moteurs 16 a 20, sortis du composant le 2026-08-29.
+ *
+ * Meme raison que pour effets.ts, enveloppe.ts et lfo.ts : le code qui LIT les
+ * parametres a demenage, et un test qui ne lirait que AudioPluginRack.tsx
+ * declarerait inertes vingt-trois reglages parfaitement cables. C'est la
+ * troisieme fois que ce test suit une extraction ; il est concu pour.
+ */
+const MOTEURS = readFileSync(path.join(DIR, "..", "core", "audio", "moteurs.ts"), "utf-8");
 
 /**
  * Corps de construireVoix : la fonction qui fabrique reellement le son.
@@ -150,7 +159,7 @@ describe("cablage des parametres", () => {
     // exempter en bloc aurait desarme le garde-fou pour douze parametres ;
     // etendre ce qu'il lit le garde entier — un parametre lu nulle part
     // echoue toujours.
-    const corps = moteurSansAffichage() + EFFETS + ENVELOPPE + LFO;
+    const corps = moteurSansAffichage() + EFFETS + ENVELOPPE + LFO + MOTEURS;
     // Les gains d'egaliseur ne se lisent plus `p.fxEqLow` mais `p[bande.reglage]`,
     // la bande venant de `BANDES_EQ`. Le nom du parametre reste ecrit une fois
     // et une seule — dans la table — donc il reste cherchable ; l'accepter la

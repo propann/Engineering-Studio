@@ -98,6 +98,10 @@ export function creerContexteFactice(sampleRate = 48000): ContexteFactice {
     createOscillator: () =>
       noeud("osc", { type: "sine", frequency: creerParamFactice(440), detune: creerParamFactice(0), start: () => {}, stop: () => {} }),
     createWaveShaper: () => noeud("waveshaper", { curve: null, oversample: "none" }),
+    // Ajoute le 2026-08-29 avec les moteurs 16 a 20 : la boite a rythmes et le
+    // claquement de contact de l'orgue lisent tous deux un tampon de bruit.
+    createBufferSource: () =>
+      noeud("bufferSource", { buffer: null, playbackRate: creerParamFactice(1), loop: false, start: () => {}, stop: () => {} }),
     createStereoPanner: () => noeud("panner", { pan: creerParamFactice(0) }),
     createPeriodicWave: (real: Float32Array, imag: Float32Array) => ({ __kind: "wave", real, imag }),
   };

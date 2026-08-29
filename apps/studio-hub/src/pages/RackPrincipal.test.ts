@@ -267,7 +267,20 @@ describe("ce que la fusion ne devait pas casser", () => {
     // Elle annoncait « Moog 24dB Ladder » et « Karplus-Strong » — mot pour mot
     // le catalogue d'un composant supprime en aout.
     const moteurs = [...TYPES.slice(TYPES.indexOf("EnginePluginType ="), TYPES.indexOf(";", TYPES.indexOf("EnginePluginType ="))).matchAll(/"(\w+)"/g)].map((m) => m[1]);
-    expect(moteurs).toHaveLength(15);
+    /**
+     * Vingt depuis le 2026-08-29, et non plus quinze.
+     *
+     * Les cinq derniers — drum_machine, vocoder_dsp, string_machine,
+     * organ_drawbars, phase_distortion — etaient decrits depuis longtemps par
+     * `apps/op1-studio/app/lib/soundEnginesData.ts` et annonces par toute la
+     * documentation, mais n'existaient nulle part en synthese. Leur DSP vit
+     * dans `core/audio/moteurs.ts`, et `moteurs.test.ts` verifie que chacun
+     * relie bien ses sources a sa sortie.
+     *
+     * Ce nombre est verrouille a dessein : c'est ce qui a rendu visible
+     * l'ecart entre les deux catalogues.
+     */
+    expect(moteurs).toHaveLength(20);
     const i = RACK.indexOf('id: "labo"');
     const carte = RACK.slice(i, RACK.indexOf("\n  },", i));
     for (const disparu of ["Moog", "Ladder", "Karplus"]) {

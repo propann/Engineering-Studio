@@ -24,7 +24,16 @@ export type EnginePluginType =
   | "amy_engine"
   | "pl_synth"
   | "open303"
-  | "faust_dsp";
+  | "faust_dsp"
+  // Rack B, moteurs 16 a 20. Ajoutes le 2026-08-29 : ils etaient decrits
+  // dans apps/op1-studio/app/lib/soundEnginesData.ts et annonces par toute la
+  // documentation, mais n'existaient nulle part en synthese. Voir
+  // core/audio/moteurs.ts.
+  | "drum_machine"
+  | "vocoder_dsp"
+  | "string_machine"
+  | "organ_drawbars"
+  | "phase_distortion";
 
 // ============================================================================
 // PATCH & PRESET MANAGEMENT
@@ -343,4 +352,9 @@ export const AUDIO_ENGINES: Record<EnginePluginType, string> = {
   pl_synth: "PL Synth (Chiptune)",
   open303: "Open303 (Acid)",
   faust_dsp: "Faust DSP",
+  drum_machine: "Boîte à Rythmes",
+  vocoder_dsp: "Vocodeur Spectral",
+  string_machine: "String Machine",
+  organ_drawbars: "Orgue à Tirettes",
+  phase_distortion: "Phase Distortion",
 };

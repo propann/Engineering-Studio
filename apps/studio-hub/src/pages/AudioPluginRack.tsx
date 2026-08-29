@@ -64,24 +64,24 @@ import {
   libelleLatence,
 } from "@studio-hub/core/audio/latence";
 
-type EnginePluginType =
-  // MUTABLE INSTRUMENTS EURORACK SUITE
-  | "mi_plaits"
-  | "mi_braids"
-  | "mi_rings"
-  | "mi_clouds"
-  | "mi_elements"
-  // TOP 10 GIT OPEN SOURCE ENGINES
-  | "dexed_fm"
-  | "surge_xt"
-  | "zynaddsubfx"
-  | "helm"
-  | "fluidsynth"
-  | "amsynth"
-  | "amy_engine"
-  | "pl_synth"
-  | "open303"
-  | "faust_dsp";
+/**
+ * Le rack declarait sa PROPRE copie de EnginePluginType, identique a celle de
+ * core/types/audio.ts. Les deux ont diverge le 2026-08-29, quand les moteurs
+ * 16 a 20 ont ete ajoutes a l'une et pas a l'autre : le typecheck a alors
+ * refuse d'assigner un identifiant de l'une a une variable de l'autre.
+ *
+ * On importe desormais la seule definition qui fait autorite. Meme raison que
+ * pour PatchPreset, decrit juste en dessous.
+ */
+import type { EnginePluginType } from "@studio-hub/core/types/audio";
+import {
+  construireDrumMachine,
+  construireOrganDrawbars,
+  construirePhaseDistortion,
+  construireStringMachine,
+  construireVocodeur,
+  organDrawbarsLisible,
+} from "@studio-hub/core/audio/moteurs";
 
 /**
  * Le rack declarait son propre PatchPreset, sous-ensemble strict de celui de
@@ -203,6 +203,43 @@ const FACTORY_PATCHES: Record<EnginePluginType, PatchPreset[]> = {
     { id: "fa4", name: "Low-Pass DSP Sub Drive", engine: "faust_dsp", category: "Bass", params: { faustFreqMod: 20, faustFilter: 1100, faustGain: 60, faustFeedback: 20, faustDrive: 40 } },
     { id: "fa5", name: "Feedback Distortion Swarm", engine: "faust_dsp", category: "FX", params: { faustFreqMod: 85, faustFilter: 2800, faustGain: 85, faustFeedback: 95, faustDrive: 80 } },
   ],
+
+  // ─── MOTEURS 16 A 20 ────────────────────────────────────────────────────
+  drum_machine: [
+    { id: "dm1", name: "808 Deep Kick", engine: "drum_machine", category: "Drum", params: { drumVoice: "kick", drumTone: 30, drumDecay: 70, drumNoise: 5, drumDrive: 15 } },
+    { id: "dm2", name: "909 Punch Kick", engine: "drum_machine", category: "Drum", params: { drumVoice: "kick", drumTone: 70, drumDecay: 30, drumNoise: 20, drumDrive: 55 } },
+    { id: "dm3", name: "Snare Crack", engine: "drum_machine", category: "Drum", params: { drumVoice: "snare", drumTone: 60, drumDecay: 25, drumNoise: 80, drumDrive: 35 } },
+    { id: "dm4", name: "Closed Hat Tight", engine: "drum_machine", category: "Drum", params: { drumVoice: "hat", drumTone: 75, drumDecay: 12, drumNoise: 100, drumDrive: 0 } },
+    { id: "dm5", name: "Analog Tom Fall", engine: "drum_machine", category: "Drum", params: { drumVoice: "tom", drumTone: 45, drumDecay: 55, drumNoise: 10, drumDrive: 10 } },
+  ],
+  vocoder_dsp: [
+    { id: "vc1", name: "Robot Voice A", engine: "vocoder_dsp", category: "FX", params: { vocBands: 10, vocFormant: "a", vocCarrier: "sawtooth", vocBrightness: 60, vocResonance: 55 } },
+    { id: "vc2", name: "Choir Vowel E", engine: "vocoder_dsp", category: "Pad", params: { vocBands: 14, vocFormant: "e", vocCarrier: "square", vocBrightness: 75, vocResonance: 70 } },
+    { id: "vc3", name: "Nasal Lead I", engine: "vocoder_dsp", category: "Lead", params: { vocBands: 8, vocFormant: "i", vocCarrier: "sawtooth", vocBrightness: 90, vocResonance: 80 } },
+    { id: "vc4", name: "Dark Vowel O", engine: "vocoder_dsp", category: "Bass", params: { vocBands: 6, vocFormant: "o", vocCarrier: "triangle", vocBrightness: 25, vocResonance: 45 } },
+    { id: "vc5", name: "Hollow U Drone", engine: "vocoder_dsp", category: "Ambient", params: { vocBands: 12, vocFormant: "u", vocCarrier: "sawtooth", vocBrightness: 35, vocResonance: 90 } },
+  ],
+  string_machine: [
+    { id: "sm1", name: "Solina Ensemble", engine: "string_machine", category: "Pad", params: { strVoices: 5, strDetune: 14, strEnsemble: 75, strTone: 4200, strAttack: 35 } },
+    { id: "sm2", name: "Wide Cinematic Strings", engine: "string_machine", category: "Pad", params: { strVoices: 9, strDetune: 28, strEnsemble: 95, strTone: 6000, strAttack: 70 } },
+    { id: "sm3", name: "Tight Chamber", engine: "string_machine", category: "Pad", params: { strVoices: 3, strDetune: 6, strEnsemble: 40, strTone: 3200, strAttack: 15 } },
+    { id: "sm4", name: "Dark Cello Bed", engine: "string_machine", category: "Ambient", params: { strVoices: 6, strDetune: 18, strEnsemble: 60, strTone: 1400, strAttack: 85 } },
+    { id: "sm5", name: "Bright Violin Swell", engine: "string_machine", category: "Lead", params: { strVoices: 7, strDetune: 22, strEnsemble: 85, strTone: 9000, strAttack: 55 } },
+  ],
+  organ_drawbars: [
+    { id: "og1", name: "Jazz 888000000", engine: "organ_drawbars", category: "Keys", params: { orgDrawbars: "888000000", orgPercussion: 40, orgLeslie: 5, orgKeyClick: 25 } },
+    { id: "og2", name: "Full Gospel 888888888", engine: "organ_drawbars", category: "Keys", params: { orgDrawbars: "888888888", orgPercussion: 20, orgLeslie: 7, orgKeyClick: 40 } },
+    { id: "og3", name: "Smith Bars 888800000", engine: "organ_drawbars", category: "Keys", params: { orgDrawbars: "888800000", orgPercussion: 80, orgLeslie: 6, orgKeyClick: 50 } },
+    { id: "og4", name: "Soft Flute 008000000", engine: "organ_drawbars", category: "Ambient", params: { orgDrawbars: "008000000", orgPercussion: 0, orgLeslie: 2, orgKeyClick: 0 } },
+    { id: "og5", name: "Rock Screamer 868868868", engine: "organ_drawbars", category: "Lead", params: { orgDrawbars: "868868868", orgPercussion: 60, orgLeslie: 8, orgKeyClick: 70 } },
+  ],
+  phase_distortion: [
+    { id: "pd1", name: "CZ Saw Lead", engine: "phase_distortion", category: "Lead", params: { pdAmount: 65, pdShape: "saw", pdResonance: 5, pdBits: 8 } },
+    { id: "pd2", name: "CZ Square Bass", engine: "phase_distortion", category: "Bass", params: { pdAmount: 80, pdShape: "square", pdResonance: 4, pdBits: 8 } },
+    { id: "pd3", name: "Resonant Sweep", engine: "phase_distortion", category: "FX", params: { pdAmount: 90, pdShape: "resonant", pdResonance: 9, pdBits: 12 } },
+    { id: "pd4", name: "Pulse Width Pluck", engine: "phase_distortion", category: "Pluck", params: { pdAmount: 55, pdShape: "pulse", pdResonance: 3, pdBits: 16 } },
+    { id: "pd5", name: "8-Bit Digital Grit", engine: "phase_distortion", category: "Chiptune", params: { pdAmount: 75, pdShape: "saw", pdResonance: 6, pdBits: 4 } },
+  ],
 };
 
 // PIANO KEYS CONFIGURATION FOR VIRTUAL KEYBOARD
@@ -246,7 +283,7 @@ export default function AudioPluginRack({
   const [activeEngine, setActiveEngine] = useState<EnginePluginType>("mi_plaits");
   const [selectedPatchId, setSelectedPatchId] = useState<string>("pl1");
   const [selectedRackTab, setSelectedRackTab] = useState<"rackA" | "rackB" | "all">("rackA");
-  // Filtre de la liste de patches. 91 patches d'usine repartis sur 15 moteurs,
+  // Filtre de la liste de patches. 101 patches d'usine repartis sur 20 moteurs,
   // qu'on ne pouvait jusqu'ici que faire defiler.
   //
   // Un rendu du rack par frappe : acceptable ici, contrairement aux valeurs
@@ -498,6 +535,44 @@ export default function AudioPluginRack({
   const [faustFeedback, setFaustFeedback] = useState<number>(50);
   const [faustDrive, setFaustDrive] = useState<number>(65);
 
+  // ─── MOTEURS 16 A 20 ─────────────────────────────────────────────────────
+  // Leur synthese vit dans core/audio/moteurs.ts, hors du composant, pour
+  // etre testable : les quinze premiers sont une chaine de `else if` de huit
+  // cents lignes qu'aucun test ne peut atteindre.
+
+  // BOITE A RYTHMES
+  const [drumVoice, setDrumVoice] = useState<"kick" | "snare" | "hat" | "tom" | "clap">("kick");
+  const [drumTone, setDrumTone] = useState<number>(50);
+  const [drumDecay, setDrumDecay] = useState<number>(45);
+  const [drumNoise, setDrumNoise] = useState<number>(25);
+  const [drumDrive, setDrumDrive] = useState<number>(20);
+
+  // VOCODEUR SPECTRAL
+  const [vocBands, setVocBands] = useState<number>(10);
+  const [vocFormant, setVocFormant] = useState<"a" | "e" | "i" | "o" | "u">("a");
+  const [vocCarrier, setVocCarrier] = useState<OscillatorType>("sawtooth");
+  const [vocBrightness, setVocBrightness] = useState<number>(60);
+  const [vocResonance, setVocResonance] = useState<number>(55);
+
+  // STRING MACHINE
+  const [strVoices, setStrVoices] = useState<number>(5);
+  const [strDetune, setStrDetune] = useState<number>(14);
+  const [strEnsemble, setStrEnsemble] = useState<number>(70);
+  const [strTone, setStrTone] = useState<number>(4200);
+  const [strAttack, setStrAttack] = useState<number>(35);
+
+  // ORGUE A TIRETTES — notation d'organiste : neuf chiffres de 0 a 8.
+  const [orgDrawbars, setOrgDrawbars] = useState<string>("888000000");
+  const [orgPercussion, setOrgPercussion] = useState<number>(40);
+  const [orgLeslie, setOrgLeslie] = useState<number>(5);
+  const [orgKeyClick, setOrgKeyClick] = useState<number>(25);
+
+  // PHASE DISTORTION
+  const [pdAmount, setPdAmount] = useState<number>(65);
+  const [pdShape, setPdShape] = useState<"saw" | "square" | "pulse" | "resonant">("saw");
+  const [pdResonance, setPdResonance] = useState<number>(5);
+  const [pdBits, setPdBits] = useState<number>(8);
+
   // MUTABLE PLAITS PARAMS
   const [plaitsEngine, setPlaitsEngine] = useState<"V_ANALOG" | "FM" | "WAVETABLE" | "GRAIN" | "SPEECH" | "CHORD">("V_ANALOG");
   const [plaitsHarmonics, setPlaitsHarmonics] = useState<number>(60);
@@ -561,6 +636,11 @@ export default function AudioPluginRack({
     plBitcrush, plSampleRateDiv, plArpSpeed, plDutyCycle, plGlitch,
     acidCutoff, acidResonance, acidAccent, acidTuning, acidEnvMod, acidDecay, acidWave,
     faustFreqMod, faustFilter, faustGain, faustFeedback, faustDrive,
+    drumVoice, drumTone, drumDecay, drumNoise, drumDrive,
+    vocBands, vocFormant, vocCarrier, vocBrightness, vocResonance,
+    strVoices, strDetune, strEnsemble, strTone, strAttack,
+    orgDrawbars, orgPercussion, orgLeslie, orgKeyClick,
+    pdAmount, pdShape, pdResonance, pdBits,
   });
 
   // KEEP REF SYNCED WITH STATE
@@ -590,6 +670,11 @@ export default function AudioPluginRack({
       plBitcrush, plSampleRateDiv, plArpSpeed, plDutyCycle, plGlitch,
       acidCutoff, acidResonance, acidAccent, acidTuning, acidEnvMod, acidDecay, acidWave,
       faustFreqMod, faustFilter, faustGain, faustFeedback, faustDrive,
+    drumVoice, drumTone, drumDecay, drumNoise, drumDrive,
+    vocBands, vocFormant, vocCarrier, vocBrightness, vocResonance,
+    strVoices, strDetune, strEnsemble, strTone, strAttack,
+    orgDrawbars, orgPercussion, orgLeslie, orgKeyClick,
+    pdAmount, pdShape, pdResonance, pdBits,
     };
   });
 
@@ -1978,6 +2063,39 @@ export default function AudioPluginRack({
       showToast(
         `🎛️ FAUST fold ${p.faustDrive}% · fb ${p.faustFeedback}% : ${detunedFreq.toFixed(1)} Hz`
       );
+
+    /* ─── MOTEURS 16 A 20 ──────────────────────────────────────────────────
+     *
+     * Ils sont construits ailleurs, dans core/audio/moteurs.ts, et chaque
+     * branche tient donc en trois lignes. C'est deliberе : les quinze
+     * au-dessus forment une chaine de huit cents lignes qu'aucun test ne peut
+     * atteindre, et le depot a deja tire cette lecon en sortant les briques
+     * partagees dans core/audio/dsp.ts.
+     *
+     * Le contrat est le meme pour tous : la fonction rend son noeud de sortie,
+     * ne connecte rien a une destination, et signale par `holdUntil` jusqu'a
+     * quand elle reste audible.
+     */
+    } else if (p.activeEngine === "drum_machine") {
+      const aide = { trk, noteStop, holdUntil };
+      construireDrumMachine(ctx, p, detunedFreq, now, aide).connect(masterGain);
+      showToast(`🥁 BOÎTE À RYTHMES ${p.drumVoice.toUpperCase()} : ${detunedFreq.toFixed(1)} Hz`);
+    } else if (p.activeEngine === "vocoder_dsp") {
+      const aide = { trk, noteStop, holdUntil };
+      construireVocodeur(ctx, p, detunedFreq, now, aide).connect(masterGain);
+      showToast(`🗣️ VOCODEUR « ${p.vocFormant} » · ${p.vocBands} bandes : ${detunedFreq.toFixed(1)} Hz`);
+    } else if (p.activeEngine === "string_machine") {
+      const aide = { trk, noteStop, holdUntil };
+      construireStringMachine(ctx, p, detunedFreq, now, aide).connect(masterGain);
+      showToast(`🎻 STRING MACHINE ${p.strVoices} voix : ${detunedFreq.toFixed(1)} Hz`);
+    } else if (p.activeEngine === "organ_drawbars") {
+      const aide = { trk, noteStop, holdUntil };
+      construireOrganDrawbars(ctx, p, detunedFreq, now, aide).connect(masterGain);
+      showToast(`🎹 ORGUE ${p.orgDrawbars} : ${detunedFreq.toFixed(1)} Hz`);
+    } else if (p.activeEngine === "phase_distortion") {
+      const aide = { trk, noteStop, holdUntil };
+      construirePhaseDistortion(ctx, p, detunedFreq, now, aide).connect(masterGain);
+      showToast(`🌀 PHASE DISTORTION ${p.pdShape} ${p.pdAmount}% : ${detunedFreq.toFixed(1)} Hz`);
     }
 
     return { env, sources, naturalEnd, audibleEnd, ATTACK, DECAY, SUSTAIN, RELEASE };
@@ -2807,8 +2925,21 @@ export default function AudioPluginRack({
     showToast(`📦 EXPORTÉ (${format.toUpperCase()}) : ${p.activeEngine.toUpperCase()}`);
   };
 
+  /**
+   * Les vingt moteurs, dans la meme repartition qu'op1-studio.
+   *
+   * Le Hub decoupait autrement — rack A « melodies », rack B « rythmiques » —
+   * avec 8 et 7 moteurs. Or `apps/op1-studio/app/lib/soundEnginesData.ts`
+   * porte deja une repartition en deux racks de dix, et c'est celle que toute
+   * la documentation annonce. Deux decoupes concurrentes auraient fait un
+   * troisieme desaccord a maintenir, apres celui du nombre de moteurs et
+   * celui du type EnginePluginType.
+   *
+   * L'ordre suit donc les `slot` d'op1-studio : un moteur est au meme rang
+   * dans les deux applications.
+   */
   const ALL_ENGINES: { id: EnginePluginType; name: string; subtitle: string; category: string; color: string; rackSlot: "A" | "B" }[] = [
-    // RACK A : MÉLODIES, LEADS, HARMONIQUES & EURORACK (8 MOTEURS)
+    // RACK A — EURORACK, FM, WAVETABLE, ADDITIF, ACID (10 MOTEURS)
     { id: "mi_plaits", name: "MUTABLE PLAITS", subtitle: "16-Engine Macro Oscillator", category: "MUTABLE", color: "green", rackSlot: "A" },
     { id: "mi_braids", name: "MUTABLE BRAIDS", subtitle: "33-Model Macro Synth", category: "MUTABLE", color: "yellow", rackSlot: "A" },
     { id: "mi_rings", name: "MUTABLE RINGS", subtitle: "Resonator & Physical Modeling", category: "MUTABLE", color: "purple", rackSlot: "A" },
@@ -2816,16 +2947,33 @@ export default function AudioPluginRack({
     { id: "mi_elements", name: "MUTABLE ELEMENTS", subtitle: "Modal Physical Modeling", category: "MUTABLE", color: "pink", rackSlot: "A" },
     { id: "dexed_fm", name: "DEXED / DX7 FM", subtitle: "6-Op FM Synthesis Engine", category: "OPEN SOURCE", color: "green", rackSlot: "A" },
     { id: "surge_xt", name: "SURGE XT", subtitle: "Hybrid Wavetable Synth", category: "OPEN SOURCE", color: "yellow", rackSlot: "A" },
-    { id: "fluidsynth", name: "FLUIDSYNTH SF2", subtitle: "SoundFont Sample Player", category: "OPEN SOURCE", color: "pink", rackSlot: "A" },
-    // RACK B : RYTHMIQUES, BASSES, ACID 303 & EXPERIMENTAL DSP (7 MOTEURS)
-    { id: "open303", name: "OPEN303 ACID", subtitle: "Roland TB-303 Acid Emulation", category: "OPEN SOURCE", color: "pink", rackSlot: "B" },
+    { id: "zynaddsubfx", name: "ZYNADDSUBFX", subtitle: "Additive & Pad Engine", category: "OPEN SOURCE", color: "purple", rackSlot: "A" },
+    { id: "helm", name: "HELM SYNTH", subtitle: "Polyphonic Modulation Engine", category: "OPEN SOURCE", color: "blue", rackSlot: "A" },
+    { id: "open303", name: "OPEN303 ACID", subtitle: "Roland TB-303 Acid Emulation", category: "OPEN SOURCE", color: "pink", rackSlot: "A" },
+    // RACK B — ANALOGIQUE, CHIPTUNE, ECHANTILLONS, DSP, RYTHME & CLAVIERS (10 MOTEURS)
     { id: "amsynth", name: "AMSYNTH", subtitle: "Dual VCO Analog Synth", category: "OPEN SOURCE", color: "yellow", rackSlot: "B" },
-    { id: "zynaddsubfx", name: "ZYNADDSUBFX", subtitle: "Additive & Pad Engine", category: "OPEN SOURCE", color: "purple", rackSlot: "B" },
-    { id: "helm", name: "HELM SYNTH", subtitle: "Polyphonic Modulation Engine", category: "OPEN SOURCE", color: "blue", rackSlot: "B" },
     { id: "amy_engine", name: "AMY C/JS", subtitle: "Fixed-Point Audio Synthesizer", category: "OPEN SOURCE", color: "green", rackSlot: "B" },
     { id: "pl_synth", name: "PL_SYNTH", subtitle: "8-Bit Chiptune Tracker Engine", category: "OPEN SOURCE", color: "blue", rackSlot: "B" },
+    { id: "fluidsynth", name: "FLUIDSYNTH SF2", subtitle: "SoundFont Sample Player", category: "OPEN SOURCE", color: "pink", rackSlot: "B" },
     { id: "faust_dsp", name: "FAUST DSP NODE", subtitle: "Compiled DSP WebAudio Engine", category: "OPEN SOURCE", color: "purple", rackSlot: "B" },
+    // Moteurs 16 a 20 : synthese dans core/audio/moteurs.ts.
+    { id: "drum_machine", name: "DBOX DRUMS", subtitle: "Analog Drum Machine", category: "RYTHME", color: "yellow", rackSlot: "B" },
+    { id: "vocoder_dsp", name: "SPECTRAL VOCODER", subtitle: "Formant Filter Bank", category: "OPEN SOURCE", color: "green", rackSlot: "B" },
+    { id: "string_machine", name: "SOLINA STRINGS", subtitle: "Vintage String Ensemble", category: "OPEN SOURCE", color: "blue", rackSlot: "B" },
+    { id: "organ_drawbars", name: "B3 DRAWBARS", subtitle: "Tonewheel Drawbar Organ", category: "CLAVIERS", color: "purple", rackSlot: "B" },
+    { id: "phase_distortion", name: "CZ PHASE DIST", subtitle: "Casio Phase Distortion", category: "OPEN SOURCE", color: "pink", rackSlot: "B" },
   ];
+
+  /**
+   * Les effectifs sont DERIVES du catalogue, jamais ecrits a la main.
+   *
+   * Les onglets annonçaient « RACK A (8) » et « RACK B (7) » en dur. Ces deux
+   * nombres sont restes justes jusqu'au jour ou le catalogue a change, puis
+   * ont menti en silence — c'est la meme dérive qui a laisse cinq moteurs
+   * annonces partout et implementes nulle part.
+   */
+  const effectifA = ALL_ENGINES.filter((e) => e.rackSlot === "A").length;
+  const effectifB = ALL_ENGINES.filter((e) => e.rackSlot === "B").length;
 
   return (
     <AppShell activePage="outils" profileName={profileName} hideTopBar={enTiroir} className={`audio-plugin-rack-page ${enTiroir ? "en-tiroir" : ""}`}>
@@ -2845,7 +2993,7 @@ export default function AudioPluginRack({
         <aside className="rack-left-sidebar">
           <div className="sidebar-header">
             <h3>🎛️ DUAL RACK SYNTHÈSE</h3>
-            <small>15 Moteurs Eurorack & Open Source</small>
+            <small>{ALL_ENGINES.length} Moteurs Eurorack &amp; Open Source</small>
             <div style={{ display: "flex", gap: "4px", marginTop: "8px" }}>
               <button
                 type="button"
@@ -2862,7 +3010,7 @@ export default function AudioPluginRack({
                   cursor: "pointer",
                 }}
               >
-                RACK A (8)
+                RACK A ({effectifA})
               </button>
               <button
                 type="button"
@@ -2879,7 +3027,7 @@ export default function AudioPluginRack({
                   cursor: "pointer",
                 }}
               >
-                RACK B (7)
+                RACK B ({effectifB})
               </button>
               <button
                 type="button"
@@ -4116,6 +4264,257 @@ export default function AudioPluginRack({
                       max={100}
                       value={faustDrive}
                       onChange={(e) => updateParam("faustDrive", Number(e.target.value), setFaustDrive)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* ─── MOTEURS 16 A 20 ─────────────────────────────────────── */}
+
+              {/* BOITE A RYTHMES */}
+              {activeEngine === "drum_machine" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">VOIX :
+                    <select
+                      value={drumVoice}
+                      onChange={(e) => updateParam("drumVoice", e.target.value, setDrumVoice as (v: string) => void)}
+                    >
+                      <option value="kick">Grosse caisse</option>
+                      <option value="snare">Caisse claire</option>
+                      <option value="hat">Charleston</option>
+                      <option value="tom">Tom</option>
+                      <option value="clap">Clap</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">HAUTEUR DE CHUTE: {drumTone}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={drumTone}
+                      onChange={(e) => updateParam("drumTone", Number(e.target.value), setDrumTone)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DECROISSANCE: {drumDecay}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={drumDecay}
+                      onChange={(e) => updateParam("drumDecay", Number(e.target.value), setDrumDecay)}
+                    />
+                  </label>
+                  <label className="ctrl-group">BRUIT: {drumNoise}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={drumNoise}
+                      onChange={(e) => updateParam("drumNoise", Number(e.target.value), setDrumNoise)}
+                    />
+                  </label>
+                  <label className="ctrl-group">SATURATION: {drumDrive}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={drumDrive}
+                      onChange={(e) => updateParam("drumDrive", Number(e.target.value), setDrumDrive)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* VOCODEUR SPECTRAL */}
+              {activeEngine === "vocoder_dsp" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">VOYELLE :
+                    <select
+                      value={vocFormant}
+                      onChange={(e) => updateParam("vocFormant", e.target.value, setVocFormant as (v: string) => void)}
+                    >
+                      <option value="a">A — ouverte</option>
+                      <option value="e">E — mi-fermee</option>
+                      <option value="i">I — fermee</option>
+                      <option value="o">O — arrondie</option>
+                      <option value="u">U — sourde</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">PORTEUSE :
+                    <select
+                      value={vocCarrier}
+                      onChange={(e) => updateParam("vocCarrier", e.target.value, setVocCarrier as (v: string) => void)}
+                    >
+                      <option value="sawtooth">Dent de scie</option>
+                      <option value="square">Carree</option>
+                      <option value="triangle">Triangle</option>
+                      <option value="sine">Sinus</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">BANDES: {vocBands}
+                    <input
+                      type="range"
+                      min={3}
+                      max={16}
+                      value={vocBands}
+                      onChange={(e) => updateParam("vocBands", Number(e.target.value), setVocBands)}
+                    />
+                  </label>
+                  <label className="ctrl-group">BRILLANCE: {vocBrightness}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={vocBrightness}
+                      onChange={(e) => updateParam("vocBrightness", Number(e.target.value), setVocBrightness)}
+                    />
+                  </label>
+                  <label className="ctrl-group">RESONANCE: {vocResonance}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={vocResonance}
+                      onChange={(e) => updateParam("vocResonance", Number(e.target.value), setVocResonance)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* STRING MACHINE */}
+              {activeEngine === "string_machine" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">VOIX EMPILEES: {strVoices}
+                    <input
+                      type="range"
+                      min={1}
+                      max={9}
+                      value={strVoices}
+                      onChange={(e) => updateParam("strVoices", Number(e.target.value), setStrVoices)}
+                    />
+                  </label>
+                  <label className="ctrl-group">DESACCORD: {strDetune} cents
+                    <input
+                      type="range"
+                      min={0}
+                      max={50}
+                      value={strDetune}
+                      onChange={(e) => updateParam("strDetune", Number(e.target.value), setStrDetune)}
+                    />
+                  </label>
+                  <label className="ctrl-group">ENSEMBLE: {strEnsemble}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={strEnsemble}
+                      onChange={(e) => updateParam("strEnsemble", Number(e.target.value), setStrEnsemble)}
+                    />
+                  </label>
+                  <label className="ctrl-group">COUPURE: {strTone} Hz
+                    <input
+                      type="range"
+                      min={200}
+                      max={12000}
+                      value={strTone}
+                      onChange={(e) => updateParam("strTone", Number(e.target.value), setStrTone)}
+                    />
+                  </label>
+                  <label className="ctrl-group">ATTAQUE: {strAttack}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={strAttack}
+                      onChange={(e) => updateParam("strAttack", Number(e.target.value), setStrAttack)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* ORGUE A TIRETTES */}
+              {activeEngine === "organ_drawbars" && (
+                <div className="controls-grid">
+                  {/* Notation d'organiste : neuf chiffres de 0 a 8, un par
+                      tirette. « 888000000 » est le son de base. */}
+                  <label className="ctrl-group">TIRETTES (9 chiffres 0-8) : {organDrawbarsLisible(orgDrawbars)}
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={9}
+                      value={orgDrawbars}
+                      onChange={(e) => updateParam("orgDrawbars", e.target.value.replace(/[^0-8]/g, ""), setOrgDrawbars)}
+                    />
+                  </label>
+                  <label className="ctrl-group">PERCUSSION: {orgPercussion}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={orgPercussion}
+                      onChange={(e) => updateParam("orgPercussion", Number(e.target.value), setOrgPercussion)}
+                    />
+                  </label>
+                  <label className="ctrl-group">LESLIE: {orgLeslie} Hz
+                    <input
+                      type="range"
+                      min={0}
+                      max={8}
+                      value={orgLeslie}
+                      onChange={(e) => updateParam("orgLeslie", Number(e.target.value), setOrgLeslie)}
+                    />
+                  </label>
+                  <label className="ctrl-group">CLIC DE CONTACT: {orgKeyClick}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={orgKeyClick}
+                      onChange={(e) => updateParam("orgKeyClick", Number(e.target.value), setOrgKeyClick)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* PHASE DISTORTION */}
+              {activeEngine === "phase_distortion" && (
+                <div className="controls-grid">
+                  <label className="ctrl-group">FORME VISEE :
+                    <select
+                      value={pdShape}
+                      onChange={(e) => updateParam("pdShape", e.target.value, setPdShape as (v: string) => void)}
+                    >
+                      <option value="saw">Dent de scie</option>
+                      <option value="square">Carree</option>
+                      <option value="pulse">Impulsion</option>
+                      <option value="resonant">Resonante</option>
+                    </select>
+                  </label>
+                  <label className="ctrl-group">DEFORMATION: {pdAmount}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={pdAmount}
+                      onChange={(e) => updateParam("pdAmount", Number(e.target.value), setPdAmount)}
+                    />
+                  </label>
+                  <label className="ctrl-group">CYCLES (mode resonant): {pdResonance}
+                    <input
+                      type="range"
+                      min={1}
+                      max={16}
+                      value={pdResonance}
+                      onChange={(e) => updateParam("pdResonance", Number(e.target.value), setPdResonance)}
+                    />
+                  </label>
+                  <label className="ctrl-group">RESOLUTION: {pdBits} bits
+                    <input
+                      type="range"
+                      min={4}
+                      max={16}
+                      value={pdBits}
+                      onChange={(e) => updateParam("pdBits", Number(e.target.value), setPdBits)}
                     />
                   </label>
                 </div>

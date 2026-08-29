@@ -60,7 +60,7 @@
 | Rack | Domain | Location |
 |---|---|---|
 | **MIDI Sync** | Note generation, 30 musical scales, arpeggiator, transport clock | `packages/musique/`, `MidiSyncPanel` |
-| **Audio Engines** | 15 DSP synthesis engines, 76 factory patches, offline sample export | `pages/AudioPluginRack.tsx`, `EnginePixelHardwareCard.tsx` |
+| **Audio Engines** | 20 DSP synthesis engines (2 racks of 10), 101 factory patches, offline sample export | `pages/AudioPluginRack.tsx`, `EnginePixelHardwareCard.tsx` |
 | **DSP Effects** | Overdrive, 3-band parametric EQ, chorus/flanger modulation, multi-tap delay | `core/audio/effets.ts`, `racks/RackEffets.tsx` |
 
 ---
