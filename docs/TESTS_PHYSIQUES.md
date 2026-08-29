@@ -503,6 +503,88 @@ l'état d'hier, restaurer vers une copie de l'état actuel.
 - [ ] **Salon de Chat & Chargement de Patch** :
   - Depuis le salon de discussion, cliquer sur « Appliquer ce patch » dans un message : le synthétiseur bascule immédiatement sur le moteur et les réglages partagés.
 
+
+### L'atelier de son — ce que l'automatisation ne peut pas voir
+
+> Ajouté le 2026-08-29. Chacun de ces points a été construit et vérifié **au
+> niveau du code** — nœuds audio créés, fichiers écrits, graphes reliés — mais
+> l'automatisation s'arrête là où commence un dialogue système, une oreille ou
+> une machine branchée. Ce qui suit est exactement ce qui reste.
+
+**Le sélecteur de fichier, sur `localhost`**
+- [ ] « ENREGISTRER » ouvre bien le sélecteur système et écrit où on lui dit
+- [ ] réenregistrer réécrit le MÊME fichier sans redemander où
+- [ ] fermer le sélecteur ne laisse ni erreur ni message trompeur
+
+> Vérifié en repli seulement : sur l'IP réseau, le contexte n'étant pas
+> sécurisé, l'atelier télécharge — et deux fichiers réels ont bien atterri sur
+> le disque, `basse-test.aif` (176 454 o) et `basse-test.son.json`. C'est la
+> branche AVEC sélecteur qui reste à essayer.
+
+**Le rangement automatique, espace de travail connecté**
+- [ ] l'indicateur perd sa mention « (manuel) » une fois l'espace branché
+- [ ] « ENREGISTRER » n'ouvre plus AUCUN dialogue : le son part directement
+      dans `shared/sounds/prepared/<famille>/`
+- [ ] le fichier est bien là, au bon dossier de famille
+- [ ] « EXPORTER » range dans `shared/sounds/packs/<famille>/`, pas dans
+      `prepared/` — un livrable et un son de travail ne se mélangent pas
+
+**La bibliothèque rouvre un son de l'atelier**
+- [ ] le son enregistré apparaît dans la Bibliothèque sonore, badge 🎛️ Atelier
+- [ ] son bouton dit « Ouvrir dans l'atelier », pas « Écouter »
+- [ ] le clic ramène dans l'atelier avec **toutes ses couches, leurs couleurs
+      et ses balises**
+- [ ] revenir ensuite à l'atelier le trouve VIERGE — le dépôt se vide à la
+      prise, sinon on écraserait le travail en cours
+- [ ] réenregistrer le même son met à jour son entrée, il n'en apparaît pas
+      une seconde
+
+**Est-ce que ça sonne juste**
+
+C'est le trou le plus large : je vérifie que les nœuds sont construits et
+reliés, jamais que le résultat est musical. Un `mi_clouds` mal réglé passe tous
+les contrôles automatiques.
+
+- [ ] chacun des 20 moteurs a un timbre RECONNAISSABLE et distinct des autres
+- [ ] les 5 derniers — Dbox Drums, Vocodeur, Solina, B3, CZ Phase Dist — ne
+      sonnent pas comme un vague deux-oscillateurs générique
+- [ ] un échantillon importé, transposé de +12, sonne une octave au-dessus et
+      DEUX FOIS PLUS COURT — c'est le comportement d'un échantillonneur
+- [ ] superposer trois couches ne sature pas ; le message annonce la réduction
+      de niveau quand il y en a une
+- [ ] l'onde dessinée ressemble à ce qu'on entend
+
+**Le son fabriqué arrive dans la machine**
+- [ ] un `.aif` exporté depuis l'atelier se charge dans `synth/user/` de l'OP-1
+      et **sonne comme dans l'atelier**
+- [ ] un `.wav` exporté en EP-133 LO se charge sur un emplacement LO et sonne
+      juste — la fréquence de 26,25 kHz est celle du rendu, pas un
+      rééchantillonnage après coup
+- [ ] la création automatique d'une famille remplit bien un jeu utilisable
+
+**Le rack d'effets s'applique partout**
+- [ ] un délai réglé dans le rack DSP s'entend AUSSI sur un motif Strudel
+- [ ] et sur une pré-écoute de la bibliothèque
+- [ ] le réglage survit au changement de page et au rechargement
+- [ ] l'oscilloscope du rack montre le son APRÈS effets, pas avant
+
+**Un seul contexte audio**
+- [ ] jouer dans le rack DSP puis lancer Strudel sans recharger : les deux
+      s'entendent EN MÊME TEMPS, mélangés
+- [ ] visiter les six pages audio d'affilée ne finit pas en silence
+      — c'était le cas avant, à la septième ouverture de contexte
+
+**L'OP-1 branchée ne sonne pas deux fois**
+- [ ] en mode MIDI, une touche du panneau machine fait sonner **la machine
+      seule** — pas la machine ET son imitation logicielle désaccordée
+- [ ] sans machine, la synthèse locale prend le relais
+
+**Strudel joue les moteurs du rack**
+- [ ] `note("c2 eb2 g2").sound("open303")` fait entendre la TB-303 du rack
+- [ ] la carte de réglages de l'onglet MOTEURS change le son des notes
+      suivantes
+- [ ] `.cutoff(900)` écrit dans le code l'emporte sur le curseur
+
 ---
 
 ## Ce qu'on sait déjà, et qui évite de chercher au mauvais endroit
