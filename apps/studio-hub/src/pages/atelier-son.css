@@ -316,3 +316,47 @@
   .atelier-son .as-corps { grid-template-columns: minmax(0, 1fr); }
   .atelier-son .as-reglages { border-left: 0; border-top: 3px solid var(--as-trait); }
 }
+
+/* --- Glisser-deposer ------------------------------------------------------ */
+
+/* Le retour visuel du depot. Une bordure interieure plutot qu'un fond : le fond
+   masquerait l'onde et la pile, c'est-a-dire ce sur quoi on vise. */
+.atelier-son .as-plan--survol {
+  box-shadow: inset 0 0 0 3px var(--as-vert);
+}
+
+/* --- Carte d'echantillon -------------------------------------------------- */
+
+.atelier-son .as-carte-sample {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  background: var(--as-relief);
+  border: 1px solid var(--as-trait);
+}
+
+.atelier-son .as-carte-sample .as-titre {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+.atelier-son .as-accord {
+  display: grid;
+  gap: 4px;
+}
+
+.atelier-son .as-accord span {
+  display: flex;
+  justify-content: space-between;
+  color: var(--as-doux);
+  font: 700 9px ui-monospace, monospace;
+  letter-spacing: 0.08em;
+}
+
+.atelier-son .as-accord b { color: var(--as-texte); }
+
+.atelier-son .as-accord input[type="range"] {
+  width: 100%;
+  accent-color: var(--as-vert);
+}

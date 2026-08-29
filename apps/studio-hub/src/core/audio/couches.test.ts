@@ -4,6 +4,9 @@ import {
   PALETTE_COUCHES,
   VERSION_SON,
   ajouterCouche,
+  ajouterEchantillon,
+  decoderEchantillons,
+  encoderEchantillons,
   analyserSon,
   cheminDe,
   couchesAudibles,
@@ -279,5 +282,88 @@ describe("on ne perd pas un son", () => {
     expect("erreur" in r).toBe(false);
     if ("erreur" in r) return;
     expect(r.son.note).toBe(127);
+  });
+});
+
+describe("les echantillons voyagent dans le fichier", () => {
+  it("un aller-retour preserve le signal", () => {
+    /**
+     * L'invariant qui compte : un son enregistre puis rouvert doit sonner
+     * pareil. Une erreur d'un demi-bit ici ne se verrait nulle part ailleurs.
+     */
+    const source = new Float32Array(2048);
+    for (let i = 0; i < source.length; i += 1) {
+      source[i] = Math.sin((i / 48) * Math.PI * 2) * 0.8;
+    }
+    const relu = decoderEchantillons(encoderEchantillons(source));
+    expect(relu.length).toBe(source.length);
+    for (let i = 0; i < source.length; i += 1) {
+      // 16 bits donnent un pas de 1/32768 : on tolere un pas.
+      expect(Math.abs(relu[i] - source[i])).toBeLessThan(1 / 32000);
+    }
+  });
+
+  it("les crêtes ne debordent pas", () => {
+    /**
+     * Le complement a deux est asymetrique : -32768 a +32767. Multiplier par
+     * 32768 dans les deux sens ferait deborder les cretes positives d'un pas,
+     * ce qui claque sur un son sature.
+     */
+    const relu = decoderEchantillons(encoderEchantillons(Float32Array.from([1, -1, 0.999, -0.999])));
+    expect(relu[0]).toBeCloseTo(1, 5);
+    expect(relu[1]).toBeCloseTo(-1, 5);
+    for (const v of relu) expect(Math.abs(v)).toBeLessThanOrEqual(1);
+  });
+
+  it("les valeurs hors bornes sont ecretees, pas repliees", () => {
+    // Une valeur a 1,5 repliee donnerait -0,5 : une inversion de phase
+    // audible la ou l'on attend une saturation.
+    const relu = decoderEchantillons(encoderEchantillons(Float32Array.from([1.5, -2])));
+    expect(relu[0]).toBeCloseTo(1, 5);
+    expect(relu[1]).toBeCloseTo(-1, 5);
+  });
+
+  it("un long echantillon ne fait pas deborder la pile", () => {
+    // `String.fromCharCode(...tableau)` leve au-dela de quelques dizaines de
+    // milliers d'arguments ; deux secondes de son en font cent quatre-vingt mille.
+    const long = new Float32Array(44100 * 2);
+    expect(() => encoderEchantillons(long)).not.toThrow();
+    expect(decoderEchantillons(encoderEchantillons(long)).length).toBe(long.length);
+  });
+
+  it("une donnee abimee rend un tableau vide, pas une exception", () => {
+    for (const brut of ["", "pas du base64 !!", "AAA"]) {
+      expect(() => decoderEchantillons(brut)).not.toThrow();
+    }
+  });
+
+  it("une couche d'echantillon survit a l'aller-retour", () => {
+    const donnees = encoderEchantillons(Float32Array.from([0.5, -0.5, 0.25]));
+    let son = nouveauSon("avec sample", fige);
+    son = ajouterEchantillon(son, { fichier: "kick-808.wav", donnees, taux: 48000, accord: -2 }, fige);
+    const lu = analyserSon(serialiserSon(son));
+    expect("erreur" in lu).toBe(false);
+    if ("erreur" in lu) return;
+    const c = lu.son.couches[0];
+    expect(c.type).toBe("echantillon");
+    expect(c.nom).toBe("kick-808");
+    expect(c.echantillon?.taux).toBe(48000);
+    expect(c.echantillon?.accord).toBe(-2);
+    expect(decoderEchantillons(c.echantillon!.donnees).length).toBe(3);
+  });
+
+  it("un accord absurde est borne", () => {
+    const r = analyserSon('{"version":1,"couches":[{"type":"echantillon","echantillon":{"donnees":"AAA=","accord":900}}]}');
+    expect("erreur" in r).toBe(false);
+    if ("erreur" in r) return;
+    expect(r.son.couches[0].echantillon?.accord).toBe(24);
+  });
+
+  it("une couche d'echantillon sans donnees est ecartee", () => {
+    // Une ligne muette dans la pile que personne ne saurait expliquer.
+    const r = analyserSon('{"version":1,"couches":[{"type":"echantillon"},{"moteur":"helm"}]}');
+    expect("erreur" in r).toBe(false);
+    if ("erreur" in r) return;
+    expect(r.son.couches.map((c) => c.type)).toEqual(["moteur"]);
   });
 });

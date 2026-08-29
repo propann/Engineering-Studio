@@ -49,11 +49,43 @@ export const PALETTE_COUCHES: ReadonlyArray<string> = [
   "#f0e05f", // jaune
 ];
 
+/**
+ * Un échantillon posé dans une couche.
+ *
+ * Les données sont DANS le son, pas référencées : un fichier qui pointe vers
+ * `~/samples/kick.wav` cesse de fonctionner dès qu'on l'envoie à quelqu'un ou
+ * qu'on range le dossier. Un son fabriqué ici doit rester entier.
+ *
+ * Le prix est la taille : deux secondes de mono en 16 bits font 176 ko, un
+ * tiers de plus une fois en base64. C'est acceptable pour un son, ça ne le
+ * serait pas pour un morceau — et l'atelier fabrique des sons.
+ */
+export type Echantillon = {
+  /** Nom du fichier d'origine, pour s'y retrouver. */
+  fichier: string;
+  /** PCM 16 bits mono, encodé en base64. */
+  donnees: string;
+  /** Fréquence d'échantillonnage d'origine. */
+  taux: number;
+  /** Transposition en demi-tons, pour accorder l'échantillon aux moteurs. */
+  accord: number;
+};
+
 export type Couche = {
   id: string;
-  /** Le moteur joué par cette couche. */
+  /**
+   * Ce que joue la couche : un moteur du rack, ou un échantillon.
+   *
+   * Le champ existe pour que la lecture soit explicite. Se fier à la présence
+   * de `echantillon` marcherait, mais un `type` se lit dans une liste, se
+   * filtre, et se sérialise sans ambiguïté.
+   */
+  type: "moteur" | "echantillon";
+  /** Le moteur joué. Vide pour une couche d'échantillon. */
   moteur: string;
-  /** Nom affiché. Par défaut celui du moteur, modifiable. */
+  /** L'échantillon joué. Absent pour une couche de moteur. */
+  echantillon?: Echantillon;
+  /** Nom affiché. Par défaut celui du moteur ou du fichier, modifiable. */
   nom: string;
   couleur: string;
   /** Réglages propres à cette couche. */
@@ -124,10 +156,39 @@ export function ajouterCouche(
 ): SonFabrique {
   const couche: Couche = {
     id: identifiant(),
+    type: "moteur",
     moteur,
     nom: nomDe(moteur),
     couleur: prochaineCouleur(son.couches),
     params,
+    gain: 1,
+    muette: false,
+  };
+  return { ...son, couches: [...son.couches, couche], modifieLe: maintenant() };
+}
+
+/**
+ * Ajoute une couche d'échantillon.
+ *
+ * Elle porte les mêmes attributs qu'une couche de moteur — couleur, gain,
+ * muet, rang — pour que la pile reste homogène. Ce qui change est ce qui
+ * sonne, pas la façon dont on la manipule.
+ */
+export function ajouterEchantillon(
+  son: SonFabrique,
+  echantillon: Echantillon,
+  maintenant: () => string = () => new Date().toISOString(),
+): SonFabrique {
+  const couche: Couche = {
+    id: identifiant(),
+    type: "echantillon",
+    moteur: "",
+    echantillon,
+    // Le nom du fichier sans son extension : « kick-808.wav » devient
+    // « kick-808 », qui tient dans la liste.
+    nom: echantillon.fichier.replace(/\.[a-z0-9]+$/i, "") || "échantillon",
+    couleur: prochaineCouleur(son.couches),
+    params: {},
     gain: 1,
     muette: false,
   };
@@ -308,11 +369,52 @@ export function analyserSon(contenu: string): { son: SonFabrique } | { erreur: s
   const couches: Couche[] = [];
   for (const brut of s.couches) {
     const c = brut as Partial<Couche>;
-    if (typeof c?.moteur !== "string" || !c.moteur) continue;
+
+    /**
+     * Deux formes valides, et une seule cohérence à vérifier.
+     *
+     * Une couche de moteur doit nommer son moteur ; une couche d'échantillon
+     * doit porter ses données. Une couche qui ne fait ni l'un ni l'autre est
+     * écartée — c'est du bruit dans le fichier, et l'admettre donnerait une
+     * ligne muette dans la pile que personne ne saurait expliquer.
+     *
+     * Le champ `type` peut manquer : les premiers sons enregistrés par
+     * l'atelier n'en avaient pas. On le déduit alors de ce qui est présent.
+     */
+    const ech = c.echantillon;
+    const estEchantillon =
+      c.type === "echantillon" ||
+      (!c.type && !!ech && typeof ech.donnees === "string");
+    if (estEchantillon) {
+      if (!ech || typeof ech.donnees !== "string" || !ech.donnees) continue;
+    } else if (typeof c?.moteur !== "string" || !c.moteur) {
+      continue;
+    }
+
     couches.push({
       id: typeof c.id === "string" && c.id ? c.id : identifiant(),
-      moteur: c.moteur,
-      nom: typeof c.nom === "string" && c.nom ? c.nom : nomDe(c.moteur),
+      type: estEchantillon ? "echantillon" : "moteur",
+      moteur: estEchantillon ? "" : (c.moteur as string),
+      echantillon: estEchantillon
+        ? {
+            fichier: typeof ech!.fichier === "string" ? ech!.fichier : "échantillon",
+            donnees: ech!.donnees,
+            taux:
+              typeof ech!.taux === "number" && ech!.taux > 0 ? ech!.taux : 44100,
+            // Un accord absurde rendrait l'échantillon inaudible : deux
+            // octaves de part et d'autre suffisent largement.
+            accord:
+              typeof ech!.accord === "number" && Number.isFinite(ech!.accord)
+                ? Math.min(24, Math.max(-24, ech!.accord))
+                : 0,
+          }
+        : undefined,
+      nom:
+        typeof c.nom === "string" && c.nom
+          ? c.nom
+          : estEchantillon
+            ? (ech!.fichier ?? "échantillon")
+            : nomDe(c.moteur as string),
       // Une couleur hors palette est acceptée — on ne va pas refuser un son
       // parce que quelqu'un a mis du bleu roi — mais une couleur absente est
       // recalculée pour que la liste reste lisible.
@@ -338,4 +440,61 @@ export function analyserSon(contenu: string): { son: SonFabrique } | { erreur: s
       modifieLe: typeof s.modifieLe === "string" ? s.modifieLe : t,
     },
   };
+}
+
+/* ======================================================================== *
+ * ENCODAGE DES ECHANTILLONS
+ *
+ * Un son fabriqué ici doit rester entier : les données audio sont DANS le
+ * fichier, pas référencées. Deux conversions, l'une inverse de l'autre, et
+ * c'est le seul endroit du dépôt où une erreur d'un demi-bit se traduirait
+ * par un son déformé au rechargement.
+ * ======================================================================== */
+
+/**
+ * Convertit des échantillons flottants en PCM 16 bits, encodé en base64.
+ *
+ * Le seuil est asymétrique — −32768 à +32767 — parce que le complément à deux
+ * l'est. Multiplier par 32768 dans les deux sens ferait déborder les crêtes
+ * positives d'un pas, ce qui s'entend comme un claquement sur un son saturé.
+ */
+export function encoderEchantillons(source: Float32Array): string {
+  const pcm = new Int16Array(source.length);
+  for (let i = 0; i < source.length; i += 1) {
+    const v = Math.max(-1, Math.min(1, source[i]));
+    pcm[i] = v < 0 ? Math.round(v * 32768) : Math.round(v * 32767);
+  }
+  const octets = new Uint8Array(pcm.buffer);
+  // Par tranches : `String.fromCharCode(...tableau)` dépasse la taille de pile
+  // au-delà de quelques dizaines de milliers d'arguments, et deux secondes de
+  // son en font cent quatre-vingt mille.
+  let binaire = "";
+  const TRANCHE = 0x8000;
+  for (let i = 0; i < octets.length; i += TRANCHE) {
+    binaire += String.fromCharCode(...octets.subarray(i, i + TRANCHE));
+  }
+  return typeof btoa === "function" ? btoa(binaire) : "";
+}
+
+/**
+ * L'inverse. Rend un tableau vide plutôt que de lever sur une donnée abîmée :
+ * une couche muette se remarque et se corrige, une page blanche non.
+ */
+export function decoderEchantillons(base64: string): Float32Array {
+  try {
+    if (typeof atob !== "function" || !base64) return new Float32Array(0);
+    const binaire = atob(base64);
+    const octets = new Uint8Array(binaire.length);
+    for (let i = 0; i < binaire.length; i += 1) octets[i] = binaire.charCodeAt(i);
+    // Un nombre impair d'octets ne fait pas un entier 16 bits : on tronque
+    // plutôt que de laisser `Int16Array` lever sur un tampon mal aligné.
+    const pcm = new Int16Array(octets.buffer, 0, Math.floor(octets.length / 2));
+    const sortie = new Float32Array(pcm.length);
+    for (let i = 0; i < pcm.length; i += 1) {
+      sortie[i] = pcm[i] < 0 ? pcm[i] / 32768 : pcm[i] / 32767;
+    }
+    return sortie;
+  } catch {
+    return new Float32Array(0);
+  }
 }

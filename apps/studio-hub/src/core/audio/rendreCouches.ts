@@ -22,7 +22,13 @@
  */
 
 import { construireMoteur } from "./moteurs";
-import { couchesAudibles, paramsDeCouche, type Couche, type SonFabrique } from "./couches";
+import {
+  couchesAudibles,
+  decoderEchantillons,
+  paramsDeCouche,
+  type Couche,
+  type SonFabrique,
+} from "./couches";
 
 /** Le rendu d'une couche : ses échantillons et sa couleur. */
 export type CoucheRendue = {
@@ -123,6 +129,12 @@ async function rendreUne(
   sortie.gain.value = couche.gain;
   sortie.connect(offline.destination);
 
+  if (couche.type === "echantillon") {
+    poserEchantillon(offline, couche, sortie, 0);
+    const renduEch = await offline.startRendering();
+    return renduEch.getChannelData(0);
+  }
+
   const sources: AudioScheduledSourceNode[] = [];
   construireMoteur(
     offline,
@@ -200,4 +212,42 @@ export function crete(echantillons: Float32Array): number {
     if (v > m) m = v;
   }
   return m;
+}
+
+/**
+ * Pose un échantillon dans le graphe, accordé.
+ *
+ * `playbackRate` transpose ET change la durée — c'est le comportement d'un
+ * échantillonneur, et c'est celui qu'on veut : monter d'une octave doit
+ * raccourcir le son, sinon on entend un étirement, pas une note.
+ *
+ * Le tampon est créé au taux D'ORIGINE de l'échantillon ; le navigateur
+ * rééchantillonne. Le créer au taux du contexte le lirait trop vite ou trop
+ * lentement selon la machine — un son juste sur un ordinateur et faux sur un
+ * autre, ce qu'on ne diagnostique pas.
+ *
+ * Exportée pour que l'écoute en direct et le rendu hors ligne partagent
+ * exactement ce code : deux copies désaccordées seraient invisibles à la
+ * lecture et évidentes à l'oreille.
+ */
+export function poserEchantillon(
+  ctx: BaseAudioContext,
+  couche: Couche,
+  sortie: AudioNode,
+  quand: number,
+): AudioBufferSourceNode | null {
+  const ech = couche.echantillon;
+  if (!ech) return null;
+  const donnees = decoderEchantillons(ech.donnees);
+  if (donnees.length === 0) return null;
+
+  const tampon = ctx.createBuffer(1, donnees.length, ech.taux || 44100);
+  tampon.getChannelData(0).set(donnees);
+
+  const source = ctx.createBufferSource();
+  source.buffer = tampon;
+  source.playbackRate.value = Math.pow(2, (ech.accord || 0) / 12);
+  source.connect(sortie);
+  source.start(quand);
+  return source;
 }

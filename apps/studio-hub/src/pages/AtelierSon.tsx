@@ -8,6 +8,7 @@ import { CATALOGUE } from "../core/audio/catalogueParams";
 import { construireMoteur } from "../core/audio/moteurs";
 import {
   ajouterCouche,
+  ajouterEchantillon,
   analyserSon,
   cheminDe,
   couchesAudibles,
@@ -18,6 +19,7 @@ import {
   nouveauSon,
   paramsDeCouche,
   retirerCouche,
+  encoderEchantillons,
   serialiserSon,
   type Couche,
   type SonFabrique,
@@ -26,6 +28,7 @@ import {
   crete,
   cretes,
   frequenceDeNoteMidi,
+  poserEchantillon,
   rendreSon,
   type RenduSon,
 } from "../core/audio/rendreCouches";
@@ -73,6 +76,7 @@ export default function AtelierSon() {
 
   const prise = useRef<Prise | null>(null);
   const entree = useRef<HTMLInputElement | null>(null);
+  const audio = useRef<HTMLInputElement | null>(null);
   const sonVif = useRef(son);
   sonVif.current = son;
 
@@ -137,6 +141,14 @@ export default function AtelierSon() {
         sortie.gain.exponentialRampToValueAtTime(couche.gain, now + 0.005);
         sortie.gain.exponentialRampToValueAtTime(0.0001, now + 2);
         sortie.connect(prise.current.entree);
+
+        // Un echantillon se pose, il ne se construit pas : meme code que le
+        // rendu hors ligne, pour que l'ecoute et l'onde soient d'accord.
+        if (couche.type === "echantillon") {
+          poserEchantillon(ctx, couche, sortie, now);
+          continue;
+        }
+
         construireMoteur(
           ctx,
           paramsDeCouche(couche),
@@ -222,11 +234,75 @@ export default function AtelierSon() {
     setMessage(`« ${lu.son.nom} » ouvert.`);
   }, []);
 
+  /**
+   * Charge un fichier audio et en fait une couche.
+   *
+   * `decodeAudioData` accepte tout ce que le navigateur sait lire — WAV, AIFF,
+   * MP3, FLAC selon les cas — ce qui evite d'ecrire un decodeur par format.
+   * On ne garde que le premier canal : l'atelier fabrique des sons mono, et
+   * c'est ce que les deux machines attendent.
+   */
+  const chargerAudio = useCallback(async (fichier: File) => {
+    try {
+      const ctx = contexte();
+      const tampon = await ctx.decodeAudioData(await fichier.arrayBuffer());
+      const brut = tampon.getChannelData(0);
+      // Deux secondes suffisent pour une couche : au-dela on fabrique un
+      // morceau, pas un son, et le fichier enregistre deviendrait enorme.
+      const max = Math.floor(tampon.sampleRate * 2);
+      const coupe = brut.length > max ? brut.slice(0, max) : brut;
+      setSon((s) =>
+        ajouterEchantillon(s, {
+          fichier: fichier.name,
+          donnees: encoderEchantillons(coupe),
+          taux: tampon.sampleRate,
+          accord: 0,
+        }),
+      );
+      setErreur(null);
+      setMessage(
+        brut.length > max
+          ? `« ${fichier.name} » ajouté, coupé à 2 secondes.`
+          : `« ${fichier.name} » ajouté.`,
+      );
+    } catch (e) {
+      setErreur(
+        `« ${fichier.name} » n'a pas pu être lu : ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }, []);
+
+  /**
+   * Le glisser-deposer accepte les deux : un son de l'atelier, ou un fichier
+   * audio a superposer. On tranche sur l'extension plutot que sur le type MIME,
+   * que les navigateurs remplissent mal pour les fichiers AIFF.
+   */
+  const [survol, setSurvol] = useState(false);
+  const surDepot = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      setSurvol(false);
+      for (const fichier of Array.from(e.dataTransfer.files)) {
+        if (/\.json$/i.test(fichier.name)) await ouvrir(fichier);
+        else await chargerAudio(fichier);
+      }
+    },
+    [chargerAudio, ouvrir],
+  );
+
   const moyen = useMemo(() => moyenDisponible(), []);
 
   return (
     <AppShell activePage="atelier-son" profileName={profileName} className="atelier-son">
-      <div className="as-plan">
+      <div
+        className={`as-plan${survol ? " as-plan--survol" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setSurvol(true);
+        }}
+        onDragLeave={() => setSurvol(false)}
+        onDrop={(e) => void surDepot(e)}
+      >
         {/* ── L'onde, en haut ── */}
         <section className="as-onde" aria-label="Onde du son">
           <Onde rendu={rendu} calcule={calcule} />
@@ -296,8 +372,24 @@ export default function AtelierSon() {
                 ))}
               </select>
               <button type="button" className="as-bouton" onClick={() => ajouter(moteurAAjouter)}>
-                + AJOUTER
+                + MOTEUR
               </button>
+              <button type="button" className="as-bouton" onClick={() => audio.current?.click()}>
+                + SAMPLE
+              </button>
+              <input
+                ref={audio}
+                type="file"
+                accept="audio/*,.wav,.aif,.aiff,.mp3,.flac"
+                multiple
+                className="as-fichier-cache"
+                onChange={(e) => {
+                  const fichiers = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  for (const f of fichiers) void chargerAudio(f);
+                }}
+                aria-label="Ajouter un échantillon"
+              />
             </div>
 
             {son.couches.length === 0 ? (
@@ -326,7 +418,44 @@ export default function AtelierSon() {
 
           {/* ── Les réglages de la couche choisie ── */}
           <section className="as-reglages" aria-label="Réglages de la couche">
-            {couchesSelectionnee ? (
+            {couchesSelectionnee?.type === "echantillon" ? (
+              <div className="as-carte-sample">
+                <h3 className="as-titre">
+                  <b className="as-pastille" style={{ background: couchesSelectionnee.couleur }} />
+                  {couchesSelectionnee.nom}
+                </h3>
+                <p className="as-vide">
+                  Échantillon · {couchesSelectionnee.echantillon?.taux ?? 0} Hz ·{" "}
+                  {couchesSelectionnee.echantillon?.fichier}
+                </p>
+                {/* L'accord est le seul reglage d'un echantillon : il n'a pas de
+                    moteur a piloter. Transposer change AUSSI la duree, comme sur
+                    tout echantillonneur — monter d'une octave raccourcit le son. */}
+                <label className="as-accord">
+                  <span>
+                    ACCORD
+                    <b>{couchesSelectionnee.echantillon?.accord ?? 0} demi-tons</b>
+                  </span>
+                  <input
+                    type="range"
+                    min={-24}
+                    max={24}
+                    value={couchesSelectionnee.echantillon?.accord ?? 0}
+                    onChange={(e) =>
+                      setSon((s) =>
+                        modifierCouche(s, couchesSelectionnee.id, {
+                          echantillon: {
+                            ...couchesSelectionnee.echantillon!,
+                            accord: Number(e.target.value),
+                          },
+                        }),
+                      )
+                    }
+                    aria-label="Accord de l'échantillon"
+                  />
+                </label>
+              </div>
+            ) : couchesSelectionnee ? (
               <CarteMoteur
                 moteur={couchesSelectionnee.moteur}
                 valeurs={paramsDeCouche(couchesSelectionnee) as unknown as Record<string, unknown>}
