@@ -71,6 +71,8 @@ import {
 import { EditeurStrudel, type PoigneeEditeur } from "../components/EditeurStrudel";
 import { OscilloscopePixel } from "../components/OscilloscopePixel";
 import { AppShell } from "../ui";
+import { chargerSamplesBibliotheque, type SampleLibraryResult } from "../core/audio/bibliotheque";
+import { hasStoredPermission, loadDirectoryHandle, WORKSPACE_HANDLE_KEY } from "../core/storage/directoryHandleStore";
 import "./strudel-rack.css";
 
 /**
@@ -98,10 +100,10 @@ import "./strudel-rack.css";
  * rack » : jusqu'ici la page utilisait le bon contexte mais court-circuitait la
  * console, et son volume était le seul du Hub à ne pas répondre.
  *
- * **Aucun échantillon distant.** Les synthés intégrés seulement. `sons.ts`
- * relève dans la source de superdough ce qui existe hors ligne, et le rack
- * prévient quand un motif appelle un son qui n'arrivera pas — au lieu de
- * laisser un silence inexpliqué.
+ * **Les échantillons viennent des deux sources prévues.** La bibliothèque
+ * sonore du workspace est injectée sous des clés stables, puis la banque
+ * distante officielle de Strudel est chargée par son API `samples`. Si le
+ * réseau est absent, les sons locaux et les synthés restent disponibles.
  *
  * **Aucune écriture machine.** Le rack envoie des notes MIDI, qui disparaissent
  * une fois jouées. Il n'écrit ni patch, ni échantillon, ni dossier sur l'OP‑1
@@ -116,7 +118,7 @@ import "./strudel-rack.css";
  */
 
 type Etat = "eteint" | "chargement" | "pret" | "joue";
-type Onglet = "exemples" | "sons" | "aide" | "machines" | "mixage" | "effets" | "moteurs";
+type EtatSamples = "non-chargés" | "chargement" | "prêts" | "indisponibles";
 
 /** Ce que `@strudel/web` expose, réduit à ce que le rack utilise. */
 type ApiStrudel = {
@@ -126,6 +128,7 @@ type ApiStrudel = {
   setAudioContext?: (ctx: AudioContext) => unknown;
   registerZZFXSounds?: () => unknown;
   registerSound?: (nom: string, declencheur: unknown, donnees?: unknown) => void;
+  samples?: (sampleMap: Record<string, string> | string, baseUrl?: string) => Promise<unknown>;
   getSuperdoughAudioController?: () => {
     output?: { destinationGain?: GainNode | null };
   };
@@ -134,23 +137,12 @@ type ApiStrudel = {
 /** L'ordonnanceur de Strudel, tel que le surlignage l'utilise. */
 type Repl = { scheduler?: unknown; setCps?: (v: number) => unknown };
 
-const ONGLETS: ReadonlyArray<{ id: Onglet; label: string }> = [
-  { id: "exemples", label: "EXEMPLES" },
-  { id: "sons", label: "SONS" },
-  { id: "moteurs", label: "MOTEURS" },
-  { id: "aide", label: "AIDE" },
-  { id: "machines", label: "MACHINES" },
-  { id: "mixage", label: "MIXAGE" },
-  { id: "effets", label: "EFFETS" },
-];
-
 export default function StrudelRack() {
   const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
   const [code, setCode] = useState(EXEMPLES[0].code);
   const [etat, setEtat] = useState<Etat>("eteint");
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [onglet, setOnglet] = useState<Onglet>("exemples");
   const [bpm, setBpm] = useState(transport().bpm);
 
   const [extraits, setExtraits] = useState<Extrait[]>([]);
@@ -172,6 +164,10 @@ export default function StrudelRack() {
    * une copie des valeurs qui divergerait de celles qui jouent.
    */
   const [revisionCartes, setRevisionCartes] = useState(0);
+  const [etatSamples, setEtatSamples] = useState<EtatSamples>("non-chargés");
+  const [nombreSamplesLocaux, setNombreSamplesLocaux] = useState(0);
+  const [sampleKeys, setSampleKeys] = useState<string[]>([]);
+  const [samplesDistantsCharges, setSamplesDistantsCharges] = useState(false);
   const [canal, setCanal] = useState(1);
 
   const [voieId, setVoieId] = useState<string | null>(null);
@@ -198,6 +194,9 @@ export default function StrudelRack() {
   const prise = useRef<Prise | null>(null);
   const positions = useRef<unknown[]>([]);
   const entreeFichier = useRef<HTMLInputElement | null>(null);
+  const samplesLocaux = useRef<SampleLibraryResult | null>(null);
+  const sampleKeysVifs = useRef<string[]>([]);
+  const samplesDistantsVifs = useRef(false);
   /** Le code le plus récent, lisible depuis un rappel sans le recréer. */
   const codeVif = useRef(code);
   codeVif.current = code;
@@ -208,7 +207,14 @@ export default function StrudelRack() {
     setProfileName(readProfileName());
     setExtraits(trierExtraits(lireExtraits()));
     setMoyen(moyenDisponible());
-    void machinesDisponibles().then(setMachines);
+      void machinesDisponibles().then(setMachines);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      samplesLocaux.current?.release();
+      samplesLocaux.current = null;
+    };
   }, []);
 
   // Asservir l'horloge de Strudel au transport partagé du Hub.
@@ -233,6 +239,41 @@ export default function StrudelRack() {
       const mod = (await import("@strudel/web")) as unknown as ApiStrudel;
       mod.setAudioContext?.(contexte());
       const pret = mod.initStrudel({
+        /** Les deux banques utilisent le sampler officiel de Strudel. */
+        prebake: async () => {
+          let localCharge = false;
+          let distantCharge = false;
+          setEtatSamples("chargement");
+          try {
+            const workspace = await loadDirectoryHandle(WORKSPACE_HANDLE_KEY);
+            if (workspace && (await hasStoredPermission(workspace, "read"))) {
+              const local = await chargerSamplesBibliotheque(workspace);
+              samplesLocaux.current = local;
+              setNombreSamplesLocaux(local.loaded.length);
+              const keys = local.loaded.map(({ key }) => key);
+              sampleKeysVifs.current = keys;
+              setSampleKeys(keys);
+              if (Object.keys(local.sampleMap).length && mod.samples) {
+                await mod.samples(local.sampleMap);
+                localCharge = true;
+              }
+            }
+          } catch {
+            // Une permission absente ou un fichier manquant ne doit pas
+            // empêcher les synthés Strudel de démarrer.
+          }
+          try {
+            if (mod.samples) {
+              await mod.samples("github:tidalcycles/dirt-samples");
+              distantCharge = true;
+              samplesDistantsVifs.current = true;
+              setSamplesDistantsCharges(true);
+            }
+          } catch {
+            // Le sampler local reste utilisable sans réseau.
+          }
+          setEtatSamples(localCharge || distantCharge ? "prêts" : "indisponibles");
+        },
         /**
          * Relevé à chaque évaluation : les positions des fragments de
          * mini-notation dans le document. C'est ce qui permet de les
@@ -265,8 +306,8 @@ export default function StrudelRack() {
        * C'était le manque explicite de la feuille de route : « déclencher les
        * moteurs DSP internes depuis un motif » n'existait pas.
        *
-       * Ce sont les mêmes oscillateurs que dans le rack — rien n'est
-       * téléchargé, et la promesse « aucun échantillon distant » tient.
+       * Ce sont les mêmes oscillateurs que dans le rack — l'échantillonnage
+       * est géré séparément par le sampler Strudel ci-dessus.
        */
       if (typeof mod.registerSound === "function") {
         const ajoutes = enregistrerMoteurs(
@@ -362,7 +403,10 @@ export default function StrudelRack() {
       setEtat("joue");
       poignee.current?.clignoter();
       if (repl.current?.scheduler) dessinateur.current?.start(repl.current.scheduler);
-      const absents = sonsManquants(codeVif.current);
+      const absents = sonsManquants(codeVif.current, {
+        samplesDistants: samplesDistantsVifs.current,
+        samplesLocaux: sampleKeysVifs.current,
+      });
       setMessage(
         absents.length
           ? `En cours. Sons introuvables hors ligne : ${absents.join(", ")}.`
@@ -373,7 +417,7 @@ export default function StrudelRack() {
       // montre telle quelle, sans arrêter ce qui jouait déjà.
       setErreur(e instanceof Error ? e.message : String(e));
     }
-  }, [demarrer]);
+  }, [demarrer, sampleKeys, samplesDistantsCharges]);
 
   /**
    * Le PANIC du rack.
@@ -540,7 +584,10 @@ export default function StrudelRack() {
     [arreter, jouer, ouvrir, sauver],
   );
 
-  const absents = useMemo(() => sonsManquants(code), [code]);
+  const absents = useMemo(() => sonsManquants(code, {
+    samplesDistants: samplesDistantsCharges,
+    samplesLocaux: sampleKeys,
+  }), [code, sampleKeys, samplesDistantsCharges]);
   const enAttente = modifie(projet, code);
   const titreProjet = projet?.nom ?? "Sans titre";
 
@@ -602,19 +649,7 @@ export default function StrudelRack() {
             />
           </div>
 
-          <nav className="sr-groupe sr-onglets" aria-label="Panneaux">
-            {ONGLETS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                className={`sr-onglet${onglet === o.id ? " sr-onglet--actif" : ""}`}
-                aria-pressed={onglet === o.id}
-                onClick={() => setOnglet(o.id)}
-              >
-                {o.label}
-              </button>
-            ))}
-          </nav>
+          <span className="sr-barre-aide">CODE À GAUCHE · OUTILS TOUJOURS VISIBLES À DROITE</span>
         </header>
 
         <div className="sr-corps">
@@ -641,12 +676,21 @@ export default function StrudelRack() {
             )}
           </section>
 
-          <aside className="sr-panneau" aria-label={`Panneau ${onglet}`}>
-            {/* Le tracé de la sortie générale du rack, pas seulement de
-                Strudel : c'est l'analyseur du bus maître qu'il lit. */}
-            <OscilloscopePixel actif={etat === "joue"} />
+          <aside className="sr-panneau" aria-label="Exemples et outils Strudel">
+            <section className="sr-outil sr-outil--signal" aria-labelledby="sr-signal-titre">
+              <div className="sr-outil-entete">
+                <h2 id="sr-signal-titre" className="sr-titre">Signal du Hub</h2>
+                <span className="sr-outil-etat">{etat === "joue" ? "EN DIRECT" : "EN ATTENTE"}</span>
+              </div>
+              {/* Le tracé de la sortie générale du rack, pas seulement de
+                  Strudel : c'est l'analyseur du bus maître qu'il lit. */}
+              <OscilloscopePixel actif={etat === "joue"} hauteur={88} />
+              <p className="sr-aide sr-aide--court">
+                Le signal de Strudel passe par le même bus audio que les moteurs DSP.
+              </p>
+            </section>
 
-            {onglet === "exemples" && (
+            <section className="sr-outil sr-outil--exemples" aria-labelledby="sr-exemples-titre">
               <PanneauExemples
                 extraits={extraits}
                 nom={nom}
@@ -655,9 +699,18 @@ export default function StrudelRack() {
                 onEnregistrer={enregistrer}
                 onOublier={oublier}
               />
-            )}
-            {onglet === "sons" && <PanneauSons moteurs={moteursRack} />}
-            {onglet === "moteurs" && (
+            </section>
+
+            <section className="sr-outil" aria-label="Sons disponibles">
+              <PanneauSons
+                moteurs={moteursRack}
+                etatSamples={etatSamples}
+                nombreSamplesLocaux={nombreSamplesLocaux}
+                samplesDistantsCharges={samplesDistantsCharges}
+              />
+            </section>
+
+            <section className="sr-outil" aria-label="Réglages des moteurs">
               <PanneauMoteurs
                 code={code}
                 revision={revisionCartes}
@@ -666,9 +719,9 @@ export default function StrudelRack() {
                   setRevisionCartes((n) => n + 1);
                 }}
               />
-            )}
-            {onglet === "aide" && <PanneauAide />}
-            {onglet === "machines" && (
+            </section>
+
+            <section className="sr-outil" aria-label="Machines MIDI">
               <PanneauMachines
                 machines={machines}
                 canal={canal}
@@ -678,34 +731,38 @@ export default function StrudelRack() {
                 onDebrancher={debrancherMachines}
                 onRafraichir={() => void machinesDisponibles().then(setMachines)}
               />
-            )}
-            {onglet === "effets" && (
-              <>
-                <h2 className="sr-titre">Effets du studio</h2>
-                <p className="sr-aide">
-                  Sur le bus maître : tout ce qui joue dans l'atelier les traverse,
-                  Strudel comme les vingt moteurs. Les réglages suivent d'une page
-                  à l'autre et survivent au rechargement.
-                </p>
-                <RackEffets
-                  params={effets}
-                  onParam={(nom, valeur) => reglerEffetsMaitre({ [nom]: valeur })}
-                  delaySync={delaiSync}
-                  onDelaySync={setDelaiSync}
-                  delayDivision={delaiDivision}
-                  onDelayDivision={setDelaiDivision}
-                  bpmHote={bpm}
-                />
-              </>
-            )}
-            {onglet === "mixage" && (
+            </section>
+
+            <section className="sr-outil" aria-label="Mixage">
               <PanneauMixage
                 voieId={voieId}
                 gain={gain} setGain={setGain}
                 pano={pano} setPano={setPano}
                 reverb={reverb} setReverb={setReverb}
               />
-            )}
+            </section>
+
+            <section className="sr-outil" aria-labelledby="sr-effets-titre">
+              <h2 id="sr-effets-titre" className="sr-titre">Effets du studio</h2>
+              <p className="sr-aide">
+                Sur le bus maître : tout ce qui joue dans l'atelier les traverse,
+                Strudel comme les vingt moteurs. Les réglages suivent d'une page
+                à l'autre et survivent au rechargement.
+              </p>
+              <RackEffets
+                params={effets}
+                onParam={(nom, valeur) => reglerEffetsMaitre({ [nom]: valeur })}
+                delaySync={delaiSync}
+                onDelaySync={setDelaiSync}
+                delayDivision={delaiDivision}
+                onDelayDivision={setDelaiDivision}
+                bpmHote={bpm}
+              />
+            </section>
+
+            <section className="sr-outil" aria-label="Aide Strudel">
+              <PanneauAide />
+            </section>
           </aside>
         </div>
 
@@ -720,7 +777,7 @@ export default function StrudelRack() {
               Hors ligne, {absents.length > 1 ? "ces sons n'existent pas" : "ce son n'existe pas"} ici :{" "}
               <b>{absents.join(", ")}</b>
               {absents.some((a) => SONS_DISTANTS_CONNUS.includes(a)) &&
-                " — ce sont des échantillons du Strudel officiel, hébergés en ligne. Onglet MACHINES pour jouer une vraie boîte à rythmes."}
+                " — ce sont des échantillons du Strudel officiel, hébergés en ligne. Le panneau Machines permet de jouer une vraie boîte à rythmes."}
             </p>
           )}
           {moyen === "telechargement" && (
@@ -755,7 +812,7 @@ function PanneauExemples({
 }) {
   return (
     <>
-      <h2 className="sr-titre">Exemples</h2>
+      <h2 id="sr-exemples-titre" className="sr-titre">Exemples</h2>
       <ul className="sr-liste">
         {EXEMPLES.map((e) => (
           <li key={e.nom}>
@@ -802,13 +859,27 @@ function PanneauExemples({
   );
 }
 
-function PanneauSons({ moteurs }: { moteurs: string[] }) {
+function PanneauSons({
+  moteurs,
+  etatSamples,
+  nombreSamplesLocaux,
+  samplesDistantsCharges,
+}: {
+  moteurs: string[];
+  etatSamples: EtatSamples;
+  nombreSamplesLocaux: number;
+  samplesDistantsCharges: boolean;
+}) {
   return (
     <>
-      <h2 className="sr-titre">Sons hors ligne</h2>
+      <h2 className="sr-titre">Sons & banques</h2>
       <p className="sr-aide">
-        Relevés dans la source du moteur, à la version verrouillée. Tout ce qui est
-        listé ici sonne sans réseau.
+        Synthés du moteur, samples de la Bibliothèque sonore et banque officielle
+        Strudel utilisent le même sampler et la même sortie du Hub.
+      </p>
+      <p className="sr-note" role="status">
+        Bibliothèque locale : {etatSamples === "chargement" ? "chargement…" : `${nombreSamplesLocaux} sample(s)`}
+        {samplesDistantsCharges ? " · banque distante prête" : " · banque distante indisponible"}
       </p>
       {(["forme d'onde", "bruit", "percussion", "expérimental"] as const).map((famille) => {
         const liste = SONS_LOCAUX.filter((s) => s.famille === famille);
@@ -883,7 +954,7 @@ function PanneauMoteurs({
         <h2 className="sr-titre">Moteurs du rack</h2>
         <p className="sr-aide">
           Aucun moteur du rack dans ce motif. Écris <code>.sound("mi_plaits")</code>
-          {" "}— ou n'importe lequel de l'onglet SONS — et sa carte de réglages
+          {" "}— ou n'importe lequel de la liste Sons — et sa carte de réglages
           apparaîtra ici.
         </p>
       </>

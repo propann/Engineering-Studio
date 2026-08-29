@@ -7,14 +7,15 @@ import {
   nomsJouables,
   sonsManquants,
 } from "./sons";
+import { EXEMPLES } from "./extraits";
 
 /**
  * Le catalogue des sons, et le détecteur de sons absents.
  *
- * Ce que ces tests protègent : la promesse « aucun échantillon distant » n'a
- * de valeur que si le rack sait dire ce qui manque. Un motif copié depuis
- * strudel.cc appelle `bd` et `hh` ; sans avertissement, il joue à moitié et
- * l'on cherche la panne dans le mauvais endroit.
+ * Ce que ces tests protègent : le rack sait distinguer sa palette intégrée,
+ * les samples du workspace et la banque distante. Un motif copié depuis
+ * strudel.cc appelle `bd` et `hh` ; l'avertissement disparaît dès que la banque
+ * officielle est effectivement chargée.
  */
 
 describe("le catalogue", () => {
@@ -64,12 +65,28 @@ describe("le catalogue", () => {
 });
 
 describe("repérer les sons qui ne sonneront pas", () => {
+  it("tous les exemples de la fenêtre utilisent la palette locale", () => {
+    for (const e of EXEMPLES) {
+      expect(sonsManquants(e.code), `« ${e.nom} » utilise un son non enregistré`).toEqual([]);
+    }
+  });
+
   it("ne signale rien sur un motif entièrement local", () => {
     expect(sonsManquants('note("c e g").sound("sawtooth")')).toEqual([]);
   });
 
   it("repère un échantillon distant", () => {
     expect(sonsManquants('s("bd*4")')).toEqual(["bd"]);
+  });
+
+  it("accepte la banque distante une fois chargée", () => {
+    expect(sonsManquants('s("bd*4")', { samplesDistants: true })).toEqual([]);
+  });
+
+  it("accepte une clé issue de la Bibliothèque sonore", () => {
+    expect(sonsManquants('s("machine_ep133_slot_001_abc123")', {
+      samplesLocaux: ["machine_ep133_slot_001_abc123"],
+    })).toEqual([]);
   });
 
   it("découpe un mini-motif entier", () => {

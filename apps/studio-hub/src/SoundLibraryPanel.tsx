@@ -3,37 +3,21 @@ import { readProfile, type StudioProfile } from "./core/profile";
 import { useNotesMidi } from "./core/midi/useNotesMidi";
 import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
 import { poserFichierEnAttente } from "./core/audio/sonEnAttente";
-
-export type SoundSourceType = "all" | "labo" | "p2p" | "personal" | "machines";
-export type SoundTarget = "op1" | "ep133";
+import {
+  audioBlobBibliotheque,
+  cleSample,
+  indexerBibliotheque,
+  inferSoundKind,
+  type SoundKind,
+  type SoundLibraryAsset,
+  type SoundSourceType,
+  type SoundTarget,
+} from "./core/audio/bibliotheque";
 /**
  * `atelier` designe un son FABRIQUE ici : un `.son.json`, avec ses couches et
  * leurs reglages. Ce n'est pas un fichier audio — on ne le pre-ecoute pas, on
  * le ROUVRE dans l'atelier pour continuer a le travailler.
  */
-export type SoundKind = "sample" | "drum" | "synth" | "voice" | "loop" | "bass" | "fx" | "other" | "atelier";
-
-export interface SoundLibraryAsset {
-  id: string;
-  name: string;
-  sourceType: "labo" | "p2p" | "personal" | "machines";
-  path: string;
-  size: number;
-  sha256: string;
-  kind: SoundKind;
-  tags: string[];
-  favorite: boolean;
-  targets: SoundTarget[];
-  addedAt: string;
-  engineOrigin?: string;
-  machineSlot?: string;
-  author?: string;
-  synthPresetParams?: Record<string, number | string>;
-  durationSeconds?: number;
-}
-
-type SoundLibraryManifest = { schema: "studio-hub.sound-library.v1"; updatedAt: string; assets: SoundLibraryAsset[] };
-
 const SOUND_FOLDERS = ["originals", "prepared", "packs", "quarantine"] as const;
 const AUDIO_EXTENSIONS = /\.(aif|aiff|wav|mp3|flac|ogg|m4a|aac|opus)$/i;
 /**
@@ -234,17 +218,6 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-function inferKind(name: string): SoundKind {
-  const lower = name.toLowerCase();
-  if (/kick|snare|hat|clap|perc|drum|tom|cymbal/.test(lower)) return "drum";
-  if (/bass|808|sub|reese|wobble/.test(lower)) return "bass";
-  if (/voice|vocal|speech|vox|hook/.test(lower)) return "voice";
-  if (/loop|break|beat|riff/.test(lower)) return "loop";
-  if (/synth|lead|pad|chord|keys|bell|organ/.test(lower)) return "synth";
-  if (/fx|riser|sweep|impact|noise/.test(lower)) return "fx";
-  return "sample";
-}
-
 function cleanFileName(name: string) {
   return name.normalize("NFKC").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").trim() || `son-${Date.now()}.wav`;
 }
@@ -263,18 +236,6 @@ async function ensureSoundFolders(root: FileSystemDirectoryHandle) {
   const sounds = await soundsDirectory(root, true);
   for (const folder of SOUND_FOLDERS) await sounds.getDirectoryHandle(folder, { create: true });
   return sounds;
-}
-
-async function readManifest(sounds: FileSystemDirectoryHandle): Promise<SoundLibraryAsset[]> {
-  try {
-    const file = await sounds.getFileHandle("manifest.json");
-    const parsed = JSON.parse(await (await file.getFile()).text()) as Partial<SoundLibraryManifest>;
-    return Array.isArray(parsed.assets)
-      ? parsed.assets.filter((asset): asset is SoundLibraryAsset => Boolean(asset && typeof asset.id === "string" && typeof asset.path === "string"))
-      : [];
-  } catch {
-    return [];
-  }
 }
 
 async function writeManifest(sounds: FileSystemDirectoryHandle, assets: SoundLibraryAsset[]) {
@@ -333,11 +294,12 @@ async function importIntoOriginals(sounds: FileSystemDirectoryHandle, file: File
       path: `originals/${name}`,
       size: stored.size,
       sha256,
-      kind: inferKind(name),
+      kind: inferSoundKind(name),
       tags: [],
       favorite: false,
       targets: ["op1", "ep133"],
       addedAt: new Date().toISOString(),
+      storageRoot: "sounds",
     } satisfies SoundLibraryAsset,
   };
 }
@@ -367,9 +329,9 @@ export function SoundLibraryPanel({
 
   const [currentProfile, setCurrentProfile] = useState<StudioProfile | null>(() => readProfile());
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const soundsRef = useRef<FileSystemDirectoryHandle | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
+  const workspaceRef = useRef<FileSystemDirectoryHandle | null>(workspaceHandle);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const synthCtxRef = useRef<AudioContext | null>(null);
   const priseRef = useRef<Prise | null>(null);
@@ -381,6 +343,8 @@ export function SoundLibraryPanel({
     return () => {
       priseRef.current?.detacher();
       priseRef.current = null;
+      try { sourceRef.current?.stop(); } catch { /* déjà arrêté */ }
+      sourceRef.current = null;
       synthCtxRef.current = null;
     };
   }, []);
@@ -394,13 +358,19 @@ export function SoundLibraryPanel({
   // Chargement des fichiers réels du workspace
   useEffect(() => {
     let cancelled = false;
+    workspaceRef.current = workspaceHandle;
     void (async () => {
-      if (!workspaceHandle) return;
+      if (!workspaceHandle) {
+        soundsRef.current = null;
+        setAssets(DEFAULT_STUDIO_SOUNDS);
+        return;
+      }
       try {
         const sounds = await ensureSoundFolders(workspaceHandle);
-        const loaded = await readManifest(sounds);
+        const loaded = await indexerBibliotheque(workspaceHandle);
         if (!cancelled) {
           soundsRef.current = sounds;
+          workspaceRef.current = workspaceHandle;
           // Fusion des sons d'usine/moteurs avec les fichiers réels du workspace
           const existingIds = new Set(loaded.map((a) => a.id));
           const merged = [...loaded, ...DEFAULT_STUDIO_SOUNDS.filter((s) => !existingIds.has(s.id))];
@@ -417,9 +387,8 @@ export function SoundLibraryPanel({
   }, [workspaceHandle]);
 
   useEffect(() => () => {
-    audioRef.current?.pause();
-    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    if (synthCtxRef.current) void synthCtxRef.current.close();
+    try { sourceRef.current?.stop(); } catch { /* déjà arrêté */ }
+    sourceRef.current = null;
   }, []);
 
   // Détermination du rôle du profil opérateur (ex: Beatmaker -> drums, Sound Designer -> synth/fx)
@@ -538,25 +507,36 @@ export function SoundLibraryPanel({
     }
 
     if (playingId === asset.id) {
-      audioRef.current?.pause();
+      try { sourceRef.current?.stop(); } catch { /* déjà arrêté */ }
+      sourceRef.current = null;
       setPlayingId(null);
       return;
     }
 
+    try { sourceRef.current?.stop(); } catch { /* déjà arrêté */ }
+    sourceRef.current = null;
     setPlayingId(asset.id);
 
-    // 1. Essai de lecture depuis le fichier physique s'il existe dans le workspace
-    if (soundsRef.current && (asset.sourceType === "personal" || asset.path.startsWith("originals/"))) {
+    // 1. Lecture du fichier physique partagé par la Bibliothèque et Strudel.
+    if (workspaceRef.current && asset.storageRoot) {
       try {
-        const file = await findFile(soundsRef.current, asset.path);
-        if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-        const url = URL.createObjectURL(await file.getFile());
-        objectUrlRef.current = url;
-        audioRef.current?.pause();
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => setPlayingId(null);
-        void audio.play().catch(() => setStatus("Clique à nouveau sur lecture si le navigateur bloque l’audio."));
+        const blob = await audioBlobBibliotheque(workspaceRef.current, asset);
+        if (!blob) throw new Error("fichier introuvable");
+        const ctx = contexte();
+        if (ctx.state === "suspended") await ctx.resume();
+        if (!priseRef.current) priseRef.current = brancher("Bibliothèque sonore");
+        const buffer = await ctx.decodeAudioData(await blob.arrayBuffer());
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(priseRef.current.entree);
+        source.onended = () => {
+          if (sourceRef.current === source) {
+            sourceRef.current = null;
+            setPlayingId(null);
+          }
+        };
+        sourceRef.current = source;
+        source.start();
         return;
       } catch {
         // Si le fichier physique n'est pas trouvé, repli sur le synthétiseur de pré-écoute
@@ -685,7 +665,7 @@ export function SoundLibraryPanel({
   }
 
   const copyStrudelSnippet = (asset: SoundLibraryAsset) => {
-    const sampleTag = asset.name.toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 16);
+    const sampleTag = cleSample(asset);
     const snippet = `// Pattern Strudel pour ${asset.name}\ns("${sampleTag}*4").gain(0.85).room(0.2)`;
     navigator.clipboard.writeText(snippet);
     setStatus(`📋 Snippet Strudel copié pour « ${asset.name} » !`);
@@ -891,7 +871,7 @@ export function SoundLibraryPanel({
                       <span>
                         {idx > 0 ? "🔴 Doublon:" : "Original:"} {asset.name} ({formatBytes(asset.size)})
                       </span>
-                      {idx > 0 && (
+                      {idx > 0 && !asset.readOnly && (
                         <button
                           onClick={() => void removeAsset(asset)}
                           style={{
@@ -951,6 +931,7 @@ export function SoundLibraryPanel({
                   className={`sound-favorite-button ${asset.favorite ? "is-active" : ""}`}
                   aria-label={`${asset.favorite ? "Retirer" : "Ajouter"} ${asset.name} des favoris`}
                   onClick={() => void toggleFavorite(asset)}
+                  disabled={asset.readOnly}
                 >
                   ★
                 </button>
@@ -990,6 +971,11 @@ export function SoundLibraryPanel({
                 <span style={{ fontSize: "11px", color: "var(--theme-text-muted, #94a3b8)" }}>
                   {formatBytes(asset.size)}
                 </span>
+                {asset.readOnly && (
+                  <span style={{ fontSize: "10px", color: "#fbbf24", fontWeight: 800 }} title="Fichier issu d'une sauvegarde machine">
+                    LECTURE SEULE
+                  </span>
+                )}
               </div>
 
               {/* Meta supplémentaire : machine slot, engine origin, auteur */}
@@ -1005,7 +991,7 @@ export function SoundLibraryPanel({
               <div className="sound-targets">
                 {(Object.keys(TARGET_LABELS) as SoundTarget[]).map((item) => (
                   <label key={item}>
-                    <input type="checkbox" checked={asset.targets.includes(item)} onChange={() => toggleTarget(asset, item)} />
+                    <input type="checkbox" checked={asset.targets.includes(item)} onChange={() => toggleTarget(asset, item)} disabled={asset.readOnly} />
                     {TARGET_LABELS[item]}
                   </label>
                 ))}
@@ -1017,6 +1003,7 @@ export function SoundLibraryPanel({
                 aria-label={`Tags de ${asset.name}`}
                 value={asset.tags.join(", ")}
                 placeholder="Tags : kick, court, live, modular"
+                disabled={asset.readOnly}
                 onChange={(event) => {
                   const tags = event.target.value
                     .split(",")
@@ -1031,6 +1018,7 @@ export function SoundLibraryPanel({
                 <button
                   type="button"
                   onClick={() => copyStrudelSnippet(asset)}
+                  title={`Copier s("${cleSample(asset)}")`}
                   style={{
                     padding: "3px 6px",
                     background: "#1e293b",
@@ -1064,9 +1052,11 @@ export function SoundLibraryPanel({
               </div>
 
               <div className="sound-library-asset-actions" style={{ marginTop: "8px" }}>
-                <button className="text-button" onClick={() => void removeAsset(asset)}>
-                  Supprimer
-                </button>
+                {asset.readOnly ? <span title="Les sauvegardes machine restent intactes">Sauvegarde machine · lecture seule</span> : (
+                  <button className="text-button" onClick={() => void removeAsset(asset)}>
+                    Supprimer
+                  </button>
+                )}
                 <span title={asset.sha256}>SHA‑256 · {asset.sha256.slice(0, 10)}…</span>
               </div>
             </article>

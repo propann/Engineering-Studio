@@ -196,6 +196,14 @@
 
 .strudel-console .sr-fichier { gap: 8px; }
 
+.strudel-console .sr-barre-aide {
+  margin-left: auto;
+  color: var(--sr-doux);
+  font: 700 10px/1.3 ui-monospace, monospace;
+  letter-spacing: .1em;
+  text-align: right;
+}
+
 .strudel-console .sr-projet {
   max-width: 22ch;
   overflow: hidden;
@@ -216,42 +224,11 @@
   clip-path: inset(50%);
 }
 
-/* --- Onglets ------------------------------------------------------------ */
-
-.strudel-console .sr-onglets {
-  gap: 0;
-  margin-left: auto;
-}
-
-.strudel-console .sr-onglet {
-  padding: 8px 10px;
-  color: var(--sr-doux);
-  background: transparent;
-  border: 2px solid transparent;
-  border-bottom: 3px solid transparent;
-  border-radius: 0;
-  font: 700 11px/1 ui-monospace, monospace;
-  letter-spacing: .1em;
-  cursor: pointer;
-}
-
-.strudel-console .sr-onglet:hover { color: var(--sr-texte); }
-
-.strudel-console .sr-onglet--actif {
-  color: var(--sr-vert);
-  border-bottom-color: var(--sr-vert);
-}
-
-.strudel-console .sr-onglet:focus-visible {
-  outline: 3px solid var(--sr-magenta);
-  outline-offset: -3px;
-}
-
 /* --- Corps : éditeur + panneau ------------------------------------------ */
 
 .strudel-console .sr-corps {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
   min-height: 0;
 }
 
@@ -317,6 +294,58 @@
   padding: 16px;
   overflow-y: auto;
   background: var(--sr-panneau-plein);
+}
+
+.strudel-console .sr-outil {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--sr-trait);
+}
+
+.strudel-console .sr-outil:last-child {
+  margin-bottom: 0;
+  border-bottom: 0;
+}
+
+.strudel-console .sr-outil-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.strudel-console .sr-outil-etat {
+  color: var(--sr-ambre);
+  font: 700 9px/1 ui-monospace, monospace;
+  letter-spacing: .12em;
+}
+
+.strudel-console .sr-aide--court { margin-bottom: 0; }
+
+.strudel-console .sr-outil--signal .sr-scope {
+  margin-bottom: 8px;
+}
+
+.strudel-console .sr-outil--exemples .sr-titre {
+  margin-bottom: 10px;
+}
+
+.strudel-console .sr-outil--exemples .sr-liste {
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.strudel-console .sr-outil--exemples .sr-liste li {
+  padding: 6px 8px;
+}
+
+.strudel-console .sr-outil--exemples .sr-liste li > button {
+  font-size: 11px;
+}
+
+.strudel-console .sr-outil--exemples .sr-liste li > small {
+  font-size: 9px;
+  line-height: 1.35;
 }
 
 .strudel-console .sr-titre {
@@ -522,13 +551,13 @@
     border-right: 0;
     border-bottom: 3px solid var(--sr-trait);
   }
-  .strudel-console .sr-onglets { margin-left: 0; width: 100%; overflow-x: auto; }
+  .strudel-console .sr-barre-aide { width: 100%; margin-left: 0; text-align: left; }
 }
 
 /* --- Oscilloscope ------------------------------------------------------- */
 
-/* Posé en tête du panneau latéral, au-dessus de l'onglet courant : on veut le
-   voir quel que soit le panneau ouvert, c'est un indicateur, pas un contenu. */
+/* Posé en tête de la colonne droite : on veut le voir avec les exemples et les
+   outils, c'est un indicateur permanent du bus, pas un contenu à chercher. */
 .strudel-console .sr-scope {
   display: block;
   width: 100%;

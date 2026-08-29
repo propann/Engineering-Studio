@@ -173,4 +173,59 @@ export const EXEMPLES: ReadonlyArray<{ nom: string; code: string; aide: string }
     code: 'note("c e g b").sound("sawtooth").cutoff(sine.range(200, 3000).slow(4))',
     aide: "Une coupure qui respire — le balayage vient d'une sinusoïde lente.",
   },
+  {
+    nom: "Boîte synthétique",
+    code: 's("sbd*4").note("c2")',
+    aide: "Une grosse caisse locale, sans sample distant, sur quatre temps.",
+  },
+  {
+    nom: "Souffle granulaire",
+    code: 's("white*8").decay(.08).gain(.35)',
+    aide: "Un souffle blanc court pour dessiner un charleston ou une texture.",
+  },
+  {
+    nom: "Pulse animée",
+    code: 'note("c3 e3 g3 b3").sound("pulse").pw(sine.range(.2, .8).slow(4))',
+    aide: "La largeur d'impulsion bouge lentement autour d'un arpège.",
+  },
+  {
+    nom: "Nuage Rings",
+    code: 'note("<c3 eb3 g3 bb3>").sound("mi_rings").room(.7).slow(2)',
+    aide: "Un résonateur du rack, espacé et envoyé dans la réverbération partagée.",
+  },
+  {
+    nom: "Grain Clouds",
+    code: 'note("c2 ~ eb2 ~ g2 ~").sound("mi_clouds").gain(.65)',
+    aide: "Une nappe granulaire du rack entre les silences du motif.",
+  },
+  {
+    nom: "Basse 303",
+    code: 'note("c2 c2 eb2 g2").sound("open303").cutoff(sine.range(280, 1800).slow(8))',
+    aide: "Une basse acide avec filtre animé, jouée par le moteur interne.",
+  },
+  {
+    nom: "Accord FM",
+    code: 'note("<c4 e4 g4 b4>").sound("dexed_fm").slow(2).gain(.55)',
+    aide: "Un accord métallique tenu par le moteur FM du rack.",
+  },
+  {
+    nom: "Cordes larges",
+    code: 'note("c3 eb3 g3").sound("string_machine").room(.8).slow(4)',
+    aide: "Une nappe de cordes du rack, lente et large dans le bus du studio.",
+  },
+  {
+    nom: "Orgue séquencé",
+    code: 'note("c3 [e3 g3] b3 [g3 e3]").sound("organ_drawbars").slow(2)',
+    aide: "Un cycle d'accords joué par le moteur d'orgue à tirettes.",
+  },
+  {
+    nom: "Mélodie inversée",
+    code: 'note("c e g b").sound("triangle").sometimes(x => x.rev()).fast(2)',
+    aide: "Une mélodie douce qui s'inverse parfois et accélère le motif.",
+  },
+  {
+    nom: "Empilement spectral",
+    code: 'stack(note("c2").sound("brown"), note("c4 eb4 g4").sound("vocoder_dsp").slow(2))',
+    aide: "Un grondement sous un moteur spectral : deux couches sur la même console.",
+  },
 ];

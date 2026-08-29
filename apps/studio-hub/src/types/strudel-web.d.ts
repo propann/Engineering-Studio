@@ -60,6 +60,12 @@ declare module "@strudel/web" {
    */
   export function registerZZFXSounds(): unknown;
 
+  /** Enregistre une banque locale ou distante dans le sampler Strudel. */
+  export function samples(
+    source: Record<string, string> | string,
+    baseUrl?: string,
+  ): Promise<unknown>;
+
   /**
    * Le contrôleur audio de superdough.
    *

@@ -12,8 +12,9 @@ import { describe, expect, it } from "vitest";
  * est exécutée pour de vrai dans les fichiers `core/strudel/*.test.ts`.
  *
  * Le parcours complet a été vérifié au navigateur : chargement de l'éditeur,
- * évaluation, surlignage des événements, arrêt, sans erreur console et sans
- * une seule requête sortante.
+ * évaluation, surlignage des événements, arrêt et branchement des banques de
+ * samples. La banque distante reste appelée uniquement par l'API officielle
+ * de Strudel.
  *
  * ## Deux invariants ont changé le 2026-08-29, et pourquoi
  *
@@ -117,13 +118,19 @@ describe("la sortie passe par la console du rack", () => {
   });
 });
 
-describe("rien ne part sur un serveur", () => {
-  it("le rack ne charge aucun échantillon distant", () => {
-    // Strudel n'en charge aucun par defaut ; l'option de pré-chargement en
-    // ferait venir de github. L'atelier promet que rien ne sort du navigateur.
-    expect(RACK, "le rack charge des échantillons").not.toMatch(/\bsamples\(/);
-    expect(RACK, "le rack passe une option de pré-chargement").not.toContain("prebake");
-    expect(RACK).not.toContain("github:");
+describe("les banques sonores sont connectées", () => {
+  it("charge la bibliothèque locale et la banque officielle Strudel", () => {
+    expect(RACK).toContain("chargerSamplesBibliotheque");
+    expect(RACK).toContain("prebake");
+    expect(RACK).toContain("mod.samples(local.sampleMap)");
+    expect(RACK).toContain('mod.samples("github:tidalcycles/dirt-samples")');
+  });
+
+  it("n'ouvre pas la permission workspace depuis un effet", () => {
+    // Le rack réutilise une permission de lecture déjà accordée. La demande
+    // interactive reste dans la Bibliothèque sonore/Vault, sur geste humain.
+    expect(RACK).toContain('hasStoredPermission(workspace, "read")');
+    expect(RACK).not.toContain("requestStoredPermission");
   });
 
   it("l'éditeur et la documentation sont embarqués, pas cherchés en ligne", () => {
@@ -151,13 +158,15 @@ describe("le rack n'écrit sur aucune machine", () => {
    * une liste d'API.
    */
   it("aucun module d'écriture machine n'est importé", () => {
-    for (const src of [RACK, PROJETS, SORTIE]) {
+    for (const src of [PROJETS, SORTIE]) {
       expect(src).not.toContain("machineWrite");
       expect(src, "un accès au coffre est importé").not.toMatch(/from ".*VaultPanel"/);
       expect(src, "un accès aux dossiers machine est importé").not.toMatch(
         /from ".*(directoryHandleStore|fs-handles)"/,
       );
     }
+    expect(RACK, "la lecture du workspace n'est pas protégée").toContain("hasStoredPermission");
+    expect(RACK, "le rack ne demande pas de permission d'écriture").not.toContain('"readwrite"');
   });
 
   it("le rack ne demande jamais un DOSSIER, seulement un fichier", () => {
@@ -234,6 +243,30 @@ describe("l'éditeur est celui de Strudel", () => {
     // Perdre la coloration est acceptable ; perdre l'acces au code ne l'est pas.
     expect(RACK).toContain("sr-repli");
     expect(RACK).toContain("editeurPret === false");
+  });
+});
+
+describe("la fenêtre reste une seule surface de travail", () => {
+  it("ne cache plus les outils derrière des onglets", () => {
+    expect(RACK, "un état d'onglet est encore présent").not.toContain("Onglet");
+    expect(RACK, "une navigation par onglets est encore rendue").not.toContain("sr-onglet");
+    for (const panneau of [
+      "PanneauExemples",
+      "PanneauSons",
+      "PanneauMoteurs",
+      "PanneauMachines",
+      "PanneauMixage",
+      "RackEffets",
+      "PanneauAide",
+    ]) {
+      expect(RACK, `${panneau} n'est plus accessible dans la fenêtre`).toContain(panneau);
+    }
+  });
+
+  it("place la bibliothèque d'exemples dans la colonne persistante", () => {
+    expect(RACK).toContain('className="sr-outil sr-outil--exemples"');
+    expect(RACK).toContain('aria-label="Exemples et outils Strudel"');
+    expect(RACK).toContain('id="sr-exemples-titre"');
   });
 });
 

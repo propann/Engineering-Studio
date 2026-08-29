@@ -27,9 +27,9 @@
  *
  * ## Ce qui manque, et où le prendre
  *
- * Il n'y a pas de batterie échantillonnée hors ligne : `bd`, `sd`, `hh`, `cp`
- * du Strudel officiel viennent de `dirt-samples`, sur GitHub. On ne les charge
- * pas.
+ * La banque `dirt-samples` est chargée à la demande par le rack. Les noms
+ * restent listés ici pour que le contrôle de code sache distinguer un sample
+ * Strudel officiel d'une faute de frappe ou d'une clé locale inconnue.
  *
  * Ce n'est pas une privation dans cet atelier : la boîte à rythmes, c'est
  * l'EP‑133 posée sur le bureau. `SORTIE_MACHINE` de `sortieMidi.ts` envoie le
@@ -163,12 +163,11 @@ export const SONS_ZZFX: ReadonlyArray<string> = [
 ];
 
 /**
- * Les noms que le Strudel officiel connaît mais que nous n'avons pas.
+ * Les noms que le Strudel officiel connaît et que le rack peut charger.
  *
- * Ils sont listés pour être RECONNUS, pas pour être proposés : quand un motif
- * copié depuis strudel.cc ne sonne pas, le rack peut dire pourquoi au lieu de
- * laisser un silence. C'est le seul endroit du rack qui nomme un échantillon
- * distant, et il n'en charge aucun.
+ * Ils sont listés pour être reconnus avant et après le chargement de la banque
+ * distante : quand un motif copié depuis strudel.cc ne sonne pas, le rack peut
+ * dire pourquoi au lieu de laisser un silence.
  */
 export const SONS_DISTANTS_CONNUS: ReadonlyArray<string> = [
   "bd", "sd", "hh", "oh", "cp", "rim", "lt", "mt", "ht", "cr", "rd",
@@ -208,8 +207,15 @@ export function nomsJouables(): string[] {
  * le reste du motif joue, et un `.sound()` inconnu n'est pas une erreur de
  * syntaxe — Strudel se contente de ne rien produire pour cette voix.
  */
-export function sonsManquants(code: string): string[] {
-  const jouables = new Set(nomsJouables());
+export function sonsManquants(code: string, options: {
+  samplesDistants?: boolean;
+  samplesLocaux?: Iterable<string>;
+} = {}): string[] {
+  const jouables = new Set([
+    ...nomsJouables(),
+    ...(options.samplesDistants ? SONS_DISTANTS_CONNUS : []),
+    ...(options.samplesLocaux ?? []),
+  ]);
   const trouves = new Set<string>();
   // `.sound("x")` et `s("x")` sont les deux écritures ; le contenu peut être
   // un mini-motif entier — « bd*4, ~ hh » — donc on le découpe.
