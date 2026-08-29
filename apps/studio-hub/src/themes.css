@@ -240,6 +240,9 @@ textarea {
   .landing-shortcuts .ui-button { width: 100%; }
 }
 
+/* Rack Strudel : voir pages/strudel-rack.css. Les regles qui etaient ici
+   visaient des classes supprimees le 2026-08-29. */
+
 /* Training Lab : aucun style statique en ligne. */
 .exercises-hub-app { min-height: 100vh; display: flex; flex-direction: column; color: var(--ui-text); background: var(--ui-bg); }
 .exercise-notice { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 8px 16px; padding: 8px 12px; background: var(--ui-panel); border: 1px solid var(--ui-blue); border-radius: var(--ui-radius-sm); }
@@ -486,37 +489,6 @@ textarea {
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--ui-border-soft);
-}
-
-/* Rack Strudel — un editeur de code et son carnet, cote a cote. Tout passe par
-   les jetons : aucune couleur en dur, aucune valeur ecrite dans le JSX. */
-.strudel-page { padding-bottom: 40px; }
-.strudel-page .ui-page-header em { color: var(--ui-cyan); font-style: normal; }
-.strudel-atelier { width: min(1440px, calc(100% - 32px)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
-.strudel-editeur { display: grid; gap: 14px; }
-.strudel-champ { display: grid; gap: 8px; }
-.strudel-champ > span { color: var(--ui-muted); font: 900 10px var(--ui-font-mono); letter-spacing: .12em; }
-.strudel-champ textarea { width: 100%; padding: 14px; color: var(--ui-text); background: var(--ui-panel); border: 2px solid var(--ui-border); border-radius: var(--ui-radius-sm); font: 13px/1.6 var(--ui-font-mono); resize: vertical; tab-size: 2; }
-.strudel-champ textarea:focus-visible { outline: 3px solid var(--ui-cyan); outline-offset: 2px; }
-.strudel-commandes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.strudel-raccourcis { color: var(--ui-muted); font: 11px var(--ui-font-mono); }
-.strudel-erreur { margin: 0; padding: 12px 14px; color: var(--ui-danger); background: var(--ui-panel); border: 2px solid var(--ui-danger); border-radius: var(--ui-radius-sm); font: 12px/1.5 var(--ui-font-mono); overflow-wrap: anywhere; }
-.strudel-message { margin: 0; padding: 12px 14px; color: var(--ui-muted); background: var(--ui-panel-soft); border-radius: var(--ui-radius-sm); font-size: 13px; }
-.strudel-carnet { display: grid; gap: 12px; padding: 18px; background: var(--ui-panel); border: 2px solid var(--ui-border); border-radius: var(--ui-radius-md); }
-.strudel-carnet h2 { margin: 0; font: 900 11px var(--ui-font-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ui-muted); }
-.strudel-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.strudel-liste li { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid var(--ui-border-soft); }
-.strudel-liste li:last-child { border-bottom: 0; padding-bottom: 0; }
-.strudel-liste li > button { justify-self: start; padding: 0; color: var(--ui-text); background: transparent; border: 0; font: 700 13px var(--ui-font-mono); text-align: left; cursor: pointer; }
-.strudel-liste li > button:hover { color: var(--ui-cyan); }
-.strudel-liste small { grid-column: 1 / -1; color: var(--ui-muted); font-size: 12px; line-height: 1.45; }
-.strudel-oublier { min-width: 28px; min-height: 28px; color: var(--ui-muted); background: transparent; border: 1px solid var(--ui-border-soft); border-radius: var(--ui-radius-sm); cursor: pointer; }
-.strudel-oublier:hover { color: var(--ui-danger); border-color: var(--ui-danger); }
-.strudel-enregistrer { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-.strudel-enregistrer input { min-width: 0; padding: 9px 10px; color: var(--ui-text); background: var(--ui-bg); border: 1px solid var(--ui-border-soft); border-radius: var(--ui-radius-sm); font: 12px var(--ui-font-mono); }
-.strudel-vide { margin: 0; color: var(--ui-muted); font-size: 12px; line-height: 1.5; }
-@media (max-width: 900px) {
-  .strudel-atelier { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1180px) {

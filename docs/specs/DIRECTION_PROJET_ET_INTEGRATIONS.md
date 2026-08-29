@@ -69,12 +69,33 @@
 ### B. Moteurs Audio, DSP & Live Coding
 
 #### 4. Intégration Live-Coding Strudel / Algorithmes Génératifs
-- **Objectif** : Fournir une interface de programmation musicale en direct basée sur la syntaxe Strudel (TidalCycles pour le web), connectée directement aux 15 moteurs du rack et aux sorties MIDI physiques.
-- **Spécifications Techniques** :
-  - Interpréteur de motifs rythmiques et polyrythmies euclidiennes en temps réel.
-  - Synchronisation stricte sur l'horloge maître partagée (`packages/musique/divisions.ts` et `packages/rack-bus/transport.ts`).
-  - Sortie commutable : déclenchement des oscillateurs DSP internes ou émission MIDI vers OP-1 / EP-133.
-- **Composant Cible** : `apps/studio-hub/src/pages/StrudelLiveStudio.tsx`.
+- **Objectif** : Fournir une interface de programmation musicale en direct basée sur la syntaxe Strudel (TidalCycles pour le web), connectée à la console du rack et aux sorties MIDI physiques.
+- **Composant** : `apps/studio-hub/src/pages/StrudelRack.tsx`.
+
+  L'ancienne cible annoncée ici, `StrudelLiveStudio.tsx`, a été supprimée le
+  2026-08-29. Elle n'était pas une implémentation partielle mais une maquette :
+  elle n'importait jamais Strudel, affichait « code compilé et évalué avec
+  succès » sans rien évaluer, et jouait un motif de seize pas figé quel que soit
+  le code tapé. Ses quatorze « appels moteur » nommaient des sons — `mi_plaits`,
+  `open303`, `dexed_fm` — qui n'existent dans aucune version de Strudel.
+
+- **État au 2026-08-29** :
+  - ✅ Interpréteur de motifs et rythmes euclidiens : celui de `@strudel/web`,
+    avec l'éditeur officiel `@strudel/codemirror` et le surlignage des
+    événements en direct.
+  - ✅ Synchronisation sur l'horloge partagée : `sAbonnerTransport` de
+    `packages/rack-bus/transport.ts`, converti en cycles par
+    `core/strudel/tempo.ts`.
+  - ✅ Émission MIDI vers OP-1 / EP-133 : `core/strudel/sortieMidi.ts`. Notes
+    seulement — aucune écriture dans la mémoire des machines.
+  - ✅ Sortie audio dans la console : la sortie de superdough est détournée
+    vers une voie `brancher()`, avec gain, panoramique et départ de réverb.
+  - ❌ **Déclenchement des moteurs DSP internes depuis un motif.** Strudel ne
+    connaît que ses propres synthés ; faire répondre `.sound("mi_plaits")`
+    demanderait d'enregistrer chaque moteur du rack auprès de `superdough`
+    via `registerSound()`. Rien de tel n'est écrit à ce jour.
+  - ❌ **Échantillons distants** : refusés délibérément. Voir
+    `core/strudel/sons.ts` pour la palette réellement disponible hors ligne.
 
 #### 5. Moteur DSP WebAssembly (WASM / Rust / C++)
 - **Objectif** : Dépasser les limites de calcul CPU des AudioWorklets JS purs pour des émulations analogiques lourdes (filtres ladder Moog, saturation à transformateurs, réverbérations à convolution).

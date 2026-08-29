@@ -110,7 +110,7 @@ const tools: Tool[] = [
   },
   {
     id: "strudel", code: "STRUDEL", category: "CRÉATION SONORE", title: "Strudel — le code qui joue",
-    text: "Un langage de motifs : on écrit une ligne, elle boucle. Rack séparé, branché sur le moteur audio du Hub, sans aucun échantillon distant.",
+    text: "Un langage de motifs : on écrit une ligne, elle boucle. L'éditeur officiel, branché sur la console du Hub, sans aucun échantillon distant. Peut piloter une machine en MIDI, sans jamais rien écrire dans sa mémoire.",
     accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
     action: { type: "page", page: "strudel-rack" }, section: "hub", couleur: "#28d6d0",
   },

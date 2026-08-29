@@ -1,12 +1,18 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BPM_MAX,
   BPM_MIN,
+  brancher,
   contexte,
   reglerBpm,
+  reglerDepart,
+  reglerGain,
+  reglerPanoramique,
   sAbonnerTransport,
   transport,
+  voies,
+  type Prise,
 } from "@studio-hub/rack-bus";
 import { readProfileName } from "../core/profile";
 import {
@@ -18,53 +24,104 @@ import {
   trierExtraits,
   type Extrait,
 } from "../core/strudel/extraits";
-import { AppShell, Button, PageHeader, StatusBadge } from "../ui";
+import {
+  ALIAS_SONS,
+  SONS_DISTANTS_CONNUS,
+  SONS_LOCAUX,
+  SONS_ZZFX,
+  sonsManquants,
+} from "../core/strudel/sons";
+import { LIMITE_DOC, RACCOURCIS, SECTIONS_DOC } from "../core/strudel/reference";
+import { bpmVersCps } from "../core/strudel/tempo";
+import {
+  enregistrerProjet,
+  lireFichier,
+  modifie,
+  moyenDisponible,
+  nouveauProjet,
+  ouvrirProjet,
+  type Projet,
+} from "../core/strudel/projets";
+import {
+  ajouterSortie,
+  machinesDisponibles,
+  panicMachines,
+  retirerSorties,
+  routeVersMachine,
+  type Machine,
+} from "../core/strudel/sortieMidi";
+import { EditeurStrudel, type PoigneeEditeur } from "../components/EditeurStrudel";
+import { OscilloscopePixel } from "../components/OscilloscopePixel";
+import { AppShell } from "../ui";
+import "./strudel-rack.css";
 
 /**
  * Le rack Strudel — du code qui joue.
  *
- * Strudel est un langage de motifs : on écrit une ligne, elle boucle. C'est
- * un rack séparé, sans aucun lien avec le parcours de création OP-1, comme la
- * feuille de route l'exige.
+ * ## Ce que cette page est
  *
- * ## Ce qui est tenu, et pourquoi
+ * L'éditeur officiel de Strudel, monté dans le rack du Hub. Même éditeur
+ * — CodeMirror, avec le surlignage des événements en direct —, mêmes
+ * raccourcis, et une référence consultable à côté. Ce qui change, c'est le
+ * branchement : le son ne va pas à la sortie du navigateur, il entre dans le
+ * fond de panier comme n'importe quel autre module.
+ *
+ * ## Les quatre choses que ce rack tient
  *
  * **Le contexte audio est celui du Hub.** `setAudioContext(contexte())` avant
- * l'initialisation : Strudel utiliserait sinon le sien, et sortirait à côté du
- * mixage et du transport au lieu d'y passer. C'est tout l'intérêt du fond de
- * panier.
+ * `initStrudel` : Strudel fabriquerait sinon le sien et s'y attacherait
+ * définitivement. Rien ne le signalerait — le son sortirait, simplement à côté
+ * du mixage.
  *
- * **Aucun échantillon distant.** Strudel n'en charge pas par défaut, et on ne
- * lui en ajoute pas : l'atelier promet que rien ne part sur un serveur. Les
- * synthés intégrés fonctionnent hors ligne, ils suffisent. Un test interdit
- * aux exemples fournis d'appeler `samples()`.
+ * **La sortie passe par une voie de console.** Après l'initialisation, on
+ * détourne le `destinationGain` de superdough vers une prise obtenue par
+ * `brancher()`. Strudel gagne alors gain, panoramique, départ de réverbération,
+ * muet et solo — comme les vingt moteurs. C'était le vrai sens de « intégré au
+ * rack » : jusqu'ici la page utilisait le bon contexte mais court-circuitait la
+ * console, et son volume était le seul du Hub à ne pas répondre.
  *
- * **Aucune écriture machine.** Ce rack ne touche ni l'OP-1 ni l'EP-133. Il ne
- * lit aucun dossier et n'en écrit aucun.
+ * **Aucun échantillon distant.** Les synthés intégrés seulement. `sons.ts`
+ * relève dans la source de superdough ce qui existe hors ligne, et le rack
+ * prévient quand un motif appelle un son qui n'arrivera pas — au lieu de
+ * laisser un silence inexpliqué.
  *
- * **Arrêt immédiat.** `hush()` coupe tout, et le bouton reste atteignable
- * pendant l'exécution — c'est le PANIC du rack.
+ * **Aucune écriture machine.** Le rack envoie des notes MIDI, qui disparaissent
+ * une fois jouées. Il n'écrit ni patch, ni échantillon, ni dossier sur l'OP‑1
+ * ou l'EP‑133. Les fichiers qu'il écrit sont des projets, dans un emplacement
+ * que l'utilisateur désigne lui-même.
  *
  * ## Chargement à la demande
  *
- * Le paquet pèse environ 1,5 Mo. L'importer d'office alourdirait le Hub entier
- * pour une page qu'on n'ouvre pas à chaque fois : il n'est cherché qu'au
- * premier démarrage, sur un geste de l'utilisateur — ce que la politique de
- * lecture automatique des navigateurs exige de toute façon.
+ * Strudel pèse environ 1,5 Mo, CodeMirror et ses greffons davantage. Les deux
+ * sont importés dynamiquement : le Hub ne transporte pas un éditeur de code
+ * pour afficher sa page d'accueil.
  */
 
 type Etat = "eteint" | "chargement" | "pret" | "joue";
+type Onglet = "exemples" | "sons" | "aide" | "machines" | "mixage";
 
-/** Ce que `@strudel/web` expose, réduit à ce qu'on utilise. */
+/** Ce que `@strudel/web` expose, réduit à ce que le rack utilise. */
 type ApiStrudel = {
-  initStrudel: (options?: Record<string, unknown>) => void;
+  initStrudel: (options?: Record<string, unknown>) => unknown;
   evaluate: (code: string) => Promise<unknown>;
   hush: () => void;
   setAudioContext?: (ctx: AudioContext) => unknown;
-  setBpm?: (bpm: number) => unknown;
-  setTempo?: (bpm: number) => unknown;
-  scheduler?: { setBpm?: (bpm: number) => unknown; setTempo?: (bpm: number) => unknown };
+  registerZZFXSounds?: () => unknown;
+  getSuperdoughAudioController?: () => {
+    output?: { destinationGain?: GainNode | null };
+  };
 };
+
+/** L'ordonnanceur de Strudel, tel que le surlignage l'utilise. */
+type Repl = { scheduler?: unknown; setCps?: (v: number) => unknown };
+
+const ONGLETS: ReadonlyArray<{ id: Onglet; label: string }> = [
+  { id: "exemples", label: "EXEMPLES" },
+  { id: "sons", label: "SONS" },
+  { id: "aide", label: "AIDE" },
+  { id: "machines", label: "MACHINES" },
+  { id: "mixage", label: "MIXAGE" },
+];
 
 export default function StrudelRack() {
   const [profileName, setProfileName] = useState("NOUVEAU MEMBRE");
@@ -72,30 +129,49 @@ export default function StrudelRack() {
   const [etat, setEtat] = useState<Etat>("eteint");
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [onglet, setOnglet] = useState<Onglet>("exemples");
+  const [bpm, setBpm] = useState(transport().bpm);
+
   const [extraits, setExtraits] = useState<Extrait[]>([]);
   const [nom, setNom] = useState("");
-  const [bpm, setBpm] = useState(transport().bpm);
+
+  const [projet, setProjet] = useState<Projet | null>(null);
+  const [poigneeFichier, setPoigneeFichier] = useState<FileSystemFileHandle | null>(null);
+  const [moyen, setMoyen] = useState<"systeme-de-fichiers" | "telechargement">("telechargement");
+
+  const [machines, setMachines] = useState<Machine[]>([]);
+  const [canal, setCanal] = useState(1);
+
+  const [voieId, setVoieId] = useState<string | null>(null);
+  const [gain, setGain] = useState(1);
+  const [pano, setPano] = useState(0);
+  const [reverb, setReverb] = useState(0);
+
+  const [editeurPret, setEditeurPret] = useState<boolean | null>(null);
+
   const api = useRef<ApiStrudel | null>(null);
+  const repl = useRef<Repl | null>(null);
+  const dessinateur = useRef<{ start: (s: unknown) => void; stop: () => void; invalidate: (s?: unknown) => void } | null>(null);
+  const poignee = useRef<PoigneeEditeur | null>(null);
+  const prise = useRef<Prise | null>(null);
+  const positions = useRef<unknown[]>([]);
+  const entreeFichier = useRef<HTMLInputElement | null>(null);
+  /** Le code le plus récent, lisible depuis un rappel sans le recréer. */
+  const codeVif = useRef(code);
+  codeVif.current = code;
 
   useEffect(() => {
     setProfileName(readProfileName());
     setExtraits(trierExtraits(lireExtraits()));
+    setMoyen(moyenDisponible());
+    void machinesDisponibles().then(setMachines);
   }, []);
 
   // Asservir l'horloge de Strudel au transport partagé du Hub.
   useEffect(() => {
     return sAbonnerTransport((t) => {
       setBpm(t.bpm);
-      if (api.current) {
-        // Mettre à jour l'horloge interne de Strudel si disponible
-        if (typeof api.current.setBpm === "function") {
-          api.current.setBpm(t.bpm);
-        } else if (typeof api.current.setTempo === "function") {
-          api.current.setTempo(t.bpm);
-        } else if (typeof api.current.scheduler?.setBpm === "function") {
-          api.current.scheduler.setBpm(t.bpm);
-        }
-      }
+      repl.current?.setCps?.(bpmVersCps(t.bpm));
     });
   }, []);
 
@@ -112,8 +188,39 @@ export default function StrudelRack() {
     try {
       const mod = (await import("@strudel/web")) as unknown as ApiStrudel;
       mod.setAudioContext?.(contexte());
-      mod.initStrudel();
+      const pret = mod.initStrudel({
+        /**
+         * Relevé à chaque évaluation : les positions des fragments de
+         * mini-notation dans le document. C'est ce qui permet de les
+         * illuminer quand ils sonnent.
+         */
+        afterEval: (options: { meta?: { miniLocations?: unknown[] } }) => {
+          positions.current = options?.meta?.miniLocations ?? [];
+          poignee.current?.poserPositions(positions.current);
+          if (repl.current?.scheduler) dessinateur.current?.invalidate(repl.current.scheduler);
+        },
+      });
       api.current = mod;
+
+      /**
+       * Les sons ZZFX ne sont pas enregistrés par défaut : `@strudel/web`
+       * n'appelle que `registerSynthSounds`. Ce sont des générateurs, pas des
+       * téléchargements — rien ne sort du navigateur en les ajoutant, et ils
+       * élargissent nettement la palette hors ligne.
+       */
+      try {
+        mod.registerZZFXSounds?.();
+      } catch {
+        /* la palette de base suffit si l'enregistrement échoue */
+      }
+
+      // `initStrudel` rend une promesse résolue sur le repl.
+      repl.current = (await Promise.resolve(pret as Promise<Repl>)) ?? null;
+      repl.current?.setCps?.(bpmVersCps(transport().bpm));
+
+      brancherSurLaConsole(mod);
+      await preparerSurlignage();
+
       setEtat("pret");
       return mod;
     } catch (e) {
@@ -123,6 +230,61 @@ export default function StrudelRack() {
       );
       return null;
     }
+    // Les deux fonctions ci-dessous sont stables : définies hors du rendu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Détourne la sortie de Strudel vers une voie de la console.
+   *
+   * superdough câble `channelMerger → destinationGain → ctx.destination`. Il
+   * n'expose aucune API pour changer cette destination : on prend donc le
+   * `destinationGain`, on le débranche, et on le rebranche sur la prise.
+   *
+   * Fait après `initStrudel`, jamais avant : le contrôleur n'existe pas tant
+   * que le moteur n'a pas démarré.
+   *
+   * Si la structure interne de superdough change, on le voit ici et le rack
+   * continue de sonner — en direct, hors console. Un échec silencieux qui
+   * couperait le son serait pire qu'un mixage inopérant.
+   */
+  const brancherSurLaConsole = useCallback((mod: ApiStrudel) => {
+    try {
+      const sortie = mod.getSuperdoughAudioController?.().output?.destinationGain;
+      if (!sortie) {
+        setMessage(
+          "Sortie branchée en direct : la console du rack ne pilotera pas ce volume.",
+        );
+        return;
+      }
+      const avant = new Set(voies().map((v) => v.id));
+      const p = brancher("Strudel");
+      prise.current = p;
+      const nouvelle = voies().find((v) => !avant.has(v.id));
+      setVoieId(nouvelle?.id ?? null);
+
+      sortie.disconnect();
+      sortie.connect(p.entree);
+    } catch (e) {
+      setMessage(
+        `Sortie branchée en direct (${e instanceof Error ? e.message : String(e)}).`,
+      );
+    }
+  }, []);
+
+  /** Démarre la boucle qui illumine les événements pendant la lecture. */
+  const preparerSurlignage = useCallback(async () => {
+    if (dessinateur.current) return;
+    try {
+      const { Drawer } = await import("@strudel/draw");
+      const d = new Drawer((haps: unknown[], temps: number) => {
+        poignee.current?.surligner(temps, haps);
+      }, [0, 0]);
+      dessinateur.current = d as unknown as typeof dessinateur.current;
+    } catch {
+      // Le surlignage est du confort : son absence ne doit pas empêcher de
+      // jouer, et l'annoncer comme une panne serait disproportionné.
+    }
   }, []);
 
   const jouer = useCallback(async () => {
@@ -130,32 +292,67 @@ export default function StrudelRack() {
     if (!mod) return;
     setErreur(null);
     try {
-      await mod.evaluate(code);
+      await mod.evaluate(codeVif.current);
       setEtat("joue");
-      setMessage("En cours. « Arrêter » coupe tout.");
+      poignee.current?.clignoter();
+      if (repl.current?.scheduler) dessinateur.current?.start(repl.current.scheduler);
+      const absents = sonsManquants(codeVif.current);
+      setMessage(
+        absents.length
+          ? `En cours. Sons introuvables hors ligne : ${absents.join(", ")}.`
+          : "En cours. « Stop » coupe tout.",
+      );
     } catch (e) {
       // Une erreur de syntaxe est le cas NORMAL d'un éditeur de code : on la
       // montre telle quelle, sans arrêter ce qui jouait déjà.
       setErreur(e instanceof Error ? e.message : String(e));
     }
-  }, [code, demarrer]);
+  }, [demarrer]);
 
+  /**
+   * Le PANIC du rack.
+   *
+   * Coupe les deux chemins : `hush()` pour l'audio de Strudel, et les paquets
+   * « all notes off » pour les machines. Le premier ignore ce qui est parti en
+   * MIDI, le second ne connaît pas l'audio — il faut les deux.
+   */
   const arreter = useCallback(() => {
     api.current?.hush();
+    dessinateur.current?.stop();
+    poignee.current?.surligner(0, []);
     setEtat(api.current ? "pret" : "eteint");
     setMessage("Arrêté.");
+    void panicMachines();
   }, []);
 
   // Tout couper en quittant la page : sans cela, le motif continuerait de
   // jouer par-dessus l'écran suivant.
   useEffect(() => () => api.current?.hush(), []);
 
+  /**
+   * Débrancher la voie et couper les machines au démontage.
+   *
+   * Séparé du `hush` ci-dessus par volonté : chaque effet a une seule
+   * responsabilité, et celui-ci touche à des ressources — une voie de console,
+   * des ports MIDI — que le premier ne connaît pas.
+   */
+  useEffect(() => {
+    return () => {
+      dessinateur.current?.stop();
+      prise.current?.detacher();
+      prise.current = null;
+      void panicMachines();
+    };
+  }, []);
+
+  /* --- Extraits (brouillons locaux) ------------------------------------- */
+
   const enregistrer = useCallback(() => {
     const liste = trierExtraits(enregistrerExtrait(nom, code, extraits));
     setExtraits(liste);
     setMessage(
       ecrireExtraits(liste)
-        ? `« ${liste.find((e) => e.code === code)?.nom ?? nom} » enregistré localement.`
+        ? `« ${liste.find((e) => e.code === code)?.nom ?? nom} » gardé dans ce navigateur.`
         : "Le navigateur a refusé d'écrire — extrait gardé pour cette session seulement.",
     );
     setNom("");
@@ -168,115 +365,521 @@ export default function StrudelRack() {
     setMessage("Extrait retiré.");
   }, [extraits]);
 
-  const surTouche = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); void jouer(); }
-    if (e.key === "Escape") { e.preventDefault(); arreter(); }
-  };
+  /* --- Projets (fichiers) ----------------------------------------------- */
+
+  const chargerCode = useCallback((nouveau: string) => {
+    setCode(nouveau);
+    poignee.current?.remplacer(nouveau);
+  }, []);
+
+  const sauver = useCallback(async () => {
+    const p = nouveauProjet(projet?.nom ?? nom ?? "Sans titre", codeVif.current, bpm);
+    const r = await enregistrerProjet(p, poigneeFichier);
+    if (!r.ok) {
+      if (!r.annule) setErreur(r.erreur ?? "L'enregistrement a échoué.");
+      return;
+    }
+    setProjet({ ...p, code: codeVif.current });
+    setPoigneeFichier(r.poignee);
+    setMessage(
+      r.poignee
+        ? `Enregistré dans « ${r.nomFichier} ».`
+        : `« ${r.nomFichier} » envoyé dans les téléchargements — ce navigateur ne peut pas réécrire le fichier sur place.`,
+    );
+  }, [bpm, nom, poigneeFichier, projet]);
+
+  const ouvrir = useCallback(async () => {
+    if (moyen !== "systeme-de-fichiers") {
+      entreeFichier.current?.click();
+      return;
+    }
+    const r = await ouvrirProjet();
+    if (!r.ok) {
+      if (!r.annule) setErreur(r.erreur ?? "L'ouverture a échoué.");
+      return;
+    }
+    chargerCode(r.projet.code);
+    setProjet(r.projet);
+    setPoigneeFichier(r.poignee);
+    if (r.projet.bpm >= BPM_MIN && r.projet.bpm <= BPM_MAX) reglerBpm(r.projet.bpm);
+    setMessage(
+      r.brut
+        ? `Code importé sous « ${r.projet.nom} ». Enregistre-le pour en faire un projet.`
+        : `« ${r.projet.nom} » ouvert.`,
+    );
+  }, [chargerCode, moyen]);
+
+  const surFichierChoisi = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const f = e.target.files?.[0];
+      // Vider la valeur permet de rouvrir le MÊME fichier deux fois de suite :
+      // sans cela, l'évènement `change` ne se déclenche pas la seconde fois.
+      e.target.value = "";
+      if (!f) return;
+      const r = await lireFichier(f);
+      if (!r.ok) {
+        setErreur(r.erreur ?? "Fichier illisible.");
+        return;
+      }
+      chargerCode(r.projet.code);
+      setProjet(r.projet);
+      setPoigneeFichier(null);
+      if (r.projet.bpm >= BPM_MIN && r.projet.bpm <= BPM_MAX) reglerBpm(r.projet.bpm);
+      setMessage(`« ${r.projet.nom} » ouvert.`);
+    },
+    [chargerCode],
+  );
+
+  /* --- Machines ---------------------------------------------------------- */
+
+  const brancherMachine = useCallback(
+    (m: Machine) => {
+      chargerCode(ajouterSortie(codeVif.current, m, canal));
+      setMessage(
+        `Motif routé vers ${m.etiquette}, canal ${canal}. La machine joue ses propres sons.`,
+      );
+    },
+    [canal, chargerCode],
+  );
+
+  const debrancherMachines = useCallback(() => {
+    chargerCode(retirerSorties(codeVif.current));
+    void panicMachines();
+    setMessage("Routage MIDI retiré.");
+  }, [chargerCode]);
+
+  /* --- Console ----------------------------------------------------------- */
+
+  useEffect(() => { if (voieId) reglerGain(voieId, gain); }, [gain, voieId]);
+  useEffect(() => { if (voieId) reglerPanoramique(voieId, pano); }, [pano, voieId]);
+  useEffect(() => { if (voieId) reglerDepart(voieId, reverb); }, [reverb, voieId]);
+
+  /* --- Clavier ----------------------------------------------------------- */
+
+  /**
+   * Les raccourcis de page.
+   *
+   * `Ctrl+Entrée` et `Ctrl+.` sont câblés DANS CodeMirror, qui les consomme
+   * avant d'arriver ici. On ne traite donc que ce qui doit marcher même quand
+   * le focus est ailleurs — un clic dans le panneau latéral ne doit pas
+   * priver de l'arrêt d'urgence.
+   */
+  const surTouche = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === "Escape") { e.preventDefault(); arreter(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); void jouer(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void sauver(); }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") { e.preventDefault(); void ouvrir(); }
+    },
+    [arreter, jouer, ouvrir, sauver],
+  );
+
+  const absents = useMemo(() => sonsManquants(code), [code]);
+  const enAttente = modifie(projet, code);
+  const titreProjet = projet?.nom ?? "Sans titre";
 
   return (
-    <AppShell activePage="strudel-rack" profileName={profileName} className="strudel-page">
-      <PageHeader
-        eyebrow="RACK · LANGAGE DE MOTIFS"
-        title={<>Strudel.<br /><em>Le code qui joue.</em></>}
-        description="Écris une ligne, elle boucle. Rack séparé, branché sur le moteur audio du Hub — aucune machine n'est touchée."
-        status={
-          <StatusBadge tone={etat === "joue" ? "ready" : etat === "chargement" ? "test" : "offline"}>
-            {etat === "joue" ? "En cours" : etat === "chargement" ? "Chargement…" : etat === "pret" ? "Prêt" : "Éteint"}
-          </StatusBadge>
-        }
-      />
+    <AppShell activePage="strudel-rack" profileName={profileName} className="strudel-console">
+      {/* Pas de titre ni de paragraphe d'accueil : la page est un instrument,
+          pas une brochure. Ce qu'elle fait se lit dans sa barre d'outils. */}
+      <div className="sr-plan" onKeyDown={surTouche}>
+        <header className="sr-barre">
+          <div className="sr-groupe sr-groupe--transport">
+            <span className={`sr-diode sr-diode--${etat}`} aria-hidden="true" />
+            <span className="sr-etat" role="status">
+              {etat === "joue" ? "EN LECTURE" : etat === "chargement" ? "CHARGEMENT" : etat === "pret" ? "PRÊT" : "ÉTEINT"}
+            </span>
+            <button
+              type="button"
+              className="sr-bouton sr-bouton--jouer"
+              onClick={() => void jouer()}
+              disabled={etat === "chargement"}
+            >
+              ▶ JOUER
+            </button>
+            {/* Jamais désactivé : c'est l'arrêt d'urgence du rack, il doit
+                répondre y compris pendant le chargement. */}
+            <button type="button" className="sr-bouton sr-bouton--stop" onClick={arreter}>
+              ■ STOP
+            </button>
+          </div>
 
-      <section className="strudel-atelier" aria-label="Éditeur Strudel">
-        <div className="strudel-editeur">
-          <label className="strudel-champ">
-            <span>CODE</span>
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={surTouche}
-              spellCheck={false}
-              rows={12}
-              aria-label="Code Strudel"
+          <label className="sr-groupe sr-tempo" title="Tempo asservi au transport partagé du Hub">
+            <span>BPM</span>
+            <input
+              type="number"
+              min={BPM_MIN}
+              max={BPM_MAX}
+              value={bpm}
+              onChange={(e) => {
+                const v = Number.parseInt(e.target.value, 10);
+                if (!Number.isNaN(v)) reglerBpm(v);
+              }}
+              aria-label="Tempo BPM asservi au Hub"
             />
           </label>
 
-          <div className="strudel-commandes">
-            <Button variant="primary" onClick={() => void jouer()} disabled={etat === "chargement"}>
-              {etat === "chargement" ? "Chargement…" : "Jouer"}
-            </Button>
-            {/* Toujours atteignable, y compris pendant le chargement : c'est
-                l'arrêt d'urgence de ce rack. */}
-            <Button variant="danger" onClick={arreter}>Arrêter</Button>
-            <label className="strudel-tempo-controle" title="Tempo asservi au transport partagé du Hub">
-              <span>TEMPO</span>
-              <input
-                type="number"
-                min={BPM_MIN}
-                max={BPM_MAX}
-                value={bpm}
-                onChange={(e) => {
-                  const v = Number.parseInt(e.target.value, 10);
-                  if (!Number.isNaN(v)) {
-                    reglerBpm(v);
-                  }
-                }}
-                aria-label="Tempo BPM asservi au Hub"
-              />
-              <span className="strudel-bpm-unite">BPM</span>
-            </label>
-            <span className="strudel-raccourcis">Ctrl+Entrée pour jouer · Échap pour arrêter</span>
+          <div className="sr-groupe sr-fichier">
+            <span className="sr-projet" title={titreProjet}>
+              {titreProjet}
+              {enAttente && <b className="sr-modifie" aria-label="modifications non enregistrées">●</b>}
+            </span>
+            <button type="button" className="sr-bouton" onClick={() => void ouvrir()}>OUVRIR</button>
+            <button type="button" className="sr-bouton" onClick={() => void sauver()}>ENREGISTRER</button>
+            <input
+              ref={entreeFichier}
+              type="file"
+              accept=".json,.js,.mjs,.txt"
+              className="sr-fichier-cache"
+              onChange={(e) => void surFichierChoisi(e)}
+              aria-label="Ouvrir un projet Strudel"
+            />
           </div>
 
-          {erreur && <p className="strudel-erreur" role="alert">{erreur}</p>}
-          {!erreur && message && <p className="strudel-message" role="status">{message}</p>}
+          <nav className="sr-groupe sr-onglets" aria-label="Panneaux">
+            {ONGLETS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className={`sr-onglet${onglet === o.id ? " sr-onglet--actif" : ""}`}
+                aria-pressed={onglet === o.id}
+                onClick={() => setOnglet(o.id)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </nav>
+        </header>
+
+        <div className="sr-corps">
+          <section className="sr-editeur" aria-label="Éditeur Strudel">
+            <EditeurStrudel
+              codeInitial={code}
+              surChangement={setCode}
+              surEvaluer={() => void jouer()}
+              surArret={arreter}
+              surPret={(p) => {
+                poignee.current = p;
+                setEditeurPret(p !== null);
+                if (p && positions.current.length) p.poserPositions(positions.current);
+              }}
+            />
+            {editeurPret === false && (
+              <textarea
+                className="sr-repli"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                spellCheck={false}
+                aria-label="Code Strudel (éditeur de repli)"
+              />
+            )}
+          </section>
+
+          <aside className="sr-panneau" aria-label={`Panneau ${onglet}`}>
+            {/* Le tracé de la sortie générale du rack, pas seulement de
+                Strudel : c'est l'analyseur du bus maître qu'il lit. */}
+            <OscilloscopePixel actif={etat === "joue"} />
+
+            {onglet === "exemples" && (
+              <PanneauExemples
+                extraits={extraits}
+                nom={nom}
+                setNom={setNom}
+                onCharger={chargerCode}
+                onEnregistrer={enregistrer}
+                onOublier={oublier}
+              />
+            )}
+            {onglet === "sons" && <PanneauSons />}
+            {onglet === "aide" && <PanneauAide />}
+            {onglet === "machines" && (
+              <PanneauMachines
+                machines={machines}
+                canal={canal}
+                setCanal={setCanal}
+                route={routeVersMachine(code)}
+                onBrancher={brancherMachine}
+                onDebrancher={debrancherMachines}
+                onRafraichir={() => void machinesDisponibles().then(setMachines)}
+              />
+            )}
+            {onglet === "mixage" && (
+              <PanneauMixage
+                voieId={voieId}
+                gain={gain} setGain={setGain}
+                pano={pano} setPano={setPano}
+                reverb={reverb} setReverb={setReverb}
+              />
+            )}
+          </aside>
         </div>
 
-        <aside className="strudel-carnet" aria-label="Exemples et extraits">
-          <h2>Exemples</h2>
-          <ul className="strudel-liste">
-            {EXEMPLES.map((e) => (
-              <li key={e.nom}>
-                <button type="button" onClick={() => setCode(e.code)}>{e.nom}</button>
-                <small>{e.aide}</small>
-              </li>
-            ))}
-          </ul>
-
-          <h2>Mes extraits</h2>
-          <div className="strudel-enregistrer">
-            <input
-              value={nom}
-              onChange={(e) => setNom(e.target.value)}
-              placeholder="Nom de l'extrait"
-              aria-label="Nom de l'extrait à enregistrer"
-            />
-            <Button variant="secondary" onClick={enregistrer}>Enregistrer</Button>
-          </div>
-
-          {extraits.length === 0 ? (
-            <p className="strudel-vide">
-              Aucun extrait gardé. Ce que tu enregistres reste dans ce navigateur,
-              et n'en sort pas.
-            </p>
+        <footer className="sr-pied">
+          {erreur ? (
+            <p className="sr-erreur" role="alert">{erreur}</p>
           ) : (
-            <ul className="strudel-liste">
-              {extraits.map((e) => (
-                <li key={e.id}>
-                  <button type="button" onClick={() => setCode(e.code)}>{e.nom}</button>
-                  <button
-                    type="button"
-                    className="strudel-oublier"
-                    onClick={() => oublier(e.id)}
-                    aria-label={`Retirer ${e.nom}`}
-                  >
-                    ✕
-                  </button>
+            <p className="sr-message" role="status">{message ?? "Ctrl+Entrée pour jouer · Ctrl+. ou Échap pour tout couper"}</p>
+          )}
+          {absents.length > 0 && (
+            <p className="sr-avertissement">
+              Hors ligne, {absents.length > 1 ? "ces sons n'existent pas" : "ce son n'existe pas"} ici :{" "}
+              <b>{absents.join(", ")}</b>
+              {absents.some((a) => SONS_DISTANTS_CONNUS.includes(a)) &&
+                " — ce sont des échantillons du Strudel officiel, hébergés en ligne. Onglet MACHINES pour jouer une vraie boîte à rythmes."}
+            </p>
+          )}
+          {moyen === "telechargement" && (
+            <p className="sr-note">
+              Contexte non sécurisé : « Enregistrer » télécharge un fichier au lieu de
+              réécrire celui qui est ouvert. Passe par localhost pour l'écriture en place.
+            </p>
+          )}
+        </footer>
+      </div>
+    </AppShell>
+  );
+}
+
+/* ------------------------------------------------------------------------ *
+ * Les panneaux.
+ *
+ * Extraits en composants pour que la page reste lisible : le rack en compte
+ * cinq, et les garder en ligne aurait donné un rendu de trois cents lignes où
+ * l'on ne retrouve plus rien.
+ * ------------------------------------------------------------------------ */
+
+function PanneauExemples({
+  extraits, nom, setNom, onCharger, onEnregistrer, onOublier,
+}: {
+  extraits: Extrait[];
+  nom: string;
+  setNom: (v: string) => void;
+  onCharger: (code: string) => void;
+  onEnregistrer: () => void;
+  onOublier: (id: string) => void;
+}) {
+  return (
+    <>
+      <h2 className="sr-titre">Exemples</h2>
+      <ul className="sr-liste">
+        {EXEMPLES.map((e) => (
+          <li key={e.nom}>
+            <button type="button" onClick={() => onCharger(e.code)}>{e.nom}</button>
+            <small>{e.aide}</small>
+          </li>
+        ))}
+      </ul>
+
+      <h2 className="sr-titre">Brouillons</h2>
+      <p className="sr-aide">
+        Gardés dans ce navigateur. Pour un fichier qu'on peut envoyer ou versionner,
+        utilise ENREGISTRER.
+      </p>
+      <div className="sr-ajout">
+        <input
+          value={nom}
+          onChange={(e) => setNom(e.target.value)}
+          placeholder="Nom du brouillon"
+          aria-label="Nom du brouillon"
+        />
+        <button type="button" className="sr-bouton" onClick={onEnregistrer}>GARDER</button>
+      </div>
+      {extraits.length === 0 ? (
+        <p className="sr-vide">Aucun brouillon.</p>
+      ) : (
+        <ul className="sr-liste">
+          {extraits.map((e) => (
+            <li key={e.id}>
+              <button type="button" onClick={() => onCharger(e.code)}>{e.nom}</button>
+              <button
+                type="button"
+                className="sr-retirer"
+                onClick={() => onOublier(e.id)}
+                aria-label={`Retirer ${e.nom}`}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+function PanneauSons() {
+  return (
+    <>
+      <h2 className="sr-titre">Sons hors ligne</h2>
+      <p className="sr-aide">
+        Relevés dans la source du moteur, à la version verrouillée. Tout ce qui est
+        listé ici sonne sans réseau.
+      </p>
+      {(["forme d'onde", "bruit", "percussion", "expérimental"] as const).map((famille) => {
+        const liste = SONS_LOCAUX.filter((s) => s.famille === famille);
+        if (!liste.length) return null;
+        return (
+          <div key={famille} className="sr-famille">
+            <h3 className="sr-sous-titre">{famille}</h3>
+            <ul className="sr-liste sr-liste--sons">
+              {liste.map((s) => (
+                <li key={s.nom}>
+                  <code>{s.nom}</code>
+                  <small>{s.aide}</small>
                 </li>
               ))}
             </ul>
-          )}
-        </aside>
-      </section>
-    </AppShell>
+          </div>
+        );
+      })}
+      <div className="sr-famille">
+        <h3 className="sr-sous-titre">zzfx</h3>
+        <p className="sr-aide">{SONS_ZZFX.join(" · ")}</p>
+      </div>
+      <div className="sr-famille">
+        <h3 className="sr-sous-titre">raccourcis</h3>
+        <p className="sr-aide">
+          {ALIAS_SONS.map((a) => `${a.alias} = ${a.vers}`).join(" · ")}
+        </p>
+      </div>
+    </>
+  );
+}
+
+function PanneauAide() {
+  return (
+    <>
+      <h2 className="sr-titre">Raccourcis</h2>
+      <ul className="sr-liste sr-liste--touches">
+        {RACCOURCIS.map((r) => (
+          <li key={r.touches}><kbd>{r.touches}</kbd><small>{r.effet}</small></li>
+        ))}
+      </ul>
+      {SECTIONS_DOC.map((s) => (
+        <details key={s.id} className="sr-section">
+          <summary>{s.titre}</summary>
+          <p className="sr-aide">{s.intro}</p>
+          <ul className="sr-liste sr-liste--doc">
+            {s.entrees.map((e) => (
+              <li key={e.syntaxe}>
+                <code>{e.syntaxe}</code>
+                <small>{e.effet}</small>
+                {e.exemple && <pre>{e.exemple}</pre>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ))}
+      <p className="sr-note">{LIMITE_DOC}</p>
+    </>
+  );
+}
+
+function PanneauMachines({
+  machines, canal, setCanal, route, onBrancher, onDebrancher, onRafraichir,
+}: {
+  machines: Machine[];
+  canal: number;
+  setCanal: (v: number) => void;
+  route: boolean;
+  onBrancher: (m: Machine) => void;
+  onDebrancher: () => void;
+  onRafraichir: () => void;
+}) {
+  return (
+    <>
+      <h2 className="sr-titre">Machines</h2>
+      <p className="sr-aide">
+        Le motif part en MIDI, la machine joue ses propres sons. Rien n'est écrit
+        dans sa mémoire : une note jouée ne laisse aucune trace.
+      </p>
+      <label className="sr-ajout">
+        <span>CANAL</span>
+        <input
+          type="number" min={1} max={16} value={canal}
+          onChange={(e) => {
+            const v = Number.parseInt(e.target.value, 10);
+            if (!Number.isNaN(v)) setCanal(Math.min(16, Math.max(1, v)));
+          }}
+          aria-label="Canal MIDI"
+        />
+      </label>
+      {machines.length === 0 ? (
+        <>
+          <p className="sr-vide">Aucune sortie MIDI détectée.</p>
+          <button type="button" className="sr-bouton" onClick={onRafraichir}>RECHERCHER</button>
+        </>
+      ) : (
+        <ul className="sr-liste">
+          {machines.map((m) => (
+            <li key={m.nom}>
+              <button type="button" onClick={() => onBrancher(m)}>
+                {m.etiquette}
+                {m.connue && <em className="sr-connue"> ({m.connue === "op1" ? "OP-1" : "EP-133"})</em>}
+              </button>
+              <small>{m.nom}</small>
+            </li>
+          ))}
+        </ul>
+      )}
+      {route && (
+        <button type="button" className="sr-bouton sr-bouton--stop" onClick={onDebrancher}>
+          RETIRER LE ROUTAGE
+        </button>
+      )}
+    </>
+  );
+}
+
+function PanneauMixage({
+  voieId, gain, setGain, pano, setPano, reverb, setReverb,
+}: {
+  voieId: string | null;
+  gain: number; setGain: (v: number) => void;
+  pano: number; setPano: (v: number) => void;
+  reverb: number; setReverb: (v: number) => void;
+}) {
+  if (!voieId) {
+    return (
+      <>
+        <h2 className="sr-titre">Console</h2>
+        <p className="sr-vide">
+          La voie n'est pas ouverte. Lance la lecture une fois : le rack branche
+          Strudel sur la console au premier démarrage du moteur.
+        </p>
+      </>
+    );
+  }
+  return (
+    <>
+      <h2 className="sr-titre">Console</h2>
+      <p className="sr-aide">
+        Strudel occupe une voie du fond de panier, comme les moteurs du rack DSP.
+        Ces réglages sont ceux de la console, pas ceux du motif.
+      </p>
+      <Curseur nom="VOLUME" valeur={gain} min={0} max={2} pas={0.01} sur={setGain} />
+      <Curseur nom="PANORAMIQUE" valeur={pano} min={-1} max={1} pas={0.01} sur={setPano} />
+      <Curseur nom="RÉVERB" valeur={reverb} min={0} max={1} pas={0.01} sur={setReverb} />
+      <p className="sr-note">Voie « Strudel » · {voieId}</p>
+    </>
+  );
+}
+
+function Curseur({
+  nom, valeur, min, max, pas, sur,
+}: {
+  nom: string; valeur: number; min: number; max: number; pas: number;
+  sur: (v: number) => void;
+}) {
+  return (
+    <label className="sr-curseur">
+      <span>{nom}</span>
+      <input
+        type="range" min={min} max={max} step={pas} value={valeur}
+        onChange={(e) => sur(Number.parseFloat(e.target.value))}
+        aria-label={nom}
+      />
+      <b>{valeur.toFixed(2)}</b>
+    </label>
   );
 }

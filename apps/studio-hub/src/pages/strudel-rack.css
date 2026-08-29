@@ -1,0 +1,541 @@
+/**
+ * Le rack Strudel — habillage console, ambiance pixel.
+ *
+ * ## Les règles du dessin
+ *
+ * Trois contraintes tenues partout, qui font la cohérence de l'ensemble :
+ *
+ * 1. **Aucun arrondi.** `border-radius: 0` sur tout. Un pixel n'a pas de coin
+ *    rond ; un seul arrondi oublié casse l'illusion plus sûrement qu'une
+ *    couleur fausse.
+ * 2. **Aucune ombre floue.** Les reliefs sont des `box-shadow` à décalage
+ *    entier et flou nul — un bloc de couleur décalé, comme un sprite ombré.
+ * 3. **Une grille de 4 px.** Écarts, épaisseurs et décalages sont des
+ *    multiples de 4. C'est ce qui donne la sensation de trame sans qu'on
+ *    dessine une seule image.
+ *
+ * ## Pourquoi une feuille à part
+ *
+ * Les anciennes règles `.strudel-*` vivaient en double, dans `themes.css` ET
+ * dans `outils.css`. La seconde n'est chargée que par le Hub des outils : les
+ * styles du rack dépendaient donc d'une page qu'on avait pu ne jamais ouvrir.
+ * Un rack qui s'affiche différemment selon le chemin parcouru pour y arriver
+ * est un bogue qu'on ne reproduit qu'une fois sur deux.
+ *
+ * Cette feuille est importée par `StrudelRack.tsx`, donc chargée avec la page
+ * et avec elle seule.
+ *
+ * ## Portée
+ *
+ * Tout est préfixé `.sr-` sous `.strudel-console`. Aucun sélecteur d'élément
+ * nu : ce que la garde de `styles.selecteurs.test.ts` interdit dans les
+ * feuilles héritées, on ne le réintroduit pas dans une feuille neuve.
+ */
+
+.strudel-console {
+  /* Palette. Sombre dans les deux thèmes : c'est une console, pas un
+     document. Le vert est celui d'un écran à phosphore, le magenta sert
+     d'accent unique — deux accents concurrents brouilleraient la lecture. */
+  --sr-fond: #0b0f0c;
+  --sr-panneau: #12181300;
+  --sr-panneau-plein: #121813;
+  --sr-relief: #1c241d;
+  --sr-trait: #2f3d31;
+  --sr-trait-vif: #4a6b4f;
+  --sr-texte: #d8e6d6;
+  --sr-doux: #8fa38d;
+  --sr-vert: #7cf07c;
+  --sr-magenta: #ff5fa2;
+  --sr-ambre: #ffc14d;
+  --sr-rouge: #ff5f5f;
+  --sr-pas: 4px;
+
+  min-height: 100vh;
+  color: var(--sr-texte);
+  background-color: var(--sr-fond);
+  /* La trame de fond : deux dégradés répétés de 4 px, donc une grille dessinée
+     sans image. Très peu contrastée — on doit la sentir, pas la lire. */
+  background-image:
+    linear-gradient(rgba(124, 240, 124, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 240, 124, 0.03) 1px, transparent 1px);
+  background-size: 16px 16px, 16px 16px;
+  font-family: ui-monospace, "Courier New", monospace;
+}
+
+.strudel-console .sr-plan {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Hauteur de la barre du Hub retirée : le rack occupe tout ce qui reste,
+     l'éditeur compris. C'est ce qui rend la fenêtre d'édition grande sans
+     qu'on lui fixe une hauteur arbitraire. */
+  height: calc(100vh - 64px);
+}
+
+/* --- Barre d'outils ----------------------------------------------------- */
+
+.strudel-console .sr-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 10px 16px;
+  background: var(--sr-panneau-plein);
+  border-bottom: 3px solid var(--sr-trait);
+}
+
+.strudel-console .sr-groupe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strudel-console .sr-groupe--transport { gap: 10px; }
+
+/* La diode d'état. Carrée, évidemment. */
+.strudel-console .sr-diode {
+  width: 12px;
+  height: 12px;
+  background: var(--sr-trait-vif);
+  box-shadow: 0 0 0 2px var(--sr-fond), 0 0 0 4px var(--sr-trait);
+}
+.strudel-console .sr-diode--joue { background: var(--sr-vert); animation: sr-pulse 1s steps(2) infinite; }
+.strudel-console .sr-diode--chargement { background: var(--sr-ambre); animation: sr-pulse .4s steps(2) infinite; }
+.strudel-console .sr-diode--pret { background: var(--sr-trait-vif); }
+.strudel-console .sr-diode--eteint { background: #33403400; box-shadow: 0 0 0 2px var(--sr-fond), 0 0 0 4px var(--sr-trait); }
+
+@keyframes sr-pulse { 50% { opacity: .25; } }
+
+/* Les animations sont décoratives : qui demande moins de mouvement n'a rien
+   à y perdre. */
+@media (prefers-reduced-motion: reduce) {
+  .strudel-console .sr-diode { animation: none; }
+}
+
+.strudel-console .sr-etat {
+  min-width: 96px;
+  color: var(--sr-doux);
+  font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: .14em;
+}
+
+/* Le bouton pixel : bordure franche, ombre pleine décalée, et l'ombre qui
+   disparaît à l'enfoncement pendant que le bouton descend d'autant. */
+.strudel-console .sr-bouton {
+  padding: 8px 12px;
+  color: var(--sr-texte);
+  background: var(--sr-relief);
+  border: 2px solid var(--sr-trait-vif);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 0 #000;
+  font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: .1em;
+  cursor: pointer;
+  transition: none;
+}
+
+.strudel-console .sr-bouton:hover { background: #263026; }
+
+.strudel-console .sr-bouton:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 0 #000;
+}
+
+.strudel-console .sr-bouton:focus-visible {
+  outline: 3px solid var(--sr-magenta);
+  outline-offset: 2px;
+}
+
+.strudel-console .sr-bouton:disabled {
+  color: var(--sr-doux);
+  border-color: var(--sr-trait);
+  box-shadow: 4px 4px 0 0 #0006;
+  cursor: not-allowed;
+}
+
+.strudel-console .sr-bouton--jouer {
+  color: #06120a;
+  background: var(--sr-vert);
+  border-color: #b6ffb6;
+}
+.strudel-console .sr-bouton--jouer:hover { background: #9dff9d; }
+
+.strudel-console .sr-bouton--stop {
+  color: #1a0509;
+  background: var(--sr-magenta);
+  border-color: #ff9cc6;
+}
+.strudel-console .sr-bouton--stop:hover { background: #ff7fb5; }
+
+/* Champs — même géométrie que les boutons, en creux plutôt qu'en relief. */
+.strudel-console .sr-tempo span,
+.strudel-console .sr-ajout span,
+.strudel-console .sr-curseur span {
+  color: var(--sr-doux);
+  font: 700 10px/1 ui-monospace, monospace;
+  letter-spacing: .14em;
+}
+
+.strudel-console .sr-tempo input,
+.strudel-console .sr-ajout input {
+  width: 72px;
+  padding: 7px 8px;
+  color: var(--sr-texte);
+  background: #080c09;
+  border: 2px solid var(--sr-trait);
+  border-radius: 0;
+  font: 700 13px/1 ui-monospace, monospace;
+}
+
+.strudel-console .sr-ajout input { width: 100%; }
+
+.strudel-console .sr-tempo input:focus-visible,
+.strudel-console .sr-ajout input:focus-visible {
+  outline: 3px solid var(--sr-magenta);
+  outline-offset: 2px;
+}
+
+.strudel-console .sr-fichier { gap: 8px; }
+
+.strudel-console .sr-projet {
+  max-width: 22ch;
+  overflow: hidden;
+  color: var(--sr-ambre);
+  font: 700 12px/1 ui-monospace, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.strudel-console .sr-modifie { margin-left: 4px; color: var(--sr-magenta); }
+
+/* L'entrée fichier de repli : atteignable au clavier, jamais visible. */
+.strudel-console .sr-fichier-cache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* --- Onglets ------------------------------------------------------------ */
+
+.strudel-console .sr-onglets {
+  gap: 0;
+  margin-left: auto;
+}
+
+.strudel-console .sr-onglet {
+  padding: 8px 10px;
+  color: var(--sr-doux);
+  background: transparent;
+  border: 2px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: .1em;
+  cursor: pointer;
+}
+
+.strudel-console .sr-onglet:hover { color: var(--sr-texte); }
+
+.strudel-console .sr-onglet--actif {
+  color: var(--sr-vert);
+  border-bottom-color: var(--sr-vert);
+}
+
+.strudel-console .sr-onglet:focus-visible {
+  outline: 3px solid var(--sr-magenta);
+  outline-offset: -3px;
+}
+
+/* --- Corps : éditeur + panneau ------------------------------------------ */
+
+.strudel-console .sr-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  min-height: 0;
+}
+
+.strudel-console .sr-editeur {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-right: 3px solid var(--sr-trait);
+}
+
+/* CodeMirror gère son propre DOM : on ne lui impose que l'encombrement. */
+.strudel-console .strudel-cm,
+.strudel-console .strudel-cm .cm-editor {
+  height: 100%;
+}
+
+.strudel-console .strudel-cm .cm-scroller { font-family: ui-monospace, "Courier New", monospace; }
+
+/* Le surlignage des événements actifs, posé par `highlightMiniLocations`.
+   C'est LA raison d'avoir pris CodeMirror.
+
+   Il ne pose PAS de classe : il écrit un style en ligne
+   `outline: solid 2px var(--foreground)` sur un intervalle du document
+   (highlight.mjs:96). Une règle visant une classe `.hl-…` — ce qu'on suppose
+   naturellement — ne s'appliquerait donc jamais, et le motif jouerait sans que
+   rien ne s'illumine.
+
+   Deux conséquences pour cette feuille :
+
+   1. On redéfinit `--foreground` ici, puisque c'est ce que le style en ligne
+      consulte. Le thème algoboy y met #6B4747, un brun sombre presque
+      invisible sur son propre fond.
+   2. On ajoute un aplat par le sélecteur d'attribut, l'outline seul étant trop
+      fin pour se repérer du coin de l'œil pendant qu'on tape. */
+.strudel-console .strudel-cm .cm-editor {
+  --foreground: var(--sr-vert);
+}
+
+.strudel-console .strudel-cm .cm-editor span[style*="outline"] {
+  background-color: rgba(124, 240, 124, .22);
+}
+
+/* L'éditeur de repli, affiché seulement si CodeMirror n'a pas pu se charger. */
+.strudel-console .sr-repli {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  color: var(--sr-texte);
+  background: #080c09;
+  border: 0;
+  font: 14px/1.6 ui-monospace, monospace;
+  resize: none;
+  tab-size: 2;
+}
+
+/* --- Panneau latéral ---------------------------------------------------- */
+
+.strudel-console .sr-panneau {
+  min-height: 0;
+  padding: 16px;
+  overflow-y: auto;
+  background: var(--sr-panneau-plein);
+}
+
+.strudel-console .sr-titre {
+  margin: 0 0 8px;
+  color: var(--sr-vert);
+  font: 700 12px/1 ui-monospace, monospace;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.strudel-console .sr-sous-titre {
+  margin: 12px 0 6px;
+  color: var(--sr-doux);
+  font: 700 10px/1 ui-monospace, monospace;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.strudel-console .sr-aide,
+.strudel-console .sr-vide,
+.strudel-console .sr-note {
+  margin: 0 0 12px;
+  color: var(--sr-doux);
+  font: 11px/1.6 ui-monospace, monospace;
+}
+
+.strudel-console .sr-note { color: #6f7f6d; }
+
+.strudel-console .sr-liste {
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.strudel-console .sr-liste li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 8px;
+  padding: 7px 8px;
+  background: var(--sr-relief);
+  border-left: 3px solid var(--sr-trait);
+}
+
+.strudel-console .sr-liste li:hover { border-left-color: var(--sr-vert); }
+
+.strudel-console .sr-liste li > button {
+  justify-self: start;
+  padding: 0;
+  color: var(--sr-texte);
+  background: transparent;
+  border: 0;
+  font: 700 12px/1.4 ui-monospace, monospace;
+  text-align: left;
+  cursor: pointer;
+}
+
+.strudel-console .sr-liste li > button:hover { color: var(--sr-vert); }
+
+.strudel-console .sr-liste li > button:focus-visible {
+  outline: 2px solid var(--sr-magenta);
+  outline-offset: 2px;
+}
+
+.strudel-console .sr-liste li > small {
+  grid-column: 1 / -1;
+  color: var(--sr-doux);
+  font: 10px/1.5 ui-monospace, monospace;
+}
+
+.strudel-console .sr-liste li > code {
+  color: var(--sr-ambre);
+  font: 700 12px/1.4 ui-monospace, monospace;
+}
+
+.strudel-console .sr-liste li > pre {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding: 6px 8px;
+  overflow-x: auto;
+  color: var(--sr-texte);
+  background: #080c09;
+  border-left: 2px solid var(--sr-trait-vif);
+  font: 10px/1.5 ui-monospace, monospace;
+}
+
+.strudel-console .sr-liste--touches li { grid-template-columns: auto minmax(0, 1fr); }
+
+.strudel-console .sr-liste--touches kbd {
+  padding: 3px 6px;
+  color: var(--sr-texte);
+  background: #080c09;
+  border: 2px solid var(--sr-trait-vif);
+  box-shadow: 2px 2px 0 0 #000;
+  font: 700 10px/1 ui-monospace, monospace;
+}
+
+.strudel-console .sr-liste--touches li > small { grid-column: 2; align-self: center; }
+
+.strudel-console .sr-retirer {
+  padding: 0 4px;
+  color: var(--sr-doux);
+  background: transparent;
+  border: 0;
+  font: 700 12px/1 ui-monospace, monospace;
+  cursor: pointer;
+}
+.strudel-console .sr-retirer:hover { color: var(--sr-rouge); }
+
+.strudel-console .sr-connue { color: var(--sr-doux); font-style: normal; }
+
+.strudel-console .sr-ajout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.strudel-console .sr-section {
+  margin-bottom: 8px;
+  border-left: 3px solid var(--sr-trait);
+}
+
+.strudel-console .sr-section > summary {
+  padding: 8px;
+  color: var(--sr-texte);
+  background: var(--sr-relief);
+  font: 700 11px/1 ui-monospace, monospace;
+  letter-spacing: .1em;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.strudel-console .sr-section > summary:hover { color: var(--sr-vert); }
+.strudel-console .sr-section[open] > summary { color: var(--sr-vert); }
+.strudel-console .sr-section > .sr-aide,
+.strudel-console .sr-section > .sr-liste { margin-top: 8px; padding-left: 8px; }
+
+.strudel-console .sr-curseur {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.strudel-console .sr-curseur b {
+  color: var(--sr-ambre);
+  font: 700 11px/1 ui-monospace, monospace;
+  text-align: right;
+}
+
+.strudel-console .sr-curseur input[type="range"] {
+  width: 100%;
+  accent-color: var(--sr-vert);
+}
+
+/* --- Pied de page ------------------------------------------------------- */
+
+.strudel-console .sr-pied {
+  display: grid;
+  gap: 4px;
+  padding: 8px 16px;
+  background: var(--sr-panneau-plein);
+  border-top: 3px solid var(--sr-trait);
+}
+
+.strudel-console .sr-message,
+.strudel-console .sr-erreur,
+.strudel-console .sr-avertissement {
+  margin: 0;
+  font: 11px/1.5 ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+.strudel-console .sr-message { color: var(--sr-doux); }
+
+.strudel-console .sr-erreur {
+  padding: 6px 8px;
+  color: var(--sr-rouge);
+  background: #1a0a0a;
+  border-left: 3px solid var(--sr-rouge);
+}
+
+.strudel-console .sr-avertissement {
+  padding: 6px 8px;
+  color: var(--sr-ambre);
+  background: #1a1408;
+  border-left: 3px solid var(--sr-ambre);
+}
+
+/* --- Écrans étroits ----------------------------------------------------- */
+
+/* Sous 1100 px, la colonne latérale passerait sous 280 px et deviendrait
+   illisible : on empile, et l'éditeur garde la moitié haute. */
+@media (max-width: 1100px) {
+  .strudel-console .sr-plan { height: auto; min-height: calc(100vh - 64px); }
+  .strudel-console .sr-corps { grid-template-columns: minmax(0, 1fr); }
+  .strudel-console .sr-editeur {
+    height: 55vh;
+    border-right: 0;
+    border-bottom: 3px solid var(--sr-trait);
+  }
+  .strudel-console .sr-onglets { margin-left: 0; width: 100%; overflow-x: auto; }
+}
+
+/* --- Oscilloscope ------------------------------------------------------- */
+
+/* Posé en tête du panneau latéral, au-dessus de l'onglet courant : on veut le
+   voir quel que soit le panneau ouvert, c'est un indicateur, pas un contenu. */
+.strudel-console .sr-scope {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+  background: #080c09;
+  border: 2px solid var(--sr-trait);
+  /* Le tracé est dessiné en carrés de 4 px : laisser le navigateur lisser
+     l'échelle rendrait flou ce qu'on a quantifié exprès. */
+  image-rendering: pixelated;
+}
