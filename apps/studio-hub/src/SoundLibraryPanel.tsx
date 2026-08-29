@@ -2,10 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { readProfile, type StudioProfile } from "./core/profile";
 import { useNotesMidi } from "./core/midi/useNotesMidi";
 import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
+import { poserFichierEnAttente } from "./core/audio/sonEnAttente";
 
 export type SoundSourceType = "all" | "labo" | "p2p" | "personal" | "machines";
 export type SoundTarget = "op1" | "ep133";
-export type SoundKind = "sample" | "drum" | "synth" | "voice" | "loop" | "bass" | "fx" | "other";
+/**
+ * `atelier` designe un son FABRIQUE ici : un `.son.json`, avec ses couches et
+ * leurs reglages. Ce n'est pas un fichier audio — on ne le pre-ecoute pas, on
+ * le ROUVRE dans l'atelier pour continuer a le travailler.
+ */
+export type SoundKind = "sample" | "drum" | "synth" | "voice" | "loop" | "bass" | "fx" | "other" | "atelier";
 
 export interface SoundLibraryAsset {
   id: string;
@@ -30,6 +36,14 @@ type SoundLibraryManifest = { schema: "studio-hub.sound-library.v1"; updatedAt: 
 
 const SOUND_FOLDERS = ["originals", "prepared", "packs", "quarantine"] as const;
 const AUDIO_EXTENSIONS = /\.(aif|aiff|wav|mp3|flac|ogg|m4a|aac|opus)$/i;
+/**
+ * Les sons fabriques par l'atelier.
+ *
+ * Testee AVANT `AUDIO_EXTENSIONS` partout ou les deux se croisent : un
+ * `.son.json` n'est pas un fichier audio, et le traiter comme tel donnerait
+ * une pre-ecoute qui echoue silencieusement.
+ */
+const EXTENSION_ATELIER = /\.son\.json$/i;
 
 const KIND_LABELS: Record<SoundKind, string> = {
   sample: "Sample",
@@ -40,6 +54,7 @@ const KIND_LABELS: Record<SoundKind, string> = {
   bass: "Basse",
   fx: "Effet FX",
   other: "Autre",
+  atelier: "🎛️ Atelier",
 };
 
 const TARGET_LABELS: Record<SoundTarget, string> = { op1: "OP‑1", ep133: "EP‑133" };
@@ -478,8 +493,50 @@ export function SoundLibraryPanel({
     }
   }
 
+  /**
+   * Rouvre un son de l'atelier dans l'atelier.
+   *
+   * Un `.son.json` n'est pas un fichier audio : il porte des couches et leurs
+   * reglages. On ne le PRE-ECOUTE pas, on le rouvre pour continuer a le
+   * travailler — c'est toute la difference entre un echantillon fige et un son
+   * qu'on fabrique.
+   *
+   * Le son passe par le depot de `sonEnAttente` : la navigation du Hub est un
+   * changement d'etat sans URL, il n'y a aucun autre endroit ou le glisser.
+   */
+  async function ouvrirDansAtelier(asset: SoundLibraryAsset) {
+    if (!soundsRef.current) {
+      setStatus("Connecte l'espace de travail pour rouvrir ce son.");
+      return;
+    }
+    try {
+      const fichier = await findFile(soundsRef.current, asset.path);
+      const pose = poserFichierEnAttente(await (await fichier.getFile()).text(), "la bibliothèque");
+      if (!pose.ok) {
+        setStatus(`« ${asset.name} » n'a pas pu être ouvert : ${pose.erreur}`);
+        return;
+      }
+      (window as unknown as { navigateMaquette?: (p: string) => void }).navigateMaquette?.("atelier-son");
+    } catch {
+      // Le manifeste peut citer un fichier qu'on a deplace ou supprime a la
+      // main : on le dit, plutot que de basculer sur un atelier vide.
+      setStatus(`« ${asset.name} » est introuvable dans l'espace de travail.`);
+    }
+  }
+
   // Pré-écoute audio : lit le fichier local s'il existe, ou synthétise le son en direct via Web Audio API !
   async function preview(asset: SoundLibraryAsset) {
+    /**
+     * Un son de l'atelier n'a rien a pre-ecouter : le bouton l'ouvre.
+     *
+     * Le laisser tomber dans le synthetiseur de pre-ecoute plus bas jouerait
+     * une sinusoide sans rapport, ce qu'on prendrait pour le son du fichier.
+     */
+    if (asset.kind === "atelier" || EXTENSION_ATELIER.test(asset.path)) {
+      await ouvrirDansAtelier(asset);
+      return;
+    }
+
     if (playingId === asset.id) {
       audioRef.current?.pause();
       setPlayingId(null);
@@ -875,14 +932,19 @@ export function SoundLibraryPanel({
               <div className="sound-library-asset-title">
                 <button
                   className="sound-preview-button"
-                  aria-label={`Écouter ${asset.name}`}
+                  aria-label={
+                    asset.kind === "atelier"
+                      ? `Ouvrir ${asset.name} dans l'atelier`
+                      : `Écouter ${asset.name}`
+                  }
+                  title={asset.kind === "atelier" ? "Ouvrir dans l'atelier de son" : undefined}
                   onClick={() => void preview(asset)}
                   style={{
                     background: isPlaying ? "var(--theme-accent, #00ed95)" : undefined,
                     color: isPlaying ? "#000" : undefined,
                   }}
                 >
-                  {isPlaying ? "⏹" : "▶"}
+                  {asset.kind === "atelier" ? "🎛️" : isPlaying ? "⏹" : "▶"}
                 </button>
                 <strong title={asset.name}>{asset.name}</strong>
                 <button

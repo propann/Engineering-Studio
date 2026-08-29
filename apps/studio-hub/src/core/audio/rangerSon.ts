@@ -117,9 +117,27 @@ export async function rangerSon(son: SonFabrique): Promise<Rangement> {
   if (!racine) return { ok: false, raison: "pas-d-espace" };
   try {
     const famille = cheminDe(son).split("/")[0];
-    const dossier = await dossierCible(racine, "shared", "sounds", DOSSIER_ATELIER, famille);
-    await ecrireDans(dossier, nomFichierSon(son.nom), serialiserSon(son));
-    return { ok: true, chemin: `shared/sounds/${DOSSIER_ATELIER}/${famille}/${nomFichierSon(son.nom)}` };
+    const sons = await dossierCible(racine, "shared", "sounds");
+    const dossier = await dossierCible(sons, DOSSIER_ATELIER, famille);
+    const nom = nomFichierSon(son.nom);
+    const taille = await ecrireDans(dossier, nom, serialiserSon(son));
+    const chemin = `${DOSSIER_ATELIER}/${famille}/${nom}`;
+
+    /**
+     * Inscrire au manifeste, pas seulement ecrire le fichier.
+     *
+     * La Bibliotheque sonore ne SCANNE pas les dossiers : elle lit un
+     * manifeste. Un fichier pose sans y etre inscrit serait invisible de
+     * l'outil cense rassembler les sons — ecrit, range, et introuvable.
+     */
+    await inscrireAuManifeste(sons, {
+      chemin,
+      nom: son.nom,
+      taille,
+      etiquettes: son.etiquettes,
+    });
+
+    return { ok: true, chemin: `shared/sounds/${chemin}` };
   } catch (e) {
     // Une permission retirée entre-temps, un disque plein, un nom refusé par
     // le système : on distingue le refus de l'échec pour que le message le
@@ -160,5 +178,99 @@ export async function rangerEchantillon(
       raison: /permission|denied|NotAllowed/i.test(message) ? "refuse" : "echec",
       message,
     };
+  }
+}
+
+
+/* ======================================================================== *
+ * LE MANIFESTE DE LA BIBLIOTHEQUE
+ * ======================================================================== */
+
+/** Ce qu'une entree de manifeste porte, reduit a ce qu'on ecrit. */
+type EntreeManifeste = {
+  id: string;
+  name: string;
+  sourceType: string;
+  path: string;
+  size: number;
+  sha256: string;
+  kind: string;
+  tags: string[];
+  favorite: boolean;
+  targets: unknown[];
+  addedAt: string;
+};
+
+/**
+ * Ajoute ou remplace une entree dans le manifeste de la bibliotheque.
+ *
+ * Remplace par CHEMIN et non par identifiant : reenregistrer le meme son doit
+ * mettre son entree a jour, pas en ajouter une seconde qui pointerait vers le
+ * meme fichier. Deux entrees jumelles rendraient la deduplication de la
+ * bibliotheque fausse.
+ *
+ * Ne leve jamais : un manifeste illisible ne doit pas empecher d'ecrire le
+ * son. Mieux vaut un fichier range mais absent de la liste qu'un travail
+ * perdu.
+ */
+async function inscrireAuManifeste(
+  sons: FileSystemDirectoryHandle,
+  entree: { chemin: string; nom: string; taille: number; etiquettes: string[] },
+): Promise<void> {
+  try {
+    let assets: EntreeManifeste[] = [];
+    try {
+      const existant = await sons.getFileHandle("manifest.json");
+      const lu = JSON.parse(await (await existant.getFile()).text()) as {
+        assets?: EntreeManifeste[];
+      };
+      if (Array.isArray(lu.assets)) assets = lu.assets;
+    } catch {
+      // Pas encore de manifeste : on en cree un.
+    }
+
+    const sha = await empreinte(entree.chemin + entree.taille);
+    const nouvelle: EntreeManifeste = {
+      id: `atelier-${sha.slice(0, 16)}`,
+      name: entree.nom,
+      sourceType: "labo",
+      path: entree.chemin,
+      size: entree.taille,
+      // Pas l'empreinte du contenu : la deduplication de la bibliotheque
+      // compare des fichiers audio, et deux sons de l'atelier au meme nom
+      // doivent se remplacer par leur chemin, pas se confondre par leur somme.
+      sha256: sha,
+      kind: "atelier",
+      tags: entree.etiquettes,
+      favorite: false,
+      targets: [],
+      addedAt: new Date().toISOString(),
+    };
+
+    const sansDoublon = assets.filter((a) => a.path !== entree.chemin);
+    const manifeste = {
+      schema: "studio-hub.sound-library.v1",
+      updatedAt: new Date().toISOString(),
+      assets: [...sansDoublon, nouvelle],
+    };
+    const fichier = await sons.getFileHandle("manifest.json", { create: true });
+    const flux = await fichier.createWritable();
+    await flux.write(JSON.stringify(manifeste, null, 2));
+    await flux.close();
+  } catch {
+    // Voir le commentaire ci-dessus : le son est ecrit, c'est l'essentiel.
+  }
+}
+
+/** Empreinte SHA-256 d'une chaine, en hexadecimal. */
+async function empreinte(texte: string): Promise<string> {
+  try {
+    const octets = new TextEncoder().encode(texte);
+    const digest = await crypto.subtle.digest("SHA-256", octets);
+    return Array.from(new Uint8Array(digest), (o) => o.toString(16).padStart(2, "0")).join("");
+  } catch {
+    // Contexte non securise : `crypto.subtle` est absent. Un identifiant
+    // suffisant ici, il ne sert qu'a distinguer des entrees locales.
+    return `local-${texte.length}-${Date.now().toString(16)}`;
   }
 }

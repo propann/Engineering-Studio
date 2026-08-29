@@ -39,6 +39,7 @@ import { encodeAiffPcm16, encodeWavPcm16 } from "@studio-hub/audio-formats";
 import { dureeAdmise, SPECS_CIBLES, type CibleMachine } from "@studio-hub/audio-formats";
 import { reappliquerEffetsMaitre } from "../core/audio/effetsMaitre";
 import { espaceDeTravail, rangerEchantillon, rangerSon } from "../core/audio/rangerSon";
+import { prendreSonEnAttente } from "../core/audio/sonEnAttente";
 import "./atelier-son.css";
 
 /**
@@ -88,6 +89,21 @@ export default function AtelierSon() {
   sonVif.current = son;
 
   useEffect(() => setProfileName(readProfileName()), []);
+
+  /**
+   * Adopte le son qu'une autre page a depose, s'il y en a un.
+   *
+   * La Bibliotheque sonore s'en sert pour rouvrir un `.son.json` ici. Le depot
+   * se VIDE a la prise : sans cela, revenir a l'atelier rouvrirait le meme son
+   * et ecraserait le travail en cours.
+   */
+  useEffect(() => {
+    const attente = prendreSonEnAttente();
+    if (!attente) return;
+    setSon(attente.son);
+    setSelection(attente.son.couches[0]?.id ?? null);
+    setMessage(`« ${attente.son.nom} » ouvert depuis ${attente.provenance}.`);
+  }, []);
 
   /**
    * L'espace de travail est-il connecte ?
