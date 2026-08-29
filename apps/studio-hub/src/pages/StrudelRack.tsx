@@ -9,6 +9,7 @@ import {
   reglerDepart,
   reglerGain,
   reglerPanoramique,
+  reverbePartagee,
   sAbonnerTransport,
   transport,
   voies,
@@ -24,6 +25,11 @@ import {
   trierExtraits,
   type Extrait,
 } from "../core/strudel/extraits";
+import {
+  enregistrerMoteurs,
+  MOTEURS_JOUABLES,
+  type ApiEnregistrement,
+} from "../core/strudel/moteursStrudel";
 import {
   ALIAS_SONS,
   SONS_DISTANTS_CONNUS,
@@ -107,6 +113,7 @@ type ApiStrudel = {
   hush: () => void;
   setAudioContext?: (ctx: AudioContext) => unknown;
   registerZZFXSounds?: () => unknown;
+  registerSound?: (nom: string, declencheur: unknown, donnees?: unknown) => void;
   getSuperdoughAudioController?: () => {
     output?: { destinationGain?: GainNode | null };
   };
@@ -140,6 +147,8 @@ export default function StrudelRack() {
   const [moyen, setMoyen] = useState<"systeme-de-fichiers" | "telechargement">("telechargement");
 
   const [machines, setMachines] = useState<Machine[]>([]);
+  /** Les moteurs du rack DSP ajoutés à la palette, une fois Strudel démarré. */
+  const [moteursRack, setMoteursRack] = useState<string[]>([]);
   const [canal, setCanal] = useState(1);
 
   const [voieId, setVoieId] = useState<string | null>(null);
@@ -212,6 +221,25 @@ export default function StrudelRack() {
         mod.registerZZFXSounds?.();
       } catch {
         /* la palette de base suffit si l'enregistrement échoue */
+      }
+
+      /**
+       * Les vingt moteurs du rack DSP, ajoutés à la palette de Strudel.
+       *
+       * `note("c e g").sound("mi_plaits")` joue désormais le moteur du rack.
+       * C'était le manque explicite de la feuille de route : « déclencher les
+       * moteurs DSP internes depuis un motif » n'existait pas.
+       *
+       * Ce sont les mêmes oscillateurs que dans le rack — rien n'est
+       * téléchargé, et la promesse « aucun échantillon distant » tient.
+       */
+      if (typeof mod.registerSound === "function") {
+        const ajoutes = enregistrerMoteurs(
+          mod as unknown as ApiEnregistrement,
+          () => contexte(),
+          () => reverbePartagee(),
+        );
+        setMoteursRack(ajoutes);
       }
 
       // `initStrudel` rend une promesse résolue sur le repl.
@@ -590,7 +618,7 @@ export default function StrudelRack() {
                 onOublier={oublier}
               />
             )}
-            {onglet === "sons" && <PanneauSons />}
+            {onglet === "sons" && <PanneauSons moteurs={moteursRack} />}
             {onglet === "aide" && <PanneauAide />}
             {onglet === "machines" && (
               <PanneauMachines
@@ -707,7 +735,7 @@ function PanneauExemples({
   );
 }
 
-function PanneauSons() {
+function PanneauSons({ moteurs }: { moteurs: string[] }) {
   return (
     <>
       <h2 className="sr-titre">Sons hors ligne</h2>
@@ -735,6 +763,15 @@ function PanneauSons() {
       <div className="sr-famille">
         <h3 className="sr-sous-titre">zzfx</h3>
         <p className="sr-aide">{SONS_ZZFX.join(" · ")}</p>
+      </div>
+      <div className="sr-famille">
+        <h3 className="sr-sous-titre">moteurs du rack</h3>
+        <p className="sr-aide">
+          Les vingt moteurs DSP, ajoutés à la palette au démarrage. Mêmes
+          oscillateurs que dans le rack, rien n'est téléchargé.
+          {moteurs.length === 0 && " Lance la lecture une fois pour les charger."}
+        </p>
+        <p className="sr-aide">{(moteurs.length ? moteurs : MOTEURS_JOUABLES).join(" · ")}</p>
       </div>
       <div className="sr-famille">
         <h3 className="sr-sous-titre">raccourcis</h3>

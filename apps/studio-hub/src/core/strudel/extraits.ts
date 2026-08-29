@@ -159,6 +159,16 @@ export const EXEMPLES: ReadonlyArray<{ nom: string; code: string; aide: string }
     aide: "Une basse et une ligne aiguë superposées, à des vitesses différentes.",
   },
   {
+    nom: "Moteur du rack",
+    code: 'note("<c2 eb2 g2 bb2>").sound("open303").cutoff(900)',
+    aide: "Les vingt moteurs DSP sont dans la palette. Ici la TB-303 du rack.",
+  },
+  {
+    nom: "Rack et synthé mêlés",
+    code: 'stack(\n  note("c2 [eb2 g2]").sound("mi_plaits"),\n  note("c5 eb5 g5").sound("triangle").slow(2)\n)',
+    aide: "Un moteur Eurorack et un synthé intégré, sur la même console.",
+  },
+  {
     nom: "Filtre balayé",
     code: 'note("c e g b").sound("sawtooth").cutoff(sine.range(200, 3000).slow(4))',
     aide: "Une coupure qui respire — le balayage vient d'une sinusoïde lente.",

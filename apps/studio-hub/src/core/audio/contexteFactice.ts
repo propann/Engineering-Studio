@@ -96,7 +96,21 @@ export function creerContexteFactice(sampleRate = 48000): ContexteFactice {
     createBiquadFilter: () =>
       noeud("filter", { type: "lowpass", frequency: creerParamFactice(350), Q: creerParamFactice(1), gain: creerParamFactice(0) }),
     createOscillator: () =>
-      noeud("osc", { type: "sine", frequency: creerParamFactice(440), detune: creerParamFactice(0), start: () => {}, stop: () => {} }),
+      noeud("osc", {
+        type: "sine",
+        frequency: creerParamFactice(440),
+        detune: creerParamFactice(0),
+        start: () => {},
+        stop: () => {},
+        // Ajoute le 2026-08-29 : `pl_synth` pose une onde de Fourier pour
+        // obtenir un rapport cyclique variable, qu'un OscillatorNode "square"
+        // fige a 50 %. Sans cette fabrique, le moteur levait dans les tests
+        // alors qu'il fonctionne au navigateur.
+        setPeriodicWave: function (this: NoeudFactice, onde: unknown) {
+          this.type = "custom";
+          this.__onde = onde;
+        },
+      }),
     createWaveShaper: () => noeud("waveshaper", { curve: null, oversample: "none" }),
     // Ajoute le 2026-08-29 avec les moteurs 16 a 20 : la boite a rythmes et le
     // claquement de contact de l'orgue lisent tous deux un tampon de bruit.

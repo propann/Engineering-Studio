@@ -14,11 +14,16 @@
  * échouent en silence, chacun affichant « sound not found » là où l'on
  * attendait une caisse claire.
  *
- * C'est exactement le piège dans lequel la page orpheline
- * `StrudelLiveStudio.tsx` était tombée : elle proposait quatorze « appels
- * moteur » — `mi_plaits`, `open303`, `dexed_fm`, `amsynth` — dont **aucun**
- * n'existe dans `@strudel/web`. Ils venaient du nom des moteurs du rack DSP,
- * pas de ceux de Strudel. Aucun de ces quatorze extraits n'aurait sonné.
+ * C'est le piège dans lequel la page orpheline `StrudelLiveStudio.tsx` était
+ * tombée : elle proposait quatorze « appels moteur » — `mi_plaits`,
+ * `open303`, `dexed_fm`, `amsynth` — dont aucun n'existait dans
+ * `@strudel/web`. Ils venaient du nom des moteurs du rack DSP, pas de ceux de
+ * Strudel, et aucun de ces quatorze extraits n'aurait sonné.
+ *
+ * Ils existent depuis le 2026-08-29, mais parce qu'on les a ECRITS :
+ * `moteursStrudel.ts` enregistre les vingt moteurs du rack aupres de
+ * superdough. Voir `MOTEURS_RACK` plus bas. La page orpheline promettait donc
+ * la bonne chose — il lui manquait seulement de la faire.
  *
  * ## Ce qui manque, et où le prendre
  *
@@ -170,12 +175,29 @@ export const SONS_DISTANTS_CONNUS: ReadonlyArray<string> = [
   "arpy", "casio", "jazz", "metal", "east", "space", "numbers", "insect",
 ];
 
-/** Tous les noms jouables hors ligne, alias compris. */
+/**
+ * Les vingt moteurs du rack DSP, ajoutes a la palette au demarrage.
+ *
+ * Enregistres aupres de superdough par `moteursStrudel.ts`. Ce sont les memes
+ * oscillateurs que dans le rack : locaux, aucun telechargement. Les compter
+ * ici evite que le rack signale `mi_plaits` comme « son introuvable » alors
+ * qu'il vient de l'enregistrer.
+ */
+export const MOTEURS_RACK: ReadonlyArray<string> = [
+  "mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements",
+  "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "open303",
+  "amsynth", "amy_engine", "pl_synth", "fluidsynth", "faust_dsp",
+  "drum_machine", "vocoder_dsp", "string_machine", "organ_drawbars",
+  "phase_distortion",
+];
+
+/** Tous les noms jouables hors ligne, alias et moteurs du rack compris. */
 export function nomsJouables(): string[] {
   return [
     ...SONS_LOCAUX.map((s) => s.nom),
     ...ALIAS_SONS.map((a) => a.alias),
     ...SONS_ZZFX,
+    ...MOTEURS_RACK,
   ];
 }
 

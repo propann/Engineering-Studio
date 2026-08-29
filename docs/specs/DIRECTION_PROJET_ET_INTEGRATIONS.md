@@ -90,10 +90,13 @@
     seulement — aucune écriture dans la mémoire des machines.
   - ✅ Sortie audio dans la console : la sortie de superdough est détournée
     vers une voie `brancher()`, avec gain, panoramique et départ de réverb.
-  - ❌ **Déclenchement des moteurs DSP internes depuis un motif.** Strudel ne
-    connaît que ses propres synthés ; faire répondre `.sound("mi_plaits")`
-    demanderait d'enregistrer chaque moteur du rack auprès de `superdough`
-    via `registerSound()`. Rien de tel n'est écrit à ce jour.
+  - ✅ **Déclenchement des moteurs DSP internes depuis un motif.**
+    `core/strudel/moteursStrudel.ts` enregistre les vingt moteurs auprès de
+    `superdough` via `registerSound()`. `note("c2").sound("open303")` joue la
+    TB-303 du rack ; `.cutoff()` et `.resonance()` visent le paramètre du bon
+    moteur, ceux qui n'en ont pas nommé n'en reçoivent pas. Vérifié au
+    navigateur le 2026-08-29 : 6 oscillateurs créés pendant la lecture, aucune
+    requête sortante.
   - ❌ **Échantillons distants** : refusés délibérément. Voir
     `core/strudel/sons.ts` pour la palette réellement disponible hors ligne.
 
