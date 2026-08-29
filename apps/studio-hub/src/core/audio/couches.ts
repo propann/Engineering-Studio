@@ -102,6 +102,14 @@ export type SonFabrique = {
   couches: Couche[];
   /** Note de référence pour l'écoute et le rendu, en MIDI. */
   note: number;
+  /**
+   * Les balises du son.
+   *
+   * Même vocabulaire que les étiquettes de patches (`core/patchMeta.ts`) : un
+   * son fabriqué ici et un patch d'usine doivent se chercher de la même façon,
+   * sinon on tient deux classements pour une seule bibliothèque.
+   */
+  etiquettes: string[];
   creeLe: string;
   modifieLe: string;
 };
@@ -144,7 +152,7 @@ export function nouveauSon(
   maintenant: () => string = () => new Date().toISOString(),
 ): SonFabrique {
   const t = maintenant();
-  return { version: VERSION_SON, nom, couches: [], note: 60, creeLe: t, modifieLe: t };
+  return { version: VERSION_SON, nom, couches: [], note: 60, etiquettes: [], creeLe: t, modifieLe: t };
 }
 
 /** Ajoute une couche pour un moteur. */
@@ -296,6 +304,16 @@ export const FAMILLES: ReadonlyArray<{ dossier: string; moteurs: ReadonlyArray<s
  * et le perdre dans un dossier sans nom serait pire que de le ranger largement.
  */
 export function dossierDe(son: SonFabrique): string {
+  /**
+   * Une balise qui nomme une famille l'emporte sur tout.
+   *
+   * C'est le seul moyen de contredire le classement automatique quand il se
+   * trompe, et il se trompera : un Plaits reglé en nappe reste rangé en lead
+   * tant que personne ne le dit. Poser la balise « nappes » suffit.
+   */
+  const parBalise = FAMILLES.find((f) => son.etiquettes?.includes(f.dossier));
+  if (parBalise) return parBalise.dossier;
+
   const audibles = couchesAudibles(son);
   if (audibles.length === 0) return "divers";
   const premiere = audibles[0];
@@ -436,6 +454,16 @@ export function analyserSon(contenu: string): { son: SonFabrique } | { erreur: s
         typeof s.note === "number" && Number.isFinite(s.note)
           ? Math.min(127, Math.max(0, Math.round(s.note)))
           : 60,
+      // Chaque etiquette est nettoyee separement : une seule abimee ne doit
+      // pas faire perdre les autres.
+      etiquettes: Array.isArray(s.etiquettes)
+        ? [...new Set(
+            s.etiquettes
+              .filter((e): e is string => typeof e === "string")
+              .map((e) => e.trim().toLowerCase())
+              .filter((e) => e.length > 0 && e.length <= 30),
+          )]
+        : [],
       creeLe: typeof s.creeLe === "string" ? s.creeLe : t,
       modifieLe: typeof s.modifieLe === "string" ? s.modifieLe : t,
     },

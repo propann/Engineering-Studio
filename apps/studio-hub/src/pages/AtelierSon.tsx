@@ -4,7 +4,7 @@ import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
 import { readProfileName } from "../core/profile";
 import { AppShell } from "../ui";
 import { CarteMoteur } from "../components/CarteMoteur";
-import { CATALOGUE } from "../core/audio/catalogueParams";
+import { CATALOGUE, nomDe } from "../core/audio/catalogueParams";
 import { construireMoteur } from "../core/audio/moteurs";
 import {
   ajouterCouche,
@@ -14,6 +14,7 @@ import {
   couchesAudibles,
   deplacerCouche,
   dossierDe,
+  FAMILLES,
   modifierCouche,
   nomFichierSon,
   nouveauSon,
@@ -33,6 +34,8 @@ import {
   type RenduSon,
 } from "../core/audio/rendreCouches";
 import { ecrireFichier, moyenDisponible } from "../core/strudel/projets";
+import { encodeAiffPcm16, encodeWavPcm16 } from "@studio-hub/audio-formats";
+import { dureeAdmise, SPECS_CIBLES, type CibleMachine } from "@studio-hub/audio-formats";
 import { reappliquerEffetsMaitre } from "../core/audio/effetsMaitre";
 import "./atelier-son.css";
 
@@ -73,6 +76,8 @@ export default function AtelierSon() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [poignee, setPoignee] = useState<FileSystemFileHandle | null>(null);
   const [moteurAAjouter, setMoteurAAjouter] = useState<string>("mi_plaits");
+  const [cible, setCible] = useState<CibleMachine>("op1_synth");
+  const [balise, setBalise] = useState("");
 
   const prise = useRef<Prise | null>(null);
   const entree = useRef<HTMLInputElement | null>(null);
@@ -221,6 +226,53 @@ export default function AtelierSon() {
     );
   }, [poignee]);
 
+  /**
+   * Envoie le son vers une machine, au format qu'elle attend.
+   *
+   * Le rendu est refait A LA FREQUENCE DE LA CIBLE — l'EP-133 lit en 26,25 kHz
+   * sur ses emplacements LO — et non reechantillonne apres coup : un rendu a
+   * 44,1 kHz puis decime aurait un repliement que le rendu direct n'a pas.
+   *
+   * L'OP-1 lit de l'AIFF, l'EP-133 du WAV. La table des cibles porte les deux,
+   * ainsi que les durees maximales, et `dureeAdmise` borne.
+   */
+  const exporter = useCallback(async (cible: CibleMachine) => {
+    const s = sonVif.current;
+    if (s.couches.length === 0) {
+      setErreur("Ajoute au moins une couche avant d'exporter.");
+      return;
+    }
+    const spec = SPECS_CIBLES[cible];
+    const duree = dureeAdmise(cible, 2);
+    setMessage(`Rendu ${spec.libelle}…`);
+    try {
+      const r = await rendreSon(s, duree, spec.frequence);
+      if (!r) {
+        setErreur("Le rendu hors ligne n'est pas disponible dans ce navigateur.");
+        return;
+      }
+      const octets =
+        spec.format === "aiff"
+          ? encodeAiffPcm16(r.somme, spec.canaux, spec.frequence)
+          : encodeWavPcm16(r.somme, spec.canaux, spec.frequence);
+      const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
+        spec.format === "aiff" ? "aif" : "wav"
+      }`;
+      const ecrit = await ecrireFichier(octets, nom);
+      if (!ecrit.ok) {
+        if (!ecrit.annule) setErreur(ecrit.erreur ?? "L'export a échoué.");
+        return;
+      }
+      setErreur(null);
+      setMessage(
+        `${ecrit.nomFichier} — ${(octets.byteLength / 1024).toFixed(0)} ko, ${spec.libelle}` +
+          (spec.dossier ? ` · à poser dans ${spec.dossier}` : ""),
+      );
+    } catch (e) {
+      setErreur(`L'export a échoué : ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }, []);
+
   const ouvrir = useCallback(async (fichier: File) => {
     const lu = analyserSon(await fichier.text());
     if ("erreur" in lu) {
@@ -290,6 +342,58 @@ export default function AtelierSon() {
     [chargerAudio, ouvrir],
   );
 
+  /**
+   * Fabrique un jeu de sons pour une machine, en une fois.
+   *
+   * Un moteur par son, choisi dans la famille demandee, avec la note et les
+   * balises qui vont avec. Ce n'est pas de la composition : c'est le travail
+   * ingrat qu'on refait a chaque fois qu'on remplit une machine vide, et qui
+   * decourage d'essayer.
+   *
+   * Chaque son passe par le MEME chemin d'export que le bouton : meme rendu,
+   * meme encodage, meme verification. Un raccourci ici produirait des fichiers
+   * subtilement differents de ceux qu'on fabrique a la main.
+   */
+  const fabriquerJeu = useCallback(
+    async (famille: string, cibleJeu: CibleMachine) => {
+      const moteurs = FAMILLES.find((f) => f.dossier === famille)?.moteurs ?? [];
+      if (moteurs.length === 0) return;
+      const spec = SPECS_CIBLES[cibleJeu];
+      const duree = dureeAdmise(cibleJeu, 2);
+      let ecrits = 0;
+      for (const moteur of moteurs) {
+        // Une note par famille : les basses en bas du clavier, les nappes au
+        // milieu. Rendre tout en do3 donnerait des basses inaudibles.
+        const note = famille === "basses" ? 36 : famille === "rythmes" ? 36 : 60;
+        let s = nouveauSon(`${famille}-${nomDe(moteur)}`);
+        s = { ...ajouterCouche(s, moteur), note, etiquettes: [famille, "auto"] };
+        try {
+          const r = await rendreSon(s, duree, spec.frequence);
+          if (!r) break;
+          const octets =
+            spec.format === "aiff"
+              ? encodeAiffPcm16(r.somme, spec.canaux, spec.frequence)
+              : encodeWavPcm16(r.somme, spec.canaux, spec.frequence);
+          const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
+            spec.format === "aiff" ? "aif" : "wav"
+          }`;
+          const ecrit = await ecrireFichier(octets, nom);
+          if (ecrit.ok) ecrits += 1;
+          else if (ecrit.annule) break; // l'utilisateur a ferme le selecteur
+        } catch {
+          // Un moteur qui refuse de se rendre ne doit pas interrompre le jeu.
+        }
+      }
+      setErreur(null);
+      setMessage(
+        ecrits > 0
+          ? `${ecrits} son${ecrits > 1 ? "s" : ""} fabriqué${ecrits > 1 ? "s" : ""} pour ${spec.libelle}, balisés « ${famille} » et « auto ».`
+          : "Aucun son fabriqué.",
+      );
+    },
+    [],
+  );
+
   const moyen = useMemo(() => moyenDisponible(), []);
 
   return (
@@ -338,6 +442,21 @@ export default function AtelierSon() {
             <button type="button" className="as-bouton" onClick={() => void enregistrer()}>
               ENREGISTRER
             </button>
+            <label className="as-champ">
+              <span>VERS</span>
+              <select
+                value={cible}
+                onChange={(e) => setCible(e.target.value as CibleMachine)}
+                aria-label="Machine de destination"
+              >
+                {Object.entries(SPECS_CIBLES).map(([id, spec]) => (
+                  <option key={id} value={id}>{spec.libelle}</option>
+                ))}
+              </select>
+            </label>
+            <button type="button" className="as-bouton" onClick={() => void exporter(cible)}>
+              EXPORTER
+            </button>
             <button type="button" className="as-bouton" onClick={() => entree.current?.click()}>
               OUVRIR
             </button>
@@ -352,6 +471,44 @@ export default function AtelierSon() {
                 if (f) void ouvrir(f);
               }}
               aria-label="Ouvrir un son"
+            />
+          </div>
+          <div className="as-balises">
+            <span className="as-balises-titre">BALISES</span>
+            {son.etiquettes.length === 0 && (
+              <span className="as-vide">aucune — elles servent à retrouver le son, et à forcer son rangement</span>
+            )}
+            {son.etiquettes.map((e) => (
+              <button
+                key={e}
+                type="button"
+                className="as-balise"
+                onClick={() =>
+                  setSon((s) => ({ ...s, etiquettes: s.etiquettes.filter((x) => x !== e) }))
+                }
+                title={`Retirer « ${e} »`}
+              >
+                {e} ✕
+              </button>
+            ))}
+            <input
+              className="as-balise-saisie"
+              value={balise}
+              placeholder="+ balise"
+              onChange={(ev) => setBalise(ev.target.value)}
+              onKeyDown={(ev) => {
+                if (ev.key !== "Enter") return;
+                ev.preventDefault();
+                const propre = balise.trim().toLowerCase().slice(0, 30);
+                if (!propre) return;
+                setSon((s) =>
+                  s.etiquettes.includes(propre)
+                    ? s
+                    : { ...s, etiquettes: [...s.etiquettes, propre] },
+                );
+                setBalise("");
+              }}
+              aria-label="Ajouter une balise"
             />
           </div>
         </section>
@@ -391,6 +548,26 @@ export default function AtelierSon() {
                 aria-label="Ajouter un échantillon"
               />
             </div>
+
+            <details className="as-auto">
+              <summary>Créer un jeu automatiquement</summary>
+              <p className="as-vide">
+                Un son par moteur de la famille, rendu et encodé pour la machine
+                choisie en haut. Les balises sont posées.
+              </p>
+              <div className="as-auto-familles">
+                {FAMILLES.map((f) => (
+                  <button
+                    key={f.dossier}
+                    type="button"
+                    className="as-bouton"
+                    onClick={() => void fabriquerJeu(f.dossier, cible)}
+                  >
+                    {f.dossier} ({f.moteurs.length})
+                  </button>
+                ))}
+              </div>
+            </details>
 
             {son.couches.length === 0 ? (
               <p className="as-vide">

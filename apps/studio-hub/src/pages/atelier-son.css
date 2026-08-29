@@ -360,3 +360,77 @@
   width: 100%;
   accent-color: var(--as-vert);
 }
+
+/* --- Balises -------------------------------------------------------------- */
+
+.atelier-son .as-balises {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.atelier-son .as-balises-titre {
+  color: var(--as-doux);
+  font: 700 10px ui-monospace, monospace;
+  letter-spacing: 0.14em;
+}
+
+.atelier-son .as-balise {
+  padding: 3px 7px;
+  color: var(--as-fond);
+  background: var(--as-vert);
+  border: 0;
+  font: 700 10px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.atelier-son .as-balise:hover { background: var(--as-magenta); }
+
+.atelier-son .as-balise-saisie {
+  width: 110px;
+  padding: 3px 6px;
+  color: var(--as-texte);
+  background: #080c09;
+  border: 2px solid var(--as-trait);
+  border-radius: 0;
+  font: 700 10px ui-monospace, monospace;
+}
+
+/* --- Creation automatique ------------------------------------------------- */
+
+/* Repliee par defaut : c'est une operation qu'on lance rarement, et sept
+   boutons ouverts en permanence encombreraient la pile qu'on regarde. */
+.atelier-son .as-auto {
+  margin-bottom: 14px;
+  border-left: 3px solid var(--as-trait);
+}
+
+.atelier-son .as-auto > summary {
+  padding: 7px 8px;
+  color: var(--as-texte);
+  background: var(--as-relief);
+  font: 700 11px ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.atelier-son .as-auto > summary:hover { color: var(--as-vert); }
+.atelier-son .as-auto[open] > summary { color: var(--as-vert); }
+.atelier-son .as-auto > * { margin-left: 8px; }
+
+.atelier-son .as-auto-familles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 10px 8px;
+}
+
+.atelier-son .as-champ select {
+  padding: 7px 8px;
+  color: var(--as-texte);
+  background: #080c09;
+  border: 2px solid var(--as-trait);
+  border-radius: 0;
+  font: 700 12px ui-monospace, monospace;
+}

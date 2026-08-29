@@ -367,3 +367,46 @@ describe("les echantillons voyagent dans le fichier", () => {
     expect(r.son.couches.map((c) => c.type)).toEqual(["moteur"]);
   });
 });
+
+describe("les balises", () => {
+  it("une balise de famille force le rangement", () => {
+    /**
+     * Le seul moyen de contredire le classement automatique quand il se
+     * trompe, et il se trompera : un Plaits regle en nappe reste range en lead
+     * tant que personne ne le dit.
+     */
+    let son = ajouterCouche(nouveauSon("x", fige), "mi_plaits", {}, fige);
+    expect(dossierDe(son)).toBe("leads");
+    son = { ...son, etiquettes: ["nappes"] };
+    expect(dossierDe(son)).toBe("nappes");
+  });
+
+  it("une balise qui ne nomme aucune famille ne change rien", () => {
+    const son = { ...ajouterCouche(nouveauSon("x", fige), "mi_plaits", {}, fige), etiquettes: ["chaud", "essai"] };
+    expect(dossierDe(son)).toBe("leads");
+  });
+
+  it("les balises survivent a l'aller-retour, normalisees", () => {
+    const son = { ...nouveauSon("x", fige), etiquettes: ["Chaud", "chaud", "  ACIDE  "] };
+    const lu = analyserSon(serialiserSon(son));
+    expect("erreur" in lu).toBe(false);
+    if ("erreur" in lu) return;
+    // Minuscules, sans espaces, sans doublon : sinon « Chaud » et « chaud »
+    // seraient deux etiquettes distinctes dans la bibliotheque.
+    expect(lu.son.etiquettes).toEqual(["chaud", "acide"]);
+  });
+
+  it("une balise abimee est ecartee sans emporter les autres", () => {
+    const r = analyserSon('{"version":1,"couches":[],"etiquettes":["bonne",42,"","' + "a".repeat(40) + '"]}');
+    expect("erreur" in r).toBe(false);
+    if ("erreur" in r) return;
+    expect(r.son.etiquettes).toEqual(["bonne"]);
+  });
+
+  it("un son sans champ balises en recoit un vide", () => {
+    const r = analyserSon('{"version":1,"couches":[]}');
+    expect("erreur" in r).toBe(false);
+    if ("erreur" in r) return;
+    expect(r.son.etiquettes).toEqual([]);
+  });
+});

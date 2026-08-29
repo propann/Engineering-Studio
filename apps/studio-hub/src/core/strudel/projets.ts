@@ -263,7 +263,12 @@ export async function enregistrerProjet(
  * pas une panne mais un geste.
  */
 export async function ecrireFichier(
-  contenu: string,
+  /**
+   * Texte pour un projet, octets pour un echantillon destine a une machine.
+   * Les deux chemins — poignee et telechargement — acceptent les deux sans
+   * rien changer : c'est `Blob` qui fait la conversion.
+   */
+  contenu: string | ArrayBuffer,
   nom: string,
   poigneeExistante: FileSystemFileHandle | null = null,
   fenetre: FenetreFichiers = globalThis as unknown as FenetreFichiers,
@@ -303,9 +308,11 @@ export async function ecrireFichier(
  * en place — chaque enregistrement crée un fichier de plus dans le dossier de
  * téléchargements — et l'interface le dit plutôt que de le cacher.
  */
-function telecharger(contenu: string, nom: string): Ecriture {
+function telecharger(contenu: string | ArrayBuffer, nom: string): Ecriture {
   try {
-    const blob = new Blob([contenu], { type: "application/json" });
+    const blob = new Blob([contenu], {
+      type: typeof contenu === "string" ? "application/json" : "application/octet-stream",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
