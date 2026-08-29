@@ -40,6 +40,15 @@
       ],
       "@studio-hub/core/*": [
         "../studio-hub/src/core/*"
+      ],
+      "@studio-hub/rack-bus": [
+        "../../packages/rack-bus/index.ts"
+      ],
+      "@studio-hub/music-git": [
+        "../../packages/music-git/index.ts"
+      ],
+      "@studio-hub/p2p-collab": [
+        "../../packages/p2p-collab/index.ts"
       ]
     },
     "baseUrl": "."
