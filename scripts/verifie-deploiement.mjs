@@ -25,6 +25,14 @@ const cible = process.argv[2] ?? URL_PAR_DEFAUT;
 
 /** Le commit local de `main`, cote origine — c'est lui qui devrait etre servi. */
 function commitAttendu() {
+  const envSha =
+    process.env.SOURCE_COMMIT ||
+    process.env.COOLIFY_GIT_COMMIT_SHA ||
+    process.env.GIT_COMMIT_SHA ||
+    process.env.COMMIT_SHA ||
+    process.env.VITE_BUILD_COMMIT;
+  if (envSha) return envSha.trim();
+
   try {
     execSync("git fetch origin --quiet", { stdio: "ignore" });
   } catch {
@@ -33,9 +41,13 @@ function commitAttendu() {
     console.warn("  (fetch impossible — comparaison avec le `main` local)");
   }
   try {
-    return execSync("git rev-parse origin/main", { encoding: "utf-8" }).trim();
+    return execSync("git rev-parse origin/main", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
-    return execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+    try {
+      return execSync("git rev-parse HEAD", { encoding: "utf-8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    } catch {
+      return "inconnu";
+    }
   }
 }
 

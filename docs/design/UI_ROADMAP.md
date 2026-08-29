@@ -55,8 +55,7 @@ responsive et son accessibilité sont validés.
 
 ### Reste à verrouiller
 
-- **UI-001** — ajouter un test composant de `TopBar` pour le bouton thème et le
-  menu mobile ;
+- ~~**UI-001**~~ — **livré le 2026-08-27.** Test de contrat d'interface `TopBar.test.tsx` pour le bouton thème, le menu mobile et les liens essentiels ;
 - ~~**UI-002**~~ — **livré le 2026-08-27.** La règle de maquette est devenue
   `.maquette-nav` ; sa cible n'existe plus, elle ne frappe donc plus rien. Sur
   les cinq `<nav>` du dépôt, trois déclaraient déjà leur propre `display` et
@@ -65,7 +64,7 @@ responsive et son accessibilité sont validés.
   `!important` a disparu avec sa cause. `styles.selecteurs.test.ts` interdit le
   retour d'un sélecteur d'élément nu ;
 - **UI-003** — corriger les tokens CSS invalides hérités ;
-- **UI-004** — ajouter une vérification automatisée des contrastes principaux.
+- ~~**UI-004**~~ — **livré le 2026-08-27.** Vérification automatisée des contrastes principaux WCAG AA dans `theme.contrast.test.ts`.
 
 ### Critère de fin
 

@@ -33,7 +33,7 @@ les tests automatiques ne peuvent pas prouver.
 | Rack — fabrication de samples | ✅ note seule et pack chromatique, son validé |
 | Rack — effets | ✅ quatre familles : saturation (doux, dur, repliement), égaliseur (courbe tracée, 5 prédéfinies), modulation (chorus/flanger/phaser), delay 1 à 8 prises avec panoramique |
 | Rack dans les studios | ✅ EP‑133 et OP‑1 |
-| Rack Strudel | ✅ langage de motifs, éditeur et extraits locaux, branché sur le moteur audio du Hub ; horloge non asservie au transport |
+| Rack Strudel | ✅ langage de motifs, éditeur et extraits locaux, branché sur le moteur audio du Hub et asservi au transport unifié (`bpm` et `enMarche`) |
 | Rack MIDI (arpégiateur, 30 gammes, séquenceur pas à pas) | ✅ longueur de note réglable et enregistrement pas à pas |
 | Enveloppe ADSR et LFO global | ✅ courbe tracée, 5 enveloppes prédéfinies, rampes exponentielles ou droites ; LFO avec déphasage à l'origine, appliqué aux vingt moteurs |
 | Chaque rack porte son interface | ✅ verrouillé par test |
