@@ -96,6 +96,35 @@ export function surchargesDepuisMotif(
   return s;
 }
 
+/**
+ * Les réglages posés sur chaque moteur depuis les cartes.
+ *
+ * Un motif dit QUEL moteur jouer ; la carte dit COMMENT. Sans cet état, une
+ * carte affichée à côté de l'éditeur ne piloterait rien — elle montrerait les
+ * valeurs par défaut pendant que le motif joue autre chose.
+ *
+ * Au niveau du module et non d'un composant : la même voix est construite par
+ * superdough, hors de tout arbre React. Un état de composant ne l'atteindrait
+ * pas.
+ */
+const surcharges = new Map<string, Record<string, number | string>>();
+
+/** Pose un réglage sur un moteur. Il vaut pour les notes suivantes. */
+export function reglerMoteur(moteur: string, nom: string, valeur: number | string): void {
+  const deja = surcharges.get(moteur) ?? {};
+  surcharges.set(moteur, { ...deja, [nom]: valeur });
+}
+
+/** Les réglages courants d'un moteur, défauts compris. */
+export function reglagesMoteur(moteur: string): Record<string, unknown> {
+  return { ...PARAMS_DEFAUT, ...(surcharges.get(moteur) ?? {}) };
+}
+
+/** Oublie les réglages posés. Réservé aux tests. */
+export function reinitialiserReglagesPourTests(): void {
+  surcharges.clear();
+}
+
 /** L'enveloppe par défaut de superdough, reprise pour ne pas détonner. */
 const ADSR_DEFAUT = { attack: 0.001, decay: 0.05, sustain: 0.6, release: 0.01 };
 
@@ -125,11 +154,18 @@ export function construireVoixStrudel(
   const sortie = ctx.createGain();
   const enveloppe = ctx.createGain();
 
+  /**
+   * Trois sources, dans cet ordre : les défauts, la carte, puis le motif.
+   *
+   * Le motif l'emporte : `.cutoff(900)` écrit dans le code est plus explicite
+   * qu'un curseur poussé il y a dix minutes, et c'est ce qu'on lit à l'écran.
+   */
   const p: ParamsMoteurs = {
     ...PARAMS_DEFAUT,
+    ...(surcharges.get(moteur) ?? {}),
     ...surchargesDepuisMotif(valeur, moteur),
     activeEngine: moteur,
-  };
+  } as ParamsMoteurs;
 
   const aide = {
     trk: <T extends AudioScheduledSourceNode>(n: T): T => {

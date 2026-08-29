@@ -28,8 +28,11 @@ import {
 import {
   enregistrerMoteurs,
   MOTEURS_JOUABLES,
+  reglagesMoteur,
+  reglerMoteur,
   type ApiEnregistrement,
 } from "../core/strudel/moteursStrudel";
+import { CarteMoteur } from "../components/CarteMoteur";
 import {
   ALIAS_SONS,
   SONS_DISTANTS_CONNUS,
@@ -113,7 +116,7 @@ import "./strudel-rack.css";
  */
 
 type Etat = "eteint" | "chargement" | "pret" | "joue";
-type Onglet = "exemples" | "sons" | "aide" | "machines" | "mixage" | "effets";
+type Onglet = "exemples" | "sons" | "aide" | "machines" | "mixage" | "effets" | "moteurs";
 
 /** Ce que `@strudel/web` expose, réduit à ce que le rack utilise. */
 type ApiStrudel = {
@@ -134,6 +137,7 @@ type Repl = { scheduler?: unknown; setCps?: (v: number) => unknown };
 const ONGLETS: ReadonlyArray<{ id: Onglet; label: string }> = [
   { id: "exemples", label: "EXEMPLES" },
   { id: "sons", label: "SONS" },
+  { id: "moteurs", label: "MOTEURS" },
   { id: "aide", label: "AIDE" },
   { id: "machines", label: "MACHINES" },
   { id: "mixage", label: "MIXAGE" },
@@ -159,6 +163,15 @@ export default function StrudelRack() {
   const [machines, setMachines] = useState<Machine[]>([]);
   /** Les moteurs du rack DSP ajoutés à la palette, une fois Strudel démarré. */
   const [moteursRack, setMoteursRack] = useState<string[]>([]);
+  /**
+   * Un compteur, pas les valeurs.
+   *
+   * Les reglages des moteurs vivent dans `moteursStrudel`, hors de React :
+   * c'est superdough qui construit les voix, en dehors de tout arbre. On
+   * redessine donc les cartes en incrementant ce compteur, plutot que de tenir
+   * une copie des valeurs qui divergerait de celles qui jouent.
+   */
+  const [revisionCartes, setRevisionCartes] = useState(0);
   const [canal, setCanal] = useState(1);
 
   const [voieId, setVoieId] = useState<string | null>(null);
@@ -644,6 +657,16 @@ export default function StrudelRack() {
               />
             )}
             {onglet === "sons" && <PanneauSons moteurs={moteursRack} />}
+            {onglet === "moteurs" && (
+              <PanneauMoteurs
+                code={code}
+                revision={revisionCartes}
+                surReglage={(moteur, nom, valeur) => {
+                  reglerMoteur(moteur, nom, valeur);
+                  setRevisionCartes((n) => n + 1);
+                }}
+              />
+            )}
             {onglet === "aide" && <PanneauAide />}
             {onglet === "machines" && (
               <PanneauMachines
@@ -823,6 +846,68 @@ function PanneauSons({ moteurs }: { moteurs: string[] }) {
           {ALIAS_SONS.map((a) => `${a.alias} = ${a.vers}`).join(" · ")}
         </p>
       </div>
+    </>
+  );
+}
+
+/**
+ * Les cartes des moteurs appeles par le motif.
+ *
+ * On n'affiche QUE ceux que le code utilise. Empiler vingt cartes ferait une
+ * colonne de deux mille pixels ou l'on ne trouve rien ; en montrer zero
+ * obligerait a choisir dans une liste ce que le motif dit deja.
+ */
+function PanneauMoteurs({
+  code,
+  revision,
+  surReglage,
+}: {
+  code: string;
+  revision: number;
+  surReglage: (moteur: string, nom: string, valeur: number | string) => void;
+}) {
+  const appeles = useMemo(() => {
+    const vus: string[] = [];
+    for (const m of code.matchAll(/(?:\.sound|\bs)\(\s*["\'`]([^"\'`]*)["\'`]/g)) {
+      for (const brut of m[1].split(/[\s,<>[\]()*!@?~|.]+/)) {
+        const nom = brut.replace(/:\d+$/, "").trim();
+        if (MOTEURS_JOUABLES.includes(nom as never) && !vus.includes(nom)) vus.push(nom);
+      }
+    }
+    return vus;
+  }, [code]);
+
+  if (appeles.length === 0) {
+    return (
+      <>
+        <h2 className="sr-titre">Moteurs du rack</h2>
+        <p className="sr-aide">
+          Aucun moteur du rack dans ce motif. Écris <code>.sound("mi_plaits")</code>
+          {" "}— ou n'importe lequel de l'onglet SONS — et sa carte de réglages
+          apparaîtra ici.
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h2 className="sr-titre">Moteurs du rack</h2>
+      <p className="sr-aide">
+        Les cartes des moteurs appelés par ce motif. Les réglages valent pour les
+        notes suivantes ; ce que le code dit — <code>.cutoff(900)</code> — reste
+        prioritaire sur le curseur.
+      </p>
+      {appeles.map((moteur) => (
+        <CarteMoteur
+          // La revision force le redessin : les valeurs vivent hors de React.
+          key={`${moteur}-${revision}`}
+          moteur={moteur}
+          compacte
+          valeurs={reglagesMoteur(moteur)}
+          surReglage={(nom, valeur) => surReglage(moteur, nom, valeur)}
+        />
+      ))}
     </>
   );
 }

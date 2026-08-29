@@ -1,0 +1,133 @@
+/**
+ * La carte de réglages d'un moteur.
+ *
+ * ## Ce qu'elle doit supporter
+ *
+ * Elle s'incruste partout : à côté d'un éditeur de code, sous une onde, en
+ * pile de cinq dans une colonne de 280 px, ou seule au milieu d'une page. Elle
+ * ne peut donc fixer aucune largeur — elle prend celle qu'on lui donne et
+ * s'organise en conséquence.
+ *
+ * `grid-template-columns: repeat(auto-fit, minmax(150px, 1fr))` fait tout le
+ * travail : une colonne sous 300 px, deux au-dessus, sans requête de média et
+ * sans que l'hôte ait à prévenir. Une carte posée dans un tiroir qui se
+ * redimensionne suit toute seule.
+ *
+ * ## Neutre par héritage
+ *
+ * Aucune couleur en dur : tout passe par les jetons `--ui-*`, et par
+ * `currentColor` là où il n'y a pas de jeton. La carte prend donc l'apparence
+ * de son hôte — console sombre du rack DSP, phosphore vert du rack Strudel —
+ * sans qu'on écrive une variante par page.
+ */
+
+.cm-carte {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  color: inherit;
+  background: var(--ui-panel, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--ui-border, currentColor);
+  border-radius: var(--ui-radius-sm, 4px);
+}
+
+.cm-titre {
+  margin: 0;
+  color: inherit;
+  font: 700 11px/1.2 var(--ui-font-mono, ui-monospace, monospace);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  /* La carte s'incruste sur des fonds tres sombres — la console du rack DSP,
+     le phosphore du rack Strudel. Une opacite basse y rend le libelle
+     illisible : constate a l'ecran, les titres disparaissaient presque. */
+  opacity: 1;
+}
+
+.cm-grille {
+  display: grid;
+  /* Le cœur de l'adaptation : voir l'en-tête. */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px 14px;
+}
+
+.cm-carte--compacte .cm-grille {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.cm-reglage {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cm-libelle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  font: 700 9px/1.3 var(--ui-font-mono, ui-monospace, monospace);
+  letter-spacing: 0.08em;
+  opacity: 0.92;
+  /* Un libellé long — « TIMBRE (FILTER CUTOFF) » — ne doit pas élargir la
+     colonne et casser la grille : il se coupe. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cm-valeur {
+  flex: none;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.cm-reglage input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  height: 18px;
+  accent-color: var(--ui-cyan, currentColor);
+}
+
+.cm-reglage select {
+  width: 100%;
+  min-width: 0;
+  padding: 5px 6px;
+  color: inherit;
+  background: var(--ui-bg, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--ui-border, currentColor);
+  border-radius: var(--ui-radius-sm, 3px);
+  font: 700 11px var(--ui-font-mono, ui-monospace, monospace);
+}
+
+.cm-reglage input:focus-visible,
+.cm-reglage select:focus-visible {
+  outline: 2px solid var(--ui-cyan, currentColor);
+  outline-offset: 2px;
+}
+
+/* Une liste occupe les deux colonnes : ses libellés sont plus longs que
+   ceux d'un curseur, et la couper en deux la rend illisible. */
+.cm-reglage--liste {
+  grid-column: 1 / -1;
+}
+
+.cm-carte--compacte .cm-reglage--liste {
+  grid-column: auto;
+}
+
+.cm-vide {
+  margin: 0;
+  font: 10px/1.5 var(--ui-font-mono, ui-monospace, monospace);
+  opacity: 0.6;
+}
+
+.cm-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ui-border, currentColor);
+}
