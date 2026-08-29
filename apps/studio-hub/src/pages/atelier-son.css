@@ -434,3 +434,7 @@
   border-radius: 0;
   font: 700 12px ui-monospace, monospace;
 }
+
+/* Le rangement reste manuel faute d'espace de travail : on le dit AVANT le
+   clic, pas apres. La difference compte quand on fabrique dix sons. */
+.atelier-son .as-rangement--manuel { color: var(--as-doux); }

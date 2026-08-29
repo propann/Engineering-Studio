@@ -38,6 +38,7 @@ import { ecrireFichier, moyenDisponible } from "../core/strudel/projets";
 import { encodeAiffPcm16, encodeWavPcm16 } from "@studio-hub/audio-formats";
 import { dureeAdmise, SPECS_CIBLES, type CibleMachine } from "@studio-hub/audio-formats";
 import { reappliquerEffetsMaitre } from "../core/audio/effetsMaitre";
+import { espaceDeTravail, rangerEchantillon, rangerSon } from "../core/audio/rangerSon";
 import "./atelier-son.css";
 
 /**
@@ -87,6 +88,18 @@ export default function AtelierSon() {
   sonVif.current = son;
 
   useEffect(() => setProfileName(readProfileName()), []);
+
+  /**
+   * L'espace de travail est-il connecte ?
+   *
+   * Affiche a cote du dossier de rangement : sans cette indication, on ne sait
+   * qu'apres avoir clique si le son sera range tout seul ou s'il faudra
+   * naviguer. La difference compte quand on en fabrique dix.
+   */
+  const [espaceConnecte, setEspaceConnecte] = useState(false);
+  useEffect(() => {
+    void espaceDeTravail().then((e) => setEspaceConnecte(e !== null));
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -213,6 +226,20 @@ export default function AtelierSon() {
       setErreur("Ajoute au moins une couche avant d'enregistrer.");
       return;
     }
+    /**
+     * L'espace de travail d'abord : c'est ce qui rend le rangement AUTOMATIQUE.
+     *
+     * Sans lui, « rangement automatique » ne nommait qu'une suggestion — le
+     * son partait dans un selecteur de fichier, et c'etait a l'utilisateur de
+     * naviguer jusqu'au bon dossier a chaque fois.
+     */
+    const range = await rangerSon(s);
+    if (range.ok) {
+      setErreur(null);
+      setMessage(`Rangé dans ${range.chemin} — visible dans la Bibliothèque sonore.`);
+      return;
+    }
+
     const r = await ecrireFichier(serialiserSon(s), nomFichierSon(s.nom), poignee);
     if (!r.ok) {
       if (!r.annule) setErreur(r.erreur ?? "L'enregistrement a échoué.");
@@ -220,10 +247,17 @@ export default function AtelierSon() {
     }
     setPoignee(r.poignee);
     setErreur(null);
+    // On dit pourquoi ce n'est PAS range tout seul, plutot que de laisser
+    // croire que ca l'est.
+    const raison =
+      range.raison === "pas-d-espace"
+        ? " Aucun espace de travail connecté : le rangement reste manuel."
+        : ` Rangement automatique impossible (${range.message ?? range.raison}).`;
     setMessage(
-      r.poignee
-        ? `Enregistré dans « ${r.nomFichier} ». Rangement : ${cheminDe(s)}.`
-        : `« ${r.nomFichier} » envoyé dans les téléchargements. Rangement conseillé : ${cheminDe(s)}.`,
+      (r.poignee
+        ? `Enregistré dans « ${r.nomFichier} ». Rangement conseillé : ${cheminDe(s)}.`
+        : `« ${r.nomFichier} » envoyé dans les téléchargements. Rangement conseillé : ${cheminDe(s)}.`) +
+        raison,
     );
   }, [poignee]);
 
@@ -262,6 +296,17 @@ export default function AtelierSon() {
       const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
         spec.format === "aiff" ? "aif" : "wav"
       }`;
+      const dansEspace = await rangerEchantillon(s, nom, octets);
+      if (dansEspace.ok) {
+        setErreur(null);
+        setMessage(
+          `${dansEspace.chemin} — ${(octets.byteLength / 1024).toFixed(0)} ko, ${spec.libelle}` +
+            (gain < 1 ? ` · niveau réduit de ${(20 * Math.log10(gain)).toFixed(1)} dB` : "") +
+            (spec.dossier ? ` · à copier dans ${spec.dossier} de la machine` : ""),
+        );
+        return;
+      }
+
       const ecrit = await ecrireFichier(octets, nom);
       if (!ecrit.ok) {
         if (!ecrit.annule) setErreur(ecrit.erreur ?? "L'export a échoué.");
@@ -383,6 +428,13 @@ export default function AtelierSon() {
           const nom = `${nomFichierSon(s.nom).replace(/\.son\.json$/, "")}.${
             spec.format === "aiff" ? "aif" : "wav"
           }`;
+          // Dans l'espace si possible : un jeu de sept fichiers via le
+          // selecteur demanderait sept validations a la suite.
+          const range = await rangerEchantillon(s, nom, octets);
+          if (range.ok) {
+            ecrits += 1;
+            continue;
+          }
           const ecrit = await ecrireFichier(octets, nom);
           if (ecrit.ok) ecrits += 1;
           else if (ecrit.annule) break; // l'utilisateur a ferme le selecteur
@@ -442,8 +494,16 @@ export default function AtelierSon() {
                 aria-label="Note de référence"
               />
             </label>
-            <span className="as-rangement" title="Dossier choisi d'après les couches et la note">
+            <span
+              className={`as-rangement${espaceConnecte ? "" : " as-rangement--manuel"}`}
+              title={
+                espaceConnecte
+                  ? `Rangé automatiquement dans shared/sounds/prepared/${dossierDe(son)}`
+                  : "Aucun espace de travail connecté : le rangement restera manuel"
+              }
+            >
               📁 {dossierDe(son)}
+              {!espaceConnecte && " (manuel)"}
             </span>
             <button type="button" className="as-bouton" onClick={() => void enregistrer()}>
               ENREGISTRER
