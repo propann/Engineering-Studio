@@ -5,6 +5,7 @@ import { MusicGitRepository, type MusicCommit, type MusicBranch, type MusicProje
 import { P2PCollabSession, type ConnectedPeer, type ChatMessage, type ChatChannelId, type ChatAttachment, exportStudioKeyFile, importStudioKeyFile, getOrCreateCryptoIdentity, saveCryptoIdentity, type CryptoIdentity } from "@studio-hub/p2p-collab";
 import { readProfile } from "../core/profile";
 import { useNotesMidi } from "../core/midi/useNotesMidi";
+import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
 
 export interface CollabStudioProps {
   enModule?: boolean;
@@ -55,16 +56,47 @@ export default function CollabStudio({ enModule = false }: CollabStudioProps) {
   const currentStepRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getAudioContext = useCallback(() => {
-    if (!audioCtxRef.current) {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtxRef.current = new AudioContextClass();
-    }
-    if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
-    }
-    return audioCtxRef.current;
+  const priseRef = useRef<Prise | null>(null);
+
+  /**
+   * Le contexte du Hub, et une voie de console.
+   *
+   * Cet outil fabriquait son propre `AudioContext` et ne le fermait jamais :
+   * chaque visite en fuyait un, et Chrome en plafonne six par document. Au
+   * septieme, plus aucun son nulle part et aucune erreur.
+   *
+   * `rack-bus` existe pour ca. La migration du rack DSP a eu lieu le
+   * 2026-08-29 ; celle-ci suit, pour que tout ce qui sonne dans l'atelier
+   * passe par la meme console.
+   */
+  const getAudioContext = () => {
+    const ctx = contexte();
+    audioCtxRef.current = ctx;
+    if (ctx.state === "suspended") void ctx.resume();
+    if (!priseRef.current) priseRef.current = brancher("Collab Studio");
+    return ctx;
+  };
+
+  /**
+   * Rend la voie au demontage.
+   *
+   * Le contexte, lui, n'est pas ferme : il appartient au Hub. Une voie
+   * laissee derriere garderait le graphe vivant et ajouterait une tranche
+   * fantome a la console a chaque visite de cette page.
+   */
+  useEffect(() => {
+    return () => {
+      priseRef.current?.detacher();
+      priseRef.current = null;
+      audioCtxRef.current = null;
+    };
   }, []);
+
+  /** Le point de sortie : la voie de console, jamais la destination brute. */
+  const sortieAudio = (): AudioNode => {
+    getAudioContext();
+    return priseRef.current!.entree;
+  };
 
   // WebAudio Sound Synthesizer Functions
   const playSynthesizedSound = useCallback((
@@ -90,9 +122,9 @@ export default function CollabStudio({ enModule = false }: CollabStudioProps) {
       const connectOut = (node: AudioNode) => {
         if (panner) {
           node.connect(panner);
-          panner.connect(ctx.destination);
+          panner.connect(sortieAudio());
         } else {
-          node.connect(ctx.destination);
+          node.connect(sortieAudio());
         }
       };
 
@@ -179,7 +211,12 @@ export default function CollabStudio({ enModule = false }: CollabStudioProps) {
     } catch {
       // Audio context error handling
     }
-  }, [getAudioContext]);
+    // `getAudioContext` n'est plus un useCallback depuis la migration sur le
+    // fond de panier : il change d'identite a chaque rendu. Le garder en
+    // dependance recreerait ce callback a chaque frappe. Il ne capture plus
+    // rien de variable — le contexte est celui du Hub — donc l'omettre est sur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Écoute du répartiteur MIDI matériel (OP-1 / EP-133)
   useNotesMidi((noteInfo) => {

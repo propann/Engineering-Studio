@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { TopBar } from "../components/TopBar";
 import "./sound-patch-creator.css";
 import { useNotesMidi } from "../core/midi/useNotesMidi";
+import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
 
 type MachineTarget = "op1" | "ep133";
 type Op1EngineType = "fm" | "dna" | "cluster" | "string" | "phase" | "digital" | "pulse";
@@ -52,16 +53,48 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
   };
 
   // INITIALIZE WEB AUDIO CONTEXT
+  /**
+   * Le contexte du Hub, et une voie de console.
+   *
+   * Cet outil fabriquait son propre `AudioContext` et ne le fermait jamais :
+   * chaque visite en fuyait un, et Chrome en plafonne six par document. Au
+   * septieme, plus aucun son nulle part et aucune erreur.
+   *
+   * `rack-bus` existe pour ca — son en-tete cite meme ce fichier,
+   * `SoundPatchCreator:55`, parmi les trois composants fautifs. La migration
+   * du rack DSP a eu lieu le 2026-08-29 ; celle-ci suit, pour que tout ce qui
+   * sonne dans l'atelier passe par la meme console.
+   */
+  const priseRef = useRef<Prise | null>(null);
+
   const getAudioContext = () => {
-    if (!audioCtxRef.current) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      audioCtxRef.current = new AudioCtx();
-    }
-    if (audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
-    }
+    const ctx = contexte();
+    audioCtxRef.current = ctx;
+    if (ctx.state === "suspended") void ctx.resume();
+    if (!priseRef.current) priseRef.current = brancher("Créateur de patch");
     setIsAudioActive(true);
-    return audioCtxRef.current;
+    return ctx;
+  };
+
+  /**
+   * Rend la voie au demontage.
+   *
+   * Le contexte, lui, n'est pas ferme : il appartient au Hub. Une voie
+   * laissee derriere garderait le graphe vivant et ajouterait une tranche
+   * fantome a la console a chaque visite de cette page.
+   */
+  useEffect(() => {
+    return () => {
+      priseRef.current?.detacher();
+      priseRef.current = null;
+      audioCtxRef.current = null;
+    };
+  }, []);
+
+  /** Le point de sortie : la voie de console, jamais la destination brute. */
+  const sortieAudio = (): AudioNode => {
+    getAudioContext();
+    return priseRef.current!.entree;
   };
 
   // PLAY REAL-TIME SYNTH SOUND VIA WEB AUDIO API
@@ -112,7 +145,7 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
 
         carrier.connect(filterNode);
         filterNode.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        gainNode.connect(sortieAudio());
 
         carrier.start(now);
         modulator.start(now);
@@ -136,7 +169,7 @@ export default function SoundPatchCreator({ profileName = "NOUVEAU MEMBRE", onCl
 
         osc.connect(filterNode);
         filterNode.connect(gainNode);
-        gainNode.connect(ctx.destination);
+        gainNode.connect(sortieAudio());
 
         osc.start(now);
         osc.stop(now + attTime + decTime + relTime + 0.1);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { readProfile, type StudioProfile } from "./core/profile";
 import { useNotesMidi } from "./core/midi/useNotesMidi";
+import { brancher, contexte, type Prise } from "@studio-hub/rack-bus";
 
 export type SoundSourceType = "all" | "labo" | "p2p" | "personal" | "machines";
 export type SoundTarget = "op1" | "ep133";
@@ -356,6 +357,18 @@ export function SoundLibraryPanel({
   const objectUrlRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const synthCtxRef = useRef<AudioContext | null>(null);
+  const priseRef = useRef<Prise | null>(null);
+
+  /**
+   * Rend la voie au demontage. Le contexte, lui, appartient au Hub.
+   */
+  useEffect(() => {
+    return () => {
+      priseRef.current?.detacher();
+      priseRef.current = null;
+      synthCtxRef.current = null;
+    };
+  }, []);
 
   // Synchronisation du profil opérateur pour le filtrage adapté
   useEffect(() => {
@@ -495,11 +508,19 @@ export function SoundLibraryPanel({
 
     // 2. Pré-écoute synthétisée en temps réel (pour les patches Labo, P2P et sons d'usine machine)
     try {
-      if (!synthCtxRef.current) {
-        synthCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-      const ctx = synthCtxRef.current;
+      /**
+       * Le contexte du Hub, et une voie de console.
+       *
+       * Ce panneau fabriquait le sien sous une forme que la garde du fond de
+       * panier ne voyait pas — `new (window.AudioContext || …)()` au lieu de
+       * `new AudioContext()`. Il ne le fermait pas davantage : chaque visite
+       * en fuyait un.
+       */
+      const ctx = contexte();
+      synthCtxRef.current = ctx;
       if (ctx.state === "suspended") await ctx.resume();
+      if (!priseRef.current) priseRef.current = brancher("Bibliothèque sonore");
+      const sortie = priseRef.current.entree;
 
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
@@ -512,7 +533,7 @@ export function SoundLibraryPanel({
         gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(sortie);
         osc.start(now);
         osc.stop(now + 0.8);
       } else if (asset.kind === "drum") {
@@ -523,7 +544,7 @@ export function SoundLibraryPanel({
         gain.gain.setValueAtTime(0.4, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(sortie);
         osc.start(now);
         osc.stop(now + 0.3);
       } else {
@@ -534,7 +555,7 @@ export function SoundLibraryPanel({
         gain.gain.linearRampToValueAtTime(0.25, now + 0.1);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(sortie);
         osc.start(now);
         osc.stop(now + 1.2);
       }
