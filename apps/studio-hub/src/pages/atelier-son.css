@@ -438,3 +438,9 @@
 /* Le rangement reste manuel faute d'espace de travail : on le dit AVANT le
    clic, pas apres. La difference compte quand on fabrique dix sons. */
 .atelier-son .as-rangement--manuel { color: var(--as-doux); }
+
+/* La toile devient un outil de decoupe quand une couche d'echantillon est
+   choisie. Le curseur le dit : sans lui, rien n'indique qu'on peut tirer. */
+.atelier-son .as-toile--coupable {
+  cursor: ew-resize;
+}

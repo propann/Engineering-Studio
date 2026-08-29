@@ -616,7 +616,22 @@ export default function AtelierSon() {
       >
         {/* ── L'onde, en haut ── */}
         <section className="as-onde" aria-label="Onde du son">
-          <Onde rendu={rendu} calcule={calcule} />
+          <Onde
+            rendu={rendu}
+            calcule={calcule}
+            decoupe={
+              couchesSelectionnee?.type === "echantillon"
+                ? {
+                    debut: couchesSelectionnee.echantillon?.debut ?? 0,
+                    fin: couchesSelectionnee.echantillon?.fin ?? 1,
+                    couleur: couchesSelectionnee.couleur,
+                  }
+                : null
+            }
+            surDecoupe={(debut, fin) =>
+              couchesSelectionnee && majEchantillon(couchesSelectionnee, { debut, fin })
+            }
+          />
           <div className="as-barre">
             <button type="button" className="as-bouton as-bouton--jouer" onClick={ecouter}>
               ▶ ÉCOUTER
@@ -928,8 +943,34 @@ export default function AtelierSon() {
  * L'inverse — la somme remplie — masquerait les couches qu'elle contient, ce
  * qui est précisément ce qu'on veut voir.
  */
-function Onde({ rendu, calcule }: { rendu: RenduSon | null; calcule: boolean }) {
+function Onde({
+  rendu,
+  calcule,
+  decoupe,
+  surDecoupe,
+}: {
+  rendu: RenduSon | null;
+  calcule: boolean;
+  /**
+   * La découpe de la couche sélectionnée, si c'est un échantillon.
+   *
+   * `null` pour un moteur : il n'y a rien à découper, et afficher des poignées
+   * inertes ferait croire à une panne.
+   */
+  decoupe: { debut: number; fin: number; couleur: string } | null;
+  surDecoupe: (debut: number, fin: number) => void;
+}) {
   const toile = useRef<HTMLCanvasElement | null>(null);
+  /**
+   * Quelle poignée on tire, et depuis quel bord.
+   *
+   * En relevé et non en état : le déplacement en produit des dizaines par
+   * seconde, et un rendu React par pixel parcouru rendrait le geste saccadé
+   * alors qu'on redessine déjà la toile nous-mêmes.
+   */
+  const tire = useRef<"debut" | "fin" | null>(null);
+  const decoupeVive = useRef(decoupe);
+  decoupeVive.current = decoupe;
 
   useEffect(() => {
     const canvas = toile.current;
@@ -984,6 +1025,27 @@ function Onde({ rendu, calcule }: { rendu: RenduSon | null; calcule: boolean }) 
      * l'écran : on ne voyait plus une seule couleur. On ne dessine donc que les
      * deux bords, haut et bas, en un trait fin.
      */
+    /**
+     * Les zones coupées sont VOILÉES, pas effacées.
+     *
+     * On doit voir ce qu'on retire pour savoir si l'on coupe au bon endroit —
+     * masquer complètement obligerait à défaire pour vérifier.
+     */
+    if (decoupe) {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "rgba(0,0,0,.6)";
+      ctx.fillRect(0, 0, decoupe.debut * r.width, r.height);
+      ctx.fillRect(decoupe.fin * r.width, 0, r.width - decoupe.fin * r.width, r.height);
+      ctx.strokeStyle = decoupe.couleur;
+      ctx.lineWidth = 2;
+      for (const x of [decoupe.debut * r.width, decoupe.fin * r.width]) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, r.height);
+        ctx.stroke();
+      }
+    }
+
     ctx.globalAlpha = 1;
     const { min, max } = cretes(rendu.somme, largeur);
     ctx.strokeStyle = "rgba(255,255,255,.6)";
@@ -997,11 +1059,57 @@ function Onde({ rendu, calcule }: { rendu: RenduSon | null; calcule: boolean }) 
       }
       ctx.stroke();
     }
-  }, [rendu]);
+  }, [rendu, decoupe]);
+
+  /** La position du pointeur, en fraction de la largeur. */
+  const fraction = (e: React.MouseEvent<HTMLCanvasElement>): number => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  };
 
   return (
     <div className="as-toile">
-      <canvas ref={toile} aria-hidden="true" />
+      <canvas
+        ref={toile}
+        aria-hidden="true"
+        className={decoupe ? "as-toile--coupable" : undefined}
+        onMouseDown={(e) => {
+          if (!decoupe) return;
+          const f = fraction(e);
+          // On saisit le bord le plus PROCHE : viser une ligne de deux pixels
+          // au pixel près serait un jeu d'adresse.
+          tire.current =
+            Math.abs(f - decoupe.debut) <= Math.abs(f - decoupe.fin) ? "debut" : "fin";
+          surDecoupe(
+            tire.current === "debut" ? f : decoupe.debut,
+            tire.current === "fin" ? f : decoupe.fin,
+          );
+        }}
+        onMouseMove={(e) => {
+          const d = decoupeVive.current;
+          if (!tire.current || !d) return;
+          const f = fraction(e);
+          /**
+           * Croiser l'autre poignée fait CHANGER de poignée.
+           *
+           * `bornesSaines` remet les bornes dans l'ordre : tirer le début
+           * au-delà de la fin les échange. Sans basculer la poignée saisie, le
+           * geste suivant les échangerait de nouveau — et la découpe
+           * oscillerait à chaque image tant qu'on tient le bouton.
+           */
+          if (tire.current === "debut" && f > d.fin) tire.current = "fin";
+          else if (tire.current === "fin" && f < d.debut) tire.current = "debut";
+          surDecoupe(tire.current === "debut" ? f : d.debut, tire.current === "fin" ? f : d.fin);
+        }}
+        onMouseUp={() => {
+          tire.current = null;
+        }}
+        // Relâcher hors de la toile doit aussi finir le geste : sans cela, la
+        // poignée resterait collée au pointeur au retour de la souris.
+        onMouseLeave={() => {
+          tire.current = null;
+        }}
+      />
       {calcule && <span className="as-calcul">calcul…</span>}
       {!rendu && !calcule && <span className="as-calcul">aucune couche</span>}
     </div>
