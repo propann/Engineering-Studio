@@ -41,6 +41,15 @@ import { dureeAdmise, SPECS_CIBLES, type CibleMachine } from "@studio-hub/audio-
 import { reappliquerEffetsMaitre } from "../core/audio/effetsMaitre";
 import { espaceDeTravail, rangerEchantillon, rangerSon } from "../core/audio/rangerSon";
 import { prendreSonEnAttente } from "../core/audio/sonEnAttente";
+import {
+  annuler,
+  empiler,
+  historiqueVide,
+  peutAnnuler,
+  peutRefaire,
+  refaire,
+  type Historique,
+} from "../core/audio/historique";
 import "./atelier-son.css";
 
 /**
@@ -114,6 +123,7 @@ export default function AtelierSon() {
    * naviguer. La difference compte quand on en fabrique dix.
    */
   const [espaceConnecte, setEspaceConnecte] = useState(false);
+  const [histoire, setHistoire] = useState<Historique>(historiqueVide);
   useEffect(() => {
     void espaceDeTravail().then((e) => setEspaceConnecte(e !== null));
   }, []);
@@ -124,6 +134,51 @@ export default function AtelierSon() {
       prise.current = null;
     };
   }, []);
+
+  /**
+   * Modifie le son EN GARDANT de quoi revenir.
+   *
+   * `geste` nomme ce qu'on fait — « gain:abc », « ajout », « retrait ». Deux
+   * appels de suite avec le meme nom, rapproches, ne font qu'un pas :
+   * c'est ainsi qu'annuler apres avoir tire un curseur revient AVANT le geste
+   * et non au pixel precedent.
+   *
+   * Les chargements — ouvrir un fichier, prendre un son depose — passent
+   * volontairement par `setSon` directement : ils remplacent tout, et pouvoir
+   * les annuler ferait revenir a un etat que l'utilisateur a explicitement
+   * quitte.
+   */
+  const modifier = useCallback(
+    (geste: string, transformer: (s: SonFabrique) => SonFabrique) => {
+      setSon((avant) => {
+        const apres = transformer(avant);
+        if (apres === avant) return avant;
+        setHistoire((h) => empiler(h, avant, geste));
+        return apres;
+      });
+    },
+    [],
+  );
+
+  const annulerUnPas = useCallback(() => {
+    setSon((courant) => {
+      const r = annuler(histoire, courant);
+      if (!r) return courant;
+      setHistoire(r.historique);
+      setSelection((sel) => (r.son.couches.some((c) => c.id === sel) ? sel : r.son.couches[0]?.id ?? null));
+      return r.son;
+    });
+  }, [histoire]);
+
+  const refaireUnPas = useCallback(() => {
+    setSon((courant) => {
+      const r = refaire(histoire, courant);
+      if (!r) return courant;
+      setHistoire(r.historique);
+      setSelection((sel) => (r.son.couches.some((c) => c.id === sel) ? sel : r.son.couches[0]?.id ?? null));
+      return r.son;
+    });
+  }, [histoire]);
 
   /* --- L'onde ------------------------------------------------------------ */
 
@@ -215,7 +270,7 @@ export default function AtelierSon() {
 
   const ajouter = useCallback(
     (moteur: string) => {
-      setSon((s) => {
+      modifier("ajout", (s) => {
         const suivant = ajouterCouche(s, moteur);
         setSelection(suivant.couches[suivant.couches.length - 1].id);
         return suivant;
@@ -226,7 +281,7 @@ export default function AtelierSon() {
   );
 
   const retirer = useCallback((id: string) => {
-    setSon((s) => retirerCouche(s, id));
+    modifier("retrait", (s) => retirerCouche(s, id));
     setSelection((sel) => (sel === id ? null : sel));
   }, []);
 
@@ -480,14 +535,40 @@ export default function AtelierSon() {
   const majEchantillon = useCallback(
     (couche: Couche, changements: Partial<NonNullable<Couche["echantillon"]>>) => {
       const base = { ...couche.echantillon!, ...changements };
-      setSon((s) =>
+      modifier(`${Object.keys(changements)[0]}:${couche.id}`, (s) =>
         modifierCouche(s, couche.id, {
           echantillon: { ...base, ...bornesSaines(base.debut, base.fin) },
         }),
       );
     },
-    [],
+    [modifier],
   );
+
+  /**
+   * Ctrl+Z et Ctrl+Maj+Z, sur la fenetre.
+   *
+   * Sur la fenetre et non sur le plan : un curseur ou un champ de saisie a le
+   * focus la plupart du temps, et un gestionnaire pose sur un conteneur ne
+   * verrait rien. On laisse passer quand le focus est dans une SAISIE DE
+   * TEXTE — le nom du son, une balise — ou Ctrl+Z doit annuler la frappe, pas
+   * la couche precedente.
+   */
+  useEffect(() => {
+    const surTouche = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "z") return;
+      const actif = document.activeElement as HTMLElement | null;
+      const dansUneSaisie =
+        actif instanceof HTMLInputElement
+          ? actif.type === "text" || actif.type === "number"
+          : actif instanceof HTMLTextAreaElement;
+      if (dansUneSaisie) return;
+      e.preventDefault();
+      if (e.shiftKey) refaireUnPas();
+      else annulerUnPas();
+    };
+    window.addEventListener("keydown", surTouche);
+    return () => window.removeEventListener("keydown", surTouche);
+  }, [annulerUnPas, refaireUnPas]);
 
   const moyen = useMemo(() => moyenDisponible(), []);
 
@@ -508,6 +589,24 @@ export default function AtelierSon() {
           <div className="as-barre">
             <button type="button" className="as-bouton as-bouton--jouer" onClick={ecouter}>
               ▶ ÉCOUTER
+            </button>
+            <button
+              type="button"
+              className="as-bouton"
+              onClick={annulerUnPas}
+              disabled={!peutAnnuler(histoire)}
+              title="Annuler (Ctrl+Z)"
+            >
+              ↶
+            </button>
+            <button
+              type="button"
+              className="as-bouton"
+              onClick={refaireUnPas}
+              disabled={!peutRefaire(histoire)}
+              title="Refaire (Ctrl+Maj+Z)"
+            >
+              ↷
             </button>
             <label className="as-champ">
               <span>NOM</span>
@@ -688,8 +787,12 @@ export default function AtelierSon() {
                     dernier={i === son.couches.length - 1}
                     surSelection={() => setSelection(c.id)}
                     surRetrait={() => retirer(c.id)}
-                    surDeplacement={(d) => setSon((s) => deplacerCouche(s, c.id, d))}
-                    surChangement={(ch) => setSon((s) => modifierCouche(s, c.id, ch))}
+                    surDeplacement={(d) => modifier("ordre", (s) => deplacerCouche(s, c.id, d))}
+                    surChangement={(ch) =>
+                      // Le geste porte l'identifiant ET le champ : tirer le gain
+                      // d'une couche puis celui d'une autre fait deux pas.
+                      modifier(`${Object.keys(ch)[0]}:${c.id}`, (s) => modifierCouche(s, c.id, ch))
+                    }
                   />
                 ))}
               </ul>
@@ -745,7 +848,9 @@ export default function AtelierSon() {
                 moteur={couchesSelectionnee.moteur}
                 valeurs={paramsDeCouche(couchesSelectionnee) as unknown as Record<string, unknown>}
                 surReglage={(nom, valeur) =>
-                  setSon((s) => modifierCouche(s, couchesSelectionnee.id, { params: { [nom]: valeur } }))
+                  modifier(`${nom}:${couchesSelectionnee.id}`, (s) =>
+                    modifierCouche(s, couchesSelectionnee.id, { params: { [nom]: valeur } }),
+                  )
                 }
                 titre={
                   <span>
