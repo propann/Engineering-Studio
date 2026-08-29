@@ -76,6 +76,27 @@ function reglagesDepuisPotentiometres(
 }
 
 
+import { construireMoteurOp1, type MoteurOp1 } from "@studio-hub/core/audio/moteursOp1";
+
+/**
+ * Traduit un moteur natif de l'OP-1 vers son identifiant dans la bibliotheque.
+ *
+ * Les noms de l'ecran — « Digital », « Iter » — et ceux du code partage
+ * — `op1_digital` — sont volontairement distincts : la bibliotheque sert
+ * aussi Strudel et le Hub, ou « Digital » tout court ne voudrait rien dire.
+ */
+function moteurNatif(engine: string): MoteurOp1 | null {
+  switch (engine) {
+    case "Digital": return "op1_digital";
+    case "Iter": return "op1_iter";
+    case "Phase": return "op1_phase";
+    case "DNA": return "op1_dna";
+    case "Voltage": return "op1_voltage";
+    default: return null;
+  }
+}
+
+
 export type Op1EngineType =
   | "FM"
   | "Cluster"
@@ -557,9 +578,53 @@ class Op1SynthEngine {
           try { s.stop(ctx.currentTime + 0.2); } catch { /* deja arretee */ }
         }
       };
+    } else if (moteurNatif(engine)) {
+      /**
+       * ── Les moteurs natifs de l'OP-1, chacun avec sa voix ──
+       *
+       * Digital, Iter, Phase, DNA et Voltage tombaient dans le repli
+       * generique ci-dessous et sonnaient donc tous PAREIL — seul le nom
+       * changeait a l'ecran. C'est le meme defaut que celui des treize
+       * moteurs du rack, corrige plus tot le 2026-08-29 : ceux-la manquaient
+       * d'une synthese, ceux-ci en partageaient une seule.
+       *
+       * Ils vivent dans `core/audio/moteursOp1.ts`, donc jouables partout —
+       * depuis ce clavier, depuis un motif Strudel, depuis les outils
+       * d'echantillon. Les laisser ici les y aurait enfermes.
+       */
+      const sources: AudioScheduledSourceNode[] = [];
+      const sortie = construireMoteurOp1(
+        ctx,
+        moteurNatif(engine)!,
+        {
+          op1Timbre: t1,
+          op1Forme: t2,
+          op1Mouvement: t3,
+          op1Decay: t4,
+        },
+        freq,
+        now,
+        {
+          trk: (n) => { sources.push(n); return n; },
+          noteStop: (n, quand) => { try { n.stop(quand); } catch { /* deja arretee */ } },
+          holdUntil: () => {},
+        },
+      );
+      sortie?.connect(voiceGain);
+
+      const atkSec = Math.max(0.005, (shiftT1 / 100) * 0.3);
+      voiceGain.gain.setValueAtTime(0, now);
+      voiceGain.gain.linearRampToValueAtTime(0.4 * velFactor, now + atkSec);
+
+      cleanupNodes = () => {
+        for (const s of sources) {
+          try { s.stop(ctx.currentTime + 0.2); } catch { /* deja arretee */ }
+        }
+      };
     } else {
-      // ── Moteurs natifs de l'OP-1 sans equivalent dans le rack ──
-      // Digital, Iter, Voltage, Phase, DNA : ils n'existent que sur la machine.
+      // ── Dernier repli : Sampler, et tout identifiant inconnu ──
+      // Le Sampler n'est pas une synthese : il lit un echantillon, et n'a donc
+      // rien a faire dans une bibliotheque d'oscillateurs.
       osc1 = ctx.createOscillator();
       osc2 = ctx.createOscillator();
       filter = ctx.createBiquadFilter();
