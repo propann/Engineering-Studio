@@ -106,57 +106,145 @@ describe("l'interface du delay synchronise", () => {
   });
 });
 
-describe("cycle de vie de l'AudioContext", () => {
+describe("cycle de vie du contexte audio", () => {
+  /**
+   * Ce bloc verifiait l'inverse jusqu'au 2026-08-29 : que le rack FERME son
+   * `AudioContext` au demontage. C'etait juste tant qu'il en etait le
+   * proprietaire — il en fabriquait un par montage, et Chrome en plafonne six
+   * par document ; au septieme, plus aucun son et aucune erreur.
+   *
+   * Le rack est depuis migre sur `@studio-hub/rack-bus`. Le probleme a disparu
+   * a la racine : il n'y a plus qu'UN contexte pour tout le document. Fermer
+   * ce contexte-la rendrait muet tout ce qui joue ailleurs — le rack Strudel
+   * en premier, qui peut tenir une boucle pendant qu'on ne touche pas aux
+   * moteurs.
+   *
+   * L'invariant s'inverse donc, et c'est ce qu'on verrouille ici.
+   */
   const bloc = () => {
-    const i = RACK.indexOf("// Ferme l'AudioContext au demontage.");
-    expect(i).toBeGreaterThan(-1);
-    return RACK.slice(i, i + 1800);
+    const i = RACK.indexOf("// Rend la voie de console au demontage.");
+    expect(i, "la borne de demontage a disparu").toBeGreaterThan(-1);
+    return RACK.slice(i, i + 2400);
   };
 
-  it("ferme le contexte au demontage", () => {
-    // Le rack en creait un par montage sans jamais le fermer. En tiroir de
-    // studio, chaque ouverture en ajoutait un — et Chrome en plafonne six par
-    // document. Au septieme, plus aucun son et aucune erreur.
-    expect(bloc()).toMatch(/ctx\.close\(\)/);
+  it("le contexte vient du fond de panier, il n'en fabrique plus", () => {
+    expect(RACK).toContain('from "@studio-hub/rack-bus"');
+    expect(RACK, "le rack fabrique encore son propre contexte").not.toMatch(
+      /new\s+Ctor\(\)|new\s+AudioContext\(\)/,
+    );
+  });
+
+  it("ne ferme JAMAIS le contexte partage", () => {
+    // C'est le contrat de rack-bus, ecrit dans son en-tete : « il ne ferme
+    // jamais le contexte ». Un rack qui le fermerait couperait tout le Hub.
+    expect(RACK, "le rack ferme le contexte partage").not.toMatch(/ctx\.close\(\)/);
+  });
+
+  it("rend sa voie de console au demontage", () => {
+    // Une voie laissee derriere garde le graphe vivant et ajoute une tranche
+    // fantome a la console a chaque visite.
+    expect(bloc()).toContain("priseRef.current?.detacher()");
   });
 
   it("le fait dans un effet de demontage, pas dans celui du clavier", () => {
     // Le nettoyage du clavier depend de `clavierActif` : il se rejoue a chaque
-    // bascule du tiroir. Y fermer le contexte le tuerait en pleine session.
-    //
-    // On lit le CODE, pas le commentaire qui le precede — celui-ci nomme
-    // `clavierActif` pour expliquer justement pourquoi il n'y est pas. Un
-    // premier jet de ce test partait du commentaire et tombait sur sa propre
-    // prose.
-    const i = RACK.indexOf("// Ferme l'AudioContext au demontage.");
+    // bascule du tiroir. Y detacher la voie couperait le rack en session.
+    const i = RACK.indexOf("// Rend la voie de console au demontage.");
     const debut = RACK.indexOf("useEffect(() => {", i);
     const fin = RACK.indexOf("}, []);", debut);
     expect(debut).toBeGreaterThan(-1);
     expect(fin).toBeGreaterThan(debut);
-    // Le corps de l'effet ne mentionne pas clavierActif...
     expect(RACK.slice(debut, fin)).not.toContain("clavierActif");
-    // ...et ses dependances sont bien vides : `[]` = demontage seul.
     expect(RACK.slice(fin, fin + 7)).toBe("}, []);");
-    // Le contexte se ferme bien la, et pas ailleurs.
-    expect(RACK.slice(debut, fin)).toContain("ctx.close()");
+    expect(RACK.slice(debut, fin)).toContain("detacher()");
   });
 
-  it("remet les references a zero, pas seulement le contexte", () => {
+  it("remet les references a zero", () => {
     // En mode strict React rejoue l'effet sur la MEME instance, donc avec les
-    // memes refs. Un contexte ferme laisse dans audioCtxRef rendrait le
-    // developpement muet, et le bus reste accroche a un contexte mort.
+    // memes refs. Sans cette remise a zero le rack garderait un bus debranche.
     const b = bloc();
-    for (const ref of ["audioCtxRef", "masterBusRef", "analyserRef", "reverbRef", "reverbReturnRef"]) {
+    for (const ref of ["priseRef", "audioCtxRef", "masterBusRef", "analyserRef", "reverbRef"]) {
       expect(b, `${ref} non remise a zero`).toContain(`${ref}.current = null;`);
     }
   });
 
-  it("ne ferme pas deux fois", () => {
-    expect(bloc()).toMatch(/state === "closed"/);
+  it("la sortie passe par la voie, pas par la destination", () => {
+    /**
+     * La moitie du chemin qui appartient au rack.
+     *
+     * `rack-bus` a ses propres tests pour l'autre moitie — que
+     * `Prise.entree` rejoint bien le bus maitre puis la destination. Ce qu'on
+     * verifie ici, c'est que le rack s'y branche au lieu de court-circuiter.
+     *
+     * Avant la migration, le graphe se terminait par
+     * `analyser.connect(ctx.destination)` : le rack sortait a cote du mixage,
+     * et son signal n'atteignait ni la reverberation partagee ni l'analyseur
+     * du fond de panier.
+     */
+    expect(RACK).toContain('brancher("Rack DSP")');
+    expect(RACK).toContain("analyser.connect(prise.entree)");
   });
 
-  it("ne laisse pas un rejet sans capture", () => {
-    // `close()` rejette si le contexte est deja en fermeture.
-    expect(bloc()).toMatch(/ctx\.close\(\)\.catch\(/);
+  it("plus aucune sortie directe vers la destination du contexte vivant", () => {
+    /**
+     * Le rendu hors ligne, lui, a le droit : `offline.destination` est celle
+     * d'un contexte jetable qui n'a pas de console. On distingue donc les deux
+     * plutot que d'interdire le mot.
+     */
+    /**
+     * On cherche une CONNEXION, pas une mention.
+     *
+     * Un premier jet cherchait `\w+\.destination` et tombait sur deux faux
+     * positifs : le commentaire qui explique justement l'ancien defaut, et
+     * `ctx.destination.channelCount` — une lecture de la largeur du contexte,
+     * qui ne relie rien. C'est le meme piege que celui documente en tete de
+     * `StrudelRack.test.ts`, et la meme parade : retirer les commentaires,
+     * puis viser l'appel plutot que le nom.
+     */
+    const sansCommentaires = RACK
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+    const branchements = [...sansCommentaires.matchAll(/\.connect\(\s*(\w+)\.destination\s*\)/g)]
+      .map((m) => m[1]);
+    const vivantes = branchements.filter((v) => !/^offline$|^sonde$/.test(v));
+    expect(
+      vivantes,
+      `sortie directe vers la destination du contexte vivant : ${vivantes.join(", ")}`,
+    ).toEqual([]);
+  });
+
+  it("la reverberation est celle du fond de panier", () => {
+    // Un convolveur par module remplirait l'atelier d'espaces distincts : deux
+    // sons joues ensemble ne sonneraient pas dans la meme piece.
+    expect(RACK).toContain("reverbePartagee()");
+  });
+
+  it("le rendu hors ligne a sa propre reverberation", () => {
+    /**
+     * Corrige un defaut anterieur a la migration : `sendToReverb` connectait
+     * toujours le convolveur du contexte VIVANT, y compris pendant un rendu
+     * hors ligne. Connecter deux contextes leve `InvalidAccessError` — verifie
+     * au navigateur. Fabriquer un echantillon depuis Clouds, Zyn, Helm ou
+     * FluidSynth, dont les envois valent 80, 60, 40 et 60 par defaut,
+     * echouait donc des qu'une note avait ete jouee.
+     */
+    expect(RACK).toContain("const reverbPour");
+    const i = RACK.indexOf("const sendToReverb");
+    const corps = RACK.slice(i, RACK.indexOf("};", i));
+    expect(corps, "sendToReverb vise encore un noeud fixe").toContain("reverbPour(ctx)");
+  });
+
+  it("ne suspend pas le contexte quand un autre module est branche", () => {
+    /**
+     * La mise en veille rendait le CPU apres 30 s d'inactivite. Sur un
+     * contexte partage, elle couperait le son de tout le Hub.
+     *
+     * On ne suspend donc que si le rack est SEUL sur la console.
+     */
+    const i = RACK.indexOf("dormantTimerRef.current = setTimeout");
+    expect(i, "le minuteur de veille a disparu").toBeGreaterThan(-1);
+    const corps = RACK.slice(i, RACK.indexOf("}, 30000);", i));
+    expect(corps, "la veille ignore les autres modules").toContain("voies()");
+    expect(corps).toContain("suspend()");
   });
 });

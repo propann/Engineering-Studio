@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNotesMidi } from "../core/midi/useNotesMidi";
+import { contexteExistant } from "@studio-hub/rack-bus";
 
 interface TelemetryMetrics {
   visitsCount: number;
   sessionDurationSec: number;
   activeSessions: number;
   pingMs: number;
-  audioState: "running" | "suspended" | "closed" | "unsupported";
+  /** `eteint` = aucun rack n'a encore ouvert le moteur audio du Hub. */
+  audioState: "running" | "suspended" | "closed" | "unsupported" | "eteint";
   sampleRate: number;
   audioLatencyMs: number;
   midiConnected: boolean;
@@ -57,21 +59,35 @@ export function ServerTelemetryRack() {
 
     // 2. Audio & MIDI inspection
     const checkHardware = () => {
-      let state: TelemetryMetrics["audioState"] = "suspended";
+      let state: TelemetryMetrics["audioState"] = "eteint";
       let sRate = 44100;
       let latency = 5.0;
 
+      /**
+       * On decrit le contexte DU HUB, sans en ouvrir un.
+       *
+       * Ce panneau fabriquait un `AudioContext` jetable a seule fin de lire
+       * son `sampleRate`, puis le fermait. Deux defauts :
+       *
+       * - Il decrivait un contexte que personne n'utilisait. Le « 48,0 kHz »
+       *   affiche n'etait pas celui du moteur audio de l'atelier, juste celui
+       *   du peripherique par defaut.
+       * - Le mode strict de React rejoue l'effet, donc DEUX contextes etaient
+       *   ouverts et fermes a chaque visite. Chrome en plafonne six par
+       *   document ; c'etait deux places prises pour rien.
+       *
+       * `contexteExistant()` ne cree rien : tant qu'aucun rack n'a joué, le
+       * panneau annonce « eteint » — ce qui est la verite.
+       */
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        try {
-          const testCtx = new AudioCtx();
-          state = testCtx.state as any;
-          sRate = testCtx.sampleRate;
-          latency = ((testCtx.baseLatency || 0.005) + ((testCtx as any).outputLatency || 0.005)) * 1000;
-          void testCtx.close();
-        } catch {
-          state = "suspended";
-        }
+      const ctx = contexteExistant();
+      if (ctx) {
+        state = ctx.state as any;
+        sRate = ctx.sampleRate;
+        latency = ((ctx.baseLatency || 0.005) + ((ctx as unknown as { outputLatency?: number }).outputLatency || 0.005)) * 1000;
+      } else if (AudioCtx) {
+        // Aucun rack n'a encore demarre le moteur : rien a decrire.
+        state = "eteint";
       } else {
         state = "unsupported";
       }
@@ -271,10 +287,16 @@ export function ServerTelemetryRack() {
             🎛️ MOTEUR AUDIO DSP
           </span>
           <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginTop: "4px" }}>
-            <span style={{ fontSize: "20px", fontWeight: 900, color: "#f59e0b", fontFamily: "monospace" }}>
-              {(metrics.sampleRate / 1000).toFixed(1)} kHz
+            {/* Tant qu'aucun rack n'a ouvert le moteur, il n'y a rien a
+                mesurer. Afficher « 44,1 kHz » serait la valeur de repli du
+                code, pas celle d'un moteur qui tourne — le panneau
+                decrirait un peripherique que personne n'utilise. */}
+            <span style={{ fontSize: "20px", fontWeight: 900, color: metrics.audioState === "eteint" ? "#64748b" : "#f59e0b", fontFamily: "monospace" }}>
+              {metrics.audioState === "eteint" ? "— kHz" : `${(metrics.sampleRate / 1000).toFixed(1)} kHz`}
             </span>
-            <span style={{ fontSize: "11px", color: "#64748b" }}>Buffer {metrics.audioLatencyMs}ms</span>
+            <span style={{ fontSize: "11px", color: "#64748b" }}>
+              {metrics.audioState === "eteint" ? "moteur non demarre" : `Buffer ${metrics.audioLatencyMs}ms`}
+            </span>
           </div>
           <span style={{ fontSize: "10px", color: "#94a3b8", marginTop: "4px" }}>
             Charge DSP estimée : {metrics.dspLoadEstPct}%

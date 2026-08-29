@@ -73,6 +73,13 @@ import {
  * On importe desormais la seule definition qui fait autorite. Meme raison que
  * pour PatchPreset, decrit juste en dessous.
  */
+import {
+  brancher,
+  contexte,
+  reverbePartagee,
+  voies,
+  type Prise,
+} from "@studio-hub/rack-bus";
 import type { EnginePluginType } from "@studio-hub/core/types/audio";
 import {
   construireDrumMachine,
@@ -693,14 +700,29 @@ export default function AudioPluginRack({
     if (dormantTimerRef.current) {
       clearTimeout(dormantTimerRef.current);
     }
-    // Auto-suspend after 30 seconds of inactivity to save 100% CPU
+    /**
+     * Mise en veille apres 30 s d'inactivite, pour rendre le CPU.
+     *
+     * Depuis la migration sur le fond de panier, le contexte n'appartient PLUS
+     * a ce rack : le suspendre couperait le son de tout le Hub — le rack
+     * Strudel en premier, qui peut tres bien jouer une boucle pendant qu'on ne
+     * touche pas aux moteurs.
+     *
+     * On ne suspend donc que si le rack est SEUL branche sur la console. Des
+     * qu'un autre module a ouvert une voie, on laisse tourner : trente
+     * secondes de CPU valent mieux qu'un silence qu'on n'explique pas.
+     */
     dormantTimerRef.current = setTimeout(() => {
       isAudioActiveRef.current = false;
       const ctx = audioCtxRef.current;
-      if (ctx && ctx.state === "running" && voicesRef.current.size === 0) {
-        void ctx.suspend().catch(() => {});
-        log.info("AudioContext automatically suspended (idle 0.0% CPU)");
+      if (!ctx || ctx.state !== "running" || voicesRef.current.size > 0) return;
+      const branchees = voies().length;
+      if (branchees > 1) {
+        log.info("Veille annulee : un autre module est branche", { branchees });
+        return;
       }
+      void ctx.suspend().catch(() => {});
+      log.info("Contexte partage suspendu (rack seul branche, 0 % CPU)");
     }, 30000);
   };
 
@@ -721,7 +743,13 @@ export default function AudioPluginRack({
   // moteur y envoie via son propre gain auxiliaire. Sert fluidReverb,
   // zynReverbSend, helmReverb et cloudsReverb.
   const reverbRef = useRef<ConvolverNode | null>(null);
-  const reverbReturnRef = useRef<GainNode | null>(null);
+  /**
+   * La voie du rack sur la console du fond de panier.
+   *
+   * Rendue au demontage : une voie laissee derriere garderait le graphe vivant
+   * et encombrerait la console d'une tranche fantome a chaque visite.
+   */
+  const priseRef = useRef<Prise | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   /**
    * Un analyseur par couche superposee, pour tracer chaque onde separement.
@@ -769,13 +797,34 @@ export default function AudioPluginRack({
   // Crée le contexte au premier appel et garantit que le bus existe.
   // resume() exige un geste utilisateur : tous les appelants viennent d'un
   // clic ou d'une frappe clavier.
+  /**
+   * Le contexte de l'atelier, et la voie du rack sur la console.
+   *
+   * Migre le 2026-08-29 vers `@studio-hub/rack-bus`. Jusque-la ce rack
+   * fabriquait son PROPRE `AudioContext`, son propre bus, son propre analyseur
+   * et sa propre reverberation, puis sortait en direct sur `ctx.destination`.
+   *
+   * C'est precisement ce que `rack-bus` a ete cree pour supprimer — son
+   * en-tete nomme meme la ligne fautive, `AudioPluginRack:650` — mais le rack
+   * n'avait jamais ete migre. Consequence : les vingt moteurs et le rack
+   * Strudel vivaient sur DEUX graphes audio separes. Ils ne pouvaient pas etre
+   * melanges, et l'oscilloscope du fond de panier ne voyait aucun moteur.
+   *
+   * Trois choses changent, et une seule reste :
+   *
+   * - Le contexte est celui du Hub, jamais ferme par ce composant.
+   * - La sortie passe par une voie de console, obtenue par `brancher()`. Le
+   *   rack gagne gain, panoramique, muet et solo comme n'importe quel module.
+   * - La reverberation est celle du fond de panier.
+   *
+   * Ce qui reste : l'analyseur LOCAL, insere entre le bus du rack et la voie.
+   * L'oscilloscope de cette page doit montrer le rack, pas la somme de tout ce
+   * qui joue dans le Hub — sinon un motif Strudel dessinerait une onde ici.
+   */
   const getAudioContext = (): AudioContext => {
     resetDormantTimer();
-    if (!audioCtxRef.current) {
-      const Ctor = window.AudioContext || (window as any).webkitAudioContext;
-      audioCtxRef.current = new Ctor();
-    }
-    const ctx = audioCtxRef.current;
+    const ctx = contexte();
+    audioCtxRef.current = ctx;
 
     if (ctx.state === "suspended") {
       void ctx.resume();
@@ -789,27 +838,61 @@ export default function AudioPluginRack({
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.6;
 
-      bus.connect(analyser);
-      analyser.connect(ctx.destination);
+      const prise = brancher("Rack DSP");
+      priseRef.current = prise;
 
-      // Retour de réverbération : convolveur -> gain de retour -> bus.
-      const reverb = ctx.createConvolver();
-      reverb.buffer = buildImpulseResponse(ctx, 2.6, 2.4);
-      const reverbReturn = ctx.createGain();
-      reverbReturn.gain.value = 1;
-      reverb.connect(reverbReturn);
-      reverbReturn.connect(bus);
+      // bus du rack -> analyseur local -> voie de console -> bus maitre.
+      bus.connect(analyser);
+      analyser.connect(prise.entree);
 
       masterBusRef.current = bus;
       analyserRef.current = analyser;
-      reverbRef.current = reverb;
-      reverbReturnRef.current = reverbReturn;
+      // La reverberation n'appartient plus au rack : elle est partagee, donc
+      // une queue de reverb declenchee ici se melange a celle des autres
+      // modules, dans le meme espace.
+      reverbRef.current = reverbePartagee();
       scopeDataRef.current = new Uint8Array(new ArrayBuffer(analyser.fftSize));
-      log.info("Master bus + analyser created", { sampleRate: ctx.sampleRate });
+      log.info("Rack branche sur le fond de panier", { sampleRate: ctx.sampleRate });
     }
 
-    audioCtxRef.current = ctx;
     return ctx;
+  };
+
+  /**
+   * La reverberation a utiliser POUR CE CONTEXTE.
+   *
+   * Corrige un defaut qui existait avant la migration : `sendToReverb`
+   * connectait toujours le convolveur du contexte VIVANT, y compris pendant un
+   * rendu hors ligne. Or connecter deux contextes leve `InvalidAccessError`.
+   * Fabriquer un echantillon depuis Clouds, Zyn, Helm ou FluidSynth — dont les
+   * envois valent 80, 60, 40 et 60 par defaut — echouait donc des qu'une note
+   * avait ete jouee.
+   *
+   * Le contexte hors ligne recoit sa propre reverberation, avec la meme
+   * reponse impulsionnelle : le fichier porte ainsi la meme queue que ce qu'on
+   * entend, ce que le rendu promet.
+   */
+  const reverbsHorsLigne = useRef(new WeakMap<BaseAudioContext, AudioNode>());
+  const reverbPour = (ctx: BaseAudioContext): AudioNode | null => {
+    if (ctx === audioCtxRef.current) return reverbRef.current;
+    const deja = reverbsHorsLigne.current.get(ctx);
+    if (deja) return deja;
+    try {
+      const conv = ctx.createConvolver();
+      conv.buffer = buildImpulseResponse(ctx, 2.6, 2.4);
+      const retour = ctx.createGain();
+      retour.gain.value = 1;
+      conv.connect(retour);
+      // Hors ligne, le retour rejoint la destination : c'est la meme topologie
+      // qu'au jeu, ou il rejoint le bus maitre.
+      retour.connect((ctx as OfflineAudioContext).destination);
+      reverbsHorsLigne.current.set(ctx, conv);
+      return conv;
+    } catch {
+      // Un contexte sans convolveur ne doit pas empecher le rendu : on rend le
+      // son sec plutot que rien.
+      return null;
+    }
   };
 
   // Coupe une voix : déclenche le release de l'enveloppe puis arrête les
@@ -1380,14 +1463,15 @@ export default function AudioPluginRack({
 
     // Envoi vers la réverbération partagée. `amount` en 0-100.
     const sendToReverb = (source: AudioNode, amount: number) => {
-      if (!reverbRef.current || amount <= 0) return;
+      const cible = reverbPour(ctx);
+      if (!cible || amount <= 0) return;
       // La réverbération prolonge le son : sans ça l'enveloppe coupe la
       // queue au moment où la source s'arrête.
       holdUntil(now + 1.2 + (amount / 100) * 1.4);
       const send = ctx.createGain();
       send.gain.setValueAtTime((amount / 100) * 0.5, now);
       source.connect(send);
-      send.connect(reverbRef.current);
+      send.connect(cible);
     };
 
     // Apply Detune Cents
@@ -2609,37 +2693,47 @@ export default function AudioPluginRack({
     return () => window.removeEventListener("hub:midi-note", surNote);
   }, []);
 
-  // Ferme l'AudioContext au demontage.
+  // Rend la voie de console au demontage.
   //
-  // Le rack en creait un par montage sans jamais le fermer. En page a part
-  // ca ne se voyait pas : on n'y revient pas dix fois. En tiroir de studio,
-  // chaque ouverture en ajoutait un — et Chrome en plafonne six par
-  // document. Au septieme, plus aucun son, sans erreur.
+  // Le rack fabriquait un AudioContext par montage sans jamais le fermer. En
+  // page a part ca ne se voyait pas : on n'y revient pas dix fois. En tiroir
+  // de studio, chaque ouverture en ajoutait un — et Chrome en plafonne six par
+  // document. Au septieme, plus aucun son, sans erreur. Le rack s'est donc mis
+  // a fermer son contexte ici.
+  //
+  // Depuis la migration sur `@studio-hub/rack-bus` le 2026-08-29, le probleme
+  // n'existe plus a la racine : il n'y a qu'UN contexte pour tout le document,
+  // ouvert a la premiere demande et jamais ferme. Ce qui se rend ici, c'est la
+  // VOIE — la tranche de console que `brancher()` a ouverte.
   //
   // Deliberement separe du nettoyage ci-dessus : celui-la depend de
-  // `clavierActif` et se rejoue a chaque bascule du tiroir. Y fermer le
-  // contexte le tuerait en pleine session.
-  //
-  // Les references sont remises a zero en plus d'etre fermees : en mode
-  // strict React rejoue l'effet sur la MEME instance, donc avec les memes
-  // refs. Sans ce nettoyage, getAudioContext rendrait un contexte ferme et
-  // le developpement serait muet.
+  // `clavierActif` et se rejoue a chaque bascule du tiroir. Y detacher la voie
+  // couperait le rack en pleine session.
   useEffect(() => {
     return () => {
       if (dormantTimerRef.current) {
         clearTimeout(dormantTimerRef.current);
         dormantTimerRef.current = null;
       }
-      const ctx = audioCtxRef.current;
+      /**
+       * On rend la voie, on ne ferme PAS le contexte.
+       *
+       * Le rack le fermait, parce qu'il en etait le proprietaire. Il ne l'est
+       * plus : `contexte()` est celui du Hub, partage avec le rack Strudel et
+       * tout module a venir. Le fermer ici rendrait muet tout ce qui joue,
+       * et `rack-bus` le dit explicitement — « il ne ferme jamais le contexte ».
+       *
+       * Les references sont remises a zero pour que `getAudioContext`
+       * reconstruise le bus et reprenne une voie au prochain montage. En mode
+       * strict React rejoue l'effet sur la MEME instance, donc avec les memes
+       * refs : sans cette remise a zero, le rack garderait un bus debranche.
+       */
+      priseRef.current?.detacher();
+      priseRef.current = null;
       audioCtxRef.current = null;
       masterBusRef.current = null;
       analyserRef.current = null;
       reverbRef.current = null;
-      reverbReturnRef.current = null;
-      if (!ctx || ctx.state === "closed") return;
-      // `close()` rejette si le contexte est deja en fermeture : rien a
-      // reparer dans ce cas, on ne veut pas d'un rejet non capture.
-      void ctx.close().catch(() => {});
     };
   }, []);
 

@@ -170,6 +170,24 @@ export function contexte(): AudioContext {
   return ctx;
 }
 
+/**
+ * Le contexte s'il existe DEJA, sans en ouvrir un.
+ *
+ * `contexte()` ouvre le contexte a la premiere demande — c'est ce qu'on veut
+ * d'un outil qui va jouer. Un panneau qui se contente de RENDRE COMPTE de
+ * l'etat audio n'a pas a le declencher : un visiteur qui n'a rien lance ne
+ * doit pas se voir ouvrir un contexte, et les navigateurs en plafonnent le
+ * nombre par document.
+ *
+ * Ajoute le 2026-08-29 pour `ServerTelemetryRack`, qui fabriquait un contexte
+ * jetable a seule fin de lire son `sampleRate`, puis le fermait — deux fois,
+ * le mode strict de React rejouant l'effet. Il decrivait donc un contexte que
+ * personne n'utilisait, en consommant deux des six places de Chrome.
+ */
+export function contexteExistant(): AudioContext | null {
+  return etat.ctx && etat.ctx.state !== "closed" ? etat.ctx : null;
+}
+
 /** Le bus maître, pour qui doit s'y brancher sans passer par une voie. */
 export function busMaitre(): GainNode {
   contexte();
@@ -180,6 +198,24 @@ export function busMaitre(): GainNode {
 export function analyseur(): AnalyserNode {
   contexte();
   return etat.analyseur!;
+}
+
+/**
+ * L'entrée de la réverbération partagée.
+ *
+ * `Prise.depart` suffit à un outil qui envoie TOUTE sa voie à la réverbération.
+ * Le rack des vingt moteurs, lui, dose l'envoi **par voix** — Clouds, Zyn,
+ * Helm et FluidSynth ont chacun leur propre réglage, et deux notes du même
+ * moteur peuvent partir à des niveaux différents. Passer par le départ de voie
+ * imposerait un niveau unique à tout le rack.
+ *
+ * Exposé pour cet usage précis, comme `busMaitre` et `analyseur` le sont déjà.
+ * Un outil qui n'a pas ce besoin doit utiliser `Prise.depart` : c'est le
+ * chemin qui respecte le muet et le solo de la console.
+ */
+export function reverbePartagee(): ConvolverNode {
+  contexte();
+  return etat.reverb!;
 }
 
 function instantane(): Voie[] {
