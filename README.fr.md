@@ -1,5 +1,10 @@
 # Engineering Studio 🎛️ (Français)
 
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![Web Audio API](https://img.shields.io/badge/Audio-Web%20Audio%20DSP-00ed95.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+[![Web MIDI](https://img.shields.io/badge/MIDI-Web%20MIDI%20API-38bdf8.svg)](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API)
+[![Local-First](https://img.shields.io/badge/Architecture-Local--First-ff5a1f.svg)](#)
+
 Un atelier **local-first** pour les machines de Teenage Engineering (OP-1, OP-1 field, EP-133 K.O. II) et la synthèse modulaire Eurorack. Sauvegardes vérifiées, transferts MIDI, édition de samples, et un rack de synthèse temps réel qui joue du son **sans qu'aucune machine physique ne soit branchée**.
 
 ---

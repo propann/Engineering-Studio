@@ -17,6 +17,7 @@ export default function Home() {
     else if (toolId === "sounds") (window as any).navigateMaquette("sound-library");
     else if (toolId === "strudel") (window as any).navigateMaquette("strudel-rack");
     else if (toolId === "labo") (window as any).navigateMaquette("audio-plugin-rack");
+    else if (toolId === "collab") (window as any).navigateMaquette("collab-studio");
     else if (toolId === "visual") (window as any).navigateMaquette("image-editor-op1");
     else if (toolId === "profil") (window as any).navigateMaquette("profil");
     else if (toolId === "backup") (window as any).navigateMaquette("backup-lab");
@@ -162,6 +163,7 @@ export default function Home() {
       <nav className="landing-shortcuts" aria-label="Outils principaux">
         <Button variant="secondary" onClick={() => openTool("labo")} icon={<span aria-hidden="true">🧪</span>}>Labo Sonore</Button>
         <Button variant="secondary" onClick={() => openTool("strudel")} icon={<span aria-hidden="true">⚡</span>}>Strudel Live</Button>
+        <Button variant="secondary" onClick={() => openTool("collab")} icon={<span aria-hidden="true">🤝</span>}>P2P Git & Collab</Button>
         <Button variant="secondary" onClick={() => openTool("sounds")} icon={<span aria-hidden="true">♫</span>}>Bibliothèque Sonore</Button>
         <Button variant="secondary" onClick={() => openTool("backup")} icon={<span aria-hidden="true">▣</span>}>Sauvegardes</Button>
         <Button variant="secondary" onClick={() => openTool("training")} icon={<span aria-hidden="true">◆</span>}>Apprendre / Jeux</Button>

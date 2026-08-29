@@ -1,16 +1,22 @@
-# Tests physiques
+# Tests physiques & Protocole Matériel Déployé
 
 Ce que les tests automatiques **ne peuvent pas** prouver : ce qui demande du
 matériel branché, des oreilles, ou les deux.
 
-La suite complète tourne à chaque poussée. Aucun ne dit si un sample sonne juste, si
-l'OP-1 accepte un fichier, ou si la latence est perceptible au jeu. C'est le
-rôle de cette liste.
+La suite complète de tests logiciels (68 suites, 1254 tests) tourne et réussit en continu. Aucun test unitaire ne dit si un sample sonne juste à l'oreille humaine, si l'OP-1 accepte un fichier sans erreur de format, si un patch FM Dexed ou Faust DSP sonne musicalement, ou si la latence USB/MIDI est imperceptible au jeu en direct. C'est le rôle de ce protocole.
 
-**État au 2026-08-21** : 9 vérifications faites, 9 en attente.
+**URL de Test Déployée (Production / Préproduction)** :  
+`https://ais-pre-gnlve6vdz4rnduw2h73sna-625700864610.europe-west1.run.app`
 
-**Règle** : une case ne se coche qu'après une vérification réelle, avec la date
-et ce qui a été observé. Pas « ça devrait marcher ».
+**Règle d'or** : une case ne se coche qu'après une vérification réelle sur machine physique ou casque de monitoring, avec la date et ce qui a été observé. Pas « ça devrait marcher ».
+
+---
+
+## 📋 Protocole Rapide pour la Version Déployée
+
+### 🌐 0. Prérequis Navigateur
+- **Navigateur** : Chrome, Edge, Brave ou tout navigateur Chromium avec support des standards **Web MIDI API** et **File System Access API**.
+- **Protocole** : HTTPS sécurisé obligatoire (pour autoriser l'accès Web MIDI et Web Audio sans blocage silencieux).
 
 ---
 
@@ -479,6 +485,23 @@ l'état d'hier, restaurer vers une copie de l'état actuel.
 ### EP-133
 - [ ] lister ses sons par SysEx — aucun mode disque, tout passe par là
 - [ ] un sample fabriqué à 26250 / 32000 / 46875 Hz est accepté par la machine
+
+### Les 20 Moteurs Audio DSP (Écoute Réelle sur Casque / Enceintes)
+- [ ] **Rack 1** :
+  - Plaits (8 modèles virtuels) : variation continue des timbres.
+  - Braids & Rings : résonance acoustique et modélisation physique propre sans bruit de fond.
+  - Dexed FM : clarté des opérateurs FM 6-op, pas de saturation numérique involontaire.
+  - Surge XT & Open303 : filtre acid résonant sans clic lors des transitions de notes.
+- [ ] **Rack 2** :
+  - FluidSynth SoundFont & ZynAddSubFX : textures polyphoniques riches.
+  - Faust DSP Wavefolder & Granular Cloud : déformations harmoniques dynamiques et dispersion granulaire stéréo.
+  - DrumSampler 909/808 : kick percutant et transitoires nettes.
+
+### Espace Git & Collaboration P2P
+- [ ] **Snapshot Local Git** :
+  - Créer un commit dans l'espace Git, vérifier la génération du hash SHA-256 et la visualisation de l'arbre.
+- [ ] **Salon de Chat & Chargement de Patch** :
+  - Depuis le salon de discussion, cliquer sur « Appliquer ce patch » dans un message : le synthétiseur bascule immédiatement sur le moteur et les réglages partagés.
 
 ---
 
