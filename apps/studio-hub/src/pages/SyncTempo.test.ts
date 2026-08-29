@@ -229,9 +229,20 @@ describe("cycle de vie du contexte audio", () => {
      * echouait donc des qu'une note avait ete jouee.
      */
     expect(RACK).toContain("const reverbPour");
-    const i = RACK.indexOf("const sendToReverb");
-    const corps = RACK.slice(i, RACK.indexOf("};", i));
-    expect(corps, "sendToReverb vise encore un noeud fixe").toContain("reverbPour(ctx)");
+    /**
+     * `sendToReverb` a suivi la chaine des moteurs dans
+     * `core/audio/moteurs.ts` le 2026-08-29. Ce qui reste a verifier ici,
+     * c'est que le rack lui passe la reverberation DU CONTEXTE COURANT, et
+     * non un noeud fixe : c'est ce choix qui evite l'InvalidAccessError.
+     */
+    expect(RACK, "le rack ne passe plus la reverberation du contexte").toContain(
+      "reverb: reverbPour(ctx)",
+    );
+    const MOTEURS = readFileSync(path.join(DIR, "..", "core", "audio", "moteurs.ts"), "utf-8");
+    const i = MOTEURS.indexOf("const sendToReverb");
+    expect(i, "sendToReverb introuvable dans la bibliotheque").toBeGreaterThan(-1);
+    const corps = MOTEURS.slice(i, MOTEURS.indexOf("};", i));
+    expect(corps, "sendToReverb vise encore un noeud fixe").toContain("aide.reverb");
   });
 
   it("ne suspend pas le contexte quand un autre module est branche", () => {

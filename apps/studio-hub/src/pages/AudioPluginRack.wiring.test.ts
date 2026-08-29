@@ -43,6 +43,22 @@ const MOTEURS = readFileSync(path.join(DIR, "..", "core", "audio", "moteurs.ts")
  * deplacement en tombant : c'etait son role.
  */
 function moteurAudio(): string {
+  /**
+   * Depuis le 2026-08-29, « le moteur audio » s'etend sur DEUX fichiers.
+   *
+   * La chaine des vingt moteurs a quitte ce composant pour
+   * `core/audio/moteurs.ts`, afin d'etre jouable ailleurs que dans ce seul
+   * ecran. Ce qui reste ici est l'enveloppe, le LFO et l'assemblage des
+   * couches ; ce qui construit un moteur est la-bas.
+   *
+   * On concatene donc les deux, comme ce test le fait deja pour effets.ts,
+   * enveloppe.ts et lfo.ts apres les extractions precedentes. Quatrieme fois
+   * qu'il suit un demenagement : c'est son role.
+   */
+  return corpsDuRack() + MOTEURS;
+}
+
+function corpsDuRack(): string {
   const debut = SOURCE.indexOf("const construireVoix");
   // Borne explicite plutot que « la fonction suivante » : la premiere version
   // bornait sur `const playPluginNote` et a casse des qu'une fonction s'est
@@ -63,7 +79,12 @@ function moteurAudio(): string {
  * la mentionnait encore.
  */
 function moteurSansAffichage(): string {
-  return moteurAudio().replace(/showToast\([\s\S]*?\);/g, "");
+  return moteurAudio()
+    .replace(/showToast\([\s\S]*?\);/g, "")
+    // Depuis l'extraction, la chaine ne montre plus rien : elle rend une
+    // description. Les affectations `message = (...)` jouent exactement le
+    // role que showToast jouait, et piegeraient le test de la meme facon.
+    .replace(/message = \([\s\S]*?\);/g, "");
 }
 
 /** Parametres declares en useState, hors etat purement visuel. */
@@ -136,11 +157,13 @@ describe("integrite du fichier", () => {
     expect(premiere.trimStart()).toMatch(/^(import|\/\/|\/\*|"use client")/);
   });
 
-  it("declare toujours les quinze moteurs", () => {
+  it("declare toujours les vingt moteurs", () => {
     const moteurs = [
       "mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements",
       "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth",
       "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp",
+      "drum_machine", "vocoder_dsp", "string_machine", "organ_drawbars",
+      "phase_distortion",
     ];
     const corps = moteurAudio();
     for (const m of moteurs) {
