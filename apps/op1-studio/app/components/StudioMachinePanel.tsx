@@ -576,17 +576,36 @@ export function StudioMachinePanel({
   const layoutHeight = bounds.height;
   const layoutViewBox = bounds.viewBox;
 
+  /**
+   * En mode MIDI, la machine joue — le studio se tait.
+   *
+   * Les deux se declenchaient : `triggerNoteOn` synthetisait en local ET la
+   * note partait sur le cable. Machine branchee, on entendait donc DEUX sons
+   * pour une touche — l'OP-1 et son imitation logicielle, desaccordes de tout
+   * ce qui les separe.
+   *
+   * L'OP-1 a ses moteurs dans le ventre. Quand elle est la, c'est elle qui
+   * sonne : le studio n'a aucune raison de la doubler. Sans machine, la
+   * synthese locale prend le relais — elle s'appuie sur les vingt moteurs du
+   * rack, pas sur des imitations des moteurs de la machine.
+   */
   function noteOn(note: number) {
     setPressed(s => new Set(s).add(note));
     setLastPlayed(`jouée : ${midiNoteName(note)}`);
+    if (mode === "midi") {
+      sendMidi([0x90, Math.max(0, Math.min(127, note)), 100], `note ${midiNoteName(note)}`);
+      return;
+    }
     op1AudioEngine.triggerNoteOn(note, 100);
-    if (mode === "midi") sendMidi([0x90, Math.max(0, Math.min(127, note)), 100], `note ${midiNoteName(note)}`);
   }
 
   function noteOff(note: number) {
     setPressed(s => { const ns = new Set(s); ns.delete(note); return ns; });
+    if (mode === "midi") {
+      sendMidi([0x80, Math.max(0, Math.min(127, note)), 0], `note ${midiNoteName(note)} off`);
+      return;
+    }
     op1AudioEngine.triggerNoteOff(note);
-    if (mode === "midi") sendMidi([0x80, Math.max(0, Math.min(127, note)), 0], `note ${midiNoteName(note)} off`);
   }
 
   function selectConfig(type: string, index: number, label: string) {

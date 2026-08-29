@@ -1,17 +1,28 @@
 /**
  * op1SynthEngine.ts — Moteur audio de synthèse et d'échantillonnage OP-1 & Bus d'enregistrement Tape
  *
- * Les VINGT moteurs du rack sont jouables au clavier depuis le 2026-08-29.
+ * CE QUE CE MOTEUR EST, ET CE QU'IL N'EST PAS
  *
- * Sept d'entre eux — FM, String, Pulse, Cluster, Drum et les moteurs natifs —
- * gardent une voix propre a l'OP-1, reglee pour ses quatre potentiometres et
- * modifiable EN DIRECT sur une note tenue.
+ * Il sert a jouer SANS machine branchee. Des que l'OP-1 est la,
+ * `StudioMachinePanel` lui envoie la note en MIDI et se tait : la machine a
+ * ses moteurs dans le ventre, et les doubler ferait entendre deux sons
+ * desaccordes pour une seule touche. C'etait le cas jusqu'au 2026-08-29.
  *
- * Les treize autres passent par `construireMoteur`, la bibliotheque partagee
- * avec le rack du Hub et Strudel. Ils tombaient jusqu'ici dans un repli
- * generique — deux oscillateurs et un filtre — et sonnaient donc tous pareil :
- * seul le nom changeait dans l'ecran. Un `mi_clouds` joue ici est desormais le
- * meme granulateur que dans le rack.
+ * Il ne simule donc PAS les moteurs natifs de l'OP-1. Cinq imitations ont ete
+ * ecrites puis retirees le meme jour : elles doublaient une machine qui fait
+ * deja mieux, alors que l'atelier a deja vingt moteurs a lui.
+ *
+ * LES VINGT MOTEURS DU RACK, EUX, SONT JOUABLES ICI
+ *
+ * Ils passent par `construireMoteur`, la bibliotheque partagee avec le rack du
+ * Hub et Strudel. Ils tombaient jusqu'ici dans un repli generique — deux
+ * oscillateurs et un filtre — et sonnaient donc tous pareil : seul le nom
+ * changeait dans l'ecran. Un `mi_clouds` joue ici est desormais le meme
+ * granulateur que dans le rack.
+ *
+ * Cinq moteurs gardent une voix propre a l'OP-1 — FM, String, Pulse, Cluster,
+ * Drum. Eux repondent aux potentiometres EN DIRECT, sur une note tenue, ce que
+ * la bibliotheque ne sait pas faire.
  *
  * Synthetiseurs emblematiques couverts :
  * - Mutable Instruments : Plaits, Braids, Rings, Clouds, Elements
@@ -72,27 +83,6 @@ function reglagesDepuisPotentiometres(
     case "faust_dsp": return { faustFilter: coupure };
     case "string_machine": return { strTone: coupure };
     default: return {};
-  }
-}
-
-
-import { construireMoteurOp1, type MoteurOp1 } from "@studio-hub/core/audio/moteursOp1";
-
-/**
- * Traduit un moteur natif de l'OP-1 vers son identifiant dans la bibliotheque.
- *
- * Les noms de l'ecran — « Digital », « Iter » — et ceux du code partage
- * — `op1_digital` — sont volontairement distincts : la bibliotheque sert
- * aussi Strudel et le Hub, ou « Digital » tout court ne voudrait rien dire.
- */
-function moteurNatif(engine: string): MoteurOp1 | null {
-  switch (engine) {
-    case "Digital": return "op1_digital";
-    case "Iter": return "op1_iter";
-    case "Phase": return "op1_phase";
-    case "DNA": return "op1_dna";
-    case "Voltage": return "op1_voltage";
-    default: return null;
   }
 }
 
@@ -578,53 +568,23 @@ class Op1SynthEngine {
           try { s.stop(ctx.currentTime + 0.2); } catch { /* deja arretee */ }
         }
       };
-    } else if (moteurNatif(engine)) {
-      /**
-       * ── Les moteurs natifs de l'OP-1, chacun avec sa voix ──
-       *
-       * Digital, Iter, Phase, DNA et Voltage tombaient dans le repli
-       * generique ci-dessous et sonnaient donc tous PAREIL — seul le nom
-       * changeait a l'ecran. C'est le meme defaut que celui des treize
-       * moteurs du rack, corrige plus tot le 2026-08-29 : ceux-la manquaient
-       * d'une synthese, ceux-ci en partageaient une seule.
-       *
-       * Ils vivent dans `core/audio/moteursOp1.ts`, donc jouables partout —
-       * depuis ce clavier, depuis un motif Strudel, depuis les outils
-       * d'echantillon. Les laisser ici les y aurait enfermes.
-       */
-      const sources: AudioScheduledSourceNode[] = [];
-      const sortie = construireMoteurOp1(
-        ctx,
-        moteurNatif(engine)!,
-        {
-          op1Timbre: t1,
-          op1Forme: t2,
-          op1Mouvement: t3,
-          op1Decay: t4,
-        },
-        freq,
-        now,
-        {
-          trk: (n) => { sources.push(n); return n; },
-          noteStop: (n, quand) => { try { n.stop(quand); } catch { /* deja arretee */ } },
-          holdUntil: () => {},
-        },
-      );
-      sortie?.connect(voiceGain);
-
-      const atkSec = Math.max(0.005, (shiftT1 / 100) * 0.3);
-      voiceGain.gain.setValueAtTime(0, now);
-      voiceGain.gain.linearRampToValueAtTime(0.4 * velFactor, now + atkSec);
-
-      cleanupNodes = () => {
-        for (const s of sources) {
-          try { s.stop(ctx.currentTime + 0.2); } catch { /* deja arretee */ }
-        }
-      };
     } else {
-      // ── Dernier repli : Sampler, et tout identifiant inconnu ──
-      // Le Sampler n'est pas une synthese : il lit un echantillon, et n'a donc
-      // rien a faire dans une bibliotheque d'oscillateurs.
+      /**
+       * ── Repli local, sans machine branchee ──
+       *
+       * Les moteurs NATIFS de l'OP-1 — Digital, Iter, Phase, DNA, Voltage —
+       * ne sont pas simules ici, et ne doivent pas l'etre : la machine les a
+       * dans le ventre. Quand elle est branchee, `StudioMachinePanel` lui
+       * envoie la note en MIDI et se tait ; c'est elle qui sonne, avec ses
+       * vrais moteurs.
+       *
+       * Une version de ce fichier a bien porte cinq imitations, ecrites le
+       * 2026-08-29 et retirees le meme jour : elles doublaient une machine qui
+       * fait deja mieux, et l'atelier a deja vingt moteurs a lui.
+       *
+       * Ce repli sert donc au jeu SANS machine. Il reste generique a dessein —
+       * une esquisse pour s'entendre jouer, pas une imitation.
+       */
       osc1 = ctx.createOscillator();
       osc2 = ctx.createOscillator();
       filter = ctx.createBiquadFilter();
