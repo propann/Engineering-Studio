@@ -1,0 +1,318 @@
+/**
+ * L'atelier de creation de son.
+ *
+ * Trois zones empilees : l'onde en haut, les couches et leurs reglages au
+ * milieu, l'etat en bas. L'onde tient une hauteur fixe — c'est un reperage, pas
+ * un editeur d'echantillon — et le milieu prend tout le reste.
+ *
+ * Meme parti pris que le rack Strudel : console sombre, geometrie franche,
+ * aucun arrondi decoratif. Les cartes de reglages heritent de ces couleurs
+ * sans qu'on ecrive une variante, puisqu'elles n'en posent aucune.
+ */
+
+.atelier-son {
+  --as-fond: #0b0f0c;
+  --as-panneau: #121813;
+  --as-relief: #1c241d;
+  --as-trait: #2f3d31;
+  --as-texte: #d8e6d6;
+  --as-doux: #8fa38d;
+  --as-vert: #7cf07c;
+  --as-magenta: #ff5fa2;
+  --as-rouge: #ff5f5f;
+
+  min-height: 100vh;
+  color: var(--as-texte);
+  background: var(--as-fond);
+  font-family: ui-monospace, "Courier New", monospace;
+}
+
+.atelier-son .as-plan {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: calc(100vh - 64px);
+}
+
+/* --- L'onde -------------------------------------------------------------- */
+
+.atelier-son .as-onde {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 3px solid var(--as-trait);
+}
+
+.atelier-son .as-toile {
+  position: relative;
+  height: 150px;
+  background: #080c09;
+  border: 2px solid var(--as-trait);
+}
+
+.atelier-son .as-toile canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.atelier-son .as-calcul {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  color: var(--as-doux);
+  font: 700 10px ui-monospace, monospace;
+  letter-spacing: 0.1em;
+}
+
+.atelier-son .as-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+/* --- Corps --------------------------------------------------------------- */
+
+.atelier-son .as-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  min-height: 0;
+}
+
+.atelier-son .as-couches,
+.atelier-son .as-reglages {
+  min-height: 0;
+  padding: 14px 16px;
+  overflow-y: auto;
+}
+
+.atelier-son .as-reglages {
+  background: var(--as-panneau);
+  border-left: 3px solid var(--as-trait);
+
+  /* Les jetons sont poses ICI, pas sur la page.
+     Sur `.atelier-son` ils descendaient jusqu'a la barre du Hub, qui les lit
+     aussi : son texte devenait presque illisible sur son propre fond. Constate
+     a l'ecran. Ils n'habillent donc que la zone des cartes. */
+  --ui-panel: var(--as-relief);
+  --ui-border: var(--as-trait);
+  --ui-bg: #080c09;
+  --ui-cyan: var(--as-vert);
+  --ui-radius-sm: 0;
+}
+
+.atelier-son .as-titre {
+  margin: 0 0 10px;
+  color: var(--as-vert);
+  font: 700 12px/1 ui-monospace, monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.atelier-son .as-ajout {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.atelier-son .as-ajout select {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  color: var(--as-texte);
+  background: #080c09;
+  border: 2px solid var(--as-trait);
+  border-radius: 0;
+  font: 700 12px ui-monospace, monospace;
+}
+
+/* --- La pile ------------------------------------------------------------- */
+
+.atelier-son .as-liste {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atelier-son .as-couche {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px repeat(4, auto);
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--as-relief);
+  /* La bordure gauche prend la couleur de la couche : voir `.as-pastille`.
+     Ici on ne pose que l'epaisseur, la couleur vient du style en ligne. */
+  border-left: 3px solid transparent;
+}
+
+.atelier-son .as-couche--active {
+  background: #263026;
+  border-left-color: var(--as-vert);
+}
+
+.atelier-son .as-choisir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  color: var(--as-texte);
+  background: transparent;
+  border: 0;
+  font: 700 12px ui-monospace, monospace;
+  text-align: left;
+  cursor: pointer;
+}
+
+.atelier-son .as-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La pastille : le seul endroit ou la couleur d'une couche est peinte, et
+   elle vient du modele — jamais du rang dans la liste. */
+.atelier-son .as-pastille {
+  flex: none;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border: 1px solid rgba(0, 0, 0, .5);
+}
+
+.atelier-son .as-gain input[type="range"] {
+  width: 100%;
+  accent-color: var(--as-vert);
+}
+
+.atelier-son .as-icone {
+  padding: 3px 6px;
+  color: var(--as-doux);
+  background: transparent;
+  border: 0;
+  font: 11px ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.atelier-son .as-icone:hover:not(:disabled) { color: var(--as-texte); }
+.atelier-son .as-icone:disabled { opacity: .3; cursor: not-allowed; }
+.atelier-son .as-icone--actif { color: var(--as-magenta); }
+.atelier-son .as-icone--retirer:hover { color: var(--as-rouge); }
+
+/* --- Champs et boutons --------------------------------------------------- */
+
+.atelier-son .as-champ {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.atelier-son .as-champ span {
+  color: var(--as-doux);
+  font: 700 10px ui-monospace, monospace;
+  letter-spacing: 0.14em;
+}
+
+.atelier-son .as-champ input {
+  width: 200px;
+  padding: 7px 8px;
+  color: var(--as-texte);
+  background: #080c09;
+  border: 2px solid var(--as-trait);
+  border-radius: 0;
+  font: 700 12px ui-monospace, monospace;
+}
+
+.atelier-son .as-champ--court input { width: 68px; }
+
+.atelier-son .as-bouton {
+  padding: 8px 12px;
+  color: var(--as-texte);
+  background: var(--as-relief);
+  border: 2px solid #4a6b4f;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 0 #000;
+  font: 700 11px ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.atelier-son .as-bouton:hover { background: #263026; }
+.atelier-son .as-bouton:active { transform: translate(4px, 4px); box-shadow: 0 0 0 0 #000; }
+
+.atelier-son .as-bouton--jouer {
+  color: #06120a;
+  background: var(--as-vert);
+  border-color: #b6ffb6;
+}
+
+.atelier-son .as-bouton:focus-visible,
+.atelier-son .as-choisir:focus-visible,
+.atelier-son .as-icone:focus-visible,
+.atelier-son .as-champ input:focus-visible,
+.atelier-son .as-ajout select:focus-visible {
+  outline: 3px solid var(--as-magenta);
+  outline-offset: 2px;
+}
+
+.atelier-son .as-rangement {
+  color: var(--as-vert);
+  font: 700 11px ui-monospace, monospace;
+}
+
+.atelier-son .as-fichier-cache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Un libelle lu par les technologies d'assistance, jamais affiche. */
+.atelier-son .as-invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* --- Pied ---------------------------------------------------------------- */
+
+.atelier-son .as-pied {
+  display: grid;
+  gap: 4px;
+  padding: 8px 16px;
+  background: var(--as-panneau);
+  border-top: 3px solid var(--as-trait);
+}
+
+.atelier-son .as-message,
+.atelier-son .as-erreur,
+.atelier-son .as-note,
+.atelier-son .as-vide {
+  margin: 0;
+  font: 11px/1.5 ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
+.atelier-son .as-message { color: var(--as-doux); }
+.atelier-son .as-note { color: #6f7f6d; }
+.atelier-son .as-vide { color: var(--as-doux); }
+
+.atelier-son .as-erreur {
+  padding: 6px 8px;
+  color: var(--as-rouge);
+  background: #1a0a0a;
+  border-left: 3px solid var(--as-rouge);
+}
+
+@media (max-width: 1100px) {
+  .atelier-son .as-plan { height: auto; min-height: calc(100vh - 64px); }
+  .atelier-son .as-corps { grid-template-columns: minmax(0, 1fr); }
+  .atelier-son .as-reglages { border-left: 0; border-top: 3px solid var(--as-trait); }
+}

@@ -26,6 +26,7 @@ const StrudelRack = lazy(() => import("./pages/StrudelRack"));
 const AudioPluginRack = lazy(() => import("./pages/AudioPluginRack"));
 const SoundLibrary = lazy(() => import("./pages/SoundLibrary"));
 const SoundEditorHub = lazy(() => import("./pages/SoundEditorHub"));
+const AtelierSon = lazy(() => import("./pages/AtelierSon"));
 const EP133StudioPage = lazy(() => import("./pages/EP133StudioPage"));
 const OP1StudioPage = lazy(() => import("./pages/OP1StudioPage"));
 const MidiSettings = lazy(() => import("./pages/MidiSettings"));
@@ -54,6 +55,7 @@ type Page =
   | "op1-settings"
   | "backup-lab"
   | "strudel-rack"
+  | "atelier-son"
   | "orphan-pages";
 
 export function App() {
@@ -105,6 +107,8 @@ function rendrePage(currentPage: Page, setCurrentPage: (p: Page) => void) {
       return <FirmwareLab />;
     case "advanced-image":
       return <AdvancedImageEditor />;
+    case "atelier-son":
+      return <AtelierSon />;
     case "strudel-rack":
       return <StrudelRack />;
     case "sound-patch-creator":

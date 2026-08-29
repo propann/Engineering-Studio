@@ -250,9 +250,24 @@ export async function enregistrerProjet(
   poigneeExistante: FileSystemFileHandle | null = null,
   fenetre: FenetreFichiers = globalThis as unknown as FenetreFichiers,
 ): Promise<Ecriture> {
-  const contenu = serialiser(projet);
-  const nom = nomFichier(projet.nom);
+  return ecrireFichier(serialiser(projet), nomFichier(projet.nom), poigneeExistante, fenetre);
+}
 
+/**
+ * Écrit un contenu dans un fichier que l'utilisateur désigne.
+ *
+ * Extrait de `enregistrerProjet` le 2026-08-29, quand l'atelier de son a eu
+ * besoin d'écrire ses propres fichiers. Deux copies de ce code auraient
+ * diverge au premier navigateur récalcitrant — et c'est ici que vivent les
+ * deux pièges : le repli hors contexte sécurisé, et l'`AbortError` qui n'est
+ * pas une panne mais un geste.
+ */
+export async function ecrireFichier(
+  contenu: string,
+  nom: string,
+  poigneeExistante: FileSystemFileHandle | null = null,
+  fenetre: FenetreFichiers = globalThis as unknown as FenetreFichiers,
+): Promise<Ecriture> {
   if (moyenDisponible(fenetre) === "systeme-de-fichiers") {
     try {
       const poignee =

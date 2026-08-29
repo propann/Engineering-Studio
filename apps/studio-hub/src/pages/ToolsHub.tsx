@@ -109,6 +109,12 @@ const tools: Tool[] = [
     action: { type: "page", page: "audio-plugin-rack" }, section: "hub", couleur: "#d9ff43",
   },
   {
+    id: "atelier-son", code: "ATELIER", category: "CRÉATION SONORE", title: "Atelier de son",
+    text: "Empile des moteurs, règle chacun, vois l'onde de chaque couche dans sa couleur. Enregistrement et rangement automatique par famille.",
+    accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
+    action: { type: "page", page: "atelier-son" }, section: "hub", couleur: "#7cf07c",
+  },
+  {
     id: "strudel", code: "STRUDEL", category: "CRÉATION SONORE", title: "Strudel — le code qui joue",
     text: "Un langage de motifs : on écrit une ligne, elle boucle. L'éditeur officiel, branché sur la console du Hub, sans aucun échantillon distant. Peut piloter une machine en MIDI, sans jamais rien écrire dans sa mémoire.",
     accent: "audio-plugin-card", visual: "wave", status: "OUVRIR →",
