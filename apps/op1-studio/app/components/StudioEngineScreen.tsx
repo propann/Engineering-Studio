@@ -544,7 +544,10 @@ export function StudioEngineScreen({
         })}
 
         {/* ── SUPERPOSITION DU MENU DE SON (MOTEURS & PATCHES) ── */}
-        {isMenuOpen && (
+        {/* L'atelier parent rend son menu complet en HTML pour afficher les
+            20 moteurs et tous leurs patches. L'écran garde ce menu SVG
+            uniquement lorsqu'il est utilisé seul, sans callback parent. */}
+        {isMenuOpen && !onOpenSoundMenu && (
           <StudioSoundMenuOverlay
             selectedEngine={engineId}
             selectedPatch={patchName}

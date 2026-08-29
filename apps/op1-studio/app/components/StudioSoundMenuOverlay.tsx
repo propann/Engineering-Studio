@@ -2,7 +2,7 @@
  * StudioSoundMenuOverlay.tsx — Menu intégré de sélection des Moteurs & Patches OP-1.
  *
  * S'affiche en superposition directe sur l'écran OLED 320×160 :
- * - Colonne gauche (Bleue) : 15 moteurs audio contrôlables au potentiomètre T1 Bleu ou au clic.
+ * - Colonne gauche (Bleue) : 20 moteurs audio contrôlables au potentiomètre T1 Bleu ou au clic.
  * - Colonne droite (Verte) : Patches du moteur contrôlables au potentiomètre T2 Vert ou au clic.
  */
 
