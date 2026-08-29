@@ -2660,7 +2660,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell studio-op1-page" style={{ minHeight: "100vh", background: "#0e1314", color: "#eef3ea", padding: "12px 16px" }}>
+    <main className="app-shell studio-op1-page" style={{ minHeight: "100vh", background: "#0e1314", color: "#eef3ea" }}>
       {notice && (
         <div className="notice" role="status" style={{ marginBottom: "12px" }}>
           <Icon name="shield" size={17} />
