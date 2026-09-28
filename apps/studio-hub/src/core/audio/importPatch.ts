@@ -19,11 +19,12 @@ import type { EnginePluginType, PatchPreset } from "../types/audio";
  * Aucun de ces défauts ne se voit avant qu'on appuie sur une touche.
  */
 
-/** Les quinze moteurs. Un identifiant hors de cette liste ne rend aucun son. */
+/** Les vingt moteurs. Un identifiant hors de cette liste ne rend aucun son. */
 export const MOTEURS_CONNUS: EnginePluginType[] = [
   "mi_plaits", "mi_braids", "mi_rings", "mi_clouds", "mi_elements",
   "dexed_fm", "surge_xt", "zynaddsubfx", "helm", "fluidsynth",
   "amsynth", "amy_engine", "pl_synth", "open303", "faust_dsp",
+  "drum_machine", "vocoder_dsp", "string_machine", "organ_drawbars", "phase_distortion",
 ];
 
 export type ResultatImport =

@@ -347,7 +347,7 @@
   border-color: rgba(0, 237, 149, 0.3);
 }
 
-/* Filtre de la liste de patches : 91 patches d'usine sur 15 moteurs, qu'on ne
+/* Filtre de la liste de patches : 101 patches d'usine sur 20 moteurs, qu'on ne
    pouvait auparavant que faire defiler. */
 .patch-search-input {
   width: 100%;

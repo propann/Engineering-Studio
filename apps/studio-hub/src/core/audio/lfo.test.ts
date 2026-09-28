@@ -154,7 +154,7 @@ describe("listes d'affichage", () => {
   });
 
   it("le defaut ne module rien", () => {
-    // Ajouter le module ne doit pas changer le son des 91 patches d'usine.
+    // Ajouter le module ne doit pas changer le son des 101 patches d'usine.
     expect(lfoActif(LFO_DEFAUT)).toBe(false);
   });
 });

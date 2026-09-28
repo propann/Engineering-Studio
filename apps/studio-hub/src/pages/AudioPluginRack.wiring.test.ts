@@ -173,6 +173,24 @@ describe("integrite du fichier", () => {
 });
 
 describe("cablage des parametres", () => {
+  it("applique les patches des cinq moteurs du rack B", () => {
+    // Les patches existaient dans la banque, mais applyPatch ne remettait
+    // pas leurs curseurs React a jour : la selection semblait changer sans
+    // conserver les reglages du patch.
+    const debut = SOURCE.indexOf("const applyPatch");
+    const fin = SOURCE.indexOf("// Le rack reste", debut);
+    const bloc = SOURCE.slice(debut, fin);
+    for (const moteur of [
+      "drum_machine",
+      "vocoder_dsp",
+      "string_machine",
+      "organ_drawbars",
+      "phase_distortion",
+    ]) {
+      expect(bloc, moteur).toContain(`patch.engine === "${moteur}"`);
+    }
+  });
+
   it("lit chaque parametre declare dans le moteur audio", () => {
     // L'invariant central. Un parametre absent d'ici est un curseur qui ne
     // produit aucun son.

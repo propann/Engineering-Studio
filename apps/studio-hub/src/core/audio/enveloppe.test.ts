@@ -16,7 +16,7 @@ describe("resolution des reglages", () => {
 
   it("reproduit exactement les valeurs cablees jusqu'ici", () => {
     // Le rack sonnait ainsi avant que l'enveloppe soit reglable. Ajouter des
-    // curseurs ne doit pas changer le son par defaut de 91 patches.
+    // curseurs ne doit pas changer le son par defaut de 101 patches.
     const e = resoudreEnveloppe(ENVELOPPE_DEFAUT);
     expect(e.ATTACK).toBeCloseTo(0.008, 10);
     expect(e.DECAY).toBeCloseTo(0.12, 10);
@@ -25,7 +25,7 @@ describe("resolution des reglages", () => {
   });
 
   it("rend le defaut sur un reglage absent", () => {
-    // Les 91 patches d'usine n'ont aucun champ d'enveloppe : sans ce repli,
+    // Les 101 patches d'usine n'ont aucun champ d'enveloppe : sans ce repli,
     // charger l'un d'eux donnerait NaN partout.
     const e = resoudreEnveloppe({});
     expect(e).toEqual(resoudreEnveloppe(ENVELOPPE_DEFAUT));

@@ -304,7 +304,7 @@ export default function AudioPluginRack({
   /**
    * Favoris et etiquettes, stockes a part des patches.
    *
-   * Les 91 patches d'usine sont des constantes du source : on ne peut pas y
+   * Les 101 patches d'usine sont des constantes du source : on ne peut pas y
    * ecrire. Ces metadonnees sont donc fusionnees a l'affichage.
    */
   const [metas, setMetas] = useState<MetasPatches>(() => lireMetas());
@@ -433,7 +433,7 @@ export default function AudioPluginRack({
   const [fxEqMid, setFxEqMid] = useState<number>(0);
   const [fxEqHigh, setFxEqHigh] = useState<number>(0);
   // Enveloppe ADSR. Les defauts reproduisent exactement les valeurs cablees
-  // jusqu'ici : ajouter des curseurs ne doit pas changer le son des 91 patches.
+  // jusqu'ici : ajouter des curseurs ne doit pas changer le son des 101 patches.
   // Module affiche sous les moteurs. Le Labo reunit ce qui servait a fabriquer
   // du son dans deux pages : les moteurs logiciels ici, la creation de patches
   // pour les machines dans un module.
@@ -446,7 +446,7 @@ export default function AudioPluginRack({
 
   // LFO global (module 7). Plusieurs moteurs ont deja leur LFO interne ;
   // celui-ci s'applique a TOUTES les voix. Inactif par defaut : ajouter le
-  // module ne doit pas changer le son des 91 patches d'usine.
+  // module ne doit pas changer le son des 101 patches d'usine.
   const [lfoCible, setLfoCible] = useState<CibleLfo>(LFO_DEFAUT.lfoCible);
   const [lfoForme, setLfoForme] = useState<FormeLfo>(LFO_DEFAUT.lfoForme);
   const [lfoRate, setLfoRate] = useState<number>(LFO_DEFAUT.lfoRate);
@@ -1368,6 +1368,34 @@ export default function AudioPluginRack({
       if (p.faustGain !== undefined) setFaustGain(p.faustGain);
       if (p.faustFeedback !== undefined) setFaustFeedback(p.faustFeedback);
       if (p.faustDrive !== undefined) setFaustDrive(p.faustDrive);
+    } else if (patch.engine === "drum_machine") {
+      if (p.drumVoice !== undefined) setDrumVoice(p.drumVoice);
+      if (p.drumTone !== undefined) setDrumTone(p.drumTone);
+      if (p.drumDecay !== undefined) setDrumDecay(p.drumDecay);
+      if (p.drumNoise !== undefined) setDrumNoise(p.drumNoise);
+      if (p.drumDrive !== undefined) setDrumDrive(p.drumDrive);
+    } else if (patch.engine === "vocoder_dsp") {
+      if (p.vocBands !== undefined) setVocBands(p.vocBands);
+      if (p.vocFormant !== undefined) setVocFormant(p.vocFormant);
+      if (p.vocCarrier !== undefined) setVocCarrier(p.vocCarrier);
+      if (p.vocBrightness !== undefined) setVocBrightness(p.vocBrightness);
+      if (p.vocResonance !== undefined) setVocResonance(p.vocResonance);
+    } else if (patch.engine === "string_machine") {
+      if (p.strVoices !== undefined) setStrVoices(p.strVoices);
+      if (p.strDetune !== undefined) setStrDetune(p.strDetune);
+      if (p.strEnsemble !== undefined) setStrEnsemble(p.strEnsemble);
+      if (p.strTone !== undefined) setStrTone(p.strTone);
+      if (p.strAttack !== undefined) setStrAttack(p.strAttack);
+    } else if (patch.engine === "organ_drawbars") {
+      if (p.orgDrawbars !== undefined) setOrgDrawbars(p.orgDrawbars);
+      if (p.orgPercussion !== undefined) setOrgPercussion(p.orgPercussion);
+      if (p.orgLeslie !== undefined) setOrgLeslie(p.orgLeslie);
+      if (p.orgKeyClick !== undefined) setOrgKeyClick(p.orgKeyClick);
+    } else if (patch.engine === "phase_distortion") {
+      if (p.pdAmount !== undefined) setPdAmount(p.pdAmount);
+      if (p.pdShape !== undefined) setPdShape(p.pdShape);
+      if (p.pdResonance !== undefined) setPdResonance(p.pdResonance);
+      if (p.pdBits !== undefined) setPdBits(p.pdBits);
     } else if (patch.engine === "mi_plaits") {
       if (p.plaitsEngine !== undefined) setPlaitsEngine(p.plaitsEngine);
       if (p.plaitsHarmonics !== undefined) setPlaitsHarmonics(p.plaitsHarmonics);

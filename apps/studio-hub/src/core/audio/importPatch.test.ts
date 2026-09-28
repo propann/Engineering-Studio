@@ -53,8 +53,8 @@ describe("refus des fichiers qui n'en sont pas", () => {
     expect(lire({ engine: null, parameters: {} }).ok).toBe(false);
   });
 
-  it("accepte les quinze moteurs, et eux seuls", () => {
-    expect(MOTEURS_CONNUS).toHaveLength(15);
+  it("accepte les vingt moteurs, et eux seuls", () => {
+    expect(MOTEURS_CONNUS).toHaveLength(20);
     for (const m of MOTEURS_CONNUS) {
       expect(lire({ engine: m, parameters: {} }).ok, m).toBe(true);
     }
@@ -181,7 +181,7 @@ describe("identite du patch importe", () => {
   });
 
   it("se marque comme patch utilisateur", () => {
-    // Sinon il se melangerait aux 91 patches d'usine, qui sont des constantes
+    // Sinon il se melangerait aux 101 patches d'usine, qui sont des constantes
     // du source et ne doivent jamais etre modifies.
     const r = lire({ engine: "helm" });
     expect(r.ok).toBe(true);
