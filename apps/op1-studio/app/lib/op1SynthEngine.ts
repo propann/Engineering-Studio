@@ -329,6 +329,9 @@ class Op1SynthEngine {
     let modulator: OscillatorNode | null = null;
     let modGain: GainNode | null = null;
     let filter: BiquadFilterNode | null = null;
+    let karplusFeedback: GainNode | null = null;
+    let karplusDelay: DelayNode | null = null;
+    let karplusNoise: AudioBufferSourceNode | null = null;
     let waveshaper: WaveShaperNode | null = null;
     let cleanupNodes: () => void = () => {};
 
@@ -417,41 +420,69 @@ class Op1SynthEngine {
       };
     } else if (rawEngine === "mi_rings" || engine === "String") {
       // ── Moteur Rings / Modélisation Karplus-Strong ──
-      const bufferSize = Math.max(2, Math.floor(ctx.sampleRate / freq));
+      // La boucle est volontairement séparée de l'enveloppe de voix : le
+      // feedback doit produire le decay naturel de la corde, et ne doit pas
+      // être coupé par une rampe globale qui crée des clics et des artefacts.
+      const period = 1 / Math.max(20, Math.min(12000, freq));
+      const brightness = Math.max(0, Math.min(1, t2 / 100));
+      const damping = Math.max(0, Math.min(1, t3 / 100));
+      const decaySeconds = Math.max(0.25, 0.35 + (t4 / 100) * 5.5);
+      const bufferSize = Math.max(
+        2,
+        Math.floor(ctx.sampleRate * period * (0.12 + (t1 / 100) * 0.48)),
+      );
       const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const output = noiseBuffer.getChannelData(0);
-      const bright = Math.max(0.1, t2 / 100);
       for (let i = 0; i < bufferSize; i++) {
-        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * (0.2 + bright * 0.8)));
+        const envelope = Math.exp(-i / Math.max(1, bufferSize * (0.18 + brightness * 0.72)));
+        output[i] = (Math.random() * 2 - 1) * envelope;
       }
 
       const noise = ctx.createBufferSource();
+      karplusNoise = noise;
       noise.buffer = noiseBuffer;
 
       filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.setValueAtTime(Math.min(14000, freq * (2 + bright * 8)), now);
-      filter.Q.setValueAtTime(4 + (t3 / 100) * 10, now);
+      filter.frequency.setValueAtTime(
+        Math.min(18000, Math.max(350, freq * (2.5 + brightness * 14) * (1 - damping * 0.45))),
+        now,
+      );
+      filter.Q.setValueAtTime(0.55 + damping * 0.8, now);
 
-      const delay = ctx.createDelay();
-      delay.delayTime.setValueAtTime(1 / freq, now);
+      const delay = ctx.createDelay(2);
+      karplusDelay = delay;
+      delay.delayTime.setValueAtTime(period, now);
 
-      const damp = Math.max(0.7, Math.min(0.995, 0.98 - (t3 / 100) * 0.1));
       const feedback = ctx.createGain();
-      feedback.gain.setValueAtTime(damp, now);
+      karplusFeedback = feedback;
+      const feedbackPerPeriod = Math.pow(10, -3 * period / decaySeconds);
+      const feedbackAmount = Math.max(0.72, Math.min(0.9985, feedbackPerPeriod * (1 - damping * 0.08)));
+      feedback.gain.setValueAtTime(feedbackAmount, now);
 
-      noise.connect(filter);
-      filter.connect(delay);
-      delay.connect(feedback);
-      feedback.connect(filter);
+      // Excitation -> ligne de retard -> filtre d'amortissement -> feedback.
+      // C'est la topologie KS classique ; le filtre est dans la boucle.
+      noise.connect(delay);
+      delay.connect(filter);
+      filter.connect(feedback);
+      feedback.connect(delay);
       filter.connect(voiceGain);
 
-      const decaySec = Math.max(0.4, (t4 / 100) * 3.5);
-      voiceGain.gain.setValueAtTime(0.6 * velFactor, now);
-      voiceGain.gain.exponentialRampToValueAtTime(0.001, now + decaySec);
+      const attack = 0.003 + (t1 / 100) * 0.035;
+      voiceGain.gain.setValueAtTime(0, now);
+      voiceGain.gain.linearRampToValueAtTime(0.58 * velFactor, now + attack);
 
       noise.start(now);
-      cleanupNodes = () => {};
+      cleanupNodes = () => {
+        const cleanupAt = ctx.currentTime + 0.2;
+        try { karplusNoise?.stop(cleanupAt); } catch {}
+        window.setTimeout(() => {
+          try { karplusNoise?.disconnect(); } catch {}
+          try { karplusDelay?.disconnect(); } catch {}
+          try { karplusFeedback?.disconnect(); } catch {}
+          try { filter?.disconnect(); } catch {}
+        }, 260);
+      };
     } else if (rawEngine === "pl_synth" || engine === "Pulse") {
       // ── Moteur Chiptune / Pulse PWM & Sub ──
       osc1 = ctx.createOscillator();
@@ -638,6 +669,34 @@ class Op1SynthEngine {
         } else if (param === "t3" || param === "shift_t3") {
           const qVal = Math.max(0.5, Math.min(24, (value / 100) * 18 + 0.5));
           filter.Q.setTargetAtTime(qVal, curTime, 0.03);
+        }
+      }
+      if ((rawEngine === "mi_rings" || engine === "String") && filter) {
+        const currentT3 = this.getEngineParam("t3", 45);
+        if (param === "t2" || param === "shift_t2") {
+          const brightness = Math.max(0, Math.min(1, value / 100));
+          const damping = Math.max(0, Math.min(1, currentT3 / 100));
+          const cut = Math.min(18000, Math.max(350, freq * (2.5 + brightness * 14) * (1 - damping * 0.45)));
+          filter.frequency.setTargetAtTime(cut, curTime, 0.03);
+        } else if (param === "t3" || param === "shift_t3") {
+          const damping = Math.max(0, Math.min(1, value / 100));
+          filter.Q.setTargetAtTime(0.55 + damping * 0.8, curTime, 0.03);
+          const decaySeconds = Math.max(0.25, 0.35 + (this.getEngineParam("t4", 70) / 100) * 5.5);
+          const feedbackPerPeriod = Math.pow(10, -3 * (1 / Math.max(20, Math.min(12000, freq))) / decaySeconds);
+          karplusFeedback?.gain.setTargetAtTime(
+            Math.max(0.72, Math.min(0.9985, feedbackPerPeriod * (1 - damping * 0.08))),
+            curTime,
+            0.03,
+          );
+        } else if (param === "t4" || param === "shift_t4") {
+          const decaySeconds = Math.max(0.25, 0.35 + (value / 100) * 5.5);
+          const feedbackPerPeriod = Math.pow(10, -3 * (1 / Math.max(20, Math.min(12000, freq))) / decaySeconds);
+          const damping = Math.max(0, Math.min(1, currentT3 / 100));
+          karplusFeedback?.gain.setTargetAtTime(
+            Math.max(0.72, Math.min(0.9985, feedbackPerPeriod * (1 - damping * 0.08))),
+            curTime,
+            0.03,
+          );
         }
       }
       if (osc1 && (param === "t1" || param === "shift_t1")) {
